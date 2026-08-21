@@ -1,0 +1,26 @@
+{
+  "id": "./",
+  "name": "Quản Lý Lát Yên",
+  "short_name": "Lát Yên",
+  "description": "Quản lý bán hàng, kho, Thu/Chi, nhân viên và báo cáo tài chính Lát Yên.",
+  "lang": "vi",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
