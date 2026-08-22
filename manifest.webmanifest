@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V243",
+  "name": "Quản Lý Lát Yên V245",
   "short_name": "Lát Yên",
-  "description": "Extends technical-ID normalization to legacy stock transaction IDs before controlled Cloud reset, using the original V198 movement UUID namespace.",
+  "description": "Collision-safe technical data normalization: exact duplicate collapse, content-derived deterministic re-keying, semantic recipe/prepared consolidation, full integrity audit before Cloud deletion.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

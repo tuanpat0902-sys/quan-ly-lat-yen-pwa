@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V243 MOVEMENT ID NORMALIZER ===== */
+/* ===== V245 COLLISION SAFE NORMALIZER ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11666,7 +11666,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V243</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V245</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -15139,6 +15139,14 @@ function v210InitLeaderElection(){
 }
 
 function v210CanOwnSync(){
+  /*
+    V244 cross-tab lock: while Reset Cloud is running, every normal sync
+    path on this browser origin must stand down.
+  */
+  if(v244ResetLockActive()){
+    return false;
+  }
+
   if(document.hidden){
     return false;
   }
@@ -19291,6 +19299,44 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V245 collision-safe technical-ID analysis.
+  try{
+    const c=
+      v245TechnicalCollisionStats();
+
+    add(
+      'Collision-Safe V245',
+      true,
+      `Trùng ID:${c.duplicate_id_groups} • exact copy:${c.exact_duplicate_rows} • ID khác nội dung:${c.conflicting_id_groups} • recipe semantic:${c.recipe_semantic_duplicates} • prepared semantic:${c.prepared_semantic_duplicates}`
+    );
+  }catch(e){
+    add(
+      'Collision-Safe V245',
+      false,
+      e?.message||String(e)
+    );
+  }
+
+  // V244 Reset Cloud local integrity audit.
+  try{
+    const audit=
+      v244LocalIntegrityAudit();
+
+    add(
+      'Reset Safety Audit V244',
+      audit.ok,
+      audit.ok
+        ?`Local toàn vẹn • audit-only movement:${audit.summary.audit_only_movements}`
+        :`${audit.errors.length} lỗi local: ${audit.errors.slice(0,3).join(' | ')}`
+    );
+  }catch(e){
+    add(
+      'Reset Safety Audit V244',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V242 warehouse creation/sync health.
   try{
     const pendingWarehouses=
@@ -19519,7 +19565,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:243,
+    version:245,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -22983,7 +23029,11 @@ function v228LocalTableRows(data=db){
     prepared_ingredient_items:data?.preparedItems||[],
     sales:data?.sales||[],
     sale_items:data?.saleItems||[],
-    stock_transactions:data?.movements||[]
+    stock_transactions:
+      (data?.movements||[])
+        .filter(row=>
+          row?._stocktake_audit_only!==true
+        )
   };
 }
 
@@ -42806,7 +42856,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V243',
+    app_version:'V245',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -43115,7 +43165,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:243,
+    version:245,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -43297,13 +43347,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:243,
+    version:245,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V243',storage:'supabase-storage',
+      schema:185,app_version:'V245',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44515,7 +44565,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:243,
+    version:245,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -47350,7 +47400,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V243',
+      app_version:'V245',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47365,7 +47415,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:243,
+      version:245,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47642,7 +47692,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v243-full-backup-'+
+    'lat-yen-v245-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -47736,17 +47786,23 @@ function v241TechnicalLegacyStats(){
         !isUuidValue(row.id)
       );
 
+  const saleItemRows=
+    (db.saleItems||[])
+      .filter(row=>
+        row?.id &&
+        !isUuidValue(row.id)
+      );
+
   return {
-    recipe_items:
-      recipeRows.length,
-    prepared_items:
-      preparedRows.length,
-    movements:
-      movementRows.length,
+    recipe_items:recipeRows.length,
+    prepared_items:preparedRows.length,
+    movements:movementRows.length,
+    sale_items:saleItemRows.length,
     total:
       recipeRows.length+
       preparedRows.length+
-      movementRows.length
+      movementRows.length+
+      saleItemRows.length
   };
 }
 
@@ -47763,198 +47819,1011 @@ function v241ResetPreflightReadiness(){
         const text=
           String(issue||'');
 
-        /*
-          These are row-primary-key IDs only.
-          They do not identify warehouse / ingredient / product / sale
-          business objects and can be deterministically regenerated.
-        */
-        if(
-          text.startsWith(
-            'Công thức/id:'
-          )
-        ){
-          return false;
-        }
-
-        if(
-          text.startsWith(
-            'Pha chế/id:'
-          )
-        ){
-          return false;
-        }
-
-        if(
-          text.startsWith(
-            'Biến động/id:'
-          )
-        ){
-          return false;
-        }
-
-        return true;
+        return !(
+          text.startsWith('Công thức/id:') ||
+          text.startsWith('Pha chế/id:') ||
+          text.startsWith('Biến động/id:') ||
+          text.startsWith('Chi tiết bán/id:')
+        );
       });
 
   return {
-    ok:
-      hardIssues.length===0,
-    issues:
-      hardIssues,
+    ok:hardIssues.length===0,
+    issues:hardIssues,
     technical,
-    counts:
-      strict.counts,
+    counts:strict.counts,
+    total:strict.total
+  };
+}
+
+
+/* ===== V245 COLLISION-SAFE TECHNICAL NORMALIZER ===== */
+function v245NormNumber(value){
+  const n=Number(value||0);
+
+  if(!Number.isFinite(n)){
+    return String(value??'');
+  }
+
+  return n.toFixed(12)
+    .replace(/0+$/,'')
+    .replace(/\.$/,'');
+}
+
+function v245TechnicalSignature(
+  kind,
+  row
+){
+  if(kind==='recipe_item'){
+    return JSON.stringify([
+      String(row.product_id||''),
+      String(row.ingredient_id||''),
+      v245NormNumber(row.quantity)
+    ]);
+  }
+
+  if(kind==='prepared_item'){
+    return JSON.stringify([
+      String(
+        row.prepared_ingredient_id||''
+      ),
+      String(
+        row.source_ingredient_id||''
+      ),
+      v245NormNumber(row.quantity)
+    ]);
+  }
+
+  if(kind==='sale_item'){
+    return JSON.stringify([
+      String(row.sale_id||''),
+      String(row.product_id||''),
+      v245NormNumber(row.quantity),
+      v245NormNumber(row.unit_price)
+    ]);
+  }
+
+  if(kind==='movement'){
+    return JSON.stringify([
+      String(row.warehouse_id||''),
+      String(row.ingredient_id||''),
+      String(
+        normalizeTransactionTypeV200(
+          row.transaction_type
+        )||
+        row.transaction_type||
+        ''
+      ),
+      v245NormNumber(row.quantity),
+      String(row.reference_id||''),
+      String(row.supplier_id||''),
+      v245NormNumber(row.unit_cost),
+      v245NormNumber(row.total_cost),
+      String(row.created_at||''),
+      String(row.note||'')
+    ]);
+  }
+
+  return JSON.stringify(row||{});
+}
+
+function v245RowFreshness(
+  row,
+  index
+){
+  let score=0;
+
+  if(row?._sync_status==='pending'){
+    score+=1e15;
+  }
+
+  if(row?._local_only===true){
+    score+=5e14;
+  }
+
+  const updated=
+    Date.parse(
+      row?.updated_at||''
+    );
+
+  const created=
+    Date.parse(
+      row?.created_at||''
+    );
+
+  if(Number.isFinite(updated)){
+    score+=updated;
+  }else if(Number.isFinite(created)){
+    score+=created;
+  }
+
+  /*
+    Current db order is the final tie breaker.
+    Later rows win because local edits/merges are normally appended later.
+  */
+  score+=Number(index||0)/1000;
+
+  return score;
+}
+
+function v245PreferredEntry(entries){
+  return [...entries]
+    .sort(
+      (a,b)=>
+        v245RowFreshness(
+          b.row,
+          b.index
+        )-
+        v245RowFreshness(
+          a.row,
+          a.index
+        )
+    )[0];
+}
+
+function v245TechnicalRowsConfig(){
+  return [
+    {
+      key:'recipeItems',
+      stat:'recipe_items',
+      kind:'recipe_item',
+      label:'công thức',
+      rows:db.recipeItems||[],
+      skip:()=>false
+    },
+    {
+      key:'preparedItems',
+      stat:'prepared_items',
+      kind:'prepared_item',
+      label:'pha chế',
+      rows:db.preparedItems||[],
+      skip:()=>false
+    },
+    {
+      key:'saleItems',
+      stat:'sale_items',
+      kind:'sale_item',
+      label:'chi tiết bán',
+      rows:db.saleItems||[],
+      skip:()=>false
+    },
+    {
+      key:'movements',
+      stat:'movements',
+      kind:'movement',
+      label:'biến động',
+      rows:db.movements||[],
+      skip:row=>
+        row?._stocktake_audit_only===true
+    }
+  ];
+}
+
+function v245TechnicalCollisionStats(){
+  const out={
+    legacy_ids:0,
+    missing_ids:0,
+    duplicate_id_groups:0,
+    duplicate_rows:0,
+    conflicting_id_groups:0,
+    exact_duplicate_rows:0,
+    recipe_semantic_duplicates:0,
+    prepared_semantic_duplicates:0
+  };
+
+  for(const cfg of v245TechnicalRowsConfig()){
+    const groups=new Map();
+
+    (cfg.rows||[]).forEach(
+      (row,index)=>{
+        if(
+          !row ||
+          cfg.skip(row)
+        ){
+          return;
+        }
+
+        const id=
+          String(row.id||'');
+
+        if(!id){
+          out.missing_ids++;
+        }else if(!isUuidValue(id)){
+          out.legacy_ids++;
+        }
+
+        if(!groups.has(id)){
+          groups.set(id,[]);
+        }
+
+        groups.get(id).push({
+          row,
+          index,
+          sig:v245TechnicalSignature(
+            cfg.kind,
+            row
+          )
+        });
+      }
+    );
+
+    for(const [id,entries] of groups){
+      if(
+        !id ||
+        entries.length<2
+      ){
+        continue;
+      }
+
+      out.duplicate_id_groups++;
+      out.duplicate_rows+=
+        entries.length-1;
+
+      const sigs=
+        new Set(
+          entries.map(x=>x.sig)
+        );
+
+      if(sigs.size>1){
+        out.conflicting_id_groups++;
+      }else{
+        out.exact_duplicate_rows+=
+          entries.length-1;
+      }
+    }
+  }
+
+  const recipeBusiness=new Map();
+
+  (db.recipeItems||[]).forEach(
+    (row,index)=>{
+      const key=
+        `${row.product_id||''}|${row.ingredient_id||''}`;
+
+      if(!recipeBusiness.has(key)){
+        recipeBusiness.set(
+          key,
+          []
+        );
+      }
+
+      recipeBusiness.get(key)
+        .push({
+          row,
+          index
+        });
+    }
+  );
+
+  for(const entries of recipeBusiness.values()){
+    if(entries.length>1){
+      out.recipe_semantic_duplicates+=
+        entries.length-1;
+    }
+  }
+
+  const preparedBusiness=new Map();
+
+  (db.preparedItems||[]).forEach(
+    (row,index)=>{
+      const key=
+        `${row.prepared_ingredient_id||''}|${row.source_ingredient_id||''}`;
+
+      if(!preparedBusiness.has(key)){
+        preparedBusiness.set(
+          key,
+          []
+        );
+      }
+
+      preparedBusiness.get(key)
+        .push({
+          row,
+          index
+        });
+    }
+  );
+
+  for(const entries of preparedBusiness.values()){
+    if(entries.length>1){
+      out.prepared_semantic_duplicates+=
+        entries.length-1;
+    }
+  }
+
+  return out;
+}
+
+function v245RepairableIntegrityError(
+  message
+){
+  const text=String(message||'');
+
+  return (
+    text.startsWith(
+      'Công thức: trùng khóa'
+    ) ||
+    text.startsWith(
+      'Công thức: khóa trống'
+    ) ||
+    text.startsWith(
+      'Pha chế: trùng khóa'
+    ) ||
+    text.startsWith(
+      'Pha chế: khóa trống'
+    ) ||
+    text.startsWith(
+      'Biến động: trùng khóa'
+    ) ||
+    text.startsWith(
+      'Biến động: khóa trống'
+    ) ||
+    text.startsWith(
+      'Chi tiết bán: trùng khóa'
+    ) ||
+    text.startsWith(
+      'Chi tiết bán: khóa trống'
+    )
+  );
+}
+
+function v245PreNormalizeIntegrityAudit(){
+  const audit=
+    v244LocalIntegrityAudit();
+
+  const hardErrors=
+    (audit.errors||[])
+      .filter(
+        x=>
+          !v245RepairableIntegrityError(
+            x
+          )
+      );
+
+  const repairableErrors=
+    (audit.errors||[])
+      .filter(
+        v245RepairableIntegrityError
+      );
+
+  return {
+    ...audit,
+    ok:hardErrors.length===0,
+    errors:hardErrors,
+    repairableErrors,
+    originalErrors:
+      audit.errors||[],
+    collisions:
+      v245TechnicalCollisionStats()
+  };
+}
+
+async function v245AllocateTechnicalId(
+  kind,
+  oldId,
+  signature,
+  used,
+  {
+    preserveUuid=false,
+    compatibility=false
+  }={}
+){
+  if(
+    preserveUuid &&
+    isUuidValue(oldId) &&
+    !used.has(oldId)
+  ){
+    used.add(oldId);
+    return oldId;
+  }
+
+  let seed='';
+
+  if(
+    compatibility &&
+    oldId
+  ){
+    /*
+      Single legacy row keeps the exact V198 mapping.
+    */
+    seed=oldId;
+  }else{
+    seed=
+      `${oldId||'missing'}|v245|${signature}`;
+  }
+
+  for(let attempt=0;attempt<20;attempt++){
+    const candidate=
+      await deterministicUuidV198(
+        kind,
+        attempt
+          ?`${seed}|${attempt}`
+          :seed
+      );
+
+    if(!used.has(candidate)){
+      used.add(candidate);
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `Không cấp được UUID duy nhất cho ${kind}.`
+  );
+}
+
+async function v245NormalizeOneTechnicalTable(
+  cfg
+){
+  const rows=
+    cfg.rows||[];
+
+  const passthrough=[];
+  const entries=[];
+
+  rows.forEach(
+    (row,index)=>{
+      if(!row){
+        return;
+      }
+
+      if(cfg.skip(row)){
+        passthrough.push({
+          row,
+          index
+        });
+
+        return;
+      }
+
+      entries.push({
+        row,
+        index,
+        oldId:
+          String(row.id||''),
+        sig:
+          v245TechnicalSignature(
+            cfg.kind,
+            row
+          )
+      });
+    }
+  );
+
+  /*
+    Step 1:
+    Exact duplicates are only collapsed when they share BOTH the same
+    original technical ID and the same business content.
+    Different original IDs are never merged here.
+  */
+  const sameLogical=
+    new Map();
+
+  for(const entry of entries){
+    const key=
+      `${entry.oldId}\u0000${entry.sig}`;
+
+    if(!sameLogical.has(key)){
+      sameLogical.set(
+        key,
+        []
+      );
+    }
+
+    sameLogical.get(key)
+      .push(entry);
+  }
+
+  const survivors=[];
+  let deduped=0;
+
+  for(const group of sameLogical.values()){
+    if(
+      group.length===1 ||
+      !group[0].oldId
+    ){
+      survivors.push(
+        ...group
+      );
+
+      continue;
+    }
+
+    const preferred=
+      v245PreferredEntry(
+        group
+      );
+
+    survivors.push(
+      preferred
+    );
+
+    deduped+=
+      group.length-1;
+  }
+
+  /*
+    Step 2:
+    Same old ID may still represent DIFFERENT content.
+    Do not discard either row: assign content-derived deterministic UUIDs.
+  */
+  const oldIdGroups=
+    new Map();
+
+  for(const entry of survivors){
+    const key=
+      entry.oldId||
+      `__missing__${entry.index}`;
+
+    if(!oldIdGroups.has(key)){
+      oldIdGroups.set(
+        key,
+        []
+      );
+    }
+
+    oldIdGroups.get(key)
+      .push(entry);
+  }
+
+  const used=
+    new Set();
+
+  let rekeyed=0;
+  let collisionVariants=0;
+
+  const output=[];
+
+  const sortedGroups=[
+    ...oldIdGroups.entries()
+  ].sort(
+    (a,b)=>
+      String(a[0])
+        .localeCompare(
+          String(b[0])
+        )
+  );
+
+  for(const [groupKey,group] of sortedGroups){
+    const distinctSigs=
+      new Set(
+        group.map(x=>x.sig)
+      );
+
+    const collision=
+      group.length>1 &&
+      distinctSigs.size>1;
+
+    if(collision){
+      collisionVariants+=
+        group.length;
+    }
+
+    /*
+      If an existing UUID has several different rows, keep the freshest row
+      on that UUID and re-key the others. Technical row IDs are not referenced
+      by other business tables.
+    */
+    let keeper=null;
+
+    if(
+      isUuidValue(groupKey) &&
+      collision
+    ){
+      keeper=
+        v245PreferredEntry(
+          group
+        );
+    }
+
+    const sortedEntries=[
+      ...group
+    ].sort(
+      (a,b)=>
+        a.sig.localeCompare(
+          b.sig
+        )||
+        a.index-b.index
+    );
+
+    for(const entry of sortedEntries){
+      const oldId=
+        entry.oldId;
+
+      const keepExisting=
+        !!keeper &&
+        keeper===entry;
+
+      const singleCompatible=
+        !collision &&
+        group.length===1 &&
+        !!oldId &&
+        !isUuidValue(oldId);
+
+      const newId=
+        await v245AllocateTechnicalId(
+          cfg.kind,
+          oldId,
+          entry.sig,
+          used,
+          {
+            preserveUuid:
+              (
+                isUuidValue(oldId) &&
+                (
+                  keepExisting ||
+                  !collision
+                )
+              ),
+            compatibility:
+              singleCompatible
+          }
+        );
+
+      if(newId!==oldId){
+        rekeyed++;
+      }
+
+      output.push({
+        row:{
+          ...entry.row,
+          id:newId
+        },
+        index:entry.index
+      });
+    }
+  }
+
+  /*
+    Audit-only rows never go Cloud and are untouched.
+  */
+  output.push(
+    ...passthrough
+  );
+
+  output.sort(
+    (a,b)=>
+      a.index-b.index
+  );
+
+  return {
+    rows:
+      output.map(x=>x.row),
+    deduped,
+    rekeyed,
+    collisionVariants
+  };
+}
+
+function v245LatestRecipeQueueLine(
+  productId,
+  ingredientId
+){
+  const ops=
+    getPendingSync()
+      .filter(x=>
+        x?.kind==='save_recipe' &&
+        String(x.product_id)===
+          String(productId)
+      );
+
+  for(
+    let i=ops.length-1;
+    i>=0;
+    i--
+  ){
+    const line=
+      (ops[i].lines||[])
+        .find(x=>
+          String(x.ingredient_id)===
+            String(ingredientId)
+        );
+
+    if(line){
+      return {
+        quantity:
+          Number(
+            line.quantity||0
+          )
+      };
+    }
+  }
+
+  return null;
+}
+
+function v245ConsolidateRecipeSemantics(){
+  const groups=
+    new Map();
+
+  (db.recipeItems||[])
+    .forEach(
+      (row,index)=>{
+        const key=
+          `${row.product_id||''}|${row.ingredient_id||''}`;
+
+        if(!groups.has(key)){
+          groups.set(
+            key,
+            []
+          );
+        }
+
+        groups.get(key)
+          .push({
+            row,
+            index
+          });
+      }
+    );
+
+  const remove=
+    new Set();
+
+  let deduped=0;
+  let conflictsResolved=0;
+
+  for(const entries of groups.values()){
+    if(entries.length<2){
+      continue;
+    }
+
+    const quantities=
+      new Set(
+        entries.map(
+          x=>
+            v245NormNumber(
+              x.row.quantity
+            )
+        )
+      );
+
+    let winner=null;
+
+    const first=
+      entries[0].row;
+
+    const queued=
+      v245LatestRecipeQueueLine(
+        first.product_id,
+        first.ingredient_id
+      );
+
+    if(queued){
+      const matches=
+        entries.filter(
+          x=>
+            v245NormNumber(
+              x.row.quantity
+            )===
+            v245NormNumber(
+              queued.quantity
+            )
+        );
+
+      if(matches.length){
+        winner=
+          v245PreferredEntry(
+            matches
+          );
+      }
+    }
+
+    if(!winner){
+      winner=
+        v245PreferredEntry(
+          entries
+        );
+    }
+
+    for(const entry of entries){
+      if(entry!==winner){
+        remove.add(
+          entry.row
+        );
+
+        deduped++;
+      }
+    }
+
+    if(quantities.size>1){
+      conflictsResolved++;
+    }
+  }
+
+  if(remove.size){
+    db.recipeItems=
+      (db.recipeItems||[])
+        .filter(
+          row=>
+            !remove.has(row)
+        );
+  }
+
+  return {
+    deduped,
+    conflictsResolved
+  };
+}
+
+function v245ConsolidatePreparedSemantics(){
+  const groups=
+    new Map();
+
+  (db.preparedItems||[])
+    .forEach(
+      (row,index)=>{
+        const key=
+          `${row.prepared_ingredient_id||''}|${row.source_ingredient_id||''}`;
+
+        if(!groups.has(key)){
+          groups.set(
+            key,
+            []
+          );
+        }
+
+        groups.get(key)
+          .push({
+            row,
+            index
+          });
+      }
+    );
+
+  const remove=
+    new Set();
+
+  let deduped=0;
+  let conflictsResolved=0;
+
+  for(const entries of groups.values()){
+    if(entries.length<2){
+      continue;
+    }
+
+    const quantities=
+      new Set(
+        entries.map(
+          x=>
+            v245NormNumber(
+              x.row.quantity
+            )
+        )
+      );
+
+    const winner=
+      v245PreferredEntry(
+        entries
+      );
+
+    for(const entry of entries){
+      if(entry!==winner){
+        remove.add(
+          entry.row
+        );
+        deduped++;
+      }
+    }
+
+    if(quantities.size>1){
+      conflictsResolved++;
+    }
+  }
+
+  if(remove.size){
+    db.preparedItems=
+      (db.preparedItems||[])
+        .filter(
+          row=>
+            !remove.has(row)
+        );
+  }
+
+  return {
+    deduped,
+    conflictsResolved
+  };
+}
+
+async function v245NormalizeTechnicalData(){
+  const before=
+    v245TechnicalCollisionStats();
+
+  const totals={
+    recipe_items:0,
+    prepared_items:0,
+    movements:0,
+    sale_items:0,
+    rekeyed:0,
+    exact_duplicates_removed:0,
+    id_collision_variants:0,
+    recipe_semantic_removed:0,
+    recipe_conflicts_resolved:0,
+    prepared_semantic_removed:0,
+    prepared_conflicts_resolved:0
+  };
+
+  for(const cfg of v245TechnicalRowsConfig()){
+    const result=
+      await v245NormalizeOneTechnicalTable(
+        cfg
+      );
+
+    db[cfg.key]=
+      result.rows;
+
+    totals[cfg.stat]+=
+      result.rekeyed;
+
+    totals.rekeyed+=
+      result.rekeyed;
+
+    totals.exact_duplicates_removed+=
+      result.deduped;
+
+    totals.id_collision_variants+=
+      result.collisionVariants;
+  }
+
+  const recipe=
+    v245ConsolidateRecipeSemantics();
+
+  totals.recipe_semantic_removed=
+    recipe.deduped;
+
+  totals.recipe_conflicts_resolved=
+    recipe.conflictsResolved;
+
+  const prepared=
+    v245ConsolidatePreparedSemantics();
+
+  totals.prepared_semantic_removed=
+    prepared.deduped;
+
+  totals.prepared_conflicts_resolved=
+    prepared.conflictsResolved;
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+
+  cacheSave();
+  flushCacheSave();
+
+  const after=
+    v245TechnicalCollisionStats();
+
+  const strict=
+    v244LocalIntegrityAudit();
+
+  if(!strict.ok){
+    throw new Error(
+      'Sau Collision-Safe Normalize vẫn còn lỗi:\n'+
+      strict.errors
+        .slice(0,20)
+        .join('\n')+
+      (
+        strict.errors.length>20
+          ?`\n... và ${strict.errors.length-20} lỗi khác`
+          :''
+      )
+    );
+  }
+
+  return {
+    ...totals,
+    before,
+    after,
     total:
-      strict.total
+      totals.rekeyed+
+      totals.exact_duplicates_removed+
+      totals.recipe_semantic_removed+
+      totals.prepared_semantic_removed
   };
 }
 
 async function v241NormalizeTechnicalLineIds(){
-  const changed={
-    recipe_items:0,
-    prepared_items:0,
-    movements:0
-  };
-
-  const recipeSeen=
-    new Set();
-
-  for(
-    let i=0;
-    i<(db.recipeItems||[]).length;
-    i++
-  ){
-    const row=
-      db.recipeItems[i];
-
-    if(!row)continue;
-
-    if(!isUuidValue(row.id)){
-      const oldId=
-        row.id||
-        `${row.product_id}|${row.ingredient_id}|${i}`;
-
-      row.id=
-        await deterministicUuidV198(
-          'recipe_item',
-          oldId
-        );
-
-      changed.recipe_items++;
-    }
-
-    if(recipeSeen.has(row.id)){
-      throw new Error(
-        `Trùng UUID dòng công thức sau chuẩn hóa: ${row.id}`
-      );
-    }
-
-    recipeSeen.add(
-      row.id
-    );
-  }
-
-  const preparedSeen=
-    new Set();
-
-  for(
-    let i=0;
-    i<(db.preparedItems||[]).length;
-    i++
-  ){
-    const row=
-      db.preparedItems[i];
-
-    if(!row)continue;
-
-    if(!isUuidValue(row.id)){
-      const oldId=
-        row.id||
-        `${row.prepared_ingredient_id}|${row.source_ingredient_id}|${i}`;
-
-      row.id=
-        await deterministicUuidV198(
-          'prepared_item',
-          oldId
-        );
-
-      changed.prepared_items++;
-    }
-
-    if(preparedSeen.has(row.id)){
-      throw new Error(
-        `Trùng UUID dòng pha chế sau chuẩn hóa: ${row.id}`
-      );
-    }
-
-    preparedSeen.add(
-      row.id
-    );
-  }
-
-  const movementSeen=
-    new Set();
-
-  for(
-    let i=0;
-    i<(db.movements||[]).length;
-    i++
-  ){
-    const row=
-      db.movements[i];
-
-    if(
-      !row ||
-      row._stocktake_audit_only===true
-    ){
-      continue;
-    }
-
-    if(!isUuidValue(row.id)){
-      const oldId=
-        row.id||
-        `${row.transaction_type||''}|${row.reference_id||''}|${row.ingredient_id||''}|${row.created_at||''}|${i}`;
-
-      /*
-        Exact same V198 namespace used by the original movement migration.
-      */
-      row.id=
-        await deterministicUuidV198(
-          'movement',
-          oldId
-        );
-
-      changed.movements++;
-    }
-
-    if(movementSeen.has(row.id)){
-      throw new Error(
-        `Trùng UUID dòng biến động sau chuẩn hóa: ${row.id}`
-      );
-    }
-
-    movementSeen.add(
-      row.id
-    );
-  }
-
-  if(
-    changed.recipe_items ||
-    changed.prepared_items ||
-    changed.movements
-  ){
-    invalidateDataIndexes();
-    invalidateDerivedCaches();
-    cacheSave();
-    flushCacheSave();
-  }
-
-  return {
-    ...changed,
-    total:
-      changed.recipe_items+
-      changed.prepared_items+
-      changed.movements
-  };
+  return v245NormalizeTechnicalData();
 }
 
 function v241StrictReadinessAfterNormalize(){
@@ -47976,6 +48845,1244 @@ function v241StrictReadinessAfterNormalize(){
         :''
     )
   );
+}
+
+
+/* ===== V244 CLOUD RESET SAFETY AUDIT ===== */
+const V244_RESET_LOCK_KEY='lat_yen_cloud_reset_lock_v244';
+const V244_RESET_LOCK_TTL_MS=10*60*1000;
+const V244_RESET_OWNER=uid();
+
+function v244ResetLockInfo(){
+  try{
+    const raw=
+      JSON.parse(
+        localStorage.getItem(
+          V244_RESET_LOCK_KEY
+        )||'null'
+      );
+
+    if(!raw?.at){
+      return null;
+    }
+
+    if(
+      Date.now()-
+      Number(raw.at||0)>
+      V244_RESET_LOCK_TTL_MS
+    ){
+      localStorage.removeItem(
+        V244_RESET_LOCK_KEY
+      );
+
+      return null;
+    }
+
+    return raw;
+  }catch(e){
+    return null;
+  }
+}
+
+function v244ResetLockActive(){
+  return !!v244ResetLockInfo();
+}
+
+function v244AcquireResetLock(){
+  const existing=
+    v244ResetLockInfo();
+
+  if(
+    existing &&
+    existing.owner!==
+      V244_RESET_OWNER
+  ){
+    throw new Error(
+      'Một tab khác trên máy này đang thực hiện Reset Cloud.'
+    );
+  }
+
+  const lock={
+    owner:V244_RESET_OWNER,
+    at:Date.now()
+  };
+
+  localStorage.setItem(
+    V244_RESET_LOCK_KEY,
+    JSON.stringify(lock)
+  );
+
+  return lock;
+}
+
+function v244TouchResetLock(){
+  if(!v244ResetLockActive()){
+    return;
+  }
+
+  localStorage.setItem(
+    V244_RESET_LOCK_KEY,
+    JSON.stringify({
+      owner:V244_RESET_OWNER,
+      at:Date.now()
+    })
+  );
+}
+
+function v244ReleaseResetLock(){
+  const lock=
+    v244ResetLockInfo();
+
+  if(
+    !lock ||
+    lock.owner===
+      V244_RESET_OWNER
+  ){
+    localStorage.removeItem(
+      V244_RESET_LOCK_KEY
+    );
+  }
+}
+
+async function v244WaitForSyncIdle(
+  timeoutMs=15000
+){
+  const started=Date.now();
+
+  while(
+    autoSyncBusy ||
+    syncing ||
+    v206RealtimePullBusy
+  ){
+    if(
+      Date.now()-started>
+      timeoutMs
+    ){
+      throw new Error(
+        'Có phiên đồng bộ đang chạy quá lâu. Hãy chờ trạng thái đồng bộ dừng rồi Reset lại.'
+      );
+    }
+
+    await sleepMs(120);
+  }
+}
+
+function v244CancelBackgroundSync(){
+  stopAutoSyncLoop();
+
+  clearTimeout(
+    v208ActionSyncTimer
+  );
+
+  v208ActionSyncTimer=null;
+  v208ActionSyncQueued=false;
+
+  clearTimeout(
+    v235IdleReconcileTimer
+  );
+
+  v235NeedFullReconcile=false;
+
+  clearTimeout(
+    v206RealtimeVerifyTimer
+  );
+
+  clearTimeout(
+    cloudReloadTimer
+  );
+
+  cloudReloadRequested=false;
+
+  if(realtimeChannel){
+    try{
+      sb.removeChannel(
+        realtimeChannel
+      );
+    }catch(e){}
+
+    realtimeChannel=null;
+  }
+
+  try{
+    v235RealtimeQueue.clear();
+  }catch(e){}
+
+  v235DeferredCanonicalMerge=null;
+}
+
+function v244DuplicateKeys(
+  rows,
+  keyFn,
+  label,
+  errors
+){
+  const seen=new Set();
+
+  for(const row of rows||[]){
+    const key=
+      String(
+        keyFn(row)||''
+      );
+
+    if(!key){
+      errors.push(
+        `${label}: khóa trống`
+      );
+
+      continue;
+    }
+
+    if(seen.has(key)){
+      errors.push(
+        `${label}: trùng khóa ${key.slice(0,50)}`
+      );
+
+      continue;
+    }
+
+    seen.add(key);
+  }
+}
+
+function v244Finite(
+  value,
+  label,
+  errors
+){
+  if(
+    !Number.isFinite(
+      Number(value)
+    )
+  ){
+    errors.push(
+      `${label}: giá trị số không hợp lệ (${String(value)})`
+    );
+  }
+}
+
+function v244Timestamp(
+  value,
+  label,
+  errors
+){
+  if(!value)return;
+
+  if(
+    !Number.isFinite(
+      Date.parse(value)
+    )
+  ){
+    errors.push(
+      `${label}: thời gian không hợp lệ (${String(value)})`
+    );
+  }
+}
+
+function v244LocalIntegrityAudit(){
+  const errors=[];
+  const warnings=[];
+
+  const warehouses=
+    new Set(
+      (db.warehouses||[])
+        .map(x=>String(x.id||''))
+    );
+
+  const ingredients=
+    new Set(
+      (db.ingredients||[])
+        .map(x=>String(x.id||''))
+    );
+
+  const suppliers=
+    new Set(
+      (db.suppliers||[])
+        .map(x=>String(x.id||''))
+    );
+
+  const products=
+    new Set(
+      (db.products||[])
+        .map(x=>String(x.id||''))
+    );
+
+  const sales=
+    new Set(
+      (db.sales||[])
+        .map(x=>String(x.id||''))
+    );
+
+  v244DuplicateKeys(
+    db.warehouses,
+    x=>x.id,
+    'Kho',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.ingredients,
+    x=>x.id,
+    'Nguyên liệu',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.suppliers,
+    x=>x.id,
+    'Nhà cung cấp',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.products,
+    x=>x.id,
+    'Sản phẩm',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.inventory,
+    x=>`${x.warehouse_id}|${x.ingredient_id}`,
+    'Tồn kho',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.recipeItems,
+    x=>x.id,
+    'Công thức',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.preparedItems,
+    x=>x.id,
+    'Pha chế',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.sales,
+    x=>x.id,
+    'Phiếu bán',
+    errors
+  );
+
+  v244DuplicateKeys(
+    db.saleItems,
+    x=>x.id,
+    'Chi tiết bán',
+    errors
+  );
+
+  v244DuplicateKeys(
+    (db.movements||[])
+      .filter(x=>
+        x?._stocktake_audit_only!==true
+      ),
+    x=>x.id,
+    'Biến động',
+    errors
+  );
+
+  for(const row of db.inventory||[]){
+    if(!warehouses.has(String(row.warehouse_id||''))){
+      errors.push(
+        `Tồn kho ${row.ingredient_id}: không tìm thấy kho ${row.warehouse_id}`
+      );
+    }
+
+    if(!ingredients.has(String(row.ingredient_id||''))){
+      errors.push(
+        `Tồn kho: không tìm thấy nguyên liệu ${row.ingredient_id}`
+      );
+    }
+
+    v244Finite(
+      row.quantity,
+      `Tồn kho ${row.ingredient_id}`,
+      errors
+    );
+
+    v244Timestamp(
+      row.updated_at,
+      `Tồn kho ${row.ingredient_id}`,
+      errors
+    );
+  }
+
+  for(const row of db.ingredients||[]){
+    v244Finite(
+      row.cost||0,
+      `Giá nguyên liệu ${row.name||row.id}`,
+      errors
+    );
+
+    v244Finite(
+      row.minimum_stock||0,
+      `Tồn tối thiểu ${row.name||row.id}`,
+      errors
+    );
+
+    v244Finite(
+      row.batch_output_qty||1,
+      `Mẻ pha chế ${row.name||row.id}`,
+      errors
+    );
+
+    v244Timestamp(
+      row.updated_at,
+      `Nguyên liệu ${row.name||row.id}`,
+      errors
+    );
+  }
+
+  for(const row of db.products||[]){
+    v244Finite(
+      row.selling_price||0,
+      `Giá bán ${row.name||row.id}`,
+      errors
+    );
+  }
+
+  for(const row of db.recipeItems||[]){
+    if(!products.has(String(row.product_id||''))){
+      errors.push(
+        `Công thức ${row.id}: món ${row.product_id} không tồn tại`
+      );
+    }
+
+    if(!ingredients.has(String(row.ingredient_id||''))){
+      errors.push(
+        `Công thức ${row.id}: nguyên liệu ${row.ingredient_id} không tồn tại`
+      );
+    }
+
+    v244Finite(
+      row.quantity,
+      `Công thức ${row.id}`,
+      errors
+    );
+  }
+
+  for(const row of db.preparedItems||[]){
+    if(
+      !ingredients.has(
+        String(
+          row.prepared_ingredient_id||''
+        )
+      )
+    ){
+      errors.push(
+        `Pha chế ${row.id}: thành phẩm không tồn tại`
+      );
+    }
+
+    if(
+      !ingredients.has(
+        String(
+          row.source_ingredient_id||''
+        )
+      )
+    ){
+      errors.push(
+        `Pha chế ${row.id}: nguyên liệu nguồn không tồn tại`
+      );
+    }
+
+    v244Finite(
+      row.quantity,
+      `Pha chế ${row.id}`,
+      errors
+    );
+  }
+
+  for(const row of db.sales||[]){
+    if(!warehouses.has(String(row.warehouse_id||''))){
+      errors.push(
+        `Phiếu bán ${row.id}: kho ${row.warehouse_id} không tồn tại`
+      );
+    }
+
+    v244Finite(
+      row.total_amount||0,
+      `Phiếu bán ${row.id}`,
+      errors
+    );
+
+    v244Timestamp(
+      row.sold_at||
+      row.created_at,
+      `Phiếu bán ${row.id}`,
+      errors
+    );
+  }
+
+  for(const row of db.saleItems||[]){
+    if(!sales.has(String(row.sale_id||''))){
+      errors.push(
+        `Chi tiết bán ${row.id}: phiếu ${row.sale_id} không tồn tại`
+      );
+    }
+
+    if(!products.has(String(row.product_id||''))){
+      errors.push(
+        `Chi tiết bán ${row.id}: món ${row.product_id} không tồn tại`
+      );
+    }
+
+    v244Finite(
+      row.quantity,
+      `Chi tiết bán ${row.id} số lượng`,
+      errors
+    );
+
+    v244Finite(
+      row.unit_price||0,
+      `Chi tiết bán ${row.id} đơn giá`,
+      errors
+    );
+  }
+
+  for(const row of db.movements||[]){
+    if(row?._stocktake_audit_only===true){
+      continue;
+    }
+
+    if(!warehouses.has(String(row.warehouse_id||''))){
+      errors.push(
+        `Biến động ${row.id}: kho ${row.warehouse_id} không tồn tại`
+      );
+    }
+
+    if(!ingredients.has(String(row.ingredient_id||''))){
+      errors.push(
+        `Biến động ${row.id}: nguyên liệu ${row.ingredient_id} không tồn tại`
+      );
+    }
+
+    if(
+      row.supplier_id &&
+      !suppliers.has(
+        String(row.supplier_id)
+      )
+    ){
+      errors.push(
+        `Biến động ${row.id}: NCC ${row.supplier_id} không tồn tại`
+      );
+    }
+
+    const type=
+      normalizeTransactionTypeV200(
+        row.transaction_type
+      );
+
+    if(!type){
+      errors.push(
+        `Biến động ${row.id}: loại giao dịch ${row.transaction_type||'(trống)'} không hợp lệ`
+      );
+    }
+
+    if(
+      type==='SALE' &&
+      row.reference_id &&
+      !sales.has(
+        String(row.reference_id)
+      )
+    ){
+      errors.push(
+        `Biến động SALE ${row.id}: phiếu bán ${row.reference_id} không tồn tại`
+      );
+    }
+
+    v244Finite(
+      row.quantity,
+      `Biến động ${row.id} số lượng`,
+      errors
+    );
+
+    if(row.unit_cost!=null){
+      v244Finite(
+        row.unit_cost,
+        `Biến động ${row.id} đơn giá`,
+        errors
+      );
+    }
+
+    if(row.total_cost!=null){
+      v244Finite(
+        row.total_cost,
+        `Biến động ${row.id} thành tiền`,
+        errors
+      );
+    }
+
+    v244Timestamp(
+      row.created_at,
+      `Biến động ${row.id}`,
+      errors
+    );
+  }
+
+  if(
+    currentWarehouseId &&
+    !warehouses.has(
+      String(currentWarehouseId)
+    )
+  ){
+    errors.push(
+      `Kho đang chọn ${currentWarehouseId} không tồn tại`
+    );
+  }
+
+  return {
+    ok:errors.length===0,
+    errors,
+    warnings,
+    summary:{
+      warehouses:(db.warehouses||[]).length,
+      ingredients:(db.ingredients||[]).length,
+      suppliers:(db.suppliers||[]).length,
+      products:(db.products||[]).length,
+      inventory:(db.inventory||[]).length,
+      recipe_items:(db.recipeItems||[]).length,
+      prepared_items:(db.preparedItems||[]).length,
+      sales:(db.sales||[]).length,
+      sale_items:(db.saleItems||[]).length,
+      movements:(db.movements||[])
+        .filter(x=>
+          x?._stocktake_audit_only!==true
+        ).length,
+      audit_only_movements:(db.movements||[])
+        .filter(x=>
+          x?._stocktake_audit_only===true
+        ).length
+    }
+  };
+}
+
+async function v244DeletePermissionPrecheck(){
+  const probes=[
+    ['sale_items','id'],
+    ['stock_transactions','id'],
+    ['sales','id'],
+    ['recipe_items','id'],
+    ['prepared_ingredient_items','id'],
+    ['inventory','warehouse_id'],
+    ['products','id'],
+    ['ingredients','id'],
+    ['suppliers','id'],
+    ['warehouses','id']
+  ];
+
+  for(const [table,column] of probes){
+    const impossible=
+      uid();
+
+    const r=
+      await promiseWithTimeout(
+        sb.from(table)
+          .delete()
+          .eq(
+            column,
+            impossible
+          ),
+        10000,
+        `Kiểm tra quyền DELETE ${table}`
+      );
+
+    if(r.error){
+      throw new Error(
+        `Cloud không cho phép DELETE bảng ${table}: ${r.error.message||String(r.error)}`
+      );
+    }
+  }
+}
+
+async function v244CloudCrudProbe(){
+  const now=
+    new Date().toISOString();
+
+  const ids={
+    warehouse:uid(),
+    ingredient1:uid(),
+    ingredient2:uid(),
+    supplier:uid(),
+    product:uid(),
+    recipe:uid(),
+    prepared:uid(),
+    sale:uid(),
+    saleItem:uid(),
+    movement:uid()
+  };
+
+  const inserted=[];
+
+  const add=async(
+    table,
+    payload,
+    key='id'
+  )=>{
+    const r=
+      await promiseWithTimeout(
+        sb.from(table)
+          .insert(payload)
+          .select(),
+        12000,
+        `Probe INSERT ${table}`
+      );
+
+    if(r.error){
+      throw new Error(
+        `Probe INSERT ${table}: ${r.error.message||String(r.error)}`
+      );
+    }
+
+    inserted.push([
+      table,
+      key,
+      payload[key]
+    ]);
+  };
+
+  const cleanupOne=async(
+    table,
+    key,
+    value
+  )=>{
+    const r=
+      await promiseWithTimeout(
+        sb.from(table)
+          .delete()
+          .eq(key,value),
+        12000,
+        `Probe DELETE ${table}`
+      );
+
+    if(r.error){
+      throw new Error(
+        `Probe DELETE ${table}: ${r.error.message||String(r.error)}`
+      );
+    }
+  };
+
+  try{
+    await add(
+      'warehouses',
+      {
+        id:ids.warehouse,
+        name:'__V244_RESET_PROBE__',
+        address:'',
+        active:false
+      }
+    );
+
+    await add(
+      'suppliers',
+      {
+        id:ids.supplier,
+        name:'__V244_RESET_PROBE__',
+        phone:'',
+        address:'',
+        note:''
+      }
+    );
+
+    await add(
+      'ingredients',
+      {
+        id:ids.ingredient1,
+        name:'__V244_PROBE_ING__',
+        unit:'test',
+        cost:0,
+        minimum_stock:0,
+        ingredient_type:'purchased',
+        batch_output_qty:1,
+        active:false,
+        updated_at:now
+      }
+    );
+
+    await add(
+      'ingredients',
+      {
+        id:ids.ingredient2,
+        name:'__V244_PROBE_PREP__',
+        unit:'test',
+        cost:0,
+        minimum_stock:0,
+        ingredient_type:'prepared',
+        batch_output_qty:1,
+        active:false,
+        updated_at:now
+      }
+    );
+
+    await add(
+      'products',
+      {
+        id:ids.product,
+        name:'__V244_RESET_PROBE__',
+        sku:null,
+        selling_price:0,
+        active:false
+      }
+    );
+
+    const inv={
+      warehouse_id:ids.warehouse,
+      ingredient_id:ids.ingredient1,
+      quantity:0,
+      updated_at:now
+    };
+
+    const invR=
+      await promiseWithTimeout(
+        sb.from('inventory')
+          .insert(inv)
+          .select(),
+        12000,
+        'Probe INSERT inventory'
+      );
+
+    if(invR.error){
+      throw new Error(
+        `Probe INSERT inventory: ${invR.error.message||String(invR.error)}`
+      );
+    }
+
+    inserted.push([
+      'inventory',
+      'warehouse_id,ingredient_id',
+      `${ids.warehouse}|${ids.ingredient1}`
+    ]);
+
+    await add(
+      'recipe_items',
+      {
+        id:ids.recipe,
+        product_id:ids.product,
+        ingredient_id:ids.ingredient1,
+        quantity:0
+      }
+    );
+
+    await add(
+      'prepared_ingredient_items',
+      {
+        id:ids.prepared,
+        prepared_ingredient_id:ids.ingredient2,
+        source_ingredient_id:ids.ingredient1,
+        quantity:0
+      }
+    );
+
+    await add(
+      'sales',
+      {
+        id:ids.sale,
+        warehouse_id:ids.warehouse,
+        total_amount:0,
+        source:'manual',
+        sold_at:now,
+        note:'V244 reset probe'
+      }
+    );
+
+    await add(
+      'sale_items',
+      {
+        id:ids.saleItem,
+        sale_id:ids.sale,
+        product_id:ids.product,
+        quantity:1,
+        unit_price:0
+      }
+    );
+
+    await add(
+      'stock_transactions',
+      {
+        id:ids.movement,
+        warehouse_id:ids.warehouse,
+        ingredient_id:ids.ingredient1,
+        transaction_type:'ADJUSTMENT',
+        quantity:0,
+        note:'V244 reset probe',
+        reference_id:ids.sale,
+        created_at:now
+      }
+    );
+
+    // Child -> parent cleanup, matching the hardened reset order.
+    await cleanupOne(
+      'sale_items',
+      'id',
+      ids.saleItem
+    );
+
+    await cleanupOne(
+      'stock_transactions',
+      'id',
+      ids.movement
+    );
+
+    await cleanupOne(
+      'sales',
+      'id',
+      ids.sale
+    );
+
+    await cleanupOne(
+      'recipe_items',
+      'id',
+      ids.recipe
+    );
+
+    await cleanupOne(
+      'prepared_ingredient_items',
+      'id',
+      ids.prepared
+    );
+
+    {
+      const r=
+        await promiseWithTimeout(
+          sb.from('inventory')
+            .delete()
+            .eq(
+              'warehouse_id',
+              ids.warehouse
+            )
+            .eq(
+              'ingredient_id',
+              ids.ingredient1
+            ),
+          12000,
+          'Probe DELETE inventory'
+        );
+
+      if(r.error){
+        throw new Error(
+          `Probe DELETE inventory: ${r.error.message||String(r.error)}`
+        );
+      }
+    }
+
+    await cleanupOne(
+      'products',
+      'id',
+      ids.product
+    );
+
+    await cleanupOne(
+      'ingredients',
+      'id',
+      ids.ingredient2
+    );
+
+    await cleanupOne(
+      'ingredients',
+      'id',
+      ids.ingredient1
+    );
+
+    await cleanupOne(
+      'suppliers',
+      'id',
+      ids.supplier
+    );
+
+    await cleanupOne(
+      'warehouses',
+      'id',
+      ids.warehouse
+    );
+
+    const verify=
+      await promiseWithTimeout(
+        sb.from('warehouses')
+          .select('id')
+          .eq(
+            'id',
+            ids.warehouse
+          )
+          .maybeSingle(),
+        10000,
+        'Xác minh probe đã dọn'
+      );
+
+    if(
+      verify.error ||
+      verify.data
+    ){
+      throw new Error(
+        'Probe Cloud không dọn sạch được warehouse thử nghiệm.'
+      );
+    }
+
+    return {
+      ok:true
+    };
+
+  }catch(e){
+    /*
+      Best effort cleanup. Nothing here touches real user rows because all
+      probe keys are random UUIDs created for this run.
+    */
+    try{
+      await sb.from('sale_items')
+        .delete()
+        .eq('id',ids.saleItem);
+    }catch(x){}
+
+    try{
+      await sb.from('stock_transactions')
+        .delete()
+        .eq('id',ids.movement);
+    }catch(x){}
+
+    try{
+      await sb.from('sales')
+        .delete()
+        .eq('id',ids.sale);
+    }catch(x){}
+
+    try{
+      await sb.from('recipe_items')
+        .delete()
+        .eq('id',ids.recipe);
+    }catch(x){}
+
+    try{
+      await sb.from('prepared_ingredient_items')
+        .delete()
+        .eq('id',ids.prepared);
+    }catch(x){}
+
+    try{
+      await sb.from('inventory')
+        .delete()
+        .eq('warehouse_id',ids.warehouse)
+        .eq('ingredient_id',ids.ingredient1);
+    }catch(x){}
+
+    try{
+      await sb.from('products')
+        .delete()
+        .eq('id',ids.product);
+    }catch(x){}
+
+    try{
+      await sb.from('ingredients')
+        .delete()
+        .in(
+          'id',
+          [
+            ids.ingredient1,
+            ids.ingredient2
+          ]
+        );
+    }catch(x){}
+
+    try{
+      await sb.from('suppliers')
+        .delete()
+        .eq('id',ids.supplier);
+    }catch(x){}
+
+    try{
+      await sb.from('warehouses')
+        .delete()
+        .eq('id',ids.warehouse);
+    }catch(x){}
+
+    throw e;
+  }
+}
+
+async function v244StorageProbe(){
+  const path=
+    `diagnostics/v244-reset-${uid()}.json`;
+
+  const body=
+    JSON.stringify({
+      type:'v244-reset-preflight',
+      at:new Date().toISOString()
+    });
+
+  const upload=
+    await promiseWithTimeout(
+      sb.storage
+        .from(MULTI_DEVICE_BUCKET)
+        .upload(
+          path,
+          new Blob(
+            [body],
+            {
+              type:'application/json'
+            }
+          ),
+          {
+            upsert:false,
+            contentType:'application/json',
+            cacheControl:'0'
+          }
+        ),
+      12000,
+      'Kiểm tra ghi Backup Storage'
+    );
+
+  if(upload.error){
+    throw new Error(
+      `Storage upload: ${upload.error.message||String(upload.error)}`
+    );
+  }
+
+  try{
+    const download=
+      await promiseWithTimeout(
+        sb.storage
+          .from(MULTI_DEVICE_BUCKET)
+          .download(path),
+        12000,
+        'Kiểm tra đọc Backup Storage'
+      );
+
+    if(download.error){
+      throw new Error(
+        `Storage download: ${download.error.message||String(download.error)}`
+      );
+    }
+  }finally{
+    const remove=
+      await sb.storage
+        .from(MULTI_DEVICE_BUCKET)
+        .remove([path]);
+
+    if(remove.error){
+      throw new Error(
+        `Storage delete: ${remove.error.message||String(remove.error)}`
+      );
+    }
+  }
+
+  return {
+    ok:true
+  };
+}
+
+function v244ClearBusinessTombstones(){
+  const keys=[
+    typeof DELETED_IMPORT_MOVEMENT_IDS_KEY!=='undefined'
+      ?DELETED_IMPORT_MOVEMENT_IDS_KEY
+      :'lat_yen_deleted_import_movement_ids_v1',
+    typeof DELETED_INGREDIENT_SCOPE_KEY!=='undefined'
+      ?DELETED_INGREDIENT_SCOPE_KEY
+      :'lat_yen_deleted_ingredient_scopes_v1',
+    typeof DELETED_PRODUCT_SCOPE_KEY!=='undefined'
+      ?DELETED_PRODUCT_SCOPE_KEY
+      :'lat_yen_deleted_product_scopes_v1',
+    typeof DELETED_EXPORT_RECEIPT_REFS_KEY!=='undefined'
+      ?DELETED_EXPORT_RECEIPT_REFS_KEY
+      :'lat_yen_deleted_export_receipt_refs_v1',
+    typeof DELETED_STOCKTAKE_RECEIPT_KEYS_KEY!=='undefined'
+      ?DELETED_STOCKTAKE_RECEIPT_KEYS_KEY
+      :'lat_yen_deleted_stocktake_receipt_keys_v1',
+    typeof DELETED_WAREHOUSE_KEY!=='undefined'
+      ?DELETED_WAREHOUSE_KEY
+      :'lat_yen_deleted_warehouses_v1'
+  ];
+
+  for(const key of keys){
+    try{
+      localStorage.setItem(
+        key,
+        '[]'
+      );
+    }catch(e){}
+  }
+
+  return keys.length;
+}
+
+async function v244CloudResetPreflight(){
+  const cred=
+    autoSyncCredentials();
+
+  if(
+    !cred.code ||
+    !cred.passphrase
+  ){
+    throw new Error(
+      'Chưa có mã ghép/mật khẩu đồng bộ. Reset toàn bộ Cloud cần thông tin này để thay Canonical và Backup cũ.'
+    );
+  }
+
+  normalizeLegacyCacheV205();
+
+  const readiness=
+    v241ResetPreflightReadiness();
+
+  if(!readiness.ok){
+    throw new Error(
+      'Còn ID nghiệp vụ/khóa ngoại chưa sẵn sàng:\n'+
+      readiness.issues
+        .slice(0,20)
+        .join('\n')+
+      (
+        readiness.issues.length>20
+          ?`\n... và ${readiness.issues.length-20} lỗi khác`
+          :''
+      )
+    );
+  }
+
+  /*
+    V245:
+    technical primary-key collisions are repairable and must not stop
+    preflight. All FK/business/numeric/timestamp errors remain blockers.
+  */
+  const integrity=
+    v245PreNormalizeIntegrityAudit();
+
+  if(!integrity.ok){
+    throw new Error(
+      'Local còn lỗi toàn vẹn không thể tự sửa:\n'+
+      integrity.errors
+        .slice(0,20)
+        .join('\n')+
+      (
+        integrity.errors.length>20
+          ?`\n... và ${integrity.errors.length-20} lỗi khác`
+          :''
+      )
+    );
+  }
+
+  const canonical=
+    await v189FetchCanonical(
+      cred.code,
+      cred.passphrase
+    );
+
+  await v244DeletePermissionPrecheck();
+  await v244CloudCrudProbe();
+  await v244StorageProbe();
+
+  return {
+    ok:true,
+    readiness,
+    integrity,
+    collision_plan:
+      integrity.collisions,
+    repairable_integrity_errors:
+      integrity.repairableErrors,
+    canonical_revision:
+      Number(
+        canonical.revision||0
+      )
+  };
 }
 
 function v239LocalReadiness(){
@@ -48230,12 +50337,17 @@ async function v239DeleteAllRows(table,column){
 }
 
 async function v239DeleteBusinessCloud(){
+  /*
+    V244 child -> parent order.
+    stock_transactions is before sales because SALE movements reference
+    sales receipts semantically and may become an FK in stricter schemas.
+  */
   const phases=[
     ['sale_items','id'],
+    ['stock_transactions','id'],
     ['sales','id'],
     ['recipe_items','id'],
     ['prepared_ingredient_items','id'],
-    ['stock_transactions','id'],
     ['inventory','warehouse_id'],
     ['products','id'],
     ['ingredients','id'],
@@ -48246,15 +50358,27 @@ async function v239DeleteBusinessCloud(){
   const deleted=[];
 
   for(let i=0;i<phases.length;i++){
-    const [table,column]=phases[i];
+    v244TouchResetLock();
+
+    const [
+      table,
+      column
+    ]=phases[i];
 
     updateSyncProgress(
-      8+Math.round(i/phases.length*27),
+      8+
+      Math.round(
+        i/phases.length*27
+      ),
       'Đang làm sạch Cloud',
       `Xóa ${table}`
     );
 
-    await v239DeleteAllRows(table,column);
+    await v239DeleteAllRows(
+      table,
+      column
+    );
+
     deleted.push(table);
   }
 
@@ -48437,14 +50561,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:243,
+    version:245,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V243',
+      app_version:'V245',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -48493,157 +50617,206 @@ async function v239ResetCloudFromThisDevice(){
     return;
   }
 
-  normalizeLegacyCacheV205();
-
-  /*
-    V243 preflight:
-    row IDs of recipe/prepared/movement can be regenerated safely.
-    Business/FK IDs remain strict blockers.
-  */
-  const preflight=
-    v241ResetPreflightReadiness();
-
-  if(!preflight.ok){
-    alert(
-      'Chưa thể Reset Cloud vì local còn dữ liệu nghiệp vụ chưa sẵn sàng.\n\n'+
-      preflight.issues
-        .slice(0,12)
-        .join('\n')+
-      (
-        preflight.issues.length>12
-          ?`\n... và ${preflight.issues.length-12} lỗi khác`
-          :''
-      )+
-      '\n\nCác ID kỹ thuật dòng công thức/pha chế/biến động sẽ được phần mềm tự sửa; các lỗi còn hiển thị ở đây là ID nghiệp vụ hoặc khóa ngoại cần kiểm tra.'
-    );
-
-    return;
-  }
-
-  const tech=
-    preflight.technical;
-
-  const technicalText=
-    tech.total
-      ?(
-        `\n\nPhần mềm sẽ tự chuẩn hóa ${tech.total} ID kỹ thuật trước khi Reset:`+
-        `\n• ${tech.recipe_items} dòng công thức`+
-        `\n• ${tech.prepared_items} dòng pha chế`+
-        `\n• ${tech.movements} dòng biến động kho`
-      )
-      :'';
-
-  const first=
-    await appConfirm(
-      `Thiết bị hiện tại có ${preflight.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.`+
-      technicalText+
-      '\n\nToàn bộ dữ liệu nghiệp vụ đang có trên Supabase sẽ bị xóa và nạp lại từ thiết bị này.'+
-      '\n\nHãy đóng phần mềm trên tất cả thiết bị khác trước khi tiếp tục.',
-      'Đặt lại toàn bộ Cloud'
-    );
-
-  if(!first)return;
-
-  const second=
-    await appConfirm(
-      'Xác nhận lần cuối:\n\n'+
-      '• KHÔNG xóa dữ liệu local trên thiết bị này.\n'+
-      '• ID kỹ thuật legacy của công thức / pha chế / biến động sẽ được đổi sang UUID trước.\n'+
-      '• Cloud sẽ bị làm sạch hoàn toàn.\n'+
-      '• Dữ liệu local hiện tại sẽ được nạp lại làm bản chuẩn.\n'+
-      '• Canonical và Backup Cloud cũ sẽ được thay bằng bản mới.\n\n'+
-      'Tiếp tục?',
-      'XÁC NHẬN RESET CLOUD'
-    );
-
-  if(!second)return;
-
   v239ResetBusy=true;
 
   const autoBefore=
     loadAutoSyncConfig();
 
+  let resetLock=false;
+
   const report={
     started_at:
       new Date().toISOString(),
-    local_total:
-      preflight.total,
+    local_total:0,
     normalized_technical_ids:0,
-    normalized_recipe_items:0,
-    normalized_prepared_items:0,
-    normalized_movements:0,
+    exact_duplicates_removed:0,
+    id_collision_variants:0,
+    recipe_semantic_removed:0,
+    recipe_conflicts_resolved:0,
+    prepared_semantic_removed:0,
+    prepared_conflicts_resolved:0,
     deleted:[],
     seeded:0,
     canonical_revision:0,
     backup_replaced:false,
+    preflight_passed:false,
     success:false
   };
 
   beginSyncProgress();
 
   try{
-    /*
-      Snapshot is BEFORE any local ID mutation.
-    */
+    updateSyncProgress(
+      2,
+      'Kiểm tra an toàn',
+      'Đang phân tích ID trùng, local, quyền Cloud và khả năng khôi phục'
+    );
+
+    v244AcquireResetLock();
+    resetLock=true;
+
+    await v244WaitForSyncIdle();
+
+    v244CancelBackgroundSync();
+
+    const preflight=
+      await v244CloudResetPreflight();
+
+    report.preflight_passed=true;
+    report.local_total=
+      preflight.readiness.total;
+
+    const collisions=
+      preflight.collision_plan||
+      {};
+
+    updateSyncProgress(
+      6,
+      'Kiểm tra an toàn PASS',
+      `Collision:${Number(collisions.duplicate_id_groups||0)} nhóm • Cloud CRUD PASS • Storage PASS • Canonical Rev ${preflight.canonical_revision}`
+    );
+
+    const tech=
+      preflight.readiness.technical;
+
+    const repairText=
+      (
+        Number(
+          collisions.duplicate_id_groups||0
+        )+
+        Number(
+          collisions.recipe_semantic_duplicates||0
+        )+
+        Number(
+          collisions.prepared_semantic_duplicates||0
+        )
+      )
+        ?(
+          '\n\nCollision-Safe Normalizer sẽ tự xử lý:'+
+          `\n• ${Number(collisions.duplicate_id_groups||0)} nhóm trùng ID kỹ thuật`+
+          `\n• ${Number(collisions.exact_duplicate_rows||0)} bản sao giống hệt`+
+          `\n• ${Number(collisions.conflicting_id_groups||0)} nhóm cùng ID nhưng nội dung khác`+
+          `\n• ${Number(collisions.recipe_semantic_duplicates||0)} dòng công thức trùng thành phần`+
+          `\n• ${Number(collisions.prepared_semantic_duplicates||0)} dòng pha chế trùng thành phần`
+        )
+        :'';
+
+    const technicalText=
+      tech.total
+        ?(
+          `\n\nCó ${tech.total} ID kỹ thuật legacy/missing cần UUID chuẩn.`
+        )
+        :'';
+
+    const first=
+      await appConfirm(
+        `Kiểm tra an toàn đã PASS.\n\nThiết bị hiện tại có ${preflight.readiness.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.`+
+        repairText+
+        technicalText+
+        '\n\nKhông có dòng khác nội dung nào bị xóa chỉ vì trùng ID: chúng sẽ được cấp UUID riêng.'+
+        '\n\nCloud chỉ bị xóa SAU KHI local đã normalize và kiểm tra toàn vẹn PASS.',
+        'Đặt lại toàn bộ Cloud'
+      );
+
+    if(!first){
+      throw new Error(
+        '__USER_CANCEL__'
+      );
+    }
+
+    const second=
+      await appConfirm(
+        'Xác nhận lần cuối:\n\n'+
+        '• Snapshot local sẽ được tạo trước khi sửa ID.\n'+
+        '• Bản sao cùng ID + cùng nội dung sẽ được gộp.\n'+
+        '• Cùng ID nhưng nội dung khác sẽ được giữ đủ và cấp UUID riêng.\n'+
+        '• Công thức/pha chế trùng cùng thành phần sẽ giữ bản local mới nhất/pending hiện tại.\n'+
+        '• Sau sửa sẽ chạy FULL integrity audit lại.\n'+
+        '• Chỉ khi PASS mới bắt đầu DELETE Cloud.\n\n'+
+        'Tiếp tục?',
+        'XÁC NHẬN RESET CLOUD'
+      );
+
+    if(!second){
+      throw new Error(
+        '__USER_CANCEL__'
+      );
+    }
+
     v204EmergencySnapshot(
-      'v243_before_technical_normalize_and_cloud_reset'
+      'v245_before_collision_safe_normalize_and_cloud_reset'
     );
 
     updateSyncProgress(
-      3,
-      'Đang chuẩn hóa ID kỹ thuật',
-      preflight.technical.total
-        ?`${preflight.technical.total} dòng cần chuyển sang UUID`
-        :'Không có ID kỹ thuật legacy'
+      7,
+      'Đang sửa collision local',
+      'Phân loại duplicate • re-key dòng khác nội dung • gộp bản sao thật'
     );
 
     const normalized=
       await v241NormalizeTechnicalLineIds();
 
     report.normalized_technical_ids=
-      normalized.total;
+      normalized.rekeyed||0;
 
-    report.normalized_recipe_items=
-      normalized.recipe_items;
+    report.exact_duplicates_removed=
+      normalized.exact_duplicates_removed||0;
 
-    report.normalized_prepared_items=
-      normalized.prepared_items;
+    report.id_collision_variants=
+      normalized.id_collision_variants||0;
 
-    report.normalized_movements=
-      normalized.movements;
+    report.recipe_semantic_removed=
+      normalized.recipe_semantic_removed||0;
+
+    report.recipe_conflicts_resolved=
+      normalized.recipe_conflicts_resolved||0;
+
+    report.prepared_semantic_removed=
+      normalized.prepared_semantic_removed||0;
+
+    report.prepared_conflicts_resolved=
+      normalized.prepared_conflicts_resolved||0;
 
     const readiness=
       v241StrictReadinessAfterNormalize();
 
+    const integrityAfter=
+      v244LocalIntegrityAudit();
+
+    if(!integrityAfter.ok){
+      throw new Error(
+        'FULL audit sau normalize không đạt:\n'+
+        integrityAfter.errors
+          .slice(0,20)
+          .join('\n')+
+        (
+          integrityAfter.errors.length>20
+            ?`\n... và ${integrityAfter.errors.length-20} lỗi khác`
+            :''
+        )
+      );
+    }
+
+    const collisionAfter=
+      v245TechnicalCollisionStats();
+
+    if(
+      collisionAfter.duplicate_id_groups ||
+      collisionAfter.recipe_semantic_duplicates ||
+      collisionAfter.prepared_semantic_duplicates
+    ){
+      throw new Error(
+        'Collision-Safe Normalize chưa hội tụ hoàn toàn: '+
+        `ID:${collisionAfter.duplicate_id_groups} • `+
+        `recipe:${collisionAfter.recipe_semantic_duplicates} • `+
+        `prepared:${collisionAfter.prepared_semantic_duplicates}`
+      );
+    }
+
     report.local_total=
       readiness.total;
 
-    stopAutoSyncLoop();
-
-    if(realtimeChannel){
-      try{
-        sb.removeChannel(
-          realtimeChannel
-        );
-      }catch(e){}
-
-      realtimeChannel=null;
-    }
-
-    try{
-      v235RealtimeQueue?.clear?.();
-    }catch(e){}
-
-    v235DeferredCanonicalMerge=null;
-    v235NeedFullReconcile=false;
-
-    updateSyncProgress(
-      6,
-      'Đã khóa đồng bộ nền',
-      normalized.total
-        ?`Đã chuẩn hóa ${normalized.total} ID kỹ thuật • chuẩn bị làm sạch Cloud`
-        :'Local đã sẵn sàng • chuẩn bị làm sạch Cloud'
-    );
+    v244TouchResetLock();
 
     const payload=
       await v239BuildCloudSeed();
@@ -48670,7 +50843,7 @@ async function v239ResetCloudFromThisDevice(){
     updateSyncProgress(
       36,
       'Cloud đã sạch',
-      'Bắt đầu nạp dữ liệu từ thiết bị này'
+      'Bắt đầu nạp dữ liệu đã chuẩn hóa từ thiết bị này'
     );
 
     const seeded=
@@ -48680,6 +50853,8 @@ async function v239ResetCloudFromThisDevice(){
 
     report.seeded=
       seeded.done;
+
+    v244ClearBusinessTombstones();
 
     updateSyncProgress(
       80,
@@ -48752,7 +50927,7 @@ async function v239ResetCloudFromThisDevice(){
         autoBefore.passphrase,
       last_sync_at:now,
       last_result:
-        'v243_clean_takeover',
+        'v245_collision_safe_takeover',
       cloud_revision:
         report.canonical_revision,
       cloud_revision_token:
@@ -48767,7 +50942,7 @@ async function v239ResetCloudFromThisDevice(){
       stage:
         'Cloud đã được đặt lại',
       detail:
-        `Đã chuẩn hóa ${normalized.total} ID kỹ thuật • Cloud xác nhận ${coverage.covered}/${coverage.total} record`
+        `Collision-Safe PASS • re-key ${normalized.rekeyed||0} • dedupe ${normalized.exact_duplicates_removed||0} • Cloud ${coverage.covered}/${coverage.total}`
     });
 
     report.success=true;
@@ -48776,6 +50951,9 @@ async function v239ResetCloudFromThisDevice(){
     v239SaveReport(
       report
     );
+
+    v244ReleaseResetLock();
+    resetLock=false;
 
     if(
       autoBefore.enabled!==false
@@ -48788,62 +50966,91 @@ async function v239ResetCloudFromThisDevice(){
 
     alert(
       'Đã đặt lại Cloud thành công.\n\n'+
-      (
-        normalized.total
-          ?(
-            `Đã chuẩn hóa:\n`+
-            `• ${normalized.recipe_items} dòng công thức\n`+
-            `• ${normalized.prepared_items} dòng pha chế\n`+
-            `• ${normalized.movements} dòng biến động kho\n`
-          )
-          :''
-      )+
-      `Đã nạp lại ${report.seeded} lượt record.\n`+
-      `Canonical Revision: ${report.canonical_revision||'mới'}.\n\n`+
-      'Thiết bị hiện tại đã trở thành nguồn dữ liệu chuẩn.'
+      `Re-key ID kỹ thuật: ${normalized.rekeyed||0}\n`+
+      `Bản sao kỹ thuật đã gộp: ${normalized.exact_duplicates_removed||0}\n`+
+      `Công thức trùng thành phần đã gộp: ${normalized.recipe_semantic_removed||0}\n`+
+      `Pha chế trùng thành phần đã gộp: ${normalized.prepared_semantic_removed||0}\n`+
+      `Đã nạp lại Cloud: ${report.seeded} lượt record.\n\n`+
+      'FULL integrity audit đã PASS trước khi xóa Cloud.'
     );
 
   }catch(e){
-    console.error(
-      'V243 Cloud Reset',
-      e
-    );
-
-    report.error=
+    const message=
       e?.message||
       String(e);
 
-    report.finished_at=
-      new Date().toISOString();
+    if(
+      message==='__USER_CANCEL__'
+    ){
+      finishSyncProgress({
+        success:false,
+        pending:
+          v191PendingCount(),
+        stage:
+          'Đã hủy Reset Cloud',
+        detail:
+          'Không có dữ liệu Cloud thật nào bị xóa.'
+      });
 
-    v239SaveReport(
-      report
-    );
-
-    finishSyncProgress({
-      success:false,
-      pending:
-        v191PendingCount(),
-      stage:
-        'Reset Cloud bị dừng',
-      detail:
-        report.error,
-      error:
-        report.error
-    });
-
-    try{
-      const payload=
-        await v239BuildCloudSeed();
-
-      await v239SeedCloudFromLocal(
-        payload
-      );
-    }catch(recoveryError){
+    }else{
       console.error(
-        'V243 emergency reseed',
-        recoveryError
+        'V245 Cloud Reset',
+        e
       );
+
+      report.error=message;
+      report.finished_at=
+        new Date().toISOString();
+
+      v239SaveReport(
+        report
+      );
+
+      finishSyncProgress({
+        success:false,
+        pending:
+          v191PendingCount(),
+        stage:
+          report.deleted.length
+            ?'Reset Cloud bị dừng • đang bảo vệ local'
+            :'Normalize/Preflight không đạt • Cloud chưa bị xóa',
+        detail:
+          message,
+        error:
+          message
+      });
+
+      if(report.deleted.length){
+        try{
+          const payload=
+            await v239BuildCloudSeed();
+
+          await v239SeedCloudFromLocal(
+            payload
+          );
+        }catch(recoveryError){
+          console.error(
+            'V245 emergency reseed',
+            recoveryError
+          );
+        }
+      }
+
+      alert(
+        (
+          report.deleted.length
+            ?'Reset Cloud đã dừng sau khi DELETE bắt đầu.'
+            :'Cloud thật CHƯA bị xóa.'
+        )+
+        '\n\n'+
+        message+
+        '\n\nLocal có snapshot từ trước Collision-Safe Normalize.'
+      );
+    }
+
+    if(resetLock){
+      v244ReleaseResetLock();
+      resetLock=false;
     }
 
     if(
@@ -48856,13 +51063,11 @@ async function v239ResetCloudFromThisDevice(){
       setupRealtime();
     }catch(rtError){}
 
-    alert(
-      'Reset Cloud đã dừng để bảo vệ dữ liệu local.\n\n'+
-      report.error+
-      '\n\nDữ liệu local vẫn còn và đã có snapshot trước khi chuẩn hóa. Nếu lỗi là quyền DELETE/RLS, cần sửa policy Supabase trước khi Reset lại.'
-    );
-
   }finally{
+    if(resetLock){
+      v244ReleaseResetLock();
+    }
+
     v239ResetBusy=false;
 
     if(
