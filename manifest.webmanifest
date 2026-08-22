@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V207",
+  "name": "Quản Lý Lát Yên V208",
   "short_name": "Lát Yên",
-  "description": "Incremental realtime row sync with delayed full verification and safe merge.",
+  "description": "Immediate sync after every data-changing action with realtime echo protection.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

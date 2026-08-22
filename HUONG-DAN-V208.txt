@@ -1,0 +1,33 @@
+V208 - SYNC ON EVERY DATA ACTION
+
+Mục tiêu:
+Mọi thao tác THAY ĐỔI DỮ LIỆU sẽ tự sync ngay.
+
+Cơ chế:
+- cacheSave() của db mutation -> xếp sync sau 280ms.
+- Nhiều thay đổi liên tiếp trong cùng thao tác được gom thành 1 sync.
+- Employee / Cashflow / Attendance / local canonical keys cũng tự kích sync.
+- Nếu đang sync, hành động mới được queue và chạy lại sau ~900ms.
+- Nếu offline, queue được giữ; khi online trở lại sẽ sync ngay.
+- Realtime/Cloud pull được đánh dấu remote apply nên KHÔNG tạo vòng lặp sync ngược.
+- Không sync khi chỉ mở menu, cuộn, lọc hoặc xem dữ liệu.
+
+Áp dụng:
+- Bán hàng
+- Nhập kho
+- Xuất kho
+- Kiểm kê
+- Nguyên liệu/Dụng cụ
+- Thực đơn
+- Kho/Chi nhánh
+- Nhân viên
+- Chấm công/Lương
+- Thu/Chi
+- Các cấu hình nghiệp vụ canonical
+
+Vẫn giữ:
+- V204 Safe Merge
+- V205 legacy ID finalize
+- V207 incremental realtime
+
+Không cần SQL mới.

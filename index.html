@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V207 INCREMENTAL REALTIME ===== */
+/* ===== V208 ACTION SYNC ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10541,15 +10541,276 @@ function cacheSaveNow(){
   }
 }
 
+
+/* ===== V208 SYNC ON EVERY DATA ACTION ===== */
+const V208_ACTION_SYNC_DEBOUNCE_MS=280;
+const V208_ACTION_SYNC_RETRY_MS=900;
+
+let v208ActionSyncTimer=null;
+let v208ActionSyncQueued=false;
+let v208RemoteApplyDepth=0;
+let v208InternalWriteDepth=0;
+let v208LastActionReason='';
+
+function v208IsRemoteOrInternal(){
+  return (
+    v208RemoteApplyDepth>0 ||
+    v208InternalWriteDepth>0
+  );
+}
+
+function v208BeginRemoteApply(){
+  v208RemoteApplyDepth++;
+}
+
+function v208EndRemoteApply(){
+  v208RemoteApplyDepth=
+    Math.max(
+      0,
+      v208RemoteApplyDepth-1
+    );
+}
+
+async function v208RunInternal(fn){
+  v208InternalWriteDepth++;
+
+  try{
+    return await fn();
+  }finally{
+    v208InternalWriteDepth=
+      Math.max(
+        0,
+        v208InternalWriteDepth-1
+      );
+  }
+}
+
+function v208ScheduleActionSync(
+  reason='data_change',
+  delay=V208_ACTION_SYNC_DEBOUNCE_MS
+){
+  if(v208IsRemoteOrInternal()){
+    return;
+  }
+
+  v208LastActionReason=
+    String(reason||'data_change');
+
+  v208ActionSyncQueued=true;
+
+  clearTimeout(
+    v208ActionSyncTimer
+  );
+
+  if(!navigator.onLine){
+    return;
+  }
+
+  v208ActionSyncTimer=
+    setTimeout(
+      ()=>v208FlushActionSync(),
+      Math.max(
+        50,
+        Number(delay||0)
+      )
+    );
+}
+
+async function v208FlushActionSync(){
+  clearTimeout(
+    v208ActionSyncTimer
+  );
+
+  v208ActionSyncTimer=null;
+
+  if(
+    !v208ActionSyncQueued ||
+    !navigator.onLine
+  ){
+    return;
+  }
+
+  if(
+    autoSyncBusy ||
+    syncing ||
+    v206RealtimePullBusy
+  ){
+    v208ActionSyncTimer=
+      setTimeout(
+        ()=>v208FlushActionSync(),
+        V208_ACTION_SYNC_RETRY_MS
+      );
+
+    return;
+  }
+
+  v208ActionSyncQueued=false;
+
+  try{
+    await autoSyncNow({
+      force:false,
+      reason:
+        'action:'+
+        v208LastActionReason,
+      silent:true
+    });
+  }catch(e){
+    console.warn(
+      'V208 action sync',
+      e
+    );
+
+    v208ActionSyncQueued=true;
+
+    v208ActionSyncTimer=
+      setTimeout(
+        ()=>v208FlushActionSync(),
+        V208_ACTION_SYNC_RETRY_MS
+      );
+  }
+}
+
+function v208BusinessStorageKey(key){
+  const k=String(key||'');
+
+  // Local/canonical business modules.
+  const exact=new Set([
+    typeof EMPLOYEE_KEY!=='undefined'
+      ?EMPLOYEE_KEY
+      :'lat_yen_employees_v1',
+
+    typeof DELETED_EMPLOYEE_KEY!=='undefined'
+      ?DELETED_EMPLOYEE_KEY
+      :'lat_yen_deleted_employees_v1',
+
+    typeof CASHFLOW_KEY!=='undefined'
+      ?CASHFLOW_KEY
+      :'lat_yen_cashflow_v1',
+
+    typeof EMP_PAYROLL_KEY!=='undefined'
+      ?EMP_PAYROLL_KEY
+      :'lat_yen_employee_payroll_v1',
+
+    typeof EMP_ATTENDANCE_KEY!=='undefined'
+      ?EMP_ATTENDANCE_KEY
+      :'lat_yen_employee_attendance_v1',
+
+    typeof EMP_SALARY_REPORT_KEY!=='undefined'
+      ?EMP_SALARY_REPORT_KEY
+      :'lat_yen_employee_salary_report_v1',
+
+    typeof APP_BRAND_KEY!=='undefined'
+      ?APP_BRAND_KEY
+      :'lat_yen_app_brand_v1',
+
+    typeof PRODUCT_WAREHOUSE_KEY!=='undefined'
+      ?PRODUCT_WAREHOUSE_KEY
+      :'lat_yen_product_warehouse_v1',
+
+    '__latyen_product_units',
+    '__latyen_sale_sources'
+  ]);
+
+  if(exact.has(k)){
+    return true;
+  }
+
+  // Never trigger from sync/runtime/cache metadata itself.
+  if(
+    k.startsWith('lat_yen_sync_') ||
+    k.startsWith('lat_yen_auto_sync_') ||
+    k.startsWith('lat_yen_fast_sync_') ||
+    k.startsWith('lat_yen_migration_') ||
+    k.startsWith('lat_yen_cloud_') ||
+    k.startsWith('lat_yen_emergency_') ||
+    k.startsWith('lat_yen_legacy_') ||
+    k.startsWith('__latyen_runtime_')
+  ){
+    return false;
+  }
+
+  return false;
+}
+
+function installV208StorageSyncHook(){
+  if(
+    window.__latyenV208StorageHookInstalled
+  ){
+    return;
+  }
+
+  window.__latyenV208StorageHookInstalled=true;
+
+  const originalSetItem=
+    Storage.prototype.setItem;
+
+  Storage.prototype.setItem=
+    function(key,value){
+      const oldValue=
+        this.getItem(key);
+
+      const result=
+        originalSetItem.call(
+          this,
+          key,
+          value
+        );
+
+      if(
+        this===localStorage &&
+        oldValue!==String(value) &&
+        v208BusinessStorageKey(key) &&
+        !v208IsRemoteOrInternal()
+      ){
+        v208ScheduleActionSync(
+          'storage:'+
+          String(key)
+        );
+      }
+
+      return result;
+    };
+}
+
+function v208MarkBusinessAction(
+  reason='business_action'
+){
+  v208ScheduleActionSync(
+    reason
+  );
+}
+
+function v208ActionSyncStatus(){
+  return {
+    queued:
+      !!v208ActionSyncQueued,
+    reason:
+      v208LastActionReason,
+    remote_depth:
+      v208RemoteApplyDepth,
+    internal_depth:
+      v208InternalWriteDepth
+  };
+}
+
 function cacheSave(){
   invalidateDataIndexes();
   cacheSaveDirty=true;
+
+  if(!v208IsRemoteOrInternal()){
+    v208ScheduleActionSync(
+      'db_mutation'
+    );
+  }
 
   if(cacheSaveTimer)return;
 
   cacheSaveTimer=setTimeout(()=>{
     cacheSaveTimer=null;
-    if(cacheSaveDirty)cacheSaveNow();
+
+    if(cacheSaveDirty){
+      cacheSaveNow();
+    }
   },90);
 }
 
@@ -11847,6 +12108,10 @@ function v205LegacyGhostCount(data=db){
 }
 
 async function loadCloud(){
+ v208BeginRemoteApply();
+
+ try{
+
  if(syncing){
   cloudReloadRequested=true;
   return;
@@ -12083,6 +12348,9 @@ async function loadCloud(){
     clearTimeout(cloudReloadTimer);
     cloudReloadTimer=setTimeout(()=>loadCloud(),250);
   }
+ }
+ }finally{
+  v208EndRemoteApply();
  }
 }
 
@@ -13405,7 +13673,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:207,
+    version:208,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -16329,6 +16597,10 @@ function v207HasPendingLocal(table,row){
 }
 
 function v207ApplyRealtimeRow(table,payload){
+  v208BeginRemoteApply();
+
+  try{
+
   const target=v207ArrayForTable(table);
   if(!target)return false;
 
@@ -16395,6 +16667,9 @@ function v207ApplyRealtimeRow(table,payload){
   cacheSave();
 
   return true;
+  }finally{
+    v208EndRemoteApply();
+  }
 }
 
 function v207ScheduleActiveRender(){
@@ -28272,6 +28547,7 @@ function addCashflowEntry(){
           :'Đã thêm khoản chi'
       )
   );
+  v208MarkBusinessAction('cashflow');
 }
 
 function deleteCashflowEntry(id){
@@ -28302,6 +28578,7 @@ function deleteCashflowEntry(id){
   );
 
   toastMsg('Đã xóa');
+  v208MarkBusinessAction('cashflow_delete');
 }
 
 
@@ -31078,6 +31355,7 @@ function deleteEmployee(id){
     console.error('deleteEmployee fatal error',err);
     alert('Xóa nhân viên thất bại: '+(err?.message||String(err)));
   }
+  v208MarkBusinessAction('employee_delete');
 }
 
 
@@ -31908,6 +32186,7 @@ function saveAttendanceForEmployee(employeeId){
   const auditEmployee=loadEmployees().find(x=>x.id===employeeId);
   auditLog('Chấm công','Lưu chấm công',auditEmployee?.name||employeeId,`Tháng ${month}`);
   toastMsg('Đã lưu chấm công nhân viên');
+  v208MarkBusinessAction('attendance');
 }
 
 function integratedPayrollRow(employeeId){
@@ -32909,6 +33188,7 @@ function saveEmployee(id=''){
   renderEmployees();
   auditLog('Nhân viên',id?'Cập nhật':'Thêm mới',`${payload.code} • ${payload.name}`,`${payload.role||''} • ${payload.attendance_mode==='day'?'Chấm công ngày':'Chấm công giờ'}`);
   toastMsg('Đã lưu nhân viên');
+  v208MarkBusinessAction('employee');
 }
 
 
@@ -33125,6 +33405,7 @@ async function deleteWarehouse(id){
   }finally{
     if(btn){btn.disabled=false;btn.textContent='Xác nhận xóa'}
   }
+  v208MarkBusinessAction('warehouse_delete');
 }
 
 function warehouseModal(id=''){let w=db.warehouses.find(x=>x.id===id)||{name:'',address:''};openModal(`<div class="modal-head"><h3>${id?'Sửa':'Thêm'} kho</h3><button class="x" onclick="closeModal()">×</button></div><div class="form-grid"><div><label>Tên</label><input id="wName" value="${esc(w.name)}"></div><div class="full"><label>Địa chỉ</label><input id="wAddress" value="${esc(w.address||'')}"></div></div><button class="primary section-gap" onclick="saveWarehouse('${id}')">Lưu lên Cloud</button>`)}
@@ -33173,6 +33454,7 @@ async function saveWarehouse(id){
   }catch(e){
     alert('Lỗi: '+(e?.message||e));
   }
+  v208MarkBusinessAction('warehouse');
 }
 
 
@@ -33789,7 +34071,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V207',
+    app_version:'V208',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34098,7 +34380,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:207,
+    version:208,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -34280,13 +34562,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:207,
+    version:208,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V207',storage:'supabase-storage',
+      schema:185,app_version:'V208',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -35499,7 +35781,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:207,
+    version:208,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -36490,7 +36772,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V207',
+      app_version:'V208',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -36505,7 +36787,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:207,
+      version:208,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -36782,7 +37064,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v207-full-backup-'+
+    'lat-yen-v208-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -38027,6 +38309,8 @@ function renderAll(){
   renderPanel(current);
 }
 
+installV208StorageSyncHook();
+
 async function init(){
   normalizeAllTableHeaders(document);
   installPageStickyTableDock();
@@ -38050,7 +38334,14 @@ async function init(){
 
       schedulePageStickyDock();
     }
-  });if(cacheLoad()){cleanupInvalidExcelSyncQueue();renderAll();setCloudStatus('Cache đã tải');}window.addEventListener('online',async()=>{try{await syncPendingOperations()}catch(e){}await loadCloud();updatePendingSyncBadge()});window.addEventListener('offline',()=>{cloudOnline=false;setCloudStatus('Offline • dùng cache','offline')});setupRealtime();await loadCloud();applyEmbeddedExcelImport(false);cleanupInvalidExcelSyncQueue();try{await syncPendingOperations()}catch(e){}updatePendingSyncBadge()}
+  });if(cacheLoad()){cleanupInvalidExcelSyncQueue();renderAll();setCloudStatus('Cache đã tải');}window.addEventListener('online',async()=>{
+  if(v208ActionSyncQueued){
+    setTimeout(
+      ()=>v208FlushActionSync(),
+      100
+    );
+  }
+try{await syncPendingOperations()}catch(e){}await loadCloud();updatePendingSyncBadge()});window.addEventListener('offline',()=>{cloudOnline=false;setCloudStatus('Offline • dùng cache','offline')});setupRealtime();await loadCloud();applyEmbeddedExcelImport(false);cleanupInvalidExcelSyncQueue();try{await syncPendingOperations()}catch(e){}updatePendingSyncBadge()}
 init();
 
 
