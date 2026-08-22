@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V192",
+  "name": "Quản Lý Lát Yên V194",
   "short_name": "Lát Yên",
-  "description": "Full-menu sync audit: atomic sales/import/export/stocktake and canonical local modules.",
+  "description": "Sync diagnostics with live DB/RPC/Storage/pending verification.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

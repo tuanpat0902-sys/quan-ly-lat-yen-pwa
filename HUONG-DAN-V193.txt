@@ -1,0 +1,25 @@
+V193 - SYNC PROGRESS MONITOR
+
+Mục tiêu:
+- Nhìn được đồng bộ đang chạy đến đâu.
+- Không báo 100% nếu vẫn còn record pending.
+
+Các mốc:
+2%  Khởi tạo
+8%  Kiểm tra pending
+18% Danh mục / supplier / recipe
+34% Nhập + Xuất kho
+48% Kiểm kê
+60% Bán hàng
+72% Pull Cloud nghiệp vụ
+82% Canonical local sync
+92% Pull xác minh lần cuối
+100% Chỉ khi Cloud online + canonical converged + pending = 0
+
+Nếu còn pending:
+- Tiến độ dừng tối đa 95%.
+- Hiển thị chính xác số mục còn chờ.
+- Có stage/detail để biết đang kẹt ở bước nào.
+
+V193 không cần SQL mới.
+Tiếp tục dùng SQL Full Update V192 đã chạy.
