@@ -1,0 +1,18 @@
+V213 - STABLE SYNC
+
+Fix theo ảnh Diagnostics:
+1. Pending Retry trong Diagnostics nay gọi Sale Movement Reconcile V212 trước và sau retry.
+2. SALE movement pending được phân loại riêng là sale, không còn hiện other.
+3. Canonical Sync so sánh semantic state trước khi commit.
+4. Nếu Cloud và local canonical đã giống nhau -> trả converged ngay, không tạo Revision mới.
+5. Giảm CAS race giữa nhiều thiết bị, tránh "Chưa hội tụ sau 6 lần thử".
+6. V210 Device Loop Breaker + V204 Safe Merge + V212 strict sale reconcile vẫn giữ nguyên.
+
+Không cần SQL mới.
+
+Sau update:
+- Mở Công cụ đồng bộ nâng cao.
+- Bấm Chạy kiểm tra.
+Kỳ vọng:
+- Local/Canonical Merge = PASS.
+- Pending = 0 = PASS nếu 10 movement bán đã tồn tại đầy đủ trên Cloud.

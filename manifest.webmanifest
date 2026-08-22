@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V212",
+  "name": "Quản Lý Lát Yên V213",
   "short_name": "Lát Yên",
-  "description": "Strict stale-sale-movement reconciliation without touching sale or sale-item status.",
+  "description": "Stable canonical no-op sync plus diagnostics sale-movement reconciliation.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
