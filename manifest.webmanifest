@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V231",
+  "name": "Quản Lý Lát Yên V233",
   "short_name": "Lát Yên",
-  "description": "Auto Final Reconcile: Auto Sync repairs the final sale/sale_item pair instead of protecting the same two records forever at 92%.",
+  "description": "Interaction Freeze: realtime/auto-sync/follower UI refreshes are deferred while the user is typing, clicking, scrolling, using searchable dropdowns or modals.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

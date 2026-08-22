@@ -1,0 +1,29 @@
+V232 - SEARCHABLE DROPDOWN / NO PRINT
+
+Đã bỏ toàn bộ phần In:
+- Bỏ nút In ở phiếu/báo cáo.
+- Bỏ In phiếu trong modal.
+- Bỏ Ctrl/Cmd + P do phần mềm cài.
+- Bỏ lệnh "In nội dung đang xem" trong Ctrl/Cmd + K.
+- Bỏ toàn bộ helper/CSS in A4 của V223.
+
+Dropdown mới:
+- Bấm 1 lần vào dropdown -> mở ngay ô tìm.
+- Không còn bung danh sách native dài.
+- Gõ tên hoặc mã để lọc tức thì.
+- Tìm không dấu vẫn được.
+- ↑ / ↓ di chuyển.
+- Enter chọn.
+- Esc đóng.
+- F2/Enter/ArrowDown khi focus select cũng mở tìm.
+- Áp dụng generic cho toàn bộ select một lựa chọn trong các bảng/form tương tự.
+- select multiple hoặc size>1 không bị can thiệp.
+
+Giữ nguyên:
+- V231 Auto Final Reconcile.
+- V228 True Cloud Proof.
+- V219 Interaction Safe.
+- V224 Zoom Lock.
+- V226 Notifications.
+
+Không cần SQL mới.

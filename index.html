@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V231 AUTO FINAL RECONCILE ===== */
+/* ===== V233 INTERACTION FREEZE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10577,53 +10577,6 @@ kbd{
 }
 
 
-/* ===== V223 PRINT UI ===== */
-.v223-print-inline{
-  display:inline-flex;
-  margin-left:7px;
-  vertical-align:middle;
-}
-
-.v223-print-btn{
-  min-height:25px!important;
-  height:25px;
-  padding:2px 7px!important;
-  font-size:9px!important;
-  font-weight:600;
-}
-
-.v223-modal-print{
-  display:flex;
-  justify-content:flex-end;
-  margin:-2px 0 8px;
-  padding-bottom:7px;
-  border-bottom:1px solid #e2e8f0;
-}
-
-@media(max-width:700px){
-  .v223-print-btn span{
-    display:none;
-  }
-
-  .v223-print-btn{
-    min-width:30px;
-    padding:2px 5px!important;
-  }
-}
-
-@media print{
-  header,
-  nav,
-  .sidebar,
-  .top,
-  button,
-  .no-print,
-  .toast{
-    display:none!important;
-  }
-}
-
-
 /* ===== V224 APP ZOOM LOCK ===== */
 html.v224-app-mode,
 html.v224-app-mode body{
@@ -10731,6 +10684,63 @@ html.v224-app-mode button{
     flex-wrap:wrap;
   }
 }
+
+
+/* ===== V232 SEARCHABLE DROPDOWN ===== */
+select:not([multiple]){
+  cursor:text!important;
+}
+
+.v220-combo-box{
+  width:min(560px,calc(100vw - 16px));
+}
+
+#v220ComboInput{
+  font-weight:600;
+}
+
+.v220-combo-list{
+  overscroll-behavior:contain;
+}
+
+.v220-combo-item{
+  min-height:34px;
+  display:flex;
+  align-items:center;
+}
+
+.v220-combo-item.active{
+  outline:1px solid rgba(15,118,110,.18);
+}
+
+@media(max-width:700px){
+  .v220-combo-box{
+    left:8px!important;
+    right:8px!important;
+    width:auto!important;
+    max-width:none!important;
+  }
+
+  #v220ComboInput{
+    height:40px;
+  }
+
+  .v220-combo-item{
+    min-height:40px;
+    font-size:12px;
+  }
+}
+
+
+/* ===== V233 INTERACTION FREEZE ===== */
+.v220-combo.open{
+  isolation:isolate;
+}
+
+/*
+  No visual overlay is shown: the user keeps working normally.
+  Background data may arrive, but panel DOM is not rebuilt until quiet.
+*/
 
 </style>
 
@@ -11212,25 +11222,134 @@ function v219EditableElement(el){
   );
 }
 
-function v219InteractionActive(){
-  const active=document.activeElement;
 
+/* ===== V233 INTERACTION FREEZE ===== */
+const V233_INTERACTION_QUIET_MS=2600;
+const V233_DEFERRED_RETRY_MS=500;
+
+let v233LastInteractionAt=0;
+let v233PointerDown=false;
+let v233ScrollMarkAt=0;
+
+function v233MarkInteraction(){
+  v233LastInteractionAt=Date.now();
+}
+
+function v233ComboOpen(){
+  return !!(
+    v220Combo?.classList.contains(
+      'open'
+    )
+  );
+}
+
+function v233PaletteOpen(){
+  return !!(
+    v222Palette?.classList.contains(
+      'open'
+    )
+  );
+}
+
+function v233TextEditingActive(){
+  const active=
+    document.activeElement;
+
+  if(!active){
+    return false;
+  }
+
+  if(
+    active.matches?.(
+      'textarea, [contenteditable="true"]'
+    )
+  ){
+    return true;
+  }
+
+  if(
+    active.matches?.(
+      'input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"])'
+    )
+  ){
+    return !active.readOnly;
+  }
+
+  return false;
+}
+
+function v233RecentInteraction(){
+  return (
+    Date.now()-v233LastInteractionAt<
+    V233_INTERACTION_QUIET_MS
+  );
+}
+
+function v233ScheduleDeferredFlush(
+  delay=V233_DEFERRED_RETRY_MS
+){
+  clearTimeout(
+    v219DeferredTimer
+  );
+
+  v219DeferredTimer=
+    setTimeout(
+      v219FlushDeferredRender,
+      delay
+    );
+}
+
+function v233ScheduleCloudReload(
+  delay=700
+){
+  clearTimeout(
+    cloudReloadTimer
+  );
+
+  cloudReloadTimer=
+    setTimeout(
+      ()=>{
+        if(v219InteractionActive()){
+          cloudReloadRequested=true;
+          v233ScheduleCloudReload(
+            900
+          );
+          return;
+        }
+
+        cloudReloadRequested=false;
+        loadCloud();
+      },
+      delay
+    );
+}
+
+function v233BackgroundAutoSyncReason(
+  reason
+){
+  return [
+    'timer',
+    'startup',
+    'focus',
+    'online'
+  ].includes(
+    String(reason||'')
+  );
+}
+
+function v219InteractionActive(){
   const modalOpen=
     !!document.querySelector(
       '#modal.open'
     );
 
-  const editing=
-    v219EditableElement(active);
-
-  const recentEdit=
-    Date.now()-v219LastUserEditAt<
-    V219_EDIT_GRACE_MS;
-
   return (
+    v233PointerDown ||
     modalOpen ||
-    editing ||
-    recentEdit
+    v233ComboOpen() ||
+    v233PaletteOpen() ||
+    v233TextEditingActive() ||
+    v233RecentInteraction()
   );
 }
 
@@ -11258,12 +11377,7 @@ function v219FlushDeferredRender(){
   }
 
   if(v219InteractionActive()){
-    v219DeferredTimer=
-      setTimeout(
-        v219FlushDeferredRender,
-        350
-      );
-
+    v233ScheduleDeferredFlush();
     return;
   }
 
@@ -11271,13 +11385,16 @@ function v219FlushDeferredRender(){
 
   try{
     renderWarehouseSelect();
+
     renderPanel(
       v219ActivePanel()
     );
+
     updatePendingSyncBadge();
+
   }catch(e){
     console.warn(
-      'V219 deferred render',
+      'V233 deferred render',
       e
     );
   }
@@ -11286,24 +11403,16 @@ function v219FlushDeferredRender(){
 function v219SafeBackgroundRender(){
   if(v219InteractionActive()){
     v219DeferredRender=true;
-
-    clearTimeout(
-      v219DeferredTimer
-    );
-
-    v219DeferredTimer=
-      setTimeout(
-        v219FlushDeferredRender,
-        450
-      );
-
+    v233ScheduleDeferredFlush();
     return false;
   }
 
   renderWarehouseSelect();
+
   renderPanel(
     v219ActivePanel()
   );
+
   updatePendingSyncBadge();
 
   return true;
@@ -11311,9 +11420,55 @@ function v219SafeBackgroundRender(){
 
 function v219InstallInteractionGuard(){
   document.addEventListener(
+    'pointerdown',
+    ()=>{
+      v233PointerDown=true;
+      v233MarkInteraction();
+    },
+    true
+  );
+
+  document.addEventListener(
+    'pointerup',
+    ()=>{
+      v233PointerDown=false;
+      v233MarkInteraction();
+
+      if(v219DeferredRender){
+        v233ScheduleDeferredFlush();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'pointercancel',
+    ()=>{
+      v233PointerDown=false;
+      v233MarkInteraction();
+      v233ScheduleDeferredFlush();
+    },
+    true
+  );
+
+  document.addEventListener(
+    'keydown',
+    ()=>{
+      v233MarkInteraction();
+    },
+    true
+  );
+
+  document.addEventListener(
     'input',
     event=>{
-      if(v219EditableElement(event.target)){
+      v233MarkInteraction();
+
+      if(
+        v219EditableElement(
+          event.target
+        )
+      ){
         v219MarkEditing();
       }
     },
@@ -11323,9 +11478,27 @@ function v219InstallInteractionGuard(){
   document.addEventListener(
     'change',
     event=>{
-      if(v219EditableElement(event.target)){
+      v233MarkInteraction();
+
+      if(
+        v219EditableElement(
+          event.target
+        )
+      ){
         v219MarkEditing();
       }
+
+      if(v219DeferredRender){
+        v233ScheduleDeferredFlush();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'focusin',
+    ()=>{
+      v233MarkInteraction();
     },
     true
   );
@@ -11333,15 +11506,48 @@ function v219InstallInteractionGuard(){
   document.addEventListener(
     'focusout',
     ()=>{
-      clearTimeout(
-        v219DeferredTimer
-      );
+      v233MarkInteraction();
 
-      v219DeferredTimer=
-        setTimeout(
-          v219FlushDeferredRender,
-          V219_EDIT_GRACE_MS+80
-        );
+      if(v219DeferredRender){
+        v233ScheduleDeferredFlush();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'touchmove',
+    ()=>{
+      v233MarkInteraction();
+    },
+    {
+      passive:true,
+      capture:true
+    }
+  );
+
+  document.addEventListener(
+    'wheel',
+    ()=>{
+      v233MarkInteraction();
+    },
+    {
+      passive:true,
+      capture:true
+    }
+  );
+
+  document.addEventListener(
+    'scroll',
+    ()=>{
+      const now=Date.now();
+
+      if(
+        now-v233ScrollMarkAt>120
+      ){
+        v233ScrollMarkAt=now;
+        v233MarkInteraction();
+      }
     },
     true
   );
@@ -11781,6 +11987,82 @@ function v220ChooseOption(option){
 }
 
 function v220InstallSelectTyping(){
+  const eligible=select=>(
+    !!select &&
+    !select.disabled &&
+    !select.multiple &&
+    Number(select.size||0)<=1
+  );
+
+  const openFromPointer=event=>{
+    const select=
+      event.target?.closest?.(
+        'select'
+      );
+
+    if(!eligible(select)){
+      return;
+    }
+
+    /*
+      V232:
+      Prevent the browser native select popup entirely.
+      A normal click now opens the searchable combobox and focuses
+      the search input immediately.
+    */
+    event.preventDefault();
+
+    v220OpenCombo(
+      select,
+      ''
+    );
+  };
+
+  // pointerdown fires before Chrome opens its native dropdown.
+  document.addEventListener(
+    'pointerdown',
+    openFromPointer,
+    true
+  );
+
+  // Fallback for browsers/environments without PointerEvent behavior.
+  document.addEventListener(
+    'mousedown',
+    event=>{
+      if(
+        typeof PointerEvent!=='undefined'
+      ){
+        return;
+      }
+
+      openFromPointer(
+        event
+      );
+    },
+    true
+  );
+
+  // Block the synthetic click that can otherwise reopen native select.
+  document.addEventListener(
+    'click',
+    event=>{
+      const select=
+        event.target?.closest?.(
+          'select'
+        );
+
+      if(
+        eligible(select) &&
+        v220Combo?.classList.contains(
+          'open'
+        )
+      ){
+        event.preventDefault();
+      }
+    },
+    true
+  );
+
   document.addEventListener(
     'keydown',
     event=>{
@@ -11789,7 +12071,9 @@ function v220InstallSelectTyping(){
           'select'
         );
 
-      if(!select)return;
+      if(!eligible(select)){
+        return;
+      }
 
       if(
         event.ctrlKey ||
@@ -11801,7 +12085,8 @@ function v220InstallSelectTyping(){
 
       if(
         event.key==='Enter' ||
-        event.key==='F2'
+        event.key==='F2' ||
+        event.key==='ArrowDown'
       ){
         event.preventDefault();
 
@@ -11822,24 +12107,6 @@ function v220InstallSelectTyping(){
         v220OpenCombo(
           select,
           event.key
-        );
-      }
-    },
-    true
-  );
-
-  document.addEventListener(
-    'dblclick',
-    event=>{
-      const select=
-        event.target?.closest?.(
-          'select'
-        );
-
-      if(select){
-        v220OpenCombo(
-          select,
-          ''
         );
       }
     },
@@ -11876,7 +12143,9 @@ function v220InstallSelectTyping(){
         );
       }
     },
-    {passive:true}
+    {
+      passive:true
+    }
   );
 }
 
@@ -11887,14 +12156,14 @@ function v220SchedulePanelRender(
     v220RenderTimer
   );
 
+  /*
+    This function is only used by the user's explicit warehouse change.
+    It must render immediately; the interaction freeze applies only to
+    background sync/realtime renders.
+  */
   v220RenderTimer=
     setTimeout(
       ()=>{
-        if(v219InteractionActive()){
-          v219DeferredRender=true;
-          return;
-        }
-
         renderPanel(
           panelId||
           v219ActivePanel()
@@ -12082,8 +12351,7 @@ const V222_COMMANDS=[
   {id:'warehouses',label:'Kho / Chi nhánh',hint:'Kho • chi nhánh',icon:'⌂'},
   {id:'history',label:'Lịch sử',hint:'Biến động • nhật ký',icon:'↶'},
   {id:'settings',label:'Cài đặt',hint:'Đồng bộ • hệ thống',icon:'⚙'},
-  {id:'__sync',label:'Đồng bộ ngay',hint:'Đẩy và nhận dữ liệu Cloud',icon:'☁',action:()=>syncNow()},
-  {id:'__print',label:'In nội dung đang xem',hint:'In phiếu hoặc báo cáo hiện tại',icon:'⎙',action:()=>v223PrintCurrentPanel()}
+  {id:'__sync',label:'Đồng bộ ngay',hint:'Đẩy và nhận dữ liệu Cloud',icon:'☁',action:()=>syncNow()}
 ];
 
 let v222Palette=null;
@@ -12251,274 +12519,6 @@ function v222EnhancePanelHead(panel){
   if(first&&!first.classList.contains('v222-title')){
     first.classList.add('v222-title');
   }
-}
-
-
-/* ===== V223 PRINT & REPORT ===== */
-function v223PrintTimestamp(){
-  try{
-    return new Intl.DateTimeFormat(
-      'vi-VN',
-      {
-        dateStyle:'short',
-        timeStyle:'short'
-      }
-    ).format(new Date());
-  }catch(e){
-    return new Date().toLocaleString();
-  }
-}
-
-function v223PrintTitleFromElement(el){
-  const heading=
-    el?.querySelector?.(
-      'h1,h2,h3,.cashflow-period-label'
-    );
-
-  return (
-    heading?.textContent?.trim() ||
-    'Báo cáo'
-  );
-}
-
-function v223PrintableClone(el){
-  const clone=el.cloneNode(true);
-
-  for(const node of clone.querySelectorAll(
-    'button, input, select, textarea, .no-print, .v223-print-btn, .cashflow-filter-row, .history-filter-grid'
-  )){
-    node.remove();
-  }
-
-  for(const details of clone.querySelectorAll('details')){
-    details.open=true;
-  }
-
-  for(const scroll of clone.querySelectorAll('.scroll')){
-    scroll.classList.remove('scroll');
-    scroll.style.overflow='visible';
-    scroll.style.maxHeight='none';
-  }
-
-  return clone;
-}
-
-function v223PrintHtml(el,title=''){
-  const brand=loadAppBrand();
-  const wh=warehouse()?.name||'';
-  const clone=v223PrintableClone(el);
-  const safeTitle=title||v223PrintTitleFromElement(el);
-
-  return `<!doctype html>
-<html lang="vi">
-<head>
-<meta charset="utf-8">
-<title>${esc(safeTitle)}</title>
-<style>
-  @page{size:A4;margin:12mm}
-  *{box-sizing:border-box}
-  body{font-family:Arial,Helvetica,sans-serif;color:#111827;font-size:10.5pt;line-height:1.35;margin:0}
-  .print-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1.5px solid #111827;padding-bottom:7px;margin-bottom:10px}
-  .print-brand{font-weight:700;font-size:13pt}
-  .print-meta{text-align:right;font-size:8.5pt;color:#475569}
-  h1,h2,h3{margin:8px 0 6px;color:#111827}
-  h2{font-size:15pt} h3{font-size:11.5pt}
-  .card{border:0!important;box-shadow:none!important;padding:0!important;margin:0 0 10px!important}
-  .grid,.grid2,.cashflow-summary,.cashflow-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .metric,.cashflow-kpi{border:1px solid #cbd5e1!important;padding:7px!important;border-radius:4px}
-  table{width:100%;border-collapse:collapse;margin:5px 0 10px}
-  th,td{border:1px solid #cbd5e1;padding:4px 5px;vertical-align:top}
-  th{background:#f1f5f9;font-weight:700;text-align:left}
-  .right{text-align:right}.center{text-align:center}
-  .muted{color:#64748b}.neg,.low{color:#b42318}.ok,.profit{color:#047857}
-  .badge,.cashflow-type,.audit-module,.audit-action{border:1px solid #cbd5e1;border-radius:3px;padding:1px 4px;background:#fff}
-  .empty{padding:8px;border:1px dashed #cbd5e1;color:#64748b}
-  .section-gap{margin-top:10px!important}
-  img{max-width:100%}
-  nav,header,.sidebar,.top,.toast,.modal{display:none!important}
-  tr{page-break-inside:avoid}
-  thead{display:table-header-group}
-</style>
-</head>
-<body>
-  <div class="print-head">
-    <div>
-      <div class="print-brand">${esc(brand.name||'QUẢN LÝ LÁT YÊN')}</div>
-      <div>${esc(safeTitle)}</div>
-    </div>
-    <div class="print-meta">
-      ${wh?`Kho/Chi nhánh: ${esc(wh)}<br>`:''}
-      In lúc: ${esc(v223PrintTimestamp())}
-    </div>
-  </div>
-  ${clone.outerHTML}
-</body>
-</html>`;
-}
-
-function v223PrintElement(el,title=''){
-  if(!el){
-    toastMsg('Không tìm thấy nội dung để in');
-    return;
-  }
-
-  const frame=document.createElement('iframe');
-  frame.setAttribute('aria-hidden','true');
-  frame.style.position='fixed';
-  frame.style.right='0';
-  frame.style.bottom='0';
-  frame.style.width='0';
-  frame.style.height='0';
-  frame.style.border='0';
-  frame.style.opacity='0';
-
-  document.body.appendChild(frame);
-
-  const doc=frame.contentDocument||frame.contentWindow.document;
-  doc.open();
-  doc.write(v223PrintHtml(el,title));
-  doc.close();
-
-  setTimeout(()=>{
-    try{
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-    }catch(e){
-      console.error('Print error',e);
-      toastMsg('Không mở được hộp thoại in');
-    }
-
-    setTimeout(()=>frame.remove(),1200);
-  },180);
-}
-
-function v223PrintCurrentPanel(){
-  const panel=document.querySelector('.panel.active');
-  if(!panel)return;
-  v223PrintElement(panel,v223PrintTitleFromElement(panel));
-}
-
-function v223TargetForHeading(heading){
-  if(!heading)return null;
-
-  return (
-    heading.closest('.card') ||
-    heading.closest('.modal-box') ||
-    heading.closest('.panel') ||
-    heading.parentElement
-  );
-}
-
-function v223ShouldOfferPrint(heading){
-  const text=v220Norm(heading?.textContent||'');
-
-  return (
-    text.includes('phieu') ||
-    text.includes('bao cao') ||
-    text.includes('lich su') ||
-    text.includes('kiem ke') ||
-    text.includes('doanh thu')
-  );
-}
-
-function v223AddPrintButton(heading){
-  if(
-    !heading ||
-    heading.dataset.v223Print==='1' ||
-    !v223ShouldOfferPrint(heading)
-  ){
-    return;
-  }
-
-  heading.dataset.v223Print='1';
-
-  const wrap=document.createElement('span');
-  wrap.className='v223-print-inline no-print';
-
-  const btn=document.createElement('button');
-  btn.type='button';
-  btn.className='secondary sm v223-print-btn';
-  btn.innerHTML='⎙ <span>In</span>';
-  btn.title='In nội dung này';
-
-  btn.addEventListener('click',event=>{
-    event.preventDefault();
-    event.stopPropagation();
-
-    const target=v223TargetForHeading(heading);
-    v223PrintElement(
-      target,
-      heading.textContent.trim()
-    );
-  });
-
-  wrap.appendChild(btn);
-  heading.appendChild(wrap);
-}
-
-function v223EnhancePrintActions(root=document){
-  if(!root?.querySelectorAll)return;
-
-  const headings=[
-    ...(root.matches?.('h2,h3')?[root]:[]),
-    ...root.querySelectorAll('h2,h3')
-  ];
-
-  for(const heading of headings){
-    v223AddPrintButton(heading);
-  }
-}
-
-function v223AddModalPrintAction(){
-  const box=E.modalBox;
-  if(!box)return;
-
-  const text=v220Norm(box.textContent||'');
-
-  if(
-    !text.includes('phieu') &&
-    !box.querySelector('table')
-  ){
-    return;
-  }
-
-  if(box.querySelector('.v223-modal-print'))return;
-
-  const toolbar=document.createElement('div');
-  toolbar.className='v223-modal-print no-print';
-  toolbar.innerHTML=`
-    <button type="button" class="secondary sm">⎙ In phiếu</button>
-  `;
-
-  toolbar.querySelector('button').addEventListener('click',()=>{
-    v223PrintElement(
-      box,
-      v223PrintTitleFromElement(box)
-    );
-  });
-
-  box.insertBefore(toolbar,box.firstChild);
-}
-
-function v223InstallPrintShortcut(){
-  document.addEventListener('keydown',event=>{
-    if(
-      (event.ctrlKey||event.metaKey) &&
-      event.key.toLowerCase()==='p' &&
-      !v222Palette?.classList.contains('open')
-    ){
-      event.preventDefault();
-
-      if(E.modal?.classList.contains('open')){
-        v223PrintElement(
-          E.modalBox,
-          v223PrintTitleFromElement(E.modalBox)
-        );
-      }else{
-        v223PrintCurrentPanel();
-      }
-    }
-  },true);
 }
 
 
@@ -13834,11 +13834,24 @@ function v218FollowerRefresh(){
     setTimeout(
       ()=>{
         try{
+          if(v219InteractionActive()){
+            v219DeferredRender=true;
+
+            v218FollowerRenderTimer=
+              setTimeout(
+                v218FollowerRefresh,
+                900
+              );
+
+            return;
+          }
+
           cacheLoad();
           v219SafeBackgroundRender();
+
         }catch(e){
           console.warn(
-            'V219 follower refresh',
+            'V233 follower refresh',
             e
           );
         }
@@ -15492,8 +15505,7 @@ async function loadCloud(){
 
   if(cloudReloadRequested){
     cloudReloadRequested=false;
-    clearTimeout(cloudReloadTimer);
-    cloudReloadTimer=setTimeout(()=>loadCloud(),250);
+    v233ScheduleCloudReload(700);
   }
  }
  }finally{
@@ -17062,7 +17074,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:231,
+    version:233,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -22558,19 +22570,17 @@ function renderPanel(id){
 
       const panel=
         E[id]||
-        document.querySelector('.panel.active');
+        document.querySelector(
+          '.panel.active'
+        );
 
-      v222EnhancePanelHead(panel);
+      v222EnhancePanelHead(
+        panel
+      );
+
       if(id==='settings'){
         v226RenderNotificationCard();
       }
-      v223EnhancePrintActions(panel);
-
-      // Some report bodies render asynchronously after parent panel.
-      setTimeout(
-        ()=>v223EnhancePrintActions(panel),
-        120
-      );
 
       scheduleTableEnhancements(
         panel||document
@@ -34789,13 +34799,6 @@ function renderCashflowReport(){
       `:'<div class="empty">Chưa có khoản thu/chi nào trong kỳ.</div>'}
     </div>
   `;
-
-  setTimeout(
-    ()=>v223EnhancePrintActions(
-      area
-    ),
-    0
-  );
 }
 
 
@@ -39751,7 +39754,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V231',
+    app_version:'V233',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -40060,7 +40063,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:231,
+    version:233,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -40242,13 +40245,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:231,
+    version:233,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V231',storage:'supabase-storage',
+      schema:185,app_version:'V233',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -41454,7 +41457,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:231,
+    version:233,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -43410,6 +43413,21 @@ async function autoSyncNow(options={}){
 
   const cfg=loadAutoSyncConfig();
 
+  /*
+    V233: timer/startup/focus/online sync must not begin while the user
+    is actively operating a form/table. Action sync after an explicit
+    save is still allowed.
+  */
+  if(
+    v233BackgroundAutoSyncReason(reason) &&
+    v219InteractionActive()
+  ){
+    return {
+      direction:'deferred_interaction',
+      reason
+    };
+  }
+
   if(
     autoSyncBusy||
     !cfg.enabled||
@@ -44195,7 +44213,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V231',
+      app_version:'V233',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -44210,7 +44228,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:231,
+      version:233,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -44487,7 +44505,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v231-full-backup-'+
+    'lat-yen-v233-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -45144,17 +45162,21 @@ function openModal(html){
   E.modalBox.innerHTML=html;
   E.modal.classList.add('open');
 
-  v223EnhancePrintActions(E.modalBox);
-  v223AddModalPrintAction();
-
   requestAnimationFrame(()=>{
     const focusable=
       E.modalBox.querySelector(
         'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])'
       );
 
-    if(focusable&&!v219InteractionActive()){
-      try{focusable.focus({preventScroll:true})}catch(e){}
+    if(
+      focusable &&
+      !v219InteractionActive()
+    ){
+      try{
+        focusable.focus({
+          preventScroll:true
+        });
+      }catch(e){}
     }
   });
 }function closeModal(){
@@ -45783,7 +45805,6 @@ v219InstallInteractionGuard();
 v220InstallSelectTyping();
 v221InstallSmartActivity();
 v222InstallUxShortcuts();
-v223InstallPrintShortcut();
 v224InstallZoomLock();
 v226InstallNotifications();
 v210InitLeaderElection();
@@ -45820,7 +45841,14 @@ async function init(){
       100
     );
   }
-try{await syncPendingOperations()}catch(e){}await loadCloud();updatePendingSyncBadge()});window.addEventListener('offline',()=>{cloudOnline=false;setCloudStatus('Offline • dùng cache','offline')});setupRealtime();await loadCloud();applyEmbeddedExcelImport(false);cleanupInvalidExcelSyncQueue();try{await syncPendingOperations()}catch(e){}updatePendingSyncBadge()}
+try{await syncPendingOperations()}catch(e){}
+if(v219InteractionActive()){
+  cloudReloadRequested=true;
+  v233ScheduleCloudReload(900);
+}else{
+  await loadCloud();
+}
+updatePendingSyncBadge()});window.addEventListener('offline',()=>{cloudOnline=false;setCloudStatus('Offline • dùng cache','offline')});setupRealtime();await loadCloud();applyEmbeddedExcelImport(false);cleanupInvalidExcelSyncQueue();try{await syncPendingOperations()}catch(e){}updatePendingSyncBadge()}
 init();
 
 
