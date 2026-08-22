@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V257 DEVICE DISCONNECT ===== */
+/* ===== V259 QR + SYNC SIMULATION FIX ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11554,6 +11554,16 @@ html.v257-device-locked body{
   overflow:hidden!important;
 }
 
+
+/* ===== AUTH V2 ===== */
+.v260-auth-gate{position:fixed;inset:0;z-index:2147483600;background:#f4f7f8;display:flex;align-items:center;justify-content:center;padding:20px}
+.v260-auth-card{width:min(430px,100%);background:#fff;border:1px solid #d8e1e6;border-radius:16px;padding:24px;box-shadow:0 18px 55px rgba(15,23,42,.13)}
+.v260-auth-logo{width:48px;height:48px;border-radius:12px;background:#e8f7f2;display:grid;place-items:center;font-size:24px;margin-bottom:10px}
+.v260-auth-card h1{font-size:22px;margin:0 0 5px}.v260-auth-card p{margin:0 0 16px;color:#64748b;line-height:1.45}
+.v260-auth-card label{display:block;font-size:12px;font-weight:700;margin:10px 0 4px}.v260-auth-card input{width:100%;height:38px}
+.v260-auth-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}.v260-auth-status{margin-top:10px;font-size:12px}
+.v260-account-bar{padding:10px 12px;border:1px solid #d9e3e8;border-radius:9px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
 </style>
 </head>
 <body>
@@ -11561,7 +11571,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V257</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V264</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11595,7 +11605,7 @@ html.v257-device-locked body{
 // ===== SUPABASE PROJECT =====
 const SUPABASE_URL = 'https://hbffhiipryqvgwpccqtx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_vYQ760V9ryjwXZfoxBisxw_MHmpcb1b';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:false}});
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 
 
 const EMBEDDED_EXCEL_DATA={"source":{"file":"KHO LAT YEN - OK(1).xlsm","import_id":"KHO_LAT_YEN_OK_1_V115","has_vba":true,"sheet_count":12},"imports":[{"row":4,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC01","name":"Chai kẹp 1L thủy tinh (nước lọc)","qty_purchase":13.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":13.0,"base_unit":"Cái","unit_price_purchase":20000.0,"unit_cost_base":20000.0,"total":260000.0,"party":"","note":""},{"row":5,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC02","name":"Ấm 2L cao inox (trà chờ)","qty_purchase":5.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":5.0,"base_unit":"Cái","unit_price_purchase":105000.0,"unit_cost_base":105000.0,"total":525000.0,"party":"","note":""},{"row":6,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC03","name":"Vét kem silicon","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":35000.0,"unit_cost_base":35000.0,"total":70000.0,"party":"","note":""},{"row":7,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC04","name":"Đồng hồ bấm giờ","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":60000.0,"unit_cost_base":60000.0,"total":120000.0,"party":"","note":""},{"row":8,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC05","name":"Cối Promix","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":1000000.0,"unit_cost_base":1000000.0,"total":2000000.0,"party":"","note":""},{"row":9,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC06","name":"Khay bê đồ chống trượt","qty_purchase":6.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":6.0,"base_unit":"Cái","unit_price_purchase":50000.0,"unit_cost_base":50000.0,"total":300000.0,"party":"","note":""},{"row":10,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC07","name":"Chậu inox bông sen 24","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":40000.0,"unit_cost_base":40000.0,"total":40000.0,"party":"","note":""},{"row":11,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC08","name":"Ca đánh sữa inox 600ml","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":90000.0,"unit_cost_base":90000.0,"total":180000.0,"party":"","note":""},{"row":12,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC09","name":"Ca đánh sữa inox 350ml","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":70000.0,"unit_cost_base":70000.0,"total":210000.0,"party":"","note":""},{"row":13,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC10","name":"Hộp đựng café nhựa 1.5L nắp nâu","qty_purchase":9.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":9.0,"base_unit":"Cái","unit_price_purchase":45000.0,"unit_cost_base":45000.0,"total":405000.0,"party":"","note":""},{"row":14,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC11","name":"Cân điện tử cao cấp Promix 5 kg","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":270000.0,"unit_cost_base":270000.0,"total":270000.0,"party":"","note":""},{"row":15,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC12","name":"Vòi phi 12 (size lớn)","qty_purchase":19.0,"purchase_unit":"Bao","conversion":1.0,"base_qty":19.0,"base_unit":"Bao","unit_price_purchase":23000.0,"unit_cost_base":23000.0,"total":437000.0,"party":"","note":""},{"row":16,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC13","name":"Vòi phi 8 (size vừa)","qty_purchase":11.0,"purchase_unit":"Bao","conversion":1.0,"base_qty":11.0,"base_unit":"Bao","unit_price_purchase":23000.0,"unit_cost_base":23000.0,"total":253000.0,"party":"","note":""},{"row":17,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC14","name":"Vòi phi 6 (size nhỏ)","qty_purchase":14.0,"purchase_unit":"Bao","conversion":1.0,"base_qty":14.0,"base_unit":"Bao","unit_price_purchase":23000.0,"unit_cost_base":23000.0,"total":322000.0,"party":"","note":""},{"row":18,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC15","name":"Chày bar 21cm","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":40000.0,"unit_cost_base":40000.0,"total":80000.0,"party":"","note":""},{"row":19,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC16","name":"Thìa bar dài","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":25000.0,"unit_cost_base":25000.0,"total":75000.0,"party":"","note":""},{"row":20,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC17","name":"Đĩa chữ nhật nhỏ","qty_purchase":49.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":49.0,"base_unit":"Cái","unit_price_purchase":12000.0,"unit_cost_base":12000.0,"total":588000.0,"party":"","note":""},{"row":21,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC18","name":"Máy đun nước nóng tự động Unibar","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":3750000.0,"unit_cost_base":3750000.0,"total":3750000.0,"party":"","note":""},{"row":22,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC19","name":"Thìa café trung bạc","qty_purchase":50.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":50.0,"base_unit":"Cái","unit_price_purchase":5500.0,"unit_cost_base":5500.0,"total":275000.0,"party":"","note":""},{"row":23,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC20","name":"Thìa café dài bạc","qty_purchase":33.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":33.0,"base_unit":"Cái","unit_price_purchase":6000.0,"unit_cost_base":6000.0,"total":198000.0,"party":"","note":""},{"row":24,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC21","name":"Thìa café ngắn bạc","qty_purchase":77.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":77.0,"base_unit":"Cái","unit_price_purchase":5000.0,"unit_cost_base":5000.0,"total":385000.0,"party":"","note":""},{"row":25,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC22","name":"Cốc loe miệng dài 9012","qty_purchase":9.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":9.0,"base_unit":"Cái","unit_price_purchase":21000.0,"unit_cost_base":21000.0,"total":189000.0,"party":"","note":"vỡ 3"},{"row":26,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC23","name":"Cốc trụ tròn họa tiết 311ZD","qty_purchase":17.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":17.0,"base_unit":"Cái","unit_price_purchase":25000.0,"unit_cost_base":25000.0,"total":425000.0,"party":"","note":""},{"row":27,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC24","name":"Cốc sọc dài 314H","qty_purchase":21.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":21.0,"base_unit":"Cái","unit_price_purchase":25000.0,"unit_cost_base":25000.0,"total":525000.0,"party":"","note":""},{"row":28,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC25","name":"Cốc sọc to 8415J","qty_purchase":32.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":32.0,"base_unit":"Cái","unit_price_purchase":27000.0,"unit_cost_base":27000.0,"total":864000.0,"party":"","note":"vỡ 5"},{"row":29,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC26","name":"Cốc loe miệng ngắn R106","qty_purchase":17.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":17.0,"base_unit":"Cái","unit_price_purchase":21000.0,"unit_cost_base":21000.0,"total":357000.0,"party":"","note":""},{"row":30,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC27","name":"Cốc vòng gỗ J85112","qty_purchase":36.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":36.0,"base_unit":"Cái","unit_price_purchase":22500.0,"unit_cost_base":22500.0,"total":810000.0,"party":"","note":""},{"row":31,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC28","name":"Cốc sọc to ngắn 6408","qty_purchase":29.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":29.0,"base_unit":"Cái","unit_price_purchase":15000.0,"unit_cost_base":15000.0,"total":435000.0,"party":"","note":""},{"row":32,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC29","name":"Cốc trà lùn UG381","qty_purchase":93.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":93.0,"base_unit":"Cái","unit_price_purchase":7500.0,"unit_cost_base":7500.0,"total":697500.0,"party":"","note":""},{"row":33,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC30","name":"Thớt vuông đại nhựa dày","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":85000.0,"unit_cost_base":85000.0,"total":85000.0,"party":"","note":""},{"row":34,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC31","name":"Rửa ly màu","qty_purchase":4.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":4.0,"base_unit":"Cái","unit_price_purchase":10000.0,"unit_cost_base":10000.0,"total":40000.0,"party":"","note":""},{"row":35,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC32","name":"Lắc nhựa 700ml","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":55000.0,"unit_cost_base":55000.0,"total":165000.0,"party":"","note":""},{"row":36,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC33","name":"Ca đong nhựa 500ml","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":25000.0,"unit_cost_base":25000.0,"total":75000.0,"party":"","note":""},{"row":37,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC34","name":"Ca đong nhựa 250ml","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":20000.0,"unit_cost_base":20000.0,"total":60000.0,"party":"","note":""},{"row":38,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC35","name":"Lọ rắc cacao nhỏ","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":45000.0,"unit_cost_base":45000.0,"total":45000.0,"party":"","note":""},{"row":39,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC36","name":"Ca đong nhựa 100ml","qty_purchase":6.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":6.0,"base_unit":"Cái","unit_price_purchase":10000.0,"unit_cost_base":10000.0,"total":60000.0,"party":"","note":""},{"row":40,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC37","name":"Bình đựng sốt vuông 800ml","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":25000.0,"unit_cost_base":25000.0,"total":50000.0,"party":"","note":""},{"row":41,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC38","name":"Bình đựng sốt vuông 1000ml","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":25000.0,"unit_cost_base":25000.0,"total":50000.0,"party":"","note":""},{"row":42,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC39","name":"Ca đong nhựa 3.5L có nắp","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":50000.0,"unit_cost_base":50000.0,"total":100000.0,"party":"","note":""},{"row":43,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC40","name":"Thanh kẹp order inox","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":230000.0,"unit_cost_base":230000.0,"total":230000.0,"party":"","note":""},{"row":44,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC41","name":"Nồi nấu trân châu tự động Unibar 5L","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":1650000.0,"unit_cost_base":1650000.0,"total":1650000.0,"party":"","note":""},{"row":45,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC42","name":"Rổ inox","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":130000.0,"unit_cost_base":130000.0,"total":130000.0,"party":"","note":""},{"row":46,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC43","name":"Ca đong nhựa đánh kem 2.5L có nắp","qty_purchase":6.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":6.0,"base_unit":"Cái","unit_price_purchase":95000.0,"unit_cost_base":95000.0,"total":570000.0,"party":"","note":""},{"row":47,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC44","name":"Gạt tàn thuốc vuông","qty_purchase":10.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":10.0,"base_unit":"Cái","unit_price_purchase":24000.0,"unit_cost_base":24000.0,"total":240000.0,"party":"","note":""},{"row":48,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC45","name":"Nhíp gắp đồ decor","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":30000.0,"unit_cost_base":30000.0,"total":90000.0,"party":"","note":""},{"row":49,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC46","name":"Thìa định lượng 10g","qty_purchase":5.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":5.0,"base_unit":"Cái","unit_price_purchase":5000.0,"unit_cost_base":5000.0,"total":25000.0,"party":"","note":""},{"row":50,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC47","name":"Bình om trà 20L","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":480000.0,"unit_cost_base":480000.0,"total":480000.0,"party":"","note":""},{"row":51,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC48","name":"Que cắm giữ bill","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":20000.0,"unit_cost_base":20000.0,"total":40000.0,"party":"","note":""},{"row":52,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC49","name":"Cắm dao inox","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":150000.0,"unit_cost_base":150000.0,"total":300000.0,"party":"","note":""},{"row":53,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC50","name":"Nạo thái","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":20000.0,"unit_cost_base":20000.0,"total":20000.0,"party":"","note":""},{"row":54,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC51","name":"Kéo vàng to","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":50000.0,"unit_cost_base":50000.0,"total":100000.0,"party":"","note":""},{"row":55,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC52","name":"Dao thái","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":40000.0,"unit_cost_base":40000.0,"total":120000.0,"party":"","note":""},{"row":56,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC53","name":"Nắp khay phần 1/4","qty_purchase":5.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":5.0,"base_unit":"Cái","unit_price_purchase":30000.0,"unit_cost_base":30000.0,"total":150000.0,"party":"","note":""},{"row":57,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC54","name":"Khay phần 1/4 10cm","qty_purchase":5.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":5.0,"base_unit":"Cái","unit_price_purchase":60000.0,"unit_cost_base":60000.0,"total":300000.0,"party":"","note":""},{"row":58,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC55","name":"Khay đựng topping 8 ngăn nắp nhựa","qty_purchase":8.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":8.0,"base_unit":"Cái","unit_price_purchase":350000.0,"unit_cost_base":350000.0,"total":2800000.0,"party":"","note":""},{"row":59,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC56","name":"Tăm tre xiên trái cây","qty_purchase":1.0,"purchase_unit":"Gói","conversion":1.0,"base_qty":1.0,"base_unit":"Gói","unit_price_purchase":55000.0,"unit_cost_base":55000.0,"total":55000.0,"party":"","note":""},{"row":60,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC57","name":"Kẹp chanh","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":30000.0,"unit_cost_base":30000.0,"total":60000.0,"party":"","note":""},{"row":61,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC58","name":"Rây lưới nhỏ","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":10000.0,"unit_cost_base":10000.0,"total":10000.0,"party":"","note":""},{"row":62,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC59","name":"Phễu lọc inox","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":180000.0,"unit_cost_base":180000.0,"total":360000.0,"party":"","note":""},{"row":63,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC60","name":"Giấy chống tràn","qty_purchase":5.0,"purchase_unit":"Gói","conversion":1.0,"base_qty":5.0,"base_unit":"Gói","unit_price_purchase":50000.0,"unit_cost_base":50000.0,"total":250000.0,"party":"","note":""},{"row":64,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC61","name":"Kệ cốc mica 9 ngăn 2 tầng","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":300000.0,"unit_cost_base":300000.0,"total":300000.0,"party":"","note":""},{"row":65,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC62","name":"Khay úp cốc nghiêng nhựa","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":135000.0,"unit_cost_base":135000.0,"total":135000.0,"party":"","note":""},{"row":66,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC63","name":"Phới thủng inox 30cm","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":80000.0,"unit_cost_base":80000.0,"total":80000.0,"party":"","note":""},{"row":67,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC64","name":"Xúc đá trung","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":60000.0,"unit_cost_base":60000.0,"total":120000.0,"party":"","note":""},{"row":68,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC65","name":"Thảm bar đen","qty_purchase":10.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":10.0,"base_unit":"Cái","unit_price_purchase":70000.0,"unit_cost_base":70000.0,"total":700000.0,"party":"","note":""},{"row":69,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC66","name":"Hộp chống ồn Promix","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":1000000.0,"unit_cost_base":1000000.0,"total":2000000.0,"party":"","note":""},{"row":70,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC67","name":"Máy xay đa năng Promix","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":3350000.0,"unit_cost_base":3350000.0,"total":6700000.0,"party":"","note":""},{"row":71,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC68","name":"Máy đo định lượng đường Unibar","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":2250000.0,"unit_cost_base":2250000.0,"total":2250000.0,"party":"","note":""},{"row":72,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC69","name":"Máy vắt cam Philip","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":580000.0,"unit_cost_base":580000.0,"total":580000.0,"party":"","note":""},{"row":73,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC70","name":"Máy đánh trứng","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":500000.0,"unit_cost_base":500000.0,"total":500000.0,"party":"","note":""},{"row":74,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC71","name":"Máy đánh bọt","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":145000.0,"unit_cost_base":145000.0,"total":145000.0,"party":"","note":""},{"row":75,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC72","name":"Máy pha cà phê Novasimolife apia 2gr","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":45000000.0,"unit_cost_base":45000000.0,"total":45000000.0,"party":"","note":""},{"row":76,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC73","name":"Máy xay cà phê Fizenze75","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":15000000.0,"unit_cost_base":15000000.0,"total":15000000.0,"party":"","note":""},{"row":77,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC74","name":"Máy xay cà phê 020","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":4500000.0,"unit_cost_base":4500000.0,"total":4500000.0,"party":"","note":""},{"row":78,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC75","name":"Bàn mát quạt gió cánh kính","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":24000000.0,"unit_cost_base":24000000.0,"total":24000000.0,"party":"","note":""},{"row":79,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC76","name":"Vợt thủng múc topping","qty_purchase":4.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":4.0,"base_unit":"Cái","unit_price_purchase":20000.0,"unit_cost_base":20000.0,"total":80000.0,"party":"","note":""},{"row":80,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC77","name":"Thìa tiện lợi ngắn","qty_purchase":3.0,"purchase_unit":"Bao","conversion":1.0,"base_qty":3.0,"base_unit":"Bao","unit_price_purchase":12000.0,"unit_cost_base":12000.0,"total":36000.0,"party":"","note":""},{"row":81,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC78","name":"Thìa tiện lợi dài","qty_purchase":3.0,"purchase_unit":"Bao","conversion":1.0,"base_qty":3.0,"base_unit":"Bao","unit_price_purchase":13000.0,"unit_cost_base":13000.0,"total":39000.0,"party":"","note":""},{"row":82,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC79","name":"Cân điện tử Uni","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":300000.0,"unit_cost_base":300000.0,"total":600000.0,"party":"","note":""},{"row":83,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC80","name":"Cốc nhựa 500","qty_purchase":14.0,"purchase_unit":"Dây","conversion":1.0,"base_qty":14.0,"base_unit":"Dây","unit_price_purchase":9700.0,"unit_cost_base":9700.0,"total":135800.0,"party":"","note":""},{"row":84,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC81","name":"Cốc nhựa 300","qty_purchase":18.0,"purchase_unit":"Dây","conversion":1.0,"base_qty":18.0,"base_unit":"Dây","unit_price_purchase":8700.0,"unit_cost_base":8700.0,"total":156600.0,"party":"","note":""},{"row":85,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC82","name":"Bao đựng ly chữ T","qty_purchase":2.0,"purchase_unit":"Kg","conversion":1.0,"base_qty":2.0,"base_unit":"Kg","unit_price_purchase":60000.0,"unit_cost_base":60000.0,"total":120000.0,"party":"","note":""},{"row":86,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC83","name":"Bao đựng 2 ly","qty_purchase":1.0,"purchase_unit":"Kg","conversion":1.0,"base_qty":1.0,"base_unit":"Kg","unit_price_purchase":60000.0,"unit_cost_base":60000.0,"total":60000.0,"party":"","note":""},{"row":87,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC84","name":"Bình nước nhựa Lock & Lock","qty_purchase":3.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":3.0,"base_unit":"Cái","unit_price_purchase":43000.0,"unit_cost_base":43000.0,"total":129000.0,"party":"","note":""},{"row":88,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC85","name":"Băng keo dán ly","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":20000.0,"unit_cost_base":20000.0,"total":40000.0,"party":"","note":""},{"row":90,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC87","name":"Rổ rá inox hình chữ nhật","qty_purchase":7.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":7.0,"base_unit":"Cái","unit_price_purchase":52000.0,"unit_cost_base":52000.0,"total":364000.0,"party":"","note":""},{"row":91,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC88","name":"Ca nhựa vàng nâu 2.4L","qty_purchase":2.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":2.0,"base_unit":"Cái","unit_price_purchase":92000.0,"unit_cost_base":92000.0,"total":184000.0,"party":"","note":""},{"row":92,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC89","name":"Ca nhựa vàng nâu 3.5L","qty_purchase":4.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":4.0,"base_unit":"Cái","unit_price_purchase":115000.0,"unit_cost_base":115000.0,"total":460000.0,"party":"","note":""},{"row":93,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC90","name":"Ca nhựa vàng nâu 5L","qty_purchase":1.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":1.0,"base_unit":"Cái","unit_price_purchase":127000.0,"unit_cost_base":127000.0,"total":127000.0,"party":"","note":""},{"row":94,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC91","name":"Thẻ bàn","qty_purchase":29.0,"purchase_unit":"Cái","conversion":1.0,"base_qty":29.0,"base_unit":"Cái","unit_price_purchase":16000.0,"unit_cost_base":16000.0,"total":464000.0,"party":"","note":""},{"row":95,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"DC92","name":"Cốc giấy","qty_purchase":30.0,"purchase_unit":"Dây","conversion":1.0,"base_qty":30.0,"base_unit":"Dây","unit_price_purchase":0,"unit_cost_base":0.0,"total":0.0,"party":"","note":""},{"row":96,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL18","name":"Rích lùn","qty_purchase":25.0,"purchase_unit":"hộp","conversion":454.0,"base_qty":11350.0,"base_unit":"ml","unit_price_purchase":30000.0,"unit_cost_base":66.07929515418502,"total":750000.0,"party":"","note":""},{"row":97,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL56","name":"Mãng cầu","qty_purchase":4.0,"purchase_unit":"kg","conversion":1000.0,"base_qty":4000.0,"base_unit":"g","unit_price_purchase":85000.0,"unit_cost_base":85.0,"total":340000.0,"party":"","note":""},{"row":98,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL54","name":"Bơ","qty_purchase":9.0,"purchase_unit":"kg","conversion":1000.0,"base_qty":9000.0,"base_unit":"g","unit_price_purchase":100000.0,"unit_cost_base":100.0,"total":900000.0,"party":"","note":""},{"row":99,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL42","name":"Bột cacao","qty_purchase":1.0,"purchase_unit":"gói","conversion":500.0,"base_qty":500.0,"base_unit":"g","unit_price_purchase":200000.0,"unit_cost_base":400.0,"total":200000.0,"party":"","note":""},{"row":100,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL43","name":"Bột Gelatin","qty_purchase":2.0,"purchase_unit":"gói","conversion":100.0,"base_qty":200.0,"base_unit":"g","unit_price_purchase":45000.0,"unit_cost_base":450.0,"total":90000.0,"party":"","note":""},{"row":101,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL45","name":"Đào miếng","qty_purchase":1.0,"purchase_unit":"g","conversion":850.0,"base_qty":850.0,"base_unit":"g","unit_price_purchase":95000.0,"unit_cost_base":111.76470588235294,"total":95000.0,"party":"","note":""},{"row":102,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL31","name":"Hạt sen","qty_purchase":1.0,"purchase_unit":"hộp","conversion":240.0,"base_qty":240.0,"base_unit":"g","unit_price_purchase":60000.0,"unit_cost_base":250.0,"total":60000.0,"party":"","note":""},{"row":103,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL34","name":"Hạt trân châu trắng","qty_purchase":6.0,"purchase_unit":"bao","conversion":2000.0,"base_qty":12000.0,"base_unit":"g","unit_price_purchase":50000.0,"unit_cost_base":25.0,"total":300000.0,"party":"","note":""},{"row":104,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL38","name":"Muối hồng","qty_purchase":3.0,"purchase_unit":"hộp","conversion":500.0,"base_qty":1500.0,"base_unit":"g","unit_price_purchase":70000.0,"unit_cost_base":140.0,"total":210000.0,"party":"","note":""},{"row":105,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL71","name":"Trà gạo rang","qty_purchase":5.0,"purchase_unit":"Gói","conversion":500.0,"base_qty":2500.0,"base_unit":"g","unit_price_purchase":170000.0,"unit_cost_base":340.0,"total":850000.0,"party":"","note":""},{"row":106,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL72","name":"Trà mộc tê","qty_purchase":5.0,"purchase_unit":"Gói","conversion":500.0,"base_qty":2500.0,"base_unit":"g","unit_price_purchase":170000.0,"unit_cost_base":340.0,"total":850000.0,"party":"","note":""},{"row":107,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL73","name":"Trà Olong","qty_purchase":8.0,"purchase_unit":"Gói","conversion":500.0,"base_qty":4000.0,"base_unit":"g","unit_price_purchase":170000.0,"unit_cost_base":340.0,"total":1360000.0,"party":"","note":""},{"row":108,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL74","name":"Trà nhài","qty_purchase":6.0,"purchase_unit":"Gói","conversion":1000.0,"base_qty":6000.0,"base_unit":"g","unit_price_purchase":270000.0,"unit_cost_base":270.0,"total":1620000.0,"party":"","note":""},{"row":109,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL75","name":"Hồng trà","qty_purchase":6.0,"purchase_unit":"Gói","conversion":1000.0,"base_qty":6000.0,"base_unit":"g","unit_price_purchase":275000.0,"unit_cost_base":275.0,"total":1650000.0,"party":"","note":""},{"row":110,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL41","name":"Bột phô mai","qty_purchase":6.0,"purchase_unit":"gói","conversion":500.0,"base_qty":3000.0,"base_unit":"g","unit_price_purchase":140000.0,"unit_cost_base":280.0,"total":840000.0,"party":"","note":""},{"row":111,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL20","name":"Siro hạnh nhân","qty_purchase":1.0,"purchase_unit":"chai","conversion":750.0,"base_qty":750.0,"base_unit":"ml","unit_price_purchase":190000.0,"unit_cost_base":253.33333333333334,"total":190000.0,"party":"","note":""},{"row":112,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL57","name":"Hướng dương thường","qty_purchase":79.0,"purchase_unit":"gói","conversion":1.0,"base_qty":79.0,"base_unit":"gói","unit_price_purchase":6200.0,"unit_cost_base":6200.0,"total":489800.0,"party":"","note":""},{"row":113,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL58","name":"Hướng dương vị dừa","qty_purchase":165.0,"purchase_unit":"gói","conversion":1.0,"base_qty":165.0,"base_unit":"gói","unit_price_purchase":7000.0,"unit_cost_base":7000.0,"total":1155000.0,"party":"","note":""},{"row":114,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL14","name":"Cốm khô","qty_purchase":1.0,"purchase_unit":"gói","conversion":1000.0,"base_qty":1000.0,"base_unit":"g","unit_price_purchase":55000.0,"unit_cost_base":55.0,"total":55000.0,"party":"","note":""},{"row":115,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL35","name":"Hạt trân châu đen","qty_purchase":3.0,"purchase_unit":"bao","conversion":1000.0,"base_qty":3000.0,"base_unit":"g","unit_price_purchase":175000.0,"unit_cost_base":175.0,"total":525000.0,"party":"","note":""},{"row":116,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL59","name":"Cam khô","qty_purchase":2.0,"purchase_unit":"gói","conversion":1.0,"base_qty":2.0,"base_unit":"gói","unit_price_purchase":60000.0,"unit_cost_base":60000.0,"total":120000.0,"party":"","note":""},{"row":117,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL60","name":"Thạch nổ củ năng trắng","qty_purchase":1.0,"purchase_unit":"hộp","conversion":510.0,"base_qty":510.0,"base_unit":"g","unit_price_purchase":70000.0,"unit_cost_base":137.2549019607843,"total":70000.0,"party":"","note":""},{"row":118,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL32","name":"Hạt nổ yến mạch","qty_purchase":10.0,"purchase_unit":"hộp","conversion":510.0,"base_qty":5100.0,"base_unit":"g","unit_price_purchase":80000.0,"unit_cost_base":156.86274509803923,"total":800000.0,"party":"","note":""},{"row":119,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL17","name":"Bột sữa chua","qty_purchase":2.0,"purchase_unit":"gói","conversion":1000.0,"base_qty":2000.0,"base_unit":"g","unit_price_purchase":295000.0,"unit_cost_base":295.0,"total":590000.0,"party":"","note":""},{"row":120,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL06","name":"Đường gói","qty_purchase":63.0,"purchase_unit":"Bịch","conversion":50.0,"base_qty":3150.0,"base_unit":"gói","unit_price_purchase":15000.0,"unit_cost_base":300.0,"total":945000.0,"party":"","note":""},{"row":121,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL37","name":"Dừa nướng","qty_purchase":1.0,"purchase_unit":"bao","conversion":1000.0,"base_qty":1000.0,"base_unit":"g","unit_price_purchase":120000.0,"unit_cost_base":120.0,"total":120000.0,"party":"","note":""},{"row":122,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL10","name":"Sữa nước","qty_purchase":16.0,"purchase_unit":"hộp","conversion":1000.0,"base_qty":16000.0,"base_unit":"ml","unit_price_purchase":98000.0,"unit_cost_base":98.0,"total":1568000.0,"party":"","note":""},{"row":123,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL62","name":"Sốt socola","qty_purchase":3.0,"purchase_unit":"chai","conversion":2000.0,"base_qty":6000.0,"base_unit":"ml","unit_price_purchase":420000.0,"unit_cost_base":210.0,"total":1260000.0,"party":"","note":""},{"row":124,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL22","name":"Siro chanh vàng","qty_purchase":2.0,"purchase_unit":"chai","conversion":750.0,"base_qty":1500.0,"base_unit":"ml","unit_price_purchase":220000.0,"unit_cost_base":293.3333333333333,"total":440000.0,"party":"","note":""},{"row":125,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL21","name":"Siro cốm","qty_purchase":3.0,"purchase_unit":"chai","conversion":750.0,"base_qty":2250.0,"base_unit":"ml","unit_price_purchase":125000.0,"unit_cost_base":166.66666666666666,"total":375000.0,"party":"","note":""},{"row":126,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL25","name":"Mứt quế hoa","qty_purchase":4.0,"purchase_unit":"gói","conversion":1000.0,"base_qty":4000.0,"base_unit":"ml","unit_price_purchase":110000.0,"unit_cost_base":110.0,"total":440000.0,"party":"","note":""},{"row":127,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL26","name":"Mứt quả mọng","qty_purchase":4.0,"purchase_unit":"gói","conversion":1000.0,"base_qty":4000.0,"base_unit":"ml","unit_price_purchase":200000.0,"unit_cost_base":200.0,"total":800000.0,"party":"","note":""},{"row":128,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL28","name":"Mứt xoài","qty_purchase":4.0,"purchase_unit":"gói","conversion":1000.0,"base_qty":4000.0,"base_unit":"ml","unit_price_purchase":175000.0,"unit_cost_base":175.0,"total":700000.0,"party":"","note":""},{"row":129,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL27","name":"Mứt mãng cầu","qty_purchase":14.0,"purchase_unit":"hộp","conversion":850.0,"base_qty":11900.0,"base_unit":"ml","unit_price_purchase":125000.0,"unit_cost_base":147.05882352941177,"total":1750000.0,"party":"","note":""},{"row":130,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL44","name":"Kem Ambiante","qty_purchase":14.0,"purchase_unit":"g","conversion":1000.0,"base_qty":14000.0,"base_unit":"g","unit_price_purchase":94000.0,"unit_cost_base":94.0,"total":1316000.0,"party":"","note":""},{"row":131,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL19","name":"Whipping Anchor","qty_purchase":8.0,"purchase_unit":"hộp","conversion":1000.0,"base_qty":8000.0,"base_unit":"ml","unit_price_purchase":180000.0,"unit_cost_base":180.0,"total":1440000.0,"party":"","note":""},{"row":132,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL13","name":"Nước cốt dừa","qty_purchase":34.0,"purchase_unit":"lon","conversion":400.0,"base_qty":13600.0,"base_unit":"ml","unit_price_purchase":30000.0,"unit_cost_base":75.0,"total":1020000.0,"party":"","note":""},{"row":133,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL08","name":"Sữa đặc","qty_purchase":13.0,"purchase_unit":"hộp","conversion":1200.0,"base_qty":15600.0,"base_unit":"g","unit_price_purchase":65000.0,"unit_cost_base":54.166666666666664,"total":845000.0,"party":"","note":""},{"row":135,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL09","name":"Sữa tươi nguyên kem","qty_purchase":19.0,"purchase_unit":"hộp","conversion":1000.0,"base_qty":19000.0,"base_unit":"ml","unit_price_purchase":32500.0,"unit_cost_base":32.5,"total":617500.0,"party":"","note":""},{"row":136,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL64","name":"Bắp rang bơ","qty_purchase":52.0,"purchase_unit":"hộp","conversion":1.0,"base_qty":52.0,"base_unit":"hộp","unit_price_purchase":13500.0,"unit_cost_base":13500.0,"total":702000.0,"party":"","note":""},{"row":137,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL15","name":"Sữa chua Vinamilk","qty_purchase":63.0,"purchase_unit":"hộp","conversion":1.0,"base_qty":63.0,"base_unit":"hộp","unit_price_purchase":6500.0,"unit_cost_base":6500.0,"total":409500.0,"party":"","note":""},{"row":138,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL12","name":"Nước dừa","qty_purchase":33.0,"purchase_unit":"hộp","conversion":1000.0,"base_qty":33000.0,"base_unit":"ml","unit_price_purchase":40000.0,"unit_cost_base":40.0,"total":1320000.0,"party":"","note":""},{"row":139,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL65","name":"Hạt cà phê 37","qty_purchase":5.0,"purchase_unit":"gói","conversion":1000.0,"base_qty":5000.0,"base_unit":"g","unit_price_purchase":270000.0,"unit_cost_base":270.0,"total":1350000.0,"party":"","note":""},{"row":140,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL66","name":"Hạt cà phê Arabica","qty_purchase":4.0,"purchase_unit":"gói","conversion":1000.0,"base_qty":4000.0,"base_unit":"g","unit_price_purchase":420000.0,"unit_cost_base":420.0,"total":1680000.0,"party":"","note":""},{"row":141,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL67","name":"Thạch nổ củ năng hồng","qty_purchase":3.0,"purchase_unit":"hộp","conversion":510.0,"base_qty":1530.0,"base_unit":"g","unit_price_purchase":70000.0,"unit_cost_base":137.2549019607843,"total":210000.0,"party":"","note":""},{"row":142,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL40","name":"Bột hạt dẻ cười","qty_purchase":4.0,"purchase_unit":"gói","conversion":500.0,"base_qty":2000.0,"base_unit":"g","unit_price_purchase":105000.0,"unit_cost_base":210.0,"total":420000.0,"party":"","note":""},{"row":143,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL63","name":"Mứt dâu tằm","qty_purchase":2.0,"purchase_unit":"hộp","conversion":1000.0,"base_qty":2000.0,"base_unit":"g","unit_price_purchase":145000.0,"unit_cost_base":145.0,"total":290000.0,"party":"","note":""},{"row":144,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL30","name":"Sốt hạt dẻ","qty_purchase":7.0,"purchase_unit":"hộp","conversion":850.0,"base_qty":5950.0,"base_unit":"g","unit_price_purchase":110000.0,"unit_cost_base":129.41176470588235,"total":770000.0,"party":"","note":""},{"row":145,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL23","name":"Mứt mơ","qty_purchase":3.0,"purchase_unit":"hộp","conversion":850.0,"base_qty":2550.0,"base_unit":"ml","unit_price_purchase":145000.0,"unit_cost_base":170.58823529411765,"total":435000.0,"party":"","note":""},{"row":146,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL61","name":"Dừa sấy dòn","qty_purchase":4.0,"purchase_unit":"hộp","conversion":200.0,"base_qty":800.0,"base_unit":"g","unit_price_purchase":95000.0,"unit_cost_base":475.0,"total":380000.0,"party":"","note":""},{"row":147,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL68","name":"Khoai lang sấy","qty_purchase":17.0,"purchase_unit":"gói","conversion":1.0,"base_qty":17.0,"base_unit":"gói","unit_price_purchase":22000.0,"unit_cost_base":22000.0,"total":374000.0,"party":"","note":""},{"row":148,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL69","name":"Bánh mỳ que","qty_purchase":13.0,"purchase_unit":"gói","conversion":1.0,"base_qty":13.0,"base_unit":"gói","unit_price_purchase":17000.0,"unit_cost_base":17000.0,"total":221000.0,"party":"","note":""},{"row":149,"sheet":"NHẬP KHO","kind":"IMPORT","date":"2026-06-17","receipt":"EXCEL-NK-20260617","code":"NL70","name":"Tai heo mắm ớt","qty_purchase":16.0,"purchase_unit":"gói","conversion":1.0,"base_qty":16.0,"base_unit":"gói","unit_price_purchase":16000.0,"unit_cost_base":16000.0,"total":256000.0,"party":"","note":""}],"exports":[{"row":4,"sheet":"XUẤT KHO NGUYÊN LIỆU","kind":"EXPORT","date":"","receipt":"EXCEL-XK","code":"NL06","name":"Đường gói","qty_purchase":40.0,"purchase_unit":"Bịch","conversion":50.0,"base_qty":2000.0,"base_unit":"gói","unit_price_purchase":300.0,"unit_cost_base":6.0,"total":12000.0,"party":"","note":""}],"inventory":[{"code":"DC01","name":"Chai kẹp 1L thủy tinh (nước lọc)","group":"Dụng cụ","unit":"Cái","quantity":13.0,"minimum_stock":10.0,"maximum_stock":13.0,"cost":20000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC02","name":"Ấm 2L cao inox (trà chờ)","group":"Dụng cụ","unit":"Cái","quantity":5.0,"minimum_stock":3.0,"maximum_stock":5.0,"cost":105000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC03","name":"Vét kem silicon","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":1.0,"maximum_stock":2.0,"cost":35000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC04","name":"Đồng hồ bấm giờ","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":1.0,"maximum_stock":2.0,"cost":60000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC05","name":"Cối Promix","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":1.0,"maximum_stock":2.0,"cost":1000000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC06","name":"Khay bê đồ chống trượt","group":"Dụng cụ","unit":"Cái","quantity":6.0,"minimum_stock":4.0,"maximum_stock":6.0,"cost":50000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC07","name":"Chậu inox bông sen 24","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":1.0,"maximum_stock":1.0,"cost":40000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC08","name":"Ca đánh sữa inox 600ml","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":1.0,"maximum_stock":2.0,"cost":90000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC09","name":"Ca đánh sữa inox 350ml","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":1.0,"maximum_stock":3.0,"cost":70000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC10","name":"Hộp đựng café nhựa 1.5L nắp nâu","group":"Dụng cụ","unit":"Cái","quantity":9.0,"minimum_stock":6.0,"maximum_stock":9.0,"cost":45000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC11","name":"Cân điện tử cao cấp Promix 5 kg","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":1.0,"maximum_stock":1.0,"cost":270000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC12","name":"Vòi phi 12 (size lớn)","group":"Dụng cụ","unit":"Bao","quantity":19.0,"minimum_stock":5.0,"maximum_stock":19.0,"cost":23000.0,"conversion":1.0,"purchase_unit":"Bao","base_unit":"Bao"},{"code":"DC13","name":"Vòi phi 8 (size vừa)","group":"Dụng cụ","unit":"Bao","quantity":11.0,"minimum_stock":5.0,"maximum_stock":11.0,"cost":23000.0,"conversion":1.0,"purchase_unit":"Bao","base_unit":"Bao"},{"code":"DC14","name":"Vòi phi 6 (size nhỏ)","group":"Dụng cụ","unit":"Bao","quantity":14.0,"minimum_stock":5.0,"maximum_stock":14.0,"cost":23000.0,"conversion":1.0,"purchase_unit":"Bao","base_unit":"Bao"},{"code":"DC15","name":"Chày bar 21cm","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":1.0,"maximum_stock":2.0,"cost":40000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC16","name":"Thìa bar dài","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":1.0,"maximum_stock":3.0,"cost":25000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC17","name":"Đĩa chữ nhật nhỏ","group":"Dụng cụ","unit":"Cái","quantity":49.0,"minimum_stock":30.0,"maximum_stock":49.0,"cost":12000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC18","name":"Máy đun nước nóng tự động Unibar","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":1.0,"maximum_stock":1.0,"cost":3750000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC19","name":"Thìa café trung bạc","group":"Dụng cụ","unit":"Cái","quantity":50.0,"minimum_stock":40.0,"maximum_stock":50.0,"cost":5500.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC20","name":"Thìa café dài bạc","group":"Dụng cụ","unit":"Cái","quantity":33.0,"minimum_stock":25.0,"maximum_stock":33.0,"cost":6000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC21","name":"Thìa café ngắn bạc","group":"Dụng cụ","unit":"Cái","quantity":77.0,"minimum_stock":50.0,"maximum_stock":77.0,"cost":5000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC22","name":"Cốc loe miệng dài 9012","group":"Dụng cụ","unit":"Cái","quantity":9.0,"minimum_stock":7.0,"maximum_stock":9.0,"cost":21000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC23","name":"Cốc trụ tròn họa tiết 311ZD","group":"Dụng cụ","unit":"Cái","quantity":17.0,"minimum_stock":0,"maximum_stock":17.0,"cost":25000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC24","name":"Cốc sọc dài 314H","group":"Dụng cụ","unit":"Cái","quantity":21.0,"minimum_stock":0,"maximum_stock":21.0,"cost":25000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC25","name":"Cốc sọc to 8415J","group":"Dụng cụ","unit":"Cái","quantity":32.0,"minimum_stock":0,"maximum_stock":32.0,"cost":27000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC26","name":"Cốc loe miệng ngắn R106","group":"Dụng cụ","unit":"Cái","quantity":17.0,"minimum_stock":0,"maximum_stock":17.0,"cost":21000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC27","name":"Cốc vòng gỗ J85112","group":"Dụng cụ","unit":"Cái","quantity":36.0,"minimum_stock":0,"maximum_stock":36.0,"cost":22500.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC28","name":"Cốc sọc to ngắn 6408","group":"Dụng cụ","unit":"Cái","quantity":29.0,"minimum_stock":0,"maximum_stock":29.0,"cost":15000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC29","name":"Cốc trà lùn UG381","group":"Dụng cụ","unit":"Cái","quantity":93.0,"minimum_stock":0,"maximum_stock":93.0,"cost":7500.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC30","name":"Thớt vuông đại nhựa dày","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":85000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC31","name":"Rửa ly màu","group":"Dụng cụ","unit":"Cái","quantity":4.0,"minimum_stock":0,"maximum_stock":4.0,"cost":10000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC32","name":"Lắc nhựa 700ml","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":55000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC33","name":"Ca đong nhựa 500ml","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":25000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC34","name":"Ca đong nhựa 250ml","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":20000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC35","name":"Lọ rắc cacao nhỏ","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":45000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC36","name":"Ca đong nhựa 100ml","group":"Dụng cụ","unit":"Cái","quantity":6.0,"minimum_stock":0,"maximum_stock":6.0,"cost":10000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC37","name":"Bình đựng sốt vuông 800ml","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":25000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC38","name":"Bình đựng sốt vuông 1000ml","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":25000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC39","name":"Ca đong nhựa 3.5L có nắp","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":50000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC40","name":"Thanh kẹp order inox","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":230000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC41","name":"Nồi nấu trân châu tự động Unibar 5L","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":1650000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC42","name":"Rổ inox","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":130000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC43","name":"Ca đong nhựa đánh kem 2.5L có nắp","group":"Dụng cụ","unit":"Cái","quantity":6.0,"minimum_stock":0,"maximum_stock":6.0,"cost":95000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC44","name":"Gạt tàn thuốc vuông","group":"Dụng cụ","unit":"Cái","quantity":10.0,"minimum_stock":0,"maximum_stock":10.0,"cost":24000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC45","name":"Nhíp gắp đồ decor","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":30000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC46","name":"Thìa định lượng 10g","group":"Dụng cụ","unit":"Cái","quantity":5.0,"minimum_stock":0,"maximum_stock":5.0,"cost":5000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC47","name":"Bình om trà 20L","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":480000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC48","name":"Que cắm giữ bill","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":20000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC49","name":"Cắm dao inox","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":150000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC50","name":"Nạo thái","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":20000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC51","name":"Kéo vàng to","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":50000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC52","name":"Dao thái","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":40000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC53","name":"Nắp khay phần 1/4","group":"Dụng cụ","unit":"Cái","quantity":5.0,"minimum_stock":0,"maximum_stock":5.0,"cost":30000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC54","name":"Khay phần 1/4 10cm","group":"Dụng cụ","unit":"Cái","quantity":5.0,"minimum_stock":0,"maximum_stock":5.0,"cost":60000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC55","name":"Khay đựng topping 8 ngăn nắp nhựa","group":"Dụng cụ","unit":"Cái","quantity":8.0,"minimum_stock":0,"maximum_stock":8.0,"cost":350000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC56","name":"Tăm tre xiên trái cây","group":"Dụng cụ","unit":"Gói","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":55000.0,"conversion":1.0,"purchase_unit":"Gói","base_unit":"Gói"},{"code":"DC57","name":"Kẹp chanh","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":30000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC58","name":"Rây lưới nhỏ","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":10000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC59","name":"Phễu lọc inox","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":180000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC60","name":"Giấy chống tràn","group":"Dụng cụ","unit":"Gói","quantity":5.0,"minimum_stock":0,"maximum_stock":5.0,"cost":50000.0,"conversion":1.0,"purchase_unit":"Gói","base_unit":"Gói"},{"code":"DC61","name":"Kệ cốc mica 9 ngăn 2 tầng","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":300000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC62","name":"Khay úp cốc nghiêng nhựa","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":135000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC63","name":"Phới thủng inox 30cm","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":80000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC64","name":"Xúc đá trung","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":60000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC65","name":"Thảm bar đen","group":"Dụng cụ","unit":"Cái","quantity":10.0,"minimum_stock":0,"maximum_stock":10.0,"cost":70000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC66","name":"Hộp chống ồn Promix","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":1000000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC67","name":"Máy xay đa năng Promix","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":3350000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC68","name":"Máy đo định lượng đường Unibar","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":2250000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC69","name":"Máy vắt cam Philip","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":580000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC70","name":"Máy đánh trứng","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":500000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC71","name":"Máy đánh bọt","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":145000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC72","name":"Máy pha cà phê Novasimolife apia 2gr","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":45000000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC73","name":"Máy xay cà phê Fizenze75","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":15000000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC74","name":"Máy xay cà phê 020","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":4500000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC75","name":"Bàn mát quạt gió cánh kính","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":24000000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC76","name":"Vợt thủng múc topping","group":"Dụng cụ","unit":"Cái","quantity":4.0,"minimum_stock":0,"maximum_stock":4.0,"cost":20000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC77","name":"Thìa tiện lợi ngắn","group":"Dụng cụ","unit":"Bao","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":12000.0,"conversion":1.0,"purchase_unit":"Bao","base_unit":"Bao"},{"code":"DC78","name":"Thìa tiện lợi dài","group":"Dụng cụ","unit":"Bao","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":13000.0,"conversion":1.0,"purchase_unit":"Bao","base_unit":"Bao"},{"code":"DC79","name":"Cân điện tử Uni","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":300000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC80","name":"Cốc nhựa 500","group":"Dụng cụ","unit":"Dây","quantity":14.0,"minimum_stock":0,"maximum_stock":14.0,"cost":9700.0,"conversion":1.0,"purchase_unit":"Dây","base_unit":"Dây"},{"code":"DC81","name":"Cốc nhựa 300","group":"Dụng cụ","unit":"Dây","quantity":18.0,"minimum_stock":0,"maximum_stock":18.0,"cost":8700.0,"conversion":1.0,"purchase_unit":"Dây","base_unit":"Dây"},{"code":"DC82","name":"Bao đựng ly chữ T","group":"Dụng cụ","unit":"Kg","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":60000.0,"conversion":1.0,"purchase_unit":"Kg","base_unit":"Kg"},{"code":"DC83","name":"Bao đựng 2 ly","group":"Dụng cụ","unit":"Kg","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":60000.0,"conversion":1.0,"purchase_unit":"Kg","base_unit":"Kg"},{"code":"DC84","name":"Bình nước nhựa Lock & Lock","group":"Dụng cụ","unit":"Cái","quantity":3.0,"minimum_stock":0,"maximum_stock":3.0,"cost":43000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC85","name":"Băng keo dán ly","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":20000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC86","name":"Hộp inox tròn có nắp","group":"Dụng cụ","unit":"Cái","quantity":0.0,"minimum_stock":0,"maximum_stock":0.0,"cost":0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC87","name":"Rổ rá inox hình chữ nhật","group":"Dụng cụ","unit":"Cái","quantity":7.0,"minimum_stock":0,"maximum_stock":7.0,"cost":52000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC88","name":"Ca nhựa vàng nâu 2.4L","group":"Dụng cụ","unit":"Cái","quantity":2.0,"minimum_stock":0,"maximum_stock":2.0,"cost":92000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC89","name":"Ca nhựa vàng nâu 3.5L","group":"Dụng cụ","unit":"Cái","quantity":4.0,"minimum_stock":0,"maximum_stock":4.0,"cost":115000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC90","name":"Ca nhựa vàng nâu 5L","group":"Dụng cụ","unit":"Cái","quantity":1.0,"minimum_stock":0,"maximum_stock":1.0,"cost":127000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC91","name":"Thẻ bàn","group":"Dụng cụ","unit":"Cái","quantity":29.0,"minimum_stock":0,"maximum_stock":29.0,"cost":16000.0,"conversion":1.0,"purchase_unit":"Cái","base_unit":"Cái"},{"code":"DC92","name":"Cốc giấy","group":"Dụng cụ","unit":"Dây","quantity":30.0,"minimum_stock":0,"maximum_stock":30.0,"cost":0.0,"conversion":1.0,"purchase_unit":"Dây","base_unit":"Dây"},{"code":"NL06","name":"Đường gói","group":"Nguyên liệu","unit":"gói","quantity":1150.0,"minimum_stock":500.0,"maximum_stock":650.0,"cost":300.0,"conversion":50.0,"purchase_unit":"Bịch","base_unit":"gói"},{"code":"NL07","name":"Đường nước","group":"Nguyên liệu","unit":"ml","quantity":0,"minimum_stock":75000.0,"maximum_stock":125000.0,"cost":23.2,"conversion":25000.0,"purchase_unit":"thùng","base_unit":"ml"},{"code":"NL08","name":"Sữa đặc","group":"Nguyên liệu","unit":"g","quantity":15600.0,"minimum_stock":1200.0,"maximum_stock":2400.0,"cost":54.166666666666664,"conversion":1200.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL09","name":"Sữa tươi nguyên kem","group":"Nguyên liệu","unit":"ml","quantity":19000.0,"minimum_stock":1000.0,"maximum_stock":2000.0,"cost":32.5,"conversion":1000.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL10","name":"Sữa nước","group":"Nguyên liệu","unit":"ml","quantity":16000.0,"minimum_stock":1000.0,"maximum_stock":2000.0,"cost":98.0,"conversion":1000.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL11","name":"Sữa bắp","group":"Nguyên liệu","unit":"ml","quantity":0,"minimum_stock":720.0,"maximum_stock":1080.0,"cost":0.0,"conversion":180.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL12","name":"Nước dừa","group":"Nguyên liệu","unit":"ml","quantity":33000.0,"minimum_stock":1000.0,"maximum_stock":1000.0,"cost":40.0,"conversion":1000.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL13","name":"Nước cốt dừa","group":"Nguyên liệu","unit":"ml","quantity":13600.0,"minimum_stock":400.0,"maximum_stock":800.0,"cost":75.0,"conversion":400.0,"purchase_unit":"lon","base_unit":"ml"},{"code":"NL14","name":"Cốm khô","group":"Nguyên liệu","unit":"g","quantity":1000.0,"minimum_stock":1000.0,"maximum_stock":3000.0,"cost":55.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL15","name":"Sữa chua Vinamilk","group":"Nguyên liệu","unit":"hộp","quantity":63.0,"minimum_stock":6.0,"maximum_stock":9.0,"cost":6500.0,"conversion":1.0,"purchase_unit":"hộp","base_unit":"hộp"},{"code":"NL16","name":"Bột matcha","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":100.0,"maximum_stock":100.0,"cost":2200.0,"conversion":100.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL17","name":"Bột sữa chua","group":"Nguyên liệu","unit":"g","quantity":2000.0,"minimum_stock":5000.0,"maximum_stock":19000.0,"cost":295.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL18","name":"Rích lùn","group":"Nguyên liệu","unit":"ml","quantity":11350.0,"minimum_stock":2270.0,"maximum_stock":4994.0,"cost":66.07929515418502,"conversion":454.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL19","name":"Whipping Anchor","group":"Nguyên liệu","unit":"ml","quantity":8000.0,"minimum_stock":5000.0,"maximum_stock":14000.0,"cost":180.0,"conversion":1000.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL20","name":"Siro hạnh nhân","group":"Nguyên liệu","unit":"ml","quantity":750.0,"minimum_stock":750.0,"maximum_stock":1500.0,"cost":253.33333333333334,"conversion":750.0,"purchase_unit":"chai","base_unit":"ml"},{"code":"NL21","name":"Siro cốm","group":"Nguyên liệu","unit":"ml","quantity":2250.0,"minimum_stock":750.0,"maximum_stock":2250.0,"cost":166.66666666666666,"conversion":750.0,"purchase_unit":"chai","base_unit":"ml"},{"code":"NL22","name":"Siro chanh vàng","group":"Nguyên liệu","unit":"ml","quantity":1500.0,"minimum_stock":22500.0,"maximum_stock":36750.0,"cost":293.3333333333333,"conversion":750.0,"purchase_unit":"chai","base_unit":"ml"},{"code":"NL23","name":"Mứt mơ","group":"Nguyên liệu","unit":"ml","quantity":2550.0,"minimum_stock":850.0,"maximum_stock":850.0,"cost":170.58823529411765,"conversion":850.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL24","name":"Mứt me","group":"Nguyên liệu","unit":"ml","quantity":0,"minimum_stock":40000.0,"maximum_stock":50000.0,"cost":0.0,"conversion":1000.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL25","name":"Mứt quế hoa","group":"Nguyên liệu","unit":"ml","quantity":4000.0,"minimum_stock":25000.0,"maximum_stock":33000.0,"cost":110.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"ml"},{"code":"NL26","name":"Mứt quả mọng","group":"Nguyên liệu","unit":"ml","quantity":4000.0,"minimum_stock":50000.0,"maximum_stock":77000.0,"cost":200.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"ml"},{"code":"NL27","name":"Mứt mãng cầu","group":"Nguyên liệu","unit":"ml","quantity":11900.0,"minimum_stock":5950.0,"maximum_stock":7650.0,"cost":147.05882352941177,"conversion":850.0,"purchase_unit":"hộp","base_unit":"ml"},{"code":"NL28","name":"Mứt xoài","group":"Nguyên liệu","unit":"ml","quantity":4000.0,"minimum_stock":0.0,"maximum_stock":17000.0,"cost":175.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"ml"},{"code":"NL29","name":"Mứt khế","group":"Nguyên liệu","unit":"ml","quantity":0,"minimum_stock":0.0,"maximum_stock":21000.0,"cost":0.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"ml"},{"code":"NL30","name":"Sốt hạt dẻ","group":"Nguyên liệu","unit":"g","quantity":5950.0,"minimum_stock":0.0,"maximum_stock":27200.0,"cost":129.41176470588235,"conversion":850.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL31","name":"Hạt sen","group":"Nguyên liệu","unit":"g","quantity":240.0,"minimum_stock":0.0,"maximum_stock":4080.0,"cost":250.0,"conversion":240.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL32","name":"Hạt nổ yến mạch","group":"Nguyên liệu","unit":"g","quantity":5100.0,"minimum_stock":0.0,"maximum_stock":18360.0,"cost":156.86274509803923,"conversion":510.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL33","name":"Hạt kiều mạch","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":14790.0,"cost":0.0,"conversion":510.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL34","name":"Hạt trân châu trắng","group":"Nguyên liệu","unit":"g","quantity":12000.0,"minimum_stock":0.0,"maximum_stock":186000.0,"cost":25.0,"conversion":2000.0,"purchase_unit":"bao","base_unit":"g"},{"code":"NL35","name":"Hạt trân châu đen","group":"Nguyên liệu","unit":"g","quantity":3000.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":175.0,"conversion":1000.0,"purchase_unit":"bao","base_unit":"g"},{"code":"NL36","name":"Sữa đậu nành","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":4000.0,"cost":5.0,"conversion":1000.0,"purchase_unit":"bao","base_unit":"g"},{"code":"NL37","name":"Dừa nướng","group":"Nguyên liệu","unit":"g","quantity":1000.0,"minimum_stock":0.0,"maximum_stock":3000.0,"cost":120.0,"conversion":1000.0,"purchase_unit":"bao","base_unit":"g"},{"code":"NL38","name":"Muối hồng","group":"Nguyên liệu","unit":"g","quantity":1500.0,"minimum_stock":0.0,"maximum_stock":1500.0,"cost":140.0,"conversion":500.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL39","name":"Bột kem trứng","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":3000.0,"cost":0.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL40","name":"Bột hạt dẻ cười","group":"Nguyên liệu","unit":"g","quantity":2000.0,"minimum_stock":0.0,"maximum_stock":500.0,"cost":210.0,"conversion":500.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL41","name":"Bột phô mai","group":"Nguyên liệu","unit":"g","quantity":3000.0,"minimum_stock":0.0,"maximum_stock":3000.0,"cost":280.0,"conversion":500.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL42","name":"Bột cacao","group":"Nguyên liệu","unit":"g","quantity":500.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":400.0,"conversion":500.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL43","name":"Bột Gelatin","group":"Nguyên liệu","unit":"g","quantity":200.0,"minimum_stock":0.0,"maximum_stock":200.0,"cost":450.0,"conversion":100.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL44","name":"Kem Ambiante","group":"Nguyên liệu","unit":"g","quantity":14000.0,"minimum_stock":0.0,"maximum_stock":2000.0,"cost":94.0,"conversion":1000.0,"purchase_unit":"g","base_unit":"g"},{"code":"NL45","name":"Đào miếng","group":"Nguyên liệu","unit":"g","quantity":850.0,"minimum_stock":0.0,"maximum_stock":850.0,"cost":111.76470588235294,"conversion":850.0,"purchase_unit":"g","base_unit":"g"},{"code":"NL46","name":"Dứa","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":550.0,"cost":27.272727272727273,"conversion":550.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL47","name":"Tắc","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":500.0,"cost":0.0,"conversion":500.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL48","name":"Chanh","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":3000.0,"cost":70.0,"conversion":500.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL49","name":"Cam","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":5000.0,"cost":70.0,"conversion":500.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL50","name":"Ổi","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":1800.0,"cost":58.333333333333336,"conversion":600.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL51","name":"Táo","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":3000.0,"cost":75.0,"conversion":600.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL52","name":"Chanh leo","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":500.0,"cost":70.0,"conversion":500.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL53","name":"Xoài","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":70.0,"conversion":500.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL54","name":"Bơ","group":"Nguyên liệu","unit":"g","quantity":9000.0,"minimum_stock":0.0,"maximum_stock":2000.0,"cost":100.0,"conversion":1000.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL55","name":"Khế","group":"Nguyên liệu","unit":"g","quantity":0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":30.0,"conversion":1000.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL56","name":"Mãng cầu","group":"Nguyên liệu","unit":"g","quantity":4000.0,"minimum_stock":0.0,"maximum_stock":2000.0,"cost":85.0,"conversion":1000.0,"purchase_unit":"kg","base_unit":"g"},{"code":"NL57","name":"Hướng dương thường","group":"Nguyên liệu","unit":"gói","quantity":79.0,"minimum_stock":0.0,"maximum_stock":3.0,"cost":6200.0,"conversion":1.0,"purchase_unit":"gói","base_unit":"gói"},{"code":"NL58","name":"Hướng dương vị dừa","group":"Nguyên liệu","unit":"gói","quantity":165.0,"minimum_stock":0.0,"maximum_stock":5.0,"cost":7000.0,"conversion":1.0,"purchase_unit":"gói","base_unit":"gói"},{"code":"NL59","name":"Cam khô","group":"Nguyên liệu","unit":"gói","quantity":2.0,"minimum_stock":0.0,"maximum_stock":5.0,"cost":60000.0,"conversion":1.0,"purchase_unit":"gói","base_unit":"gói"},{"code":"NL60","name":"Thạch nổ củ năng trắng","group":"Nguyên liệu","unit":"g","quantity":510.0,"minimum_stock":0.0,"maximum_stock":4080.0,"cost":137.2549019607843,"conversion":510.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL61","name":"Dừa sấy dòn","group":"Nguyên liệu","unit":"g","quantity":800.0,"minimum_stock":0.0,"maximum_stock":200.0,"cost":475.0,"conversion":200.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL62","name":"Sốt socola","group":"Nguyên liệu","unit":"ml","quantity":6000.0,"minimum_stock":0.0,"maximum_stock":4000.0,"cost":210.0,"conversion":2000.0,"purchase_unit":"chai","base_unit":"ml"},{"code":"NL63","name":"Mứt dâu tằm","group":"Nguyên liệu","unit":"g","quantity":2000.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":145.0,"conversion":1000.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL64","name":"Bắp rang bơ","group":"Nguyên liệu","unit":"hộp","quantity":52.0,"minimum_stock":0.0,"maximum_stock":2.0,"cost":13500.0,"conversion":1.0,"purchase_unit":"hộp","base_unit":"hộp"},{"code":"NL65","name":"Hạt cà phê 37","group":"Nguyên liệu","unit":"g","quantity":5000.0,"minimum_stock":0.0,"maximum_stock":5000.0,"cost":270.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL66","name":"Hạt cà phê Arabica","group":"Nguyên liệu","unit":"g","quantity":4000.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":420.0,"conversion":1000.0,"purchase_unit":"gói","base_unit":"g"},{"code":"NL67","name":"Thạch nổ củ năng hồng","group":"Nguyên liệu","unit":"g","quantity":1530.0,"minimum_stock":0.0,"maximum_stock":510.0,"cost":137.2549019607843,"conversion":510.0,"purchase_unit":"hộp","base_unit":"g"},{"code":"NL68","name":"Khoai lang sấy","group":"Nguyên liệu","unit":"gói","quantity":17.0,"minimum_stock":0.0,"maximum_stock":1.0,"cost":22000.0,"conversion":1.0,"purchase_unit":"gói","base_unit":"gói"},{"code":"NL69","name":"Bánh mỳ que","group":"Nguyên liệu","unit":"gói","quantity":13.0,"minimum_stock":0.0,"maximum_stock":2.0,"cost":17000.0,"conversion":1.0,"purchase_unit":"gói","base_unit":"gói"},{"code":"NL70","name":"Tai heo mắm ớt","group":"Nguyên liệu","unit":"gói","quantity":16.0,"minimum_stock":0.0,"maximum_stock":10.0,"cost":16000.0,"conversion":1.0,"purchase_unit":"gói","base_unit":"gói"},{"code":"NL71","name":"Trà gạo rang","group":"Nguyên liệu","unit":"g","quantity":2500.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":340.0,"conversion":500.0,"purchase_unit":"Gói","base_unit":"g"},{"code":"NL72","name":"Trà mộc tê","group":"Nguyên liệu","unit":"g","quantity":2500.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":340.0,"conversion":500.0,"purchase_unit":"Gói","base_unit":"g"},{"code":"NL73","name":"Trà Olong","group":"Nguyên liệu","unit":"g","quantity":4000.0,"minimum_stock":0.0,"maximum_stock":500.0,"cost":340.0,"conversion":500.0,"purchase_unit":"Gói","base_unit":"g"},{"code":"NL74","name":"Trà nhài","group":"Nguyên liệu","unit":"g","quantity":6000.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":270.0,"conversion":1000.0,"purchase_unit":"Gói","base_unit":"g"},{"code":"NL75","name":"Hồng trà","group":"Nguyên liệu","unit":"g","quantity":6000.0,"minimum_stock":0.0,"maximum_stock":1000.0,"cost":275.0,"conversion":1000.0,"purchase_unit":"Gói","base_unit":"g"}],"prepared":[{"name":"Cà phê ủ lạnh","display_recipe_name":"Ủ cà phê ủ lạnh (700ml)","unit":"ml","cost":42.0,"batch_output_qty":700.0,"batch_output_unit":"ml","recipe":[{"name":"Hạt cà phê Arabica","code":"NL66","quantity":70.0,"unit":"g"}]},{"name":"Cà phê (Shot)","display_recipe_name":"Chiết cà phê (1ml)","unit":"g","cost":270.0,"batch_output_qty":1.0,"batch_output_unit":"ml","recipe":[{"name":"Hạt cà phê 37","code":"NL65","quantity":1.0,"unit":"g"}]},{"name":"Trà xanh ủ lạnh","display_recipe_name":"Ủ trà xanh (1200ml)","unit":"ml","cost":6.75,"batch_output_qty":1200.0,"batch_output_unit":"ml","recipe":[{"name":"Trà nhài","code":"NL74","quantity":30.0,"unit":"g"}]},{"name":"Trà Shan tuyết ủ lạnh","display_recipe_name":"Ủ trà san tuyết (1500ml)","unit":"ml","cost":19.2,"batch_output_qty":1500.0,"batch_output_unit":"ml","recipe":[{"name":"Trà Olong","code":"NL73","quantity":20.0,"unit":"g"},{"name":"Hồng trà","code":"NL75","quantity":80.0,"unit":"g"}]},{"name":"Trà gạo ủ lạnh","display_recipe_name":"Ủ trà gạo (1000ml)","unit":"ml","cost":34.0,"batch_output_qty":1000.0,"batch_output_unit":"ml","recipe":[{"name":"Trà gạo rang","code":"NL71","quantity":100.0,"unit":"g"}]},{"name":"Trà bạch thiên hương ủ lạnh","display_recipe_name":"Ủ trà bạch thiên hương (1000ml)","unit":"ml","cost":20.4,"batch_output_qty":1000.0,"batch_output_unit":"ml","recipe":[{"name":"Trà mộc tê","code":"NL72","quantity":60.0,"unit":"g"}]},{"name":"Trà cốm ủ lạnh","display_recipe_name":"Ủ trà cốm (1500ml)","unit":"ml","cost":14.0,"batch_output_qty":1500.0,"batch_output_unit":"ml","recipe":[{"name":"Trà Olong","code":"NL73","quantity":30.0,"unit":"g"},{"name":"Trà nhài","code":"NL74","quantity":40.0,"unit":"g"}]},{"name":"Kem trứng","display_recipe_name":"Kem trứng (200ml)","unit":"ml","cost":55.125,"batch_output_qty":200.0,"batch_output_unit":"ml","recipe":[{"name":"Sữa tươi nguyên kem","code":"NL09","quantity":50.0,"unit":"ml"},{"name":"Bột kem trứng","code":"NL39","quantity":50.0,"unit":"g"},{"name":"Kem Ambiante","code":"NL44","quantity":100.0,"unit":"g"}]},{"name":"Kem muối","display_recipe_name":"Kem muối (200ml)","unit":"ml","cost":109.07982378854625,"batch_output_qty":200.0,"batch_output_unit":"ml","recipe":[{"name":"Đường nước","code":"NL07","quantity":10.0,"unit":"ml"},{"name":"Rích lùn","code":"NL18","quantity":50.0,"unit":"ml"},{"name":"Whipping Anchor","code":"NL19","quantity":100.0,"unit":"ml"},{"name":"Muối hồng","code":"NL38","quantity":2.0,"unit":"g"}]},{"name":"Kem matcha","display_recipe_name":"Kem matcha (50ml)","unit":"ml","cost":63.02459618208517,"batch_output_qty":50.0,"batch_output_unit":"ml","recipe":[{"name":"Sữa đặc","code":"NL08","quantity":20.0,"unit":"g"},{"name":"Bột matcha","code":"NL16","quantity":3.0,"unit":"g"},{"name":"Rích lùn","code":"NL18","quantity":20.0,"unit":"ml"},{"name":"Whipping Anchor","code":"NL19","quantity":20.0,"unit":"ml"}]},{"name":"Kem hạt dẻ cười","display_recipe_name":"Kem hạt dẻ cười (200ml)","unit":"ml","cost":115.75,"batch_output_qty":200.0,"batch_output_unit":"ml","recipe":[{"name":"Sữa tươi nguyên kem","code":"NL09","quantity":100.0,"unit":"ml"},{"name":"Bột hạt dẻ cười","code":"NL40","quantity":50.0,"unit":"g"},{"name":"Kem Ambiante","code":"NL44","quantity":100.0,"unit":"g"}]},{"name":"Kem bắp","display_recipe_name":"Kem bắp (300ml)","unit":"ml","cost":153.33333333333334,"batch_output_qty":300.0,"batch_output_unit":"ml","recipe":[{"name":"Sữa bắp","code":"NL11","quantity":180.0,"unit":"ml"},{"name":"Whipping Anchor","code":"NL19","quantity":100.0,"unit":"ml"},{"name":"Bột phô mai","code":"NL41","quantity":100.0,"unit":"g"}]},{"name":"Sốt Cốm dẻo","display_recipe_name":"Sốt cốm dẻo (500ml)","unit":"ml","cost":45.55866666666667,"batch_output_qty":500.0,"batch_output_unit":"ml","recipe":[{"name":"Đường nước","code":"NL07","quantity":30.0,"unit":"ml"},{"name":"Nước cốt dừa","code":"NL13","quantity":125.0,"unit":"ml"},{"name":"Cốm khô","code":"NL14","quantity":125.0,"unit":"g"},{"name":"Siro cốm","code":"NL21","quantity":35.0,"unit":"ml"}]},{"name":"Tàu hũ","display_recipe_name":"Tàu hũ (1000ml)","unit":"ml","cost":20.82,"batch_output_qty":1000.0,"batch_output_unit":"ml","recipe":[{"name":"Đường nước","code":"NL07","quantity":100.0,"unit":"ml"},{"name":"Sữa đậu nành","code":"NL36","quantity":1000.0,"unit":"g"},{"name":"Bột Gelatin","code":"NL43","quantity":30.0,"unit":"g"}]}],"products":[{"row":6,"stt":1,"name":"Yên đậm","price":20000.0,"cost":5160.0,"cost_ratio":0.258,"unit":"ly","recipe":[{"name":"Cà phê (Shot)","code":"","kind":"prepared","quantity":18.0,"unit":"g"},{"name":"Đường gói","code":"NL06","kind":"raw","quantity":1.0,"unit":"gói"}]},{"row":7,"stt":2,"name":"Yên nâu","price":25000.0,"cost":5672.5,"cost_ratio":0.2269,"unit":"ly","recipe":[{"name":"Cà phê (Shot)","code":"","kind":"prepared","quantity":18.0,"unit":"g"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":15.0,"unit":"g"}]},{"row":8,"stt":3,"name":"Yên choco kem trứng","price":35000.0,"cost":7055.416666666667,"cost_ratio":0.20158333333333334,"unit":"ly","recipe":[{"name":"Cà phê (Shot)","code":"","kind":"prepared","quantity":18.0,"unit":"g"},{"name":"Kem trứng","code":"","kind":"prepared","quantity":30.0,"unit":"ml"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":10.0,"unit":"g"}]},{"row":9,"stt":4,"name":"Yên êm","price":35000.0,"cost":14660.752569750366,"cost_ratio":0.4188786448500105,"unit":"ly","recipe":[{"name":"Cà phê (Shot)","code":"","kind":"prepared","quantity":18.0,"unit":"g"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":15.0,"unit":"g"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":80.0,"unit":"ml"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Siro hạnh nhân","code":"NL20","kind":"raw","quantity":20.0,"unit":"ml"}]},{"row":10,"stt":5,"name":"Yên mây","price":35000.0,"cost":9215.728046989721,"cost_ratio":0.2633065156282778,"unit":"ly","recipe":[{"name":"Cà phê (Shot)","code":"","kind":"prepared","quantity":18.0,"unit":"g"},{"name":"Kem muối","code":"","kind":"prepared","quantity":30.0,"unit":"ml"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":11,"stt":6,"name":"Yên kem bắp","price":35000.0,"cost":14696.666666666668,"cost_ratio":0.41990476190476195,"unit":"ly","recipe":[{"name":"Cà phê (Shot)","code":"","kind":"prepared","quantity":9.0,"unit":"g"},{"name":"Kem bắp","code":"","kind":"prepared","quantity":80.0,"unit":"ml"}]},{"row":12,"stt":7,"name":"Bạc xỉu thường","price":30000.0,"cost":8716.626284875183,"cost_ratio":0.29055420949583943,"unit":"ly","recipe":[{"name":"Cà phê (Shot)","code":"","kind":"prepared","quantity":18.0,"unit":"g"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":35.0,"unit":"g"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":10.0,"unit":"ml"}]},{"row":13,"stt":8,"name":"Cacao nóng","price":30000.0,"cost":10500.0,"cost_ratio":0.35,"unit":"ly","recipe":[{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":120.0,"unit":"ml"},{"name":"Bột cacao","code":"NL42","kind":"raw","quantity":6.0,"unit":"g"},{"name":"Sốt socola","code":"NL62","kind":"raw","quantity":20.0,"unit":"ml"}]},{"row":14,"stt":9,"name":"Coldbrew dâu dại","price":35000.0,"cost":11272.0,"cost_ratio":0.3220571428571429,"unit":"ly","recipe":[{"name":"Cà phê ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt quả mọng","code":"NL26","kind":"raw","quantity":30.0,"unit":"ml"}]},{"row":15,"stt":10,"name":"Coldbrew me rừng","price":35000.0,"cost":5272.0,"cost_ratio":0.15062857142857142,"unit":"ly","recipe":[{"name":"Cà phê ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt me","code":"NL24","kind":"raw","quantity":20.0,"unit":"ml"}]},{"row":16,"stt":11,"name":"Coldbrew mơ màng","price":35000.0,"cost":8683.764705882353,"cost_ratio":0.2481075630252101,"unit":"ly","recipe":[{"name":"Cà phê ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt mơ","code":"NL23","kind":"raw","quantity":20.0,"unit":"ml"}]},{"row":17,"stt":12,"name":"Coldbrew chanh vàng","price":35000.0,"cost":11138.666666666666,"cost_ratio":0.31824761904761906,"unit":"ly","recipe":[{"name":"Cà phê ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Siro chanh vàng","code":"NL22","kind":"raw","quantity":20.0,"unit":"ml"}]},{"row":18,"stt":13,"name":"Trà mơ má đào","price":39000.0,"cost":9175.088235294119,"cost_ratio":0.2352586726998492,"unit":"ly","recipe":[{"name":"Trà xanh ủ lạnh","code":"","kind":"prepared","quantity":70.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt mơ","code":"NL23","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Đào miếng","code":"NL45","kind":"raw","quantity":30.0,"unit":"g"}]},{"row":19,"stt":14,"name":"Trà me dứa","price":39000.0,"cost":2068.136363636364,"cost_ratio":0.053029137529137536,"unit":"ly","recipe":[{"name":"Trà xanh ủ lạnh","code":"","kind":"prepared","quantity":70.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt me","code":"NL24","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Dứa","code":"NL46","kind":"raw","quantity":50.0,"unit":"g"}]},{"row":20,"stt":15,"name":"Trà mãng cầu tươi","price":39000.0,"cost":12701.20588235294,"cost_ratio":0.32567194570135743,"unit":"ly","recipe":[{"name":"Trà xanh ủ lạnh","code":"","kind":"prepared","quantity":70.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Mứt mãng cầu","code":"NL27","kind":"raw","quantity":80.0,"unit":"ml"},{"name":"Tắc","code":"NL47","kind":"raw","quantity":10.0,"unit":"g"}]},{"row":21,"stt":16,"name":"Trà thanh xoài","price":39000.0,"cost":11904.5,"cost_ratio":0.3052435897435897,"unit":"ly","recipe":[{"name":"Trà xanh ủ lạnh","code":"","kind":"prepared","quantity":70.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt xoài","code":"NL28","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Chanh leo","code":"NL52","kind":"raw","quantity":10.0,"unit":"g"},{"name":"Xoài","code":"NL53","kind":"raw","quantity":50.0,"unit":"g"}]},{"row":22,"stt":17,"name":"Trà khế xí muội","price":39000.0,"cost":1270.5,"cost_ratio":0.03257692307692308,"unit":"ly","recipe":[{"name":"Trà xanh ủ lạnh","code":"","kind":"prepared","quantity":70.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":15.0,"unit":"ml"},{"name":"Mứt khế","code":"NL29","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Tắc","code":"NL47","kind":"raw","quantity":10.0,"unit":"g"},{"name":"Khế","code":"NL55","kind":"raw","quantity":15.0,"unit":"g"}]},{"row":23,"stt":18,"name":"Trà quả mọng","price":39000.0,"cost":8704.5,"cost_ratio":0.2231923076923077,"unit":"ly","recipe":[{"name":"Trà xanh ủ lạnh","code":"","kind":"prepared","quantity":70.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt quả mọng","code":"NL26","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Tắc","code":"NL47","kind":"raw","quantity":10.0,"unit":"g"}]},{"row":24,"stt":19,"name":"Shan tuyết kem trứng","price":39000.0,"cost":12073.75,"cost_ratio":0.3095833333333333,"unit":"ly","recipe":[{"name":"Trà Shan tuyết ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Kem trứng","code":"","kind":"prepared","quantity":30.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Sữa nước","code":"NL10","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Hạt trân châu đen","code":"NL35","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":25,"stt":20,"name":"Gạo rang tàu hũ","price":39000.0,"cost":9612.4,"cost_ratio":0.24647179487179485,"unit":"ly","recipe":[{"name":"Trà gạo ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Tàu hũ","code":"","kind":"prepared","quantity":20.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Sữa nước","code":"NL10","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Hạt trân châu trắng","code":"NL34","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":26,"stt":21,"name":"Trà sữa bạch thiên hương","price":39000.0,"cost":9618.0,"cost_ratio":0.24661538461538463,"unit":"ly","recipe":[{"name":"Trà bạch thiên hương ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Sữa nước","code":"NL10","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Mứt quế hoa","code":"NL25","kind":"raw","quantity":25.0,"unit":"ml"},{"name":"Hạt trân châu trắng","code":"NL34","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":27,"stt":22,"name":"Ô long nhài cốm","price":39000.0,"cost":14633.426666666666,"cost_ratio":0.37521606837606836,"unit":"ly","recipe":[{"name":"Trà cốm ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Sốt Cốm dẻo","code":"","kind":"prepared","quantity":30.0,"unit":"ml"},{"name":"Sữa nước","code":"NL10","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Siro cốm","code":"NL21","kind":"raw","quantity":25.0,"unit":"ml"},{"name":"Hạt trân châu đen","code":"NL35","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":28,"stt":23,"name":"Gạo thơm dẻ cười","price":42000.0,"cost":20960.970588235294,"cost_ratio":0.4990707282913165,"unit":"ly","recipe":[{"name":"Trà gạo ủ lạnh","code":"","kind":"prepared","quantity":120.0,"unit":"ml"},{"name":"Kem hạt dẻ cười","code":"","kind":"prepared","quantity":30.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":35.0,"unit":"ml"},{"name":"Sữa nước","code":"NL10","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Sốt hạt dẻ","code":"NL30","kind":"raw","quantity":40.0,"unit":"g"},{"name":"Hạt trân châu đen","code":"NL35","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":29,"stt":24,"name":"Bơ già dừa non","price":40000.0,"cost":22381.126284875183,"cost_ratio":0.5595281571218795,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":35.0,"unit":"ml"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":20.0,"unit":"g"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":50.0,"unit":"ml"},{"name":"Nước cốt dừa","code":"NL13","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Dừa nướng","code":"NL37","kind":"raw","quantity":10.0,"unit":"g"},{"name":"Bơ","code":"NL54","kind":"raw","quantity":100.0,"unit":"g"},{"name":"Dừa sấy dòn","code":"NL61","kind":"raw","quantity":10.0,"unit":"g"}]},{"row":30,"stt":25,"name":"Xoài dừa tuyết sơn","price":40000.0,"cost":22533.126284875183,"cost_ratio":0.5633281571218796,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":20.0,"unit":"g"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":50.0,"unit":"ml"},{"name":"Nước cốt dừa","code":"NL13","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt xoài","code":"NL28","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Dừa nướng","code":"NL37","kind":"raw","quantity":10.0,"unit":"g"},{"name":"Xoài","code":"NL53","kind":"raw","quantity":100.0,"unit":"g"},{"name":"Dừa sấy dòn","code":"NL61","kind":"raw","quantity":10.0,"unit":"g"}]},{"row":31,"stt":26,"name":"Dâu tằm kem mây","price":40000.0,"cost":18479.596475770923,"cost_ratio":0.4619899118942731,"unit":"ly","recipe":[{"name":"Kem muối","code":"","kind":"prepared","quantity":20.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":15.0,"unit":"ml"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":40.0,"unit":"ml"},{"name":"Bột sữa chua","code":"NL17","kind":"raw","quantity":30.0,"unit":"g"},{"name":"Mứt dâu tằm","code":"NL63","kind":"raw","quantity":40.0,"unit":"g"}]},{"row":32,"stt":27,"name":"Matcha latte xoài","price":39000.0,"cost":15652.459618208517,"cost_ratio":0.401345118415603,"unit":"ly","recipe":[{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":10.0,"unit":"g"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":80.0,"unit":"ml"},{"name":"Bột matcha","code":"NL16","kind":"raw","quantity":3.0,"unit":"g"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Mứt xoài","code":"NL28","kind":"raw","quantity":30.0,"unit":"ml"}]},{"row":33,"stt":28,"name":"Sen xanh matcha","price":39000.0,"cost":13829.991923641704,"cost_ratio":0.35461517752927446,"unit":"ly","recipe":[{"name":"Trà xanh ủ lạnh","code":"","kind":"prepared","quantity":50.0,"unit":"ml"},{"name":"Kem matcha","code":"","kind":"prepared","quantity":20.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Nước dừa","code":"NL12","kind":"raw","quantity":50.0,"unit":"ml"},{"name":"Hạt sen","code":"NL31","kind":"raw","quantity":40.0,"unit":"g"}]},{"row":34,"stt":29,"name":"Matcha latte","price":35000.0,"cost":10518.459618208517,"cost_ratio":0.3005274176631005,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":5.0,"unit":"ml"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":10.0,"unit":"g"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":80.0,"unit":"ml"},{"name":"Bột matcha","code":"NL16","kind":"raw","quantity":3.0,"unit":"g"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":10.0,"unit":"ml"}]},{"row":35,"stt":30,"name":"Sen dừa lạnh","price":35000.0,"cost":19753.254901960783,"cost_ratio":0.5643787114845938,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":5.0,"unit":"ml"},{"name":"Nước dừa","code":"NL12","kind":"raw","quantity":150.0,"unit":"ml"},{"name":"Hạt sen","code":"NL31","kind":"raw","quantity":40.0,"unit":"g"},{"name":"Hạt nổ yến mạch","code":"NL32","kind":"raw","quantity":20.0,"unit":"g"},{"name":"Hạt trân châu trắng","code":"NL34","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":36,"stt":31,"name":"Sữa chua kiều mạch","price":39000.0,"cost":17319.590805044485,"cost_ratio":0.44409207192421757,"unit":"ly","recipe":[{"name":"Kem trứng","code":"","kind":"prepared","quantity":30.0,"unit":"ml"},{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Bột sữa chua","code":"NL17","kind":"raw","quantity":35.0,"unit":"g"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Hạt nổ yến mạch","code":"NL32","kind":"raw","quantity":20.0,"unit":"g"},{"name":"Hạt kiều mạch","code":"NL33","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":37,"stt":32,"name":"Sữa chua kiều cốm","price":39000.0,"cost":16537.254901960783,"cost_ratio":0.42403217697335344,"unit":"ly","recipe":[{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":40.0,"unit":"g"},{"name":"Sữa chua Vinamilk","code":"NL15","kind":"raw","quantity":1.0,"unit":"hộp"},{"name":"Siro cốm","code":"NL21","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Hạt nổ yến mạch","code":"NL32","kind":"raw","quantity":20.0,"unit":"g"},{"name":"Hạt kiều mạch","code":"NL33","kind":"raw","quantity":20.0,"unit":"g"},{"name":"Chanh","code":"NL48","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":38,"stt":33,"name":"Sữa chua dâu tằm","price":35000.0,"cost":14991.666666666666,"cost_ratio":0.42833333333333334,"unit":"ly","recipe":[{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":10.0,"unit":"g"},{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":60.0,"unit":"ml"},{"name":"Sữa chua Vinamilk","code":"NL15","kind":"raw","quantity":1.0,"unit":"hộp"},{"name":"Mứt quả mọng","code":"NL26","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Tắc","code":"NL47","kind":"raw","quantity":10.0,"unit":"g"}]},{"row":39,"stt":34,"name":"Sữa chua đánh đá","price":30000.0,"cost":10789.666666666666,"cost_ratio":0.35965555555555556,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":15.0,"unit":"ml"},{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":40.0,"unit":"g"},{"name":"Nước cốt dừa","code":"NL13","kind":"raw","quantity":5.0,"unit":"ml"},{"name":"Sữa chua Vinamilk","code":"NL15","kind":"raw","quantity":1.0,"unit":"hộp"},{"name":"Chanh","code":"NL48","kind":"raw","quantity":20.0,"unit":"g"}]},{"row":40,"stt":35,"name":"Nước ép Cam","price":39000.0,"cost":10964.0,"cost_ratio":0.28112820512820513,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Cam","code":"NL49","kind":"raw","quantity":150.0,"unit":"g"}]},{"row":41,"stt":36,"name":"Nước ép Cam Táo","price":39000.0,"cost":10382.0,"cost_ratio":0.2662051282051282,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Cam","code":"NL49","kind":"raw","quantity":70.0,"unit":"g"},{"name":"Táo","code":"NL51","kind":"raw","quantity":70.0,"unit":"g"}]},{"row":42,"stt":37,"name":"Nước ép Cam Dứa","price":39000.0,"cost":7041.090909090909,"cost_ratio":0.18054079254079253,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Dứa","code":"NL46","kind":"raw","quantity":70.0,"unit":"g"},{"name":"Cam","code":"NL49","kind":"raw","quantity":70.0,"unit":"g"}]},{"row":43,"stt":38,"name":"Nước ép Ổi Táo","price":39000.0,"cost":9565.333333333334,"cost_ratio":0.24526495726495728,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Ổi","code":"NL50","kind":"raw","quantity":70.0,"unit":"g"},{"name":"Táo","code":"NL51","kind":"raw","quantity":70.0,"unit":"g"}]},{"row":44,"stt":39,"name":"Hướng dương nguyên bản","price":15000.0,"cost":6200.0,"cost_ratio":0.41333333333333333,"unit":"ly","recipe":[{"name":"Hướng dương thường","code":"NL57","kind":"raw","quantity":1.0,"unit":"gói"}]},{"row":45,"stt":40,"name":"Hướng dương vị dừa","price":15000.0,"cost":7000.0,"cost_ratio":0.4666666666666667,"unit":"ly","recipe":[{"name":"Hướng dương vị dừa","code":"NL58","kind":"raw","quantity":1.0,"unit":"gói"}]},{"row":46,"stt":41,"name":"Bắp rang bơ","price":20000.0,"cost":13500.0,"cost_ratio":0.675,"unit":"ly","recipe":[{"name":"Bắp rang bơ","code":"NL64","kind":"raw","quantity":1.0,"unit":"hộp"}]},{"row":47,"stt":42,"name":"Tai heo mắm tỏi","price":25000.0,"cost":16000.0,"cost_ratio":0.64,"unit":"ly","recipe":[{"name":"Tai heo mắm ớt","code":"NL70","kind":"raw","quantity":1.0,"unit":"gói"}]},{"row":48,"stt":43,"name":"Khoai lang sấy","price":30000.0,"cost":22000.0,"cost_ratio":0.7333333333333333,"unit":"ly","recipe":[{"name":"Khoai lang sấy","code":"NL68","kind":"raw","quantity":1.0,"unit":"gói"}]},{"row":49,"stt":44,"name":"Bánh mỳ que","price":25000.0,"cost":17000.0,"cost_ratio":0.68,"unit":"ly","recipe":[{"name":"Bánh mỳ que","code":"NL69","kind":"raw","quantity":1.0,"unit":"gói"}]},{"row":50,"stt":45,"name":"Trân châu trắng","price":5000.0,"cost":1250.0,"cost_ratio":0.25,"unit":"ly","recipe":[{"name":"Hạt trân châu trắng","code":"NL34","kind":"raw","quantity":50.0,"unit":"g"}]},{"row":51,"stt":46,"name":"Hạt nổ hồng","price":5000.0,"cost":6862.745098039215,"cost_ratio":1.372549019607843,"unit":"ly","recipe":[{"name":"Thạch nổ củ năng hồng","code":"NL67","kind":"raw","quantity":50.0,"unit":"g"}]},{"row":52,"stt":47,"name":"Hạt nổ trắng","price":5000.0,"cost":6862.745098039215,"cost_ratio":1.372549019607843,"unit":"ly","recipe":[{"name":"Thạch nổ củ năng trắng","code":"NL60","kind":"raw","quantity":50.0,"unit":"g"}]},{"row":53,"stt":48,"name":"Kiều mạch","price":5000.0,"cost":0.0,"cost_ratio":0.0,"unit":"ly","recipe":[{"name":"Hạt kiều mạch","code":"NL33","kind":"raw","quantity":50.0,"unit":"g"}]},{"row":54,"stt":49,"name":"Vụn dừa","price":5000.0,"cost":6000.0,"cost_ratio":1.2,"unit":"ly","recipe":[{"name":"Dừa nướng","code":"NL37","kind":"raw","quantity":50.0,"unit":"g"}]},{"row":55,"stt":50,"name":"Kem trứng","price":6000.0,"cost":11025.0,"cost_ratio":1.8375,"unit":"ly","recipe":[{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":50.0,"unit":"ml"},{"name":"Bột kem trứng","code":"NL39","kind":"raw","quantity":50.0,"unit":"g"},{"name":"Kem Ambiante","code":"NL44","kind":"raw","quantity":100.0,"unit":"g"}]},{"row":56,"stt":51,"name":"Kem muối","price":6000.0,"cost":21815.96475770925,"cost_ratio":3.635994126284875,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":10.0,"unit":"ml"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":50.0,"unit":"ml"},{"name":"Whipping Anchor","code":"NL19","kind":"raw","quantity":100.0,"unit":"ml"},{"name":"Muối hồng","code":"NL38","kind":"raw","quantity":2.0,"unit":"g"}]},{"row":57,"stt":52,"name":"Kem matcha","price":6000.0,"cost":12604.919236417034,"cost_ratio":2.100819872736172,"unit":"ly","recipe":[{"name":"Sữa đặc","code":"NL08","kind":"raw","quantity":20.0,"unit":"g"},{"name":"Bột matcha","code":"NL16","kind":"raw","quantity":3.0,"unit":"g"},{"name":"Rích lùn","code":"NL18","kind":"raw","quantity":20.0,"unit":"ml"},{"name":"Whipping Anchor","code":"NL19","kind":"raw","quantity":20.0,"unit":"ml"}]},{"row":58,"stt":53,"name":"Kem hạt dẻ cười","price":6000.0,"cost":23150.0,"cost_ratio":3.8583333333333334,"unit":"ly","recipe":[{"name":"Sữa tươi nguyên kem","code":"NL09","kind":"raw","quantity":100.0,"unit":"ml"},{"name":"Bột hạt dẻ cười","code":"NL40","kind":"raw","quantity":50.0,"unit":"g"},{"name":"Kem Ambiante","code":"NL44","kind":"raw","quantity":100.0,"unit":"g"}]},{"row":59,"stt":54,"name":"Kem bắp","price":6000.0,"cost":46000.0,"cost_ratio":7.666666666666667,"unit":"ly","recipe":[{"name":"Sữa bắp","code":"NL11","kind":"raw","quantity":180.0,"unit":"ml"},{"name":"Whipping Anchor","code":"NL19","kind":"raw","quantity":100.0,"unit":"ml"},{"name":"Bột phô mai","code":"NL41","kind":"raw","quantity":100.0,"unit":"g"}]},{"row":60,"stt":55,"name":"Sốt cốm dẻo","price":6000.0,"cost":22779.333333333332,"cost_ratio":3.7965555555555555,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":30.0,"unit":"ml"},{"name":"Nước cốt dừa","code":"NL13","kind":"raw","quantity":125.0,"unit":"ml"},{"name":"Cốm khô","code":"NL14","kind":"raw","quantity":125.0,"unit":"g"},{"name":"Siro cốm","code":"NL21","kind":"raw","quantity":35.0,"unit":"ml"}]},{"row":61,"stt":56,"name":"Tàu hũ","price":6000.0,"cost":20820.0,"cost_ratio":3.47,"unit":"ly","recipe":[{"name":"Đường nước","code":"NL07","kind":"raw","quantity":100.0,"unit":"ml"},{"name":"Sữa đậu nành","code":"NL36","kind":"raw","quantity":1000.0,"unit":"g"},{"name":"Bột Gelatin","code":"NL43","kind":"raw","quantity":30.0,"unit":"g"}]}]};
@@ -17076,65 +17086,55 @@ function v256CloneSnapshotState(snapshot){
   );
 }
 
-function v256LocalCloudSimulation(snapshot){
-  const proofBefore=v228Coverage();
+async function v256LocalCloudSimulation(snapshot){
+  let freshSnapshot=snapshot;
 
-  const tables=v256SnapshotRows(snapshot);
-  const localTables=v228LocalTableRows(db);
-
-  const tableResult={};
-  let localTotal=0;
-  let matched=0;
-
-  for(const [table,rows] of Object.entries(localTables)){
-    const cloudRows=tables[table]||[];
-    const cloudKeys=new Set();
-
-    for(const row of cloudRows){
-      for(const key of v228KeyCandidates(table,row)){
-        cloudKeys.add(key);
-      }
-    }
-
-    let tableMatched=0;
-
-    for(const row of rows||[]){
-      localTotal++;
-
-      if(
-        v228KeyCandidates(table,row)
-          .some(key=>
-            cloudKeys.has(key)
-          )
-      ){
-        matched++;
-        tableMatched++;
-      }
-    }
-
-    tableResult[table]={
-      local:(rows||[]).length,
-      cloud:cloudRows.length,
-      matched:tableMatched
-    };
+  if(!freshSnapshot){
+    freshSnapshot=await v256GetCloudSnapshot(true);
   }
+
+  const rows=v256SnapshotRows(freshSnapshot);
+
+  v228CaptureCloudProof({
+    warehouses:rows.warehouses,
+    suppliers:rows.suppliers,
+    ingredients:rows.ingredients,
+    inventory:rows.inventory,
+    products:rows.products,
+    recipe_items:rows.recipe_items,
+    prepared_ingredient_items:rows.prepared_ingredient_items,
+    sales:rows.sales,
+    sale_items:rows.sale_items,
+    stock_transactions:rows.stock_transactions
+  });
+
+  let coverage=v228Coverage();
+
+  if(
+    coverage.proofAvailable &&
+    Number(coverage.missingByTable?.recipe_items||0)>0
+  ){
+    try{
+      const healed=await v258HealCoverageIfNeeded();
+      coverage=healed.coverage||v228Coverage();
+    }catch(e){
+      console.warn('V259 simulation recipe verification',e);
+    }
+  }
+
+  const localTotal=Number(coverage.total||0);
+  const missing=Number(coverage.localOnly||0);
+  const matched=Math.max(0,localTotal-missing);
 
   return {
     direction:'Local → Cloud',
     local_total:localTotal,
     matched,
-    missing:
-      Math.max(
-        0,
-        localTotal-matched
-      ),
-    percent:
-      localTotal
-        ?matched/localTotal*100
-        :100,
-    proof_available:
-      !!proofBefore.proofAvailable,
-    tables:tableResult
+    missing,
+    percent:localTotal?matched/localTotal*100:100,
+    proof_available:!!coverage.proofAvailable,
+    missing_by_table:coverage.missingByTable||{},
+    method:'authoritative_cloud_proof_v259'
   };
 }
 
@@ -17263,7 +17263,7 @@ async function runSyncSimulationV256(){
       );
 
     const localCloud=
-      v256LocalCloudSimulation(
+      await v256LocalCloudSimulation(
         snapshot
       );
 
@@ -17298,8 +17298,9 @@ async function runSyncSimulationV256(){
           <span>
             Local → Cloud:
             ${localCloud.matched}/${localCloud.local_total}
-            record khớp
+            record được Cloud xác nhận
             • ${localCloud.percent.toFixed(1)}%
+            ${localCloud.missing?`• thiếu ${localCloud.missing}`:'• đã hội tụ'}
           </span>
         </div>
 
@@ -18813,6 +18814,29 @@ async function loadCloud(){
     }
   }catch(e){
     console.warn('V255 warehouse self-heal after Cloud pull',e);
+  }
+
+  /*
+    V258:
+    authoritative pull must also converge recipe coverage even when pending=0.
+  */
+  try{
+    const recipeCoverage=
+      v228Coverage();
+
+    if(
+      recipeCoverage.proofAvailable &&
+      Number(
+        recipeCoverage.missingByTable?.recipe_items||0
+      )>0
+    ){
+      await v258HealCoverageIfNeeded();
+    }
+  }catch(e){
+    console.warn(
+      'V258 recipe coverage self-heal after Cloud pull',
+      e
+    );
   }
 
   /*
@@ -20881,6 +20905,30 @@ async function runSyncDiagnostics(){
   );
 
   return final;
+
+  // V258 recipe coverage self-heal.
+  try{
+    const r=
+      JSON.parse(
+        localStorage.getItem(
+          V258_RECIPE_HEAL_REPORT_KEY
+        )||'null'
+      );
+
+    add(
+      'Recipe Coverage V258',
+      !r?.remaining,
+      r
+        ?`thiếu trước:${Number(r.missing_before||0)} • repair:${Number(r.repaired||0)} • quantity lệch:${Number(r.quantity_mismatch_before||0)} • còn:${Number(r.remaining||0)}`
+        :'Tự chạy khi coverage thiếu recipe_items'
+    );
+  }catch(e){
+    add(
+      'Recipe Coverage V258',
+      false,
+      e?.message||String(e)
+    );
+  }
 
   // V255 warehouse self-heal.
   try{
@@ -25687,6 +25735,190 @@ async function migrateAndSyncV199(){
   }
 }
 
+
+/* ===== V258 RECIPE COVERAGE SELF-HEAL ===== */
+const V258_RECIPE_HEAL_REPORT_KEY='lat_yen_recipe_coverage_heal_v258';
+let v258RecipeHealBusy=false;
+
+async function v258RefreshAuthoritativeCloudProof(){
+  v252LastCloudSnapshot=null;
+  v256SnapshotPromise=null;
+
+  const snapshot=
+    await v256GetCloudSnapshot(
+      true
+    );
+
+  const rows=
+    v256SnapshotRows(
+      snapshot
+    );
+
+  v228CaptureCloudProof({
+    warehouses:rows.warehouses,
+    suppliers:rows.suppliers,
+    ingredients:rows.ingredients,
+    inventory:rows.inventory,
+    products:rows.products,
+    recipe_items:rows.recipe_items,
+    prepared_ingredient_items:
+      rows.prepared_ingredient_items,
+    sales:rows.sales,
+    sale_items:rows.sale_items,
+    stock_transactions:
+      rows.stock_transactions
+  });
+
+  return {
+    snapshot,
+    coverage:v228Coverage()
+  };
+}
+
+async function v258HealRecipeCoverage(){
+  if(v258RecipeHealBusy){
+    return {
+      skipped:true,
+      reason:'busy'
+    };
+  }
+
+  v258RecipeHealBusy=true;
+
+  const report={
+    at:new Date().toISOString(),
+    before:0,
+    repaired:0,
+    missing_before:0,
+    quantity_mismatch_before:0,
+    missing_after:0,
+    quantity_mismatch_after:0,
+    remaining:0,
+    errors:[]
+  };
+
+  try{
+    await v258RefreshAuthoritativeCloudProof();
+
+    const beforeCoverage=
+      v228Coverage();
+
+    report.before=
+      Number(
+        beforeCoverage.localOnly||0
+      );
+
+    report.missing_before=
+      Number(
+        beforeCoverage.missingByTable?.recipe_items||0
+      );
+
+    if(report.missing_before<=0){
+      return report;
+    }
+
+    const repair=
+      await v251VerifyAndRepairRecipeSeed(
+        db.recipeItems||[]
+      );
+
+    report.repaired=
+      Number(
+        repair.repaired||0
+      );
+
+    report.quantity_mismatch_before=
+      Number(
+        repair.quantity_mismatch_before||0
+      );
+
+    report.missing_after=
+      Number(
+        repair.missing_after||0
+      );
+
+    report.quantity_mismatch_after=
+      Number(
+        repair.quantity_mismatch_after||0
+      );
+
+    const refreshed=
+      await v258RefreshAuthoritativeCloudProof();
+
+    report.remaining=
+      Number(
+        refreshed.coverage.missingByTable?.recipe_items||0
+      );
+
+    if(report.remaining===0){
+      try{
+        await v252ExactAckPending();
+      }catch(e){
+        report.errors.push(
+          e?.message||
+          String(e)
+        );
+      }
+    }
+
+    try{
+      localStorage.setItem(
+        V258_RECIPE_HEAL_REPORT_KEY,
+        JSON.stringify(report)
+      );
+    }catch(e){}
+
+    return report;
+
+  }catch(e){
+    report.errors.push(
+      e?.message||
+      String(e)
+    );
+
+    try{
+      localStorage.setItem(
+        V258_RECIPE_HEAL_REPORT_KEY,
+        JSON.stringify(report)
+      );
+    }catch(x){}
+
+    throw e;
+
+  }finally{
+    v258RecipeHealBusy=false;
+  }
+}
+
+async function v258HealCoverageIfNeeded(){
+  let coverage=
+    v228Coverage();
+
+  const recipes=
+    Number(
+      coverage.missingByTable?.recipe_items||0
+    );
+
+  if(recipes<=0){
+    return {
+      attempted:false,
+      coverage
+    };
+  }
+
+  const repair=
+    await v258HealRecipeCoverage();
+
+  coverage=
+    v228Coverage();
+
+  return {
+    attempted:true,
+    repair,
+    coverage
+  };
+}
+
 async function syncNow(){
   if(syncing||autoSyncBusy){
     cloudReloadRequested=true;
@@ -25826,6 +26058,26 @@ async function syncNow(){
       Number(v228Coverage().missingByTable?.warehouses||0)>0
     ){
       await v255HealWarehouseCoverageIfNeeded();
+    }
+
+    /*
+      V258:
+      pending can be 0 while recipe coverage is incomplete.
+      Repair actual recipe_items before final ACK/status.
+    */
+    if(
+      v228Coverage().proofAvailable &&
+      Number(
+        v228Coverage().missingByTable?.recipe_items||0
+      )>0
+    ){
+      updateSyncProgress(
+        88,
+        'Đang chốt công thức Cloud',
+        `${Number(v228Coverage().missingByTable?.recipe_items||0)} dòng công thức cần xác nhận`
+      );
+
+      await v258HealCoverageIfNeeded();
     }
 
     let exactAck=null;
@@ -44290,7 +44542,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V257',
+    app_version:'V264',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -44628,7 +44880,7 @@ function parsePairingPayload(text){
     throw new Error('Mã ghép thiết bị không đúng phiên bản V185.');
   }
   if(!/^LY-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(String(payload.code||''))){
-    throw new Error('Mã đồng bộ trong QR không hợp lệ.');
+    throw new Error('Mã đồng bộ cũ (đã ngừng) trong QR không hợp lệ.');
   }
   if(String(payload.passphrase||'').length<6){
     throw new Error('Mật khẩu mã hóa trong QR không hợp lệ.');
@@ -44665,7 +44917,7 @@ async function showPairingQr(){
       <div class="v185-pairing-box">
         <div class="v185-pairing-head">
           <div>
-            <h3>Ghép thiết bị mới</h3>
+            <h3>Đăng nhập trên thiết bị khác</h3>
             <div class="muted">Trên thiết bị mới mở V185 → Cài đặt → Quét QR ghép thiết bị.</div>
           </div>
           <button class="secondary sm" onclick="this.closest('.v185-pairing-modal').remove()">Đóng</button>
@@ -44754,52 +45006,161 @@ async function applyPairingPayload(payload){
   );
 }
 
+
+/* ===== V259 QR FALLBACK + ACCURATE SYNC SIMULATION ===== */
+let v259JsQrPromise=null;
+let v259QrCanvas=null;
+
+async function v259EnsureJsQr(){
+  if(typeof window.jsQR==='function') return true;
+  if(v259JsQrPromise) return v259JsQrPromise;
+
+  v259JsQrPromise=new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+    s.async=true;
+    s.dataset.v259Jsqr='1';
+    s.onload=()=>resolve(typeof window.jsQR==='function');
+    s.onerror=()=>reject(new Error('Không tải được bộ giải mã QR dự phòng.'));
+    document.head.appendChild(s);
+  });
+
+  try{
+    return await v259JsQrPromise;
+  }finally{
+    if(typeof window.jsQR!=='function'){
+      v259JsQrPromise=null;
+    }
+  }
+}
+
+async function v259DecodeQrFromVideo(video){
+  if(typeof BarcodeDetector!=='undefined'){
+    try{
+      const detector=new BarcodeDetector({formats:['qr_code']});
+      const codes=await detector.detect(video);
+      if(codes?.length){
+        return String(codes[0].rawValue||'');
+      }
+    }catch(e){}
+  }
+
+  if(typeof window.jsQR!=='function') return '';
+
+  const width=Number(video.videoWidth||0);
+  const height=Number(video.videoHeight||0);
+  if(width<2||height<2) return '';
+
+  if(!v259QrCanvas){
+    v259QrCanvas=document.createElement('canvas');
+  }
+
+  const canvas=v259QrCanvas;
+  canvas.width=width;
+  canvas.height=height;
+
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  ctx.drawImage(video,0,0,width,height);
+  const img=ctx.getImageData(0,0,width,height);
+
+  const result=window.jsQR(
+    img.data,
+    width,
+    height,
+    {inversionAttempts:'attemptBoth'}
+  );
+
+  return String(result?.data||'');
+}
+
 async function scanPairingQr(){
   if(!navigator.mediaDevices?.getUserMedia){
-    alert('Trình duyệt này không hỗ trợ camera. Hãy dùng “Nhập mã ghép”.');
+    alert('Trình duyệt không hỗ trợ camera. Hãy dùng “Dán mã QR” hoặc nhập mã ghép thủ công.');
     return;
   }
-  if(typeof BarcodeDetector==='undefined'){
-    alert('Trình duyệt chưa hỗ trợ quét QR trực tiếp. Hãy dùng Chrome Android mới hoặc “Nhập mã ghép”.');
-    return;
-  }
+
   try{
+    if(typeof BarcodeDetector==='undefined'){
+      await v259EnsureJsQr();
+    }
+
     const modal=document.createElement('div');
     modal.className='v185-scan-modal';
     modal.innerHTML=`
       <div class="v185-scan-box">
         <div class="v185-pairing-head">
-          <div><h3>Quét QR ghép thiết bị</h3><div class="muted">Đưa QR vào giữa khung hình.</div></div>
+          <div>
+            <h3>Quét QR ghép thiết bị</h3>
+            <div class="muted">
+              Đưa QR vào giữa khung hình.
+              ${typeof BarcodeDetector==='undefined'?'Đang dùng bộ quét tương thích.':''}
+            </div>
+          </div>
           <button class="secondary sm" onclick="closePairingScanner()">Đóng</button>
         </div>
         <video id="v185PairingVideo" playsinline autoplay muted></video>
         <div class="v185-scan-line"></div>
+        <div id="v259QrStatus" class="muted" style="margin-top:8px;font-size:12px">
+          Đang mở camera…
+        </div>
       </div>
     `;
+
     document.body.appendChild(modal);
+
     const video=modal.querySelector('#v185PairingVideo');
+    const status=modal.querySelector('#v259QrStatus');
+
     pairingScanStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'}},audio:false
+      video:{facingMode:{ideal:'environment'}},
+      audio:false
     });
+
     video.srcObject=pairingScanStream;
     await video.play();
-    const detector=new BarcodeDetector({formats:['qr_code']});
+
+    if(status){
+      status.textContent='Camera đã sẵn sàng • đang tìm mã QR…';
+    }
+
+    let decoding=false;
+
     pairingScanTimer=setInterval(async()=>{
+      if(decoding) return;
+
       try{
-        if(!video.videoWidth||!video.videoHeight)return;
-        const codes=await detector.detect(video);
-        if(!codes?.length)return;
-        await applyPairingPayload(parsePairingPayload(codes[0].rawValue||''));
-      }catch(e){
-        if(String(e?.message||'').includes('Lát Yên')){
-          closePairingScanner();
-          alert(e.message);
+        if(!video.videoWidth||!video.videoHeight) return;
+
+        decoding=true;
+
+        const raw=await v259DecodeQrFromVideo(video);
+        if(!raw) return;
+
+        if(status){
+          status.textContent='Đã nhận QR • đang ghép thiết bị…';
         }
+
+        const payload=parsePairingPayload(raw);
+        closePairingScanner();
+        await applyPairingPayload(payload);
+
+      }catch(e){
+        if(status){
+          status.textContent='Chưa đọc được QR • tiếp tục quét…';
+        }
+        console.warn('V259 QR scan',e);
+      }finally{
+        decoding=false;
       }
-    },500);
+    },350);
+
   }catch(e){
     closePairingScanner();
-    alert('Không mở được camera.\n\n'+String(e?.message||e));
+    alert(
+      'Không mở được camera hoặc bộ quét QR.\n\n'+
+      String(e?.message||e)+
+      '\n\nBạn vẫn có thể dùng “Dán mã QR đã sao chép” hoặc nhập mã ghép thủ công.'
+    );
   }
 }
 
@@ -44833,7 +45194,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V257',storage:'supabase-storage',
+      schema:185,app_version:'V264',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -48181,15 +48542,15 @@ async function autoSyncNow(options={}){
     silent=true
   }=options;
 
-  const cfg=loadAutoSyncConfig();
-
-  /*
-    V233: timer/startup/focus/online sync must not begin while the user
-    is actively operating a form/table. Action sync after an explicit
-    save is still allowed.
-  */
   if(
-    v233BackgroundAutoSyncReason(reason) &&
+    !v264CleanMode() ||
+    !navigator.onLine
+  ){
+    return null;
+  }
+
+  if(
+    v233BackgroundAutoSyncReason?.(reason) &&
     v219InteractionActive()
   ){
     return {
@@ -48198,367 +48559,110 @@ async function autoSyncNow(options={}){
     };
   }
 
-  if(
-    autoSyncBusy||
-    !cfg.enabled||
-    !navigator.onLine
-  ){
-    return null;
-  }
-
-  const cred=autoSyncCredentials();
-
-  if(
-    !cred.code||
-    !cred.passphrase
-  ){
+  if(autoSyncBusy){
     return null;
   }
 
   autoSyncBusy=true;
-  repairFalsePendingLocalRowsV197();
   beginSyncProgress();
 
-  const statusEl=$('autoSyncLiveStatus');
-
-  if(statusEl){
-    statusEl.textContent='Đang đồng bộ…';
-  }
-
-  let finalRepair=null;
-
   try{
-    let localOnlyBefore=
-      v204LocalOnlyCount();
-
     updateSyncProgress(
-      10,
-      'Kiểm tra dữ liệu',
-      localOnlyBefore
-        ?`Cloud chưa xác nhận ${localOnlyBefore} record`
-        :`${v191PendingCount()} mục pending`
+      15,
+      'Đang gửi thay đổi',
+      'Đẩy các thao tác local chưa hoàn tất'
     );
 
-    const retry=
-      await runPendingRetriesV202();
-
-    updateSyncProgress(
-      32,
-      'Gửi thay đổi',
-      retry.before
-        ?`Pending ${retry.before} → ${retry.after}`
-        :'Không có pending mới'
-    );
-
-    if(
-      !v235CanApplyRemote()
-    ){
-      return v235FinishDeferredAutoSync(
-        'interaction_after_push'
+    try{
+      await syncPendingOperations();
+    }catch(e){
+      console.warn(
+        'V264 pending push',
+        e
       );
     }
 
-    v235BatchRemoteApply=true;
-    v235DeferCloudApply=true;
-    v235CloudApplyDeferred=false;
+    updateSyncProgress(
+      50,
+      'Đồng bộ tăng dần',
+      'Chỉ tải các record thay đổi từ Cloud'
+    );
 
-    // V231: Auto Sync now handles the final sales + sale_items case.
-    if(
-      v191PendingCount()===0 &&
-      v228Coverage().proofAvailable &&
-      Number(v228Coverage().localOnly||0)>0 &&
-      v231IsFinalSalePairCase()
-    ){
+    await v262SmartPull(
+      force
+    );
+
+    /*
+      Full pull is now a fallback/verification path only.
+      It is not the normal background sync mechanism.
+    */
+    if(force){
       updateSyncProgress(
-        45,
-        'Chuẩn hóa phiếu bán cuối',
-        v228CoverageBreakdownText(
-          v228Coverage()
-        )
+        78,
+        'Xác minh Cloud',
+        'Kiểm tra dữ liệu sau đồng bộ thủ công'
       );
 
-      finalRepair=
-        await v231AutoRepairFinalSalePair();
-
-      localOnlyBefore=
-        v204LocalOnlyCount();
-    }
-
-    const proofFresh=
-      v228CloudProofFresh();
-
-    const allowPull=
-      force ||
-      !proofFresh ||
-      localOnlyBefore===0 ||
-      retry.changed ||
-      (
-        finalRepair?.attempted &&
-        Number(finalRepair.after||0)===0
-      );
-
-    updateSyncProgress(
-      58,
-      allowPull
-        ?'Tải dữ liệu Cloud'
-        :'Giữ dữ liệu an toàn',
-      allowPull
-        ?'Đang merge Cloud và xác minh lại'
-        :(
-          finalRepair?.error
-            ?`Không thể chuẩn hóa phiếu cuối: ${finalRepair.error}`
-            :`Cloud còn ${localOnlyBefore} record cần bảo vệ`
-        )
-    );
-
-    if(allowPull){
-      await loadCloudFastV202(true);
-
-      if(v235CloudApplyDeferred){
-        return v235FinishDeferredAutoSync(
-          'interaction_during_cloud_pull'
+      try{
+        await loadCloudFastV202(true);
+      }catch(e){
+        console.warn(
+          'V264 verification pull',
+          e
         );
       }
     }
 
-    // Pull may reveal the exact final pair. Repair immediately.
-    if(
-      v191PendingCount()===0 &&
-      v231IsFinalSalePairCase()
-    ){
-      updateSyncProgress(
-        66,
-        'Hoàn thiện phiếu bán cuối',
-        v228CoverageBreakdownText(
-          v228Coverage()
-        )
-      );
-
-      finalRepair=
-        await v231AutoRepairFinalSalePair();
-
-      if(
-        finalRepair.attempted &&
-        Number(finalRepair.after||0)===0
-      ){
-        await loadCloudFastV202(true);
-      }
-    }
-
-    updateSyncProgress(
-      76,
-      'Đồng bộ thiết bị',
-      'Đang kiểm tra canonical state'
-    );
-
-    if(!v235CanApplyRemote()){
-      return v235FinishDeferredAutoSync(
-        'interaction_before_canonical'
-      );
-    }
-
-    const canonical=
-      await v189CanonicalSync(
-        cred.code,
-        cred.passphrase
-      );
-
-    const state=
-      loadFastSyncStateV202();
-
-    const revisionChanged=
-      Number(state.last_revision||0)!==
-      Number(canonical.revision||0);
-
-    saveFastSyncStateV202({
-      last_revision:Number(canonical.revision||0)
-    });
-
-    if(
-      finalRepair?.attempted ||
-      revisionChanged ||
-      force ||
-      retry.changed
-    ){
-      await loadCloudFastV202(true);
-    }
-
-    let exactAck=null;
-    const ackCoverage=v228Coverage();
-    if(
-      v191PendingCount()>0 &&
-      ackCoverage.proofAvailable &&
-      Number(ackCoverage.localOnly||0)===0
-    ){
-      exactAck=await v252ExactAckPending();
-    }
-
     const pending=
-      v191PendingCount();
-
-    const coverage=
-      v228Coverage();
-
-    updateSyncProgress(
-      92,
-      'Xác minh',
-      coverage.localOnly
-        ?`Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
-        :'Dữ liệu Cloud đã được xác minh'
-    );
-
-    const now=
-      new Date().toISOString();
-
-    const fullySynced=
-      canonical.converged&&
-      pending===0&&
-      coverage.proofAvailable&&
-      coverage.localOnly===0&&
-      cloudOnline;
-
-    if(v235CanApplyRemote()){
-      v235BatchRemoteApply=false;
-      v235FlushDeferredData();
-    }
-
-    if(fullySynced){
-      v235NeedFullReconcile=false;
-    }
-
-    saveAutoSyncConfig({
-      code:cred.code,
-      passphrase:cred.passphrase,
-      last_sync_at:now,
-      last_result:
-        fullySynced
-          ?(
-            canonical.conflicts
-              ?'merged_conflicts'
-              :'synced'
-          )
-          :'protected_local',
-      cloud_revision:
-        canonical.revision||0,
-      cloud_revision_token:
-        String(canonical.revision||0)
-    });
-
-    saveMultiDeviceConfig({
-      code:cred.code,
-      last_cloud_at:now
-    });
+      Number(
+        v191PendingCount?.()||0
+      );
 
     finishSyncProgress({
-      success:fullySynced,
+      success:pending===0,
       pending,
       stage:
-        fullySynced
+        pending===0
           ?'Đã đồng bộ'
-          :(
-            coverage.localOnly
-              ?'Đang bảo vệ dữ liệu chưa được Cloud xác nhận'
-              :'Chưa đồng bộ hết'
-          ),
+          :'Còn dữ liệu chờ',
       detail:
-        fullySynced
-          ?(
-            `Rev ${canonical.revision}`+
-            (
-              finalRepair?.repaired
-                ?` • chuẩn hóa ${finalRepair.repaired} phiếu bán`
-                :''
-            )
-          )
-          :(
-            finalRepair?.error
-              ?`Sale Pair V231: ${finalRepair.error}`
-              :(
-                coverage.localOnly
-                  ?`Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
-                  :`Còn ${pending} pending`
-              )
-          )
+        pending===0
+          ?'Cloud Data V2 đã hội tụ'
+          :`${pending} mục cần gửi lại`
     });
 
-    if(!silent){
-      toastMsg(
-        fullySynced
-          ?`Đã đồng bộ • 100% • Rev ${canonical.revision}`
-          :(
-            finalRepair?.error
-              ?'Không thể chuẩn hóa phiếu bán cuối'
-              :(
-                coverage.localOnly
-                  ?`Cloud chưa xác nhận ${coverage.localOnly} record`
-                  :`Đồng bộ ${loadSyncProgress().percent}%`
-              )
-          )
-      );
-    }
+    updatePendingSyncBadge();
 
     return {
-      direction:'v231-auto-final-reconcile',
-      converged:fullySynced,
-      revision:canonical.revision,
-      pending,
-      local_only:coverage.localOnly,
-      protected:coverage.localOnly>0,
-      finalRepair
+      direction:'auth_cloud_v2',
+      organization_id:
+        v261OrganizationId,
+      pending
     };
 
   }catch(e){
-    console.warn(
-      'V231 sync',
-      reason,
-      e
-    );
-
-    const pending=v191PendingCount();
-
-    saveAutoSyncConfig({
-      last_result:'error'
-    });
-
     finishSyncProgress({
       success:false,
-      pending,
-      stage:'Đồng bộ bị chặn để bảo vệ dữ liệu',
+      pending:
+        Number(
+          v191PendingCount?.()||0
+        ),
+      stage:'Lỗi đồng bộ',
       detail:e?.message||String(e),
       error:e?.message||String(e)
     });
 
-    if(
-      !silent &&
-      reason!=='timer'
-    ){
-      alert(
-        'Đồng bộ đã dừng để bảo vệ dữ liệu local:\n\n'+
-        String(e?.message||e)
+    if(!silent){
+      toastMsg(
+        'Đồng bộ lỗi: '+
+        (e?.message||String(e))
       );
     }
 
-    return {
-      direction:'error',
-      error:e
-    };
+    throw e;
 
   }finally{
-    v235BatchRemoteApply=false;
-    v235DeferCloudApply=false;
-    v235CloudApplyDeferred=false;
     autoSyncBusy=false;
-
-    const progress=
-      loadSyncProgress();
-
-    if(statusEl){
-      statusEl.textContent=
-        progress.percent===100&&
-        progress.pending===0
-          ?'Đã đồng bộ • 100%'
-          :`${progress.stage} • ${Math.round(progress.percent)}%`;
-    }
   }
 }
 
@@ -48857,7 +48961,7 @@ function v257GateHtml(){
         <summary>Nhập mã ghép thủ công</summary>
 
         <label>
-          Mã đồng bộ
+          Mã đồng bộ cũ (đã ngừng)
           <input
             id="v257PairCode"
             autocomplete="off"
@@ -48973,7 +49077,7 @@ async function v257ManualPair(){
     )
   ){
     v257PairStatus(
-      'Mã đồng bộ chưa đúng định dạng.',
+      'Mã đồng bộ cũ (đã ngừng) chưa đúng định dạng.',
       'warn-text'
     );
     return;
@@ -49098,83 +49202,11 @@ async function v257RestoreAfterPairing(
 }
 
 function initV185AutoSync(){
-  if(v257IsDisconnected()){
-    stopAutoSyncLoop();
-    return;
-  }
-
-  const cfg=loadAutoSyncConfig();
-
-  if(cfg.code){
-    saveMultiDeviceConfig({
-      code:cfg.code
-    });
-  }
-
-  startAutoSyncLoop();
-
-  const first=()=>{
-    if(document.visibilityState==='hidden'){
-      return;
-    }
-
-    autoSyncNow({
-      force:true,
-      reason:'startup',
-      silent:true
-    }).finally(
-      ()=>scheduleNextAutoSyncV203()
-    );
-  };
-
-  if(document.readyState==='complete'){
-    setTimeout(first,1200);
-  }else{
-    window.addEventListener(
-      'load',
-      ()=>setTimeout(first,1200),
-      {once:true}
-    );
-  }
-
-  window.addEventListener(
-    'online',
-    ()=>{
-      if(document.visibilityState==='hidden'){
-        return;
-      }
-
-      autoSyncNow({
-        force:true,
-        reason:'online',
-        silent:true
-      }).finally(
-        ()=>scheduleNextAutoSyncV203()
-      );
-    }
-  );
-
-  document.addEventListener(
-    'visibilitychange',
-    ()=>{
-      if(document.visibilityState==='hidden'){
-        stopAutoSyncLoop();
-        return;
-      }
-
-      if(v203ShouldFocusSync()){
-        autoSyncNow({
-          force:false,
-          reason:'focus',
-          silent:true
-        }).finally(
-          ()=>scheduleNextAutoSyncV203()
-        );
-      }else{
-        scheduleNextAutoSyncV203();
-      }
-    }
-  );
+  /*
+    V264: legacy QR/Canonical auto-sync is permanently disabled.
+    Smart row sync V262 is started by init() after authentication.
+  */
+  stopAutoSyncLoop();
 }
 
 function runWhenIdleV203(fn,timeout=800){
@@ -49297,7 +49329,7 @@ function multiDeviceFormValues(){
 
 function validateMultiDeviceCredentials(values){
   if(!/^LY-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(values.code)){
-    alert('Mã đồng bộ chưa đúng định dạng LY-XXXXX-XXXXX.');
+    alert('Mã đồng bộ cũ (đã ngừng) chưa đúng định dạng LY-XXXXX-XXXXX.');
     return false;
   }
   if(String(values.passphrase||'').length<6){
@@ -49492,7 +49524,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V257',
+      app_version:'V264',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -49784,7 +49816,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v257-full-backup-'+
+    'lat-yen-v259-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -53855,7 +53887,7 @@ async function v249CommitAndConfirmCanonical(
     before.payload
   ){
     throw new Error(
-      `Mã đồng bộ mới không còn sạch trước commit (revision ${before.revision||0}).`
+      `Mã đồng bộ cũ (đã ngừng) mới không còn sạch trước commit (revision ${before.revision||0}).`
     );
   }
 
@@ -54057,7 +54089,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V257',
+      app_version:'V264',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -54092,585 +54124,7 @@ async function v239ReplaceCloudBackup(){
 }
 
 async function v239ResetCloudFromThisDevice(){
-  if(v239ResetBusy){
-    toastMsg(
-      'Đang đặt lại Cloud'
-    );
-    return;
-  }
-
-  if(!navigator.onLine){
-    alert(
-      'Thiết bị đang offline. Không thể đặt lại Cloud.'
-    );
-    return;
-  }
-
-  v239ResetBusy=true;
-
-  const autoBefore=
-    loadAutoSyncConfig();
-
-  let resetLock=false;
-  let cleanGeneration=null;
-
-  const report={
-    started_at:
-      new Date().toISOString(),
-    local_total:0,
-    normalized_technical_ids:0,
-    exact_duplicates_removed:0,
-    id_collision_variants:0,
-    recipe_semantic_removed:0,
-    recipe_conflicts_resolved:0,
-    prepared_semantic_removed:0,
-    prepared_conflicts_resolved:0,
-    deleted:[],
-    seeded:0,
-    canonical_revision:0,
-    backup_replaced:false,
-    sync_code_rotated:false,
-    old_sync_code:'',
-    new_sync_code:'',
-    preflight_passed:false,
-    metadata_ready_before_delete:false,
-    success:false
-  };
-
-  beginSyncProgress();
-
-  try{
-    updateSyncProgress(
-      2,
-      'Kiểm tra an toàn',
-      'Đang kiểm tra local, schema, quyền Cloud và collision'
-    );
-
-    await v244AcquireResetLock();
-    resetLock=true;
-
-    await v244WaitForSyncIdle();
-
-    v244CancelBackgroundSync();
-
-    const preflight=
-      await v244CloudResetPreflight();
-
-    report.preflight_passed=true;
-    report.local_total=
-      preflight.readiness.total;
-
-    const collisions=
-      preflight.collision_plan||
-      {};
-
-    updateSyncProgress(
-      5,
-      'Kiểm tra an toàn PASS',
-      `Collision:${Number(collisions.duplicate_id_groups||0)} • CRUD PASS • Storage PASS • Canonical cũ ${preflight.old_canonical_readable?'đọc được':'sẽ bỏ qua'}`
-    );
-
-    const first=
-      await appConfirm(
-        `Kiểm tra an toàn đã PASS.\n\nThiết bị hiện tại có ${preflight.readiness.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.\n\n`+
-        'V250 sẽ tạo mã đồng bộ mới, commit Canonical rồi đọc lại bằng RPC SECURITY DEFINER. SELECT trực tiếp chỉ còn là đường nhanh và không còn chặn Reset nếu RLS ẩn row.\n\n'+
-        'Các thiết bị khác sau Reset phải ghép lại bằng mã/QR mới.',
-        'Đặt lại toàn bộ Cloud'
-      );
-
-    if(!first){
-      throw new Error(
-        '__USER_CANCEL__'
-      );
-    }
-
-    const second=
-      await appConfirm(
-        'Xác nhận lần cuối:\n\n'+
-        '• Snapshot local được tạo trước mọi thay đổi.\n'+
-        '• Collision-Safe Normalize + FULL audit chạy trước DELETE.\n'+
-        '• Tạo mã đồng bộ THẾ HỆ MỚI.\n'+
-        '• Canonical mới phải PASS commit RPC + RPC read-back.\n'+
-        '• Backup mới phải upload PASS.\n'+
-        '• CHỈ SAU ĐÓ mới DELETE dữ liệu nghiệp vụ Cloud.\n\n'+
-        'Tiếp tục?',
-        'XÁC NHẬN RESET CLOUD'
-      );
-
-    if(!second){
-      throw new Error(
-        '__USER_CANCEL__'
-      );
-    }
-
-    v204EmergencySnapshot(
-      'v247_before_clean_generation_reset'
-    );
-
-    updateSyncProgress(
-      7,
-      'Đang chuẩn hóa local',
-      'Collision-Safe Normalize • chưa xóa Cloud'
-    );
-
-    const normalized=
-      await v241NormalizeTechnicalLineIds();
-
-    report.normalized_technical_ids=
-      normalized.rekeyed||0;
-
-    report.exact_duplicates_removed=
-      normalized.exact_duplicates_removed||0;
-
-    report.id_collision_variants=
-      normalized.id_collision_variants||0;
-
-    report.recipe_semantic_removed=
-      normalized.recipe_semantic_removed||0;
-
-    report.recipe_conflicts_resolved=
-      normalized.recipe_conflicts_resolved||0;
-
-    report.prepared_semantic_removed=
-      normalized.prepared_semantic_removed||0;
-
-    report.prepared_conflicts_resolved=
-      normalized.prepared_conflicts_resolved||0;
-
-    v241StrictReadinessAfterNormalize();
-
-    const integrityAfter=
-      v244LocalIntegrityAudit();
-
-    if(!integrityAfter.ok){
-      throw new Error(
-        'FULL audit sau normalize không đạt:\n'+
-        integrityAfter.errors
-          .slice(0,20)
-          .join('\n')
-      );
-    }
-
-    const collisionAfter=
-      v245TechnicalCollisionStats();
-
-    if(
-      collisionAfter.duplicate_id_groups ||
-      collisionAfter.recipe_semantic_duplicates ||
-      collisionAfter.prepared_semantic_duplicates
-    ){
-      throw new Error(
-        'Collision-Safe Normalize chưa hội tụ hoàn toàn.'
-      );
-    }
-
-    /*
-      KEY V247 CHANGE:
-      Canonical + Backup MUST be ready before any business DELETE.
-    */
-    updateSyncProgress(
-      15,
-      'Tạo thế hệ đồng bộ mới',
-      'Đang tạo mã mới • Canonical mới • Backup mới'
-    );
-
-    cleanGeneration=
-      await v247PrepareCleanGeneration();
-
-    report.sync_code_rotated=
-      !!cleanGeneration.rotated;
-
-    report.old_sync_code=
-      cleanGeneration.oldCode||'';
-
-    report.new_sync_code=
-      cleanGeneration.newCode||'';
-
-    report.canonical_revision=
-      Number(
-        cleanGeneration.canonical?.revision||0
-      );
-
-    report.backup_replaced=
-      !cleanGeneration.backup?.skipped;
-
-    report.metadata_ready_before_delete=true;
-
-    updateSyncProgress(
-      25,
-      'Metadata mới đã sẵn sàng',
-      `Mã mới ${cleanGeneration.newCode} • Canonical Rev ${report.canonical_revision} • đọc ${cleanGeneration.canonical?.read_source==='rpc_fallback'?'RPC fallback':'SELECT'} • Backup PASS`
-    );
-
-    v244TouchResetLock();
-
-    const payload=
-      await v239BuildCloudSeed();
-
-    /*
-      Destructive phase begins ONLY here.
-    */
-    report.deleted=
-      await v239DeleteBusinessCloud();
-
-    const empty=
-      await v239VerifyCloudEmpty();
-
-    if(!empty.empty){
-      throw new Error(
-        'Cloud chưa xóa sạch: '+
-        Object.entries(
-          empty.nonEmpty
-        )
-          .map(
-            ([k,v])=>`${k}:${v}`
-          )
-          .join(' • ')
-      );
-    }
-
-    updateSyncProgress(
-      44,
-      'Cloud nghiệp vụ đã sạch',
-      'Đang nạp lại dữ liệu từ local'
-    );
-
-    const seeded=
-      await v239SeedCloudFromLocal(
-        payload
-      );
-
-    report.seeded=
-      seeded.done;
-
-    /*
-      V251: verify recipe_items immediately after seed. If a few rows are
-      missing or have wrong quantity, repair only those rows before the final
-      Cloud Pull instead of failing the whole Reset.
-    */
-    updateSyncProgress(
-      78,
-      'Đang xác minh công thức',
-      `${payload.recipe_items.length} dòng công thức • kiểm tra tồn tại + định lượng`
-    );
-
-    const recipeVerify=
-      await v251VerifyAndRepairRecipeSeed(
-        payload.recipe_items
-      );
-
-    report.recipe_repaired=
-      Number(
-        recipeVerify.repaired||0
-      );
-
-    report.recipe_missing_before=
-      Number(
-        recipeVerify.missing_before||0
-      );
-
-    report.recipe_quantity_fixed=
-      Number(
-        recipeVerify.updated||0
-      );
-
-    v244ClearBusinessTombstones();
-
-    /*
-      Do NOT perform another canonical CAS after DELETE.
-      The canonical already passed before destructive phase.
-      Only refresh it once locally after tombstone cleanup if state changed;
-      failure here is non-destructive metadata follow-up and does not invalidate
-      the rebuilt business Cloud.
-    */
-    updateSyncProgress(
-      84,
-      'Đang xác minh dữ liệu nghiệp vụ',
-      'Canonical đã PASS trước DELETE'
-    );
-
-    await loadCloudFastV202(
-      true
-    );
-
-    let coverage=
-      v228Coverage();
-
-    /*
-      V255: repair missing warehouse master rows before final Reset failure.
-    */
-    if(
-      coverage.proofAvailable &&
-      Number(coverage.missingByTable?.warehouses||0)>0
-    ){
-      updateSyncProgress(
-        89,
-        'Đang chốt kho Cloud',
-        `${Number(coverage.missingByTable?.warehouses||0)} kho cần xác nhận`
-      );
-
-      const warehouseHeal=
-        await v255HealWarehouseCoverageIfNeeded();
-
-      report.warehouse_repaired=
-        Number(warehouseHeal.repair?.repaired||0);
-
-      report.warehouse_remaining=
-        Number(warehouseHeal.repair?.remaining||0);
-
-      coverage=
-        warehouseHeal.coverage||
-        v228Coverage();
-    }
-
-    /*
-      One last targeted self-heal: if the ONLY remaining records are recipes,
-      repair those recipes and pull proof again. Never auto-hide missing rows
-      from other business tables.
-    */
-    if(
-      coverage.proofAvailable &&
-      Number(
-        coverage.localOnly||0
-      )>0 &&
-      Number(
-        coverage.missingByTable?.recipe_items||0
-      )===
-      Number(
-        coverage.localOnly||0
-      )
-    ){
-      updateSyncProgress(
-        91,
-        'Đang chốt công thức Cloud',
-        `${coverage.localOnly} dòng cần xác nhận lại`
-      );
-
-      const recipeFinal=
-        await v251RepairRecipeCoverageIfNeeded(
-          payload
-        );
-
-      report.recipe_final_repaired=
-        Number(
-          recipeFinal.repaired||0
-        );
-
-      coverage=
-        recipeFinal.coverage||
-        v228Coverage();
-    }
-
-    if(
-      !coverage.proofAvailable||
-      Number(
-        coverage.localOnly||0
-      )!==0
-    ){
-      throw new Error(
-        `Xác minh sau Reset còn ${Number(coverage.localOnly||0)} record chưa được Cloud xác nhận • ${v228CoverageBreakdownText(coverage)}`
-      );
-    }
-
-    setPendingSync([]);
-
-    const resetAck=await v252ExactAckPending();
-    report.pending_ack_rows=Number(resetAck.ackedRows||0);
-    report.pending_after_ack=Number(resetAck.after||0);
-
-    repairFalsePendingLocalRowsV197();
-
-    const finalPending=v191PendingCount();
-    if(finalPending!==0){
-      throw new Error(
-        `Cloud đã xác nhận đủ record nhưng còn ${finalPending} pending local chưa khớp chính xác. Không báo hoàn tất giả.`
-      );
-    }
-
-    const now=
-      new Date().toISOString();
-
-    saveAutoSyncConfig({
-      enabled:
-        autoBefore.enabled!==false,
-      last_sync_at:now,
-      last_result:
-        'v255_warehouse_self_heal_complete',
-      cloud_revision:
-        report.canonical_revision,
-      cloud_revision_token:
-        String(
-          report.canonical_revision||0
-        )
-    });
-
-    finishSyncProgress({
-      success:true,
-      pending:0,
-      stage:
-        'Cloud đã được đặt lại',
-      detail:
-        `Cloud ${coverage.covered}/${coverage.total} • công thức repair ${Number(report.recipe_repaired||0)+Number(report.recipe_final_repaired||0)}`
-    });
-
-    report.success=true;
-    report.finished_at=now;
-
-    v239SaveReport(
-      report
-    );
-
-    v247SaveGenerationInfo({
-      old_code:
-        report.old_sync_code,
-      new_code:
-        report.new_sync_code,
-      canonical_revision:
-        report.canonical_revision,
-      status:'complete'
-    });
-
-    await v244ReleaseResetLock();
-    resetLock=false;
-
-    if(
-      autoBefore.enabled!==false
-    ){
-      startAutoSyncLoop();
-    }
-
-    setupRealtime();
-    renderAll();
-
-    alert(
-      'Đã đặt lại Cloud thành công.\n\n'+
-      `Mã đồng bộ mới: ${report.new_sync_code}\n`+
-      `Canonical mới: Revision ${report.canonical_revision}\n`+
-      `Đã nạp lại Cloud: ${report.seeded} lượt record.\n\n`+
-      'Quan trọng: các thiết bị khác phải ghép lại bằng QR/mã mới. Không dùng mã đồng bộ cũ nữa.'
-    );
-
-  }catch(e){
-    const message=
-      e?.message||
-      String(e);
-
-    if(
-      message==='__USER_CANCEL__'
-    ){
-      finishSyncProgress({
-        success:false,
-        pending:
-          v191PendingCount(),
-        stage:
-          'Đã hủy Reset Cloud',
-        detail:
-          'Không có dữ liệu Cloud thật nào bị xóa.'
-      });
-
-    }else{
-      console.error(
-        'V247 Cloud Reset',
-        e
-      );
-
-      report.error=message;
-      report.finished_at=
-        new Date().toISOString();
-
-      v239SaveReport(
-        report
-      );
-
-      finishSyncProgress({
-        success:false,
-        pending:
-          v191PendingCount(),
-        stage:
-          report.deleted.length
-            ?'Reset Cloud bị dừng sau DELETE'
-            :'Reset dừng an toàn trước DELETE',
-        detail:
-          message,
-        error:
-          message
-      });
-
-      if(report.deleted.length){
-        /*
-          Only business-table failures can arrive here after DELETE.
-          Canonical/Backup can no longer be the reason because they were
-          completed before destructive phase.
-        */
-        try{
-          const payload=
-            await v239BuildCloudSeed();
-
-          await v239SeedCloudFromLocal(
-            payload
-          );
-        }catch(recoveryError){
-          console.error(
-            'V247 emergency reseed',
-            recoveryError
-          );
-        }
-      }else if(cleanGeneration?.identityBefore){
-        /*
-          If new generation creation failed BEFORE real DELETE, restore the
-          previous local pairing identity. Any empty/new canonical row is
-          harmless and unused.
-        */
-        v247RestoreSyncIdentity(
-          cleanGeneration.identityBefore
-        );
-      }
-
-      alert(
-        (
-          report.deleted.length
-            ?'Reset Cloud đã dừng sau khi bắt đầu xử lý dữ liệu nghiệp vụ.'
-            :'Cloud nghiệp vụ thật CHƯA bị xóa.'
-        )+
-        '\n\n'+
-        message+
-        '\n\n'+
-        (
-          report.deleted.length
-            ?'Local vẫn có snapshot và app đã thử reseed Cloud từ local.'
-            :'Lỗi xảy ra trước giai đoạn DELETE nên dữ liệu Cloud nghiệp vụ cũ vẫn được giữ.'
-        )
-      );
-    }
-
-    if(resetLock){
-      await v244ReleaseResetLock();
-      resetLock=false;
-    }
-
-    if(
-      autoBefore.enabled!==false
-    ){
-      startAutoSyncLoop();
-    }
-
-    try{
-      setupRealtime();
-    }catch(rtError){}
-
-  }finally{
-    if(resetLock){
-      await v244ReleaseResetLock();
-    }
-
-    v239ResetBusy=false;
-
-    if(
-      activePanelId==='settings'
-    ){
-      renderSettings();
-    }
-  }
+  return v264ResetCloudClean();
 }
 
 function renderSettings(){
@@ -54706,6 +54160,14 @@ function renderSettings(){
 
   E.settings.innerHTML=`
     <div id="v221SettingsHealth" class="v221-health"></div>
+
+    <div class="v260-account-bar">
+      <div>
+        <b>Tài khoản</b>
+        <div class="muted">${esc(v260AccountEmail()||'Đã đăng nhập')}</div>
+      </div>
+      <button class="secondary sm" onclick="v260LogoutAndWipe()">Đăng xuất</button>
+    </div>
 
     <div class="card sync-v237-card">
       <div class="sync-v237-head">
@@ -54781,7 +54243,7 @@ function renderSettings(){
           class="secondary"
           onclick="${paired?'showPairingQr()':'scanPairingQr()'}"
         >
-          ${paired?'Ghép thiết bị mới':'Ghép thiết bị'}
+          ${paired?'Đăng nhập trên thiết bị khác':'Tài khoản & thiết bị'}
         </button>
 
         ${
@@ -54789,7 +54251,7 @@ function renderSettings(){
             ?`
               <button
                 class="secondary"
-                onclick="showPairingQr()"
+                onclick="v260LogoutAndWipe()"
               >Tạo mã ghép</button>
             `
             :''
@@ -54863,11 +54325,11 @@ function renderSettings(){
           <div class="sync-v237-group">
             <div class="sync-v237-group-head">
               <div>
-                <b>Ghép thiết bị</b>
-                <span>Ưu tiên dùng QR. Mã thủ công chỉ dùng khi không quét được.</span>
+                <b>Tài khoản & thiết bị</b>
+                <span>Thiết bị mới chỉ cần mở web/PWA và đăng nhập cùng tài khoản.</span>
               </div>
               <div class="sync-v237-row-actions">
-                <button class="secondary sm" onclick="showPairingQr()">Hiện QR</button>
+                <button class="secondary sm" onclick="v260LogoutAndWipe()">Hiện QR</button>
                 <button class="secondary sm" onclick="scanPairingQr()">Quét QR</button>
               </div>
             </div>
@@ -54877,7 +54339,7 @@ function renderSettings(){
 
               <div class="sync-v237-pair-grid">
                 <div>
-                  <label>Mã đồng bộ</label>
+                  <label>Mã đồng bộ cũ (đã ngừng)</label>
                   <div class="multi-code-row">
                     <input
                       id="multiDeviceCode"
@@ -55889,12 +55351,439 @@ v224InstallZoomLock();
 v226InstallNotifications();
 v210InitLeaderElection();
 
-async function init(){
-  if(v257IsDisconnected()){
-    v257EmptyRuntimeData();
-    v257ShowDisconnectedGate();
+
+/* ===== V260 AUTH FOUNDATION ===== */
+let v260Session=null;
+let v260AuthReady=false;
+
+function v260AuthGateHtml(){
+  return `
+    <div class="v260-auth-card">
+      <div class="v260-auth-logo">☁</div>
+      <h1>Đăng nhập Quản Lý Lát Yên</h1>
+      <p>
+        Đăng nhập để tự động tải dữ liệu Cloud. Phiên đăng nhập được lưu an toàn,
+        vì vậy refresh hoặc mở lại PWA không cần đăng nhập lại cho tới khi đăng xuất.
+      </p>
+
+      <label>Email</label>
+      <input id="v260Email" type="email" autocomplete="username" placeholder="email@example.com">
+
+      <label>Mật khẩu</label>
+      <input id="v260Password" type="password" autocomplete="current-password" placeholder="Mật khẩu">
+
+      <div class="v260-auth-actions">
+        <button class="primary" onclick="v260Login()">Đăng nhập</button>
+        <button class="secondary" onclick="v260SignUp()">Tạo tài khoản</button>
+      </div>
+
+      <div id="v260AuthStatus" class="v260-auth-status muted"></div>
+    </div>
+  `;
+}
+
+function v260ShowAuthGate(){
+  let gate=document.getElementById('v260AuthGate');
+  if(!gate){
+    gate=document.createElement('div');
+    gate.id='v260AuthGate';
+    gate.className='v260-auth-gate';
+    document.body.appendChild(gate);
+  }
+  gate.innerHTML=v260AuthGateHtml();
+}
+
+function v260HideAuthGate(){
+  document.getElementById('v260AuthGate')?.remove();
+}
+
+function v260AuthStatus(msg,bad=false){
+  const el=document.getElementById('v260AuthStatus');
+  if(!el)return;
+  el.className='v260-auth-status '+(bad?'warn-text':'muted');
+  el.textContent=msg||'';
+}
+
+async function v260Login(){
+  const email=String(document.getElementById('v260Email')?.value||'').trim();
+  const password=String(document.getElementById('v260Password')?.value||'');
+  if(!email||!password){
+    v260AuthStatus('Nhập email và mật khẩu.',true);
     return;
   }
+
+  v260AuthStatus('Đang đăng nhập…');
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  if(error){
+    v260AuthStatus(error.message||String(error),true);
+    return;
+  }
+
+  v260Session=data.session||null;
+  v257ClearDisconnectedState?.();
+  location.reload();
+}
+
+async function v260SignUp(){
+  const email=String(document.getElementById('v260Email')?.value||'').trim();
+  const password=String(document.getElementById('v260Password')?.value||'');
+  if(!email||password.length<6){
+    v260AuthStatus('Email hợp lệ và mật khẩu ít nhất 6 ký tự.',true);
+    return;
+  }
+
+  v260AuthStatus('Đang tạo tài khoản…');
+  const {data,error}=await sb.auth.signUp({email,password});
+  if(error){
+    v260AuthStatus(error.message||String(error),true);
+    return;
+  }
+
+  if(data.session){
+    v260Session=data.session;
+    location.reload();
+    return;
+  }
+
+  v260AuthStatus('Đã tạo tài khoản. Nếu Supabase yêu cầu xác minh email, hãy xác minh rồi đăng nhập.');
+}
+
+async function v260EnsureAuth(){
+  const {data,error}=await sb.auth.getSession();
+  if(error){
+    v260ShowAuthGate();
+    v260AuthStatus(error.message||String(error),true);
+    return false;
+  }
+
+  v260Session=data.session||null;
+  v260AuthReady=true;
+
+  if(!v260Session){
+    v260ShowAuthGate();
+    return false;
+  }
+
+  v260HideAuthGate();
+  v257ClearDisconnectedState?.();
+  return true;
+}
+
+async function v260LogoutAndWipe(){
+  const ok=await appConfirm(
+    'Đăng xuất khỏi thiết bị này?\n\nDữ liệu Cloud không bị xóa. Cache và phiên đăng nhập trên thiết bị hiện tại sẽ được xóa.',
+    'Đăng xuất'
+  );
+  if(!ok)return;
+
+  try{await sb.auth.signOut()}catch(e){}
+  try{v257EmptyRuntimeData?.()}catch(e){}
+  try{localStorage.clear()}catch(e){}
+  try{sessionStorage.clear()}catch(e){}
+  try{await v257DeleteIndexedDbData?.()}catch(e){}
+  location.reload();
+}
+
+function v260AccountEmail(){
+  return v260Session?.user?.email||'';
+}
+
+
+/* ===== V261 ORGANIZATION / RLS FOUNDATION ===== */
+const V261_ORG_KEY='lat_yen_active_org_v261';
+let v261OrganizationId='';
+
+async function v261EnsureOrganization(){
+  const cached=String(localStorage.getItem(V261_ORG_KEY)||'');
+  if(cached){
+    v261OrganizationId=cached;
+  }
+
+  const r=await sb.rpc('bootstrap_my_organization_v261',{
+    p_name:'LAT YEN'
+  });
+
+  if(r.error){
+    throw new Error(
+      'Chưa hoàn tất Cloud Data V2. Hãy chạy SQL V261 trên Supabase trước.\n'+
+      (r.error.message||String(r.error))
+    );
+  }
+
+  const row=Array.isArray(r.data)?r.data[0]:r.data;
+  const orgId=String(row?.organization_id||row?.id||r.data||'');
+  if(!orgId){
+    throw new Error('Không nhận được organization_id từ Cloud.');
+  }
+
+  v261OrganizationId=orgId;
+  localStorage.setItem(V261_ORG_KEY,orgId);
+  return orgId;
+}
+
+
+/* ===== V262 SMART ROW SYNC ===== */
+const V262_CURSOR_KEY='lat_yen_v2_sync_cursors_v262';
+const V262_TABLES=[
+  'warehouses','suppliers','ingredients','inventory','products',
+  'recipe_items','prepared_ingredient_items','sales','sale_items','stock_transactions'
+];
+let v262SmartBusy=false;
+let v262Timer=null;
+
+function v262Cursors(){
+  try{return JSON.parse(localStorage.getItem(V262_CURSOR_KEY)||'{}')||{}}
+  catch(e){return {}}
+}
+function v262SaveCursors(x){
+  localStorage.setItem(V262_CURSOR_KEY,JSON.stringify(x||{}));
+}
+
+async function v262SmartPull(force=false){
+  if(v262SmartBusy||!navigator.onLine||!v260Session)return null;
+  v262SmartBusy=true;
+
+  const cursors=v262Cursors();
+  let applied=0;
+
+  try{
+    for(const table of V262_TABLES){
+      let q=sb.from(table).select('*').order('updated_at',{ascending:true}).limit(1000);
+      if(!force&&cursors[table]){
+        q=q.gt('updated_at',cursors[table]);
+      }
+
+      const {data,error}=await q;
+      if(error)throw error;
+
+      let maxCursor=cursors[table]||'';
+
+      for(const row of data||[]){
+        if(row.deleted_at){
+          v207ApplyRealtimeRow(table,{
+            eventType:'DELETE',
+            old:row,
+            new:{}
+          });
+        }else{
+          v207ApplyRealtimeRow(table,{
+            eventType:'UPDATE',
+            old:{},
+            new:row
+          });
+        }
+
+        if(row.updated_at && String(row.updated_at)>String(maxCursor)){
+          maxCursor=row.updated_at;
+        }
+        applied++;
+      }
+
+      if(maxCursor)cursors[table]=maxCursor;
+    }
+
+    v262SaveCursors(cursors);
+    cacheSave();
+    v207ScheduleActiveRender?.();
+
+    return {applied,cursors};
+  }finally{
+    v262SmartBusy=false;
+  }
+}
+
+function v262StartSmartSync(){
+  clearInterval(v262Timer);
+  setTimeout(()=>v262SmartPull(false).catch(console.warn),1500);
+  v262Timer=setInterval(()=>{
+    if(!document.hidden && !v219InteractionActive()){
+      v262SmartPull(false).catch(console.warn);
+    }
+  },30000);
+}
+
+
+/* ===== V263 AUTH-FIRST FINAL CUTOVER ===== */
+const V263_MODE_KEY='lat_yen_auth_v2_active_v263';
+
+function v263AuthMode(){
+  return !!v260Session && !!v261OrganizationId;
+}
+
+function showPairingQr(){
+  alert('Ghép QR đã ngừng sử dụng. Hãy đăng nhập cùng tài khoản trên thiết bị mới.');
+}
+function scanPairingQr(){
+  alert('Ghép QR đã ngừng sử dụng. Hãy đăng nhập cùng tài khoản trên thiết bị mới.');
+}
+function pastePairingCode(){
+  alert('Mã ghép đã ngừng sử dụng. Hãy đăng nhập cùng tài khoản.');
+}
+
+async function disconnectThisDeviceV257(){
+  return v260LogoutAndWipe();
+}
+
+async function v263ResetOrganizationData(){
+  const ok=await appConfirm(
+    'Xóa toàn bộ dữ liệu nghiệp vụ của tài khoản này trên Cloud?\n\nThao tác được chạy trong một transaction phía server: hoặc xóa thành công toàn bộ, hoặc rollback toàn bộ.',
+    'Xóa dữ liệu Cloud'
+  );
+  if(!ok)return;
+
+  const confirm2=await appConfirm(
+    'XÁC NHẬN LẦN CUỐI\n\nDữ liệu nghiệp vụ Cloud của tổ chức hiện tại sẽ bị xóa. Tài khoản đăng nhập vẫn được giữ.',
+    'Xác nhận xóa Cloud'
+  );
+  if(!confirm2)return;
+
+  const {data,error}=await sb.rpc('reset_my_organization_v263');
+  if(error){
+    alert('Không xóa được Cloud: '+(error.message||String(error)));
+    return;
+  }
+
+  try{v257EmptyRuntimeData?.()}catch(e){}
+  try{
+    const keepSession=await sb.auth.getSession();
+    const session=keepSession.data?.session||null;
+    localStorage.clear();
+    sessionStorage.clear();
+    // Supabase session storage is restored by SDK after reload if still present;
+    // if browser storage was cleared, user simply logs in again.
+  }catch(e){}
+
+  alert('Đã xóa dữ liệu Cloud bằng transaction server.');
+  location.reload();
+}
+
+
+/* ===== V264 CLEAN AUTH CLOUD CUTOVER ===== */
+const V264_CLEAN_MODE_KEY='lat_yen_v264_clean_auth_mode';
+
+function v264CleanMode(){
+  return !!v260Session && !!v261OrganizationId;
+}
+
+function v264LegacyPairingDisabled(){
+  alert(
+    'Tài khoản & thiết bị bằng QR/mã đã được loại bỏ.\n\n'+
+    'Trên thiết bị mới, chỉ cần mở phần mềm và đăng nhập cùng tài khoản.'
+  );
+}
+
+function showPairingQr(){
+  return v264LegacyPairingDisabled();
+}
+
+function scanPairingQr(){
+  return v264LegacyPairingDisabled();
+}
+
+function pastePairingCode(){
+  return v264LegacyPairingDisabled();
+}
+
+function pairingPayload(){
+  throw new Error(
+    'V264 không còn sử dụng Pairing QR.'
+  );
+}
+
+async function disconnectThisDeviceV257(){
+  return v260LogoutAndWipe();
+}
+
+async function v264ClearLocalBusinessCache(){
+  try{
+    v257EmptyRuntimeData?.();
+  }catch(e){}
+
+  /*
+    Preserve Supabase auth storage keys so logout/login behavior remains
+    controlled by Supabase SDK. Remove Lat Yen local/business keys only.
+  */
+  const remove=[];
+
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i)||'';
+
+    if(
+      key.startsWith('lat_yen_') ||
+      key.startsWith('kho_v3_') ||
+      key.startsWith('__latyen_')
+    ){
+      remove.push(key);
+    }
+  }
+
+  for(const key of remove){
+    localStorage.removeItem(key);
+  }
+
+  try{
+    sessionStorage.clear();
+  }catch(e){}
+
+  try{
+    await v257DeleteIndexedDbData?.();
+  }catch(e){}
+}
+
+async function v264ResetCloudClean(){
+  const first=await appConfirm(
+    'Xóa TOÀN BỘ dữ liệu nghiệp vụ Cloud của tài khoản hiện tại?\n\n'+
+    'Đây là bản thử nghiệm nên thao tác sẽ làm sạch hoàn toàn dữ liệu và giữ nguyên tài khoản đăng nhập.',
+    'Làm mới dữ liệu Cloud'
+  );
+
+  if(!first)return;
+
+  const second=await appConfirm(
+    'XÁC NHẬN LẦN CUỐI\n\n'+
+    'Kho, nguyên liệu, công thức, tồn kho, phiếu bán và lịch sử kho trên Cloud sẽ bị xóa trong một transaction server.',
+    'Xóa sạch Cloud'
+  );
+
+  if(!second)return;
+
+  const {data,error}=await sb.rpc(
+    'reset_my_organization_v264'
+  );
+
+  if(error){
+    alert(
+      'Không xóa được Cloud:\n'+
+      (error.message||String(error))
+    );
+    return;
+  }
+
+  await v264ClearLocalBusinessCache();
+
+  alert(
+    'Đã làm sạch Cloud thành công.\n\nPhần mềm sẽ tải lại với dữ liệu trắng.'
+  );
+
+  location.reload();
+}
+
+async function init(){
+  if(!(await v260EnsureAuth())){
+    return;
+  }
+
+  try{
+    await v261EnsureOrganization();
+  }catch(e){
+    v260ShowAuthGate();
+    v260AuthStatus(e?.message||String(e),true);
+    return;
+  }
+
+  v262StartSmartSync();
+  localStorage.setItem(V264_CLEAN_MODE_KEY,'1');
+  localStorage.setItem(V263_MODE_KEY,'1');
 
   normalizeAllTableHeaders(document);
   installPageStickyTableDock();

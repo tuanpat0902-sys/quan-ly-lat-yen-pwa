@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V257",
+  "name": "Quản Lý Lát Yên V264",
   "short_name": "Lát Yên",
-  "description": "Secure device disconnect: wipes all local data and credentials on the current device, leaves Cloud untouched, locks the app, and requires pairing before data can be used again.",
+  "description": "One-shot clean Auth Cloud V2 cutover: persistent login, organization RLS, incremental row sync, no QR pairing, transactional Cloud reset.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

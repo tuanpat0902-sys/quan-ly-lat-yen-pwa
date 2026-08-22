@@ -1,0 +1,32 @@
+V264 - ONE-SHOT CLEAN AUTH CLOUD CUTOVER
+
+ĐÂY LÀ PHƯƠNG ÁN DÀNH CHO BẢN THỬ NGHIỆM.
+TOÀN BỘ DỮ LIỆU NGHIỆP VỤ CLOUD HIỆN TẠI SẼ BỊ XÓA.
+
+CHỈ 2 BƯỚC:
+
+BƯỚC 1 - SUPABASE
+1. Authentication -> Providers -> bật Email.
+2. SQL Editor -> New Query.
+3. Chạy toàn bộ SUPABASE-V264-ONE-SHOT-CLEAN-CUTOVER.sql.
+4. SQL phải chạy thành công.
+
+BƯỚC 2 - GITHUB
+1. Giải nén quan-ly-lat-yen-pwa-v264-upload-ready.zip.
+2. Thay file web trong GitHub Pages repo bằng toàn bộ file trong ZIP.
+3. Commit/deploy.
+4. Mở web -> tạo tài khoản/đăng nhập.
+
+SAU CUTOVER:
+- QR/mã ghép: bỏ.
+- Thiết bị mới: đăng nhập cùng tài khoản.
+- Refresh/PWA reopen: giữ session, không login lại.
+- Cloud rows là nguồn dữ liệu chính.
+- Smart Sync: theo updated_at/version.
+- Realtime: row-level.
+- Full pull: chỉ fallback/verify.
+- Xóa Cloud: RPC transaction server.
+- Đăng xuất: xóa local/cache, Cloud giữ nguyên.
+
+LƯU Ý:
+Nếu bật Confirm Email trong Supabase, tài khoản mới cần xác nhận email trước khi đăng nhập.
