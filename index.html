@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V226 NATIVE PUSH ===== */
+/* ===== V228 TRUE CLOUD PROOF ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -12010,17 +12010,43 @@ function v221SmartRender(table=''){
 
 function v221SystemHealth(){
   const pending=Number(v191PendingCount()||0);
-  const localOnly=Number(v198CloudCoverage()?.localOnly||0);
-  return {pending,localOnly,clean:pending===0&&localOnly===0&&!!cloudOnline};
+  const coverage=v228Coverage();
+  const localOnly=Number(coverage?.localOnly||0);
+
+  return {
+    pending,
+    localOnly,
+    proofAvailable:!!coverage.proofAvailable,
+    clean:
+      pending===0 &&
+      localOnly===0 &&
+      !!coverage.proofAvailable &&
+      !!cloudOnline
+  };
 }
 function v221UpdateSettingsHealth(){
   const el=document.getElementById('v221SettingsHealth');
   if(!el)return;
+
   const h=v221SystemHealth();
+  const coverage=v228Coverage();
+
   el.className='v221-health '+(h.clean?'ok':'warn');
-  el.innerHTML=h.clean
-    ?'<b>✓ Hệ thống ổn định</b><span>Cloud sạch • không pending • không dữ liệu local tồn đọng</span>'
-    :`<b>⚠ Cần xử lý đồng bộ</b><span>${h.pending} pending • ${h.localOnly} local-only</span>`;
+
+  el.innerHTML=
+    h.clean
+      ?(
+        `<b>✓ Hệ thống ổn định</b>`+
+        `<span>Cloud đã đối chiếu trực tiếp ${coverage.covered}/${coverage.total} record • không pending</span>`
+      )
+      :(
+        `<b>⚠ Cần xử lý đồng bộ</b>`+
+        `<span>${
+          !coverage.proofAvailable
+            ?'Chưa có Cloud Pull xác minh'
+            :`${h.localOnly} record chưa được Cloud xác nhận • ${esc(v228CoverageBreakdownText(coverage))}`
+        }${h.pending?` • ${h.pending} pending`:''}</span>`
+      );
 }
 
 function v221RecentSelections(){
@@ -13752,11 +13778,12 @@ let v218FollowerRenderTimer=null;
 
 function v218SystemIsClean(){
   try{
+    const coverage=v228Coverage();
+
     return (
       v191PendingCount()===0 &&
-      Number(
-        v198CloudCoverage()?.localOnly||0
-      )===0
+      !!coverage.proofAvailable &&
+      Number(coverage.localOnly||0)===0
     );
   }catch(e){
     return false;
@@ -14878,9 +14905,8 @@ function v204DetectUnsafeDrop(before,after){
 }
 
 function v204LocalOnlyCount(){
-  return Number(
-    v198CloudCoverage()?.localOnly||0
-  );
+  const coverage=v228Coverage();
+  return Number(coverage?.localOnly||0);
 }
 
 function v204CanUseDestructiveCloudReplace(){
@@ -15255,6 +15281,20 @@ async function loadCloud(){
       filterDeletedImportMovements(movementsRaw)
     )
   );
+
+  // V228: proof from exact Supabase response, before local rows are overlaid.
+  v228CaptureCloudProof({
+    warehouses,
+    suppliers,
+    ingredients,
+    inventory,
+    products,
+    recipe_items:recipeItems,
+    prepared_ingredient_items:preparedItems,
+    sales,
+    sale_items:saleItems,
+    stock_transactions:movementsRaw
+  });
   // Không cho các kho đã xóa local xuất hiện trở lại nếu Cloud chưa xóa được.
   const deletedWarehouseIds=getDeletedWarehouseIds();
   for(let i=warehouses.length-1;i>=0;i--){
@@ -15418,6 +15458,7 @@ async function loadCloud(){
   preserveExcelImportedLocal(localBefore,db);
   v205RemapLegacyRowsInPlace(db);
   v205FilterSupersededLegacyRows(db);
+  v228ClearProvenStaleFlags(db);
 
   const unsafeDrops=
    v204DetectUnsafeDrop(
@@ -16165,27 +16206,32 @@ function finishSyncProgress({
   detail='',
   error=''
 }={}){
-  const coverage=
-    typeof v198CloudCoverage==='function'
-      ?v198CloudCoverage()
-      :{localOnly:0};
+  const coverage=v228Coverage();
 
   const clean=
     !!success &&
     Number(pending||0)===0 &&
+    !!coverage.proofAvailable &&
     Number(coverage.localOnly||0)===0;
 
   return saveSyncProgress({
     running:false,
-    percent:clean?100:Math.min(95,Number(loadSyncProgress().percent||0)),
+    percent:
+      clean
+        ?100
+        :Math.min(
+            95,
+            Number(loadSyncProgress().percent||0)
+          ),
     stage:
       stage||
       (
         clean
           ?'Đã đồng bộ hoàn toàn'
           :(
+            coverage.proofAvailable &&
             Number(coverage.localOnly||0)>0
-              ?'Còn dữ liệu chỉ nằm trên thiết bị'
+              ?'Có dữ liệu chưa được Cloud xác nhận'
               :'Chưa đồng bộ hết'
           )
       ),
@@ -16193,11 +16239,15 @@ function finishSyncProgress({
       detail||
       (
         clean
-          ?'Tất cả dữ liệu kiểm tra được đã khớp Cloud.'
+          ?`Cloud xác nhận ${coverage.covered}/${coverage.total} record.`
           :(
-            Number(coverage.localOnly||0)>0
-              ?`Còn ${Number(coverage.localOnly||0)} record chưa có UUID Cloud.`
-              :`Còn ${Number(pending||0)} mục chờ đồng bộ.`
+            !coverage.proofAvailable
+              ?'Chưa có Cloud Pull mới để xác minh trực tiếp.'
+              :(
+                Number(coverage.localOnly||0)>0
+                  ?`Cloud chưa xác nhận ${Number(coverage.localOnly||0)} record • ${v228CoverageBreakdownText(coverage)}`
+                  :`Còn ${Number(pending||0)} mục chờ đồng bộ.`
+              )
           )
       ),
     pending:Number(pending||0),
@@ -16865,14 +16915,19 @@ async function runSyncDiagnostics(){
     );
 
   const coverage=
-    v198CloudCoverage();
+    v228Coverage();
 
   add(
-    'Cloud Coverage = 100%',
-    coverage.localOnly===0,
-    coverage.localOnly===0
-      ?`Tất cả ${coverage.total} record chính đã có UUID Cloud`
-      :`${coverage.localOnly}/${coverage.total} record vẫn chỉ có ID local/Excel`
+    'Cloud Proof = 100%',
+    !!coverage.proofAvailable &&
+      coverage.localOnly===0,
+    !coverage.proofAvailable
+      ?'Chưa có Cloud Pull để đối chiếu trực tiếp'
+      :(
+        coverage.localOnly===0
+          ?`Supabase xác nhận ${coverage.covered}/${coverage.total} record local`
+          :`Cloud chưa xác nhận ${coverage.localOnly}/${coverage.total} record • ${v228CoverageBreakdownText(coverage)}`
+      )
   );
 
   add(
@@ -16897,7 +16952,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:226,
+    version:228,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -18514,33 +18569,440 @@ async function migrateAndSyncV198(){
   }
 }
 
+
+/* ===== V227 CLOUD COVERAGE SEMANTICS ===== */
+function v227CoverageBreakdownText(
+  coverage=v198CloudCoverage()
+){
+  const invalid=coverage?.invalid||{};
+  const labels={
+    warehouses:'kho',
+    suppliers:'nhà cung cấp',
+    ingredients:'nguyên liệu',
+    products:'sản phẩm',
+    inventory:'tồn kho',
+    recipe_items:'công thức',
+    prepared_items:'NL sơ chế',
+    sales:'phiếu bán',
+    sale_items:'chi tiết bán',
+    movements:'biến động kho'
+  };
+
+  const parts=[];
+
+  for(const [key,label] of Object.entries(labels)){
+    const count=Number(invalid[key]||0);
+    if(count)parts.push(`${label}:${count}`);
+  }
+
+  if(Number(invalid.sale_reference||0)){
+    parts.push(`SALE ref:${Number(invalid.sale_reference)}`);
+  }
+
+  if(Number(invalid.legacy_ghosts||0)){
+    parts.push(`legacy:${Number(invalid.legacy_ghosts)}`);
+  }
+
+  return parts.join(' • ')||'Tất cả ID bắt buộc đã hợp lệ cho Cloud';
+}
+
+
+/* ===== V228 TRUE CLOUD PROOF ===== */
+const V228_PROOF_MAX_AGE_MS=5*60*1000;
+
+let v228CloudProof={
+  at:0,
+  tables:{},
+  counts:{}
+};
+
+function v228NormText(value){
+  return String(value??'')
+    .trim()
+    .replace(/\s+/g,' ')
+    .toLowerCase();
+}
+
+function v228NormNumber(value){
+  const n=Number(value||0);
+  return Number.isFinite(n)
+    ?n.toFixed(6)
+    :'0.000000';
+}
+
+function v228NormTime(value){
+  if(!value)return '';
+  const ts=Date.parse(value);
+  return Number.isFinite(ts)
+    ?new Date(ts).toISOString()
+    :String(value);
+}
+
+function v228Remap(group,value){
+  if(!value)return value;
+  return typeof v205LegacyReplacement==='function'
+    ?v205LegacyReplacement(group,value)
+    :value;
+}
+
+function v228KeyCandidates(table,row){
+  if(!row)return [];
+  const out=[];
+  const add=value=>{
+    const key=String(value||'').trim();
+    if(key&&!out.includes(key))out.push(key);
+  };
+
+  if(table==='warehouses'){
+    add('id:'+v228Remap('warehouses',row.id));
+  }else if(table==='suppliers'){
+    add('id:'+v228Remap('suppliers',row.id));
+    add(
+      'semantic:'+
+      v228NormText(row.name)+'|'+
+      v228NormText(row.phone)
+    );
+  }else if(table==='ingredients'){
+    add('id:'+v228Remap('ingredients',row.id));
+  }else if(table==='products'){
+    add('id:'+v228Remap('products',row.id));
+  }else if(table==='inventory'){
+    add(
+      'pair:'+
+      v228Remap('warehouses',row.warehouse_id)+'|'+
+      v228Remap('ingredients',row.ingredient_id)
+    );
+  }else if(table==='recipe_items'){
+    add('id:'+row.id);
+    add(
+      'pair:'+
+      v228Remap('products',row.product_id)+'|'+
+      v228Remap('ingredients',row.ingredient_id)
+    );
+  }else if(table==='prepared_ingredient_items'){
+    add('id:'+row.id);
+    add(
+      'pair:'+
+      v228Remap('ingredients',row.prepared_ingredient_id)+'|'+
+      v228Remap('ingredients',row.source_ingredient_id)
+    );
+  }else if(table==='sales'){
+    add('id:'+v228Remap('references',row.id));
+  }else if(table==='sale_items'){
+    add('id:'+row.id);
+    add(
+      'semantic:'+
+      v228Remap('references',row.sale_id)+'|'+
+      v228Remap('products',row.product_id)+'|'+
+      v228NormNumber(row.quantity)+'|'+
+      v228NormNumber(row.unit_price)
+    );
+  }else if(table==='stock_transactions'){
+    add('id:'+row.id);
+    add(
+      'semantic:'+
+      String(row.transaction_type||'').toUpperCase()+'|'+
+      v228Remap('references',row.reference_id)+'|'+
+      v228Remap('warehouses',row.warehouse_id)+'|'+
+      v228Remap('ingredients',row.ingredient_id)+'|'+
+      v228NormNumber(row.quantity)+'|'+
+      v228NormTime(row.created_at)
+    );
+  }
+
+  return out.filter(x=>
+    !x.endsWith(':') &&
+    !x.includes('undefined')
+  );
+}
+
+function v228CaptureCloudProof(snapshot){
+  const tables={};
+  const counts={};
+  const source={
+    warehouses:snapshot?.warehouses||[],
+    suppliers:snapshot?.suppliers||[],
+    ingredients:snapshot?.ingredients||[],
+    inventory:snapshot?.inventory||[],
+    products:snapshot?.products||[],
+    recipe_items:snapshot?.recipe_items||[],
+    prepared_ingredient_items:snapshot?.prepared_ingredient_items||[],
+    sales:snapshot?.sales||[],
+    sale_items:snapshot?.sale_items||[],
+    stock_transactions:snapshot?.stock_transactions||[]
+  };
+
+  for(const [table,rows] of Object.entries(source)){
+    const set=new Set();
+    for(const row of rows){
+      for(const key of v228KeyCandidates(table,row)){
+        set.add(key);
+      }
+    }
+    tables[table]=set;
+    counts[table]=rows.length;
+  }
+
+  v228CloudProof={
+    at:Date.now(),
+    tables,
+    counts
+  };
+
+  return v228CloudProof;
+}
+
+function v228CloudProofFresh(){
+  return !!(
+    v228CloudProof?.at &&
+    Date.now()-Number(v228CloudProof.at)<V228_PROOF_MAX_AGE_MS
+  );
+}
+
+function v228LocalTableRows(data=db){
+  return {
+    warehouses:data?.warehouses||[],
+    suppliers:data?.suppliers||[],
+    ingredients:data?.ingredients||[],
+    inventory:data?.inventory||[],
+    products:data?.products||[],
+    recipe_items:data?.recipeItems||[],
+    prepared_ingredient_items:data?.preparedItems||[],
+    sales:data?.sales||[],
+    sale_items:data?.saleItems||[],
+    stock_transactions:data?.movements||[]
+  };
+}
+
+function v228TrueCloudCoverage(data=db){
+  if(!v228CloudProof?.at){
+    return {
+      proofAvailable:false,
+      proofFresh:false,
+      source:'no_cloud_proof',
+      total:0,
+      covered:0,
+      cloudReady:0,
+      missing:0,
+      localOnly:0,
+      percent:0,
+      missingByTable:{},
+      examples:[]
+    };
+  }
+
+  const local=v228LocalTableRows(data);
+  let total=0;
+  let covered=0;
+  const missingByTable={};
+  const examples=[];
+
+  for(const [table,rows] of Object.entries(local)){
+    const proofSet=v228CloudProof.tables?.[table]||new Set();
+
+    for(const row of rows){
+      total++;
+
+      const candidates=v228KeyCandidates(table,row);
+      const exists=candidates.some(key=>proofSet.has(key));
+
+      if(exists){
+        covered++;
+        continue;
+      }
+
+      missingByTable[table]=Number(missingByTable[table]||0)+1;
+
+      if(examples.length<12){
+        examples.push({
+          table,
+          id:row.id||row.reference_id||candidates[0]||''
+        });
+      }
+    }
+  }
+
+  const missing=Math.max(0,total-covered);
+
+  return {
+    proofAvailable:true,
+    proofFresh:v228CloudProofFresh(),
+    proofAt:v228CloudProof.at,
+    source:'cloud_proof_v228',
+    total,
+    covered,
+    cloudReady:covered,
+    missing,
+    localOnly:missing,
+    percent:total?Math.round(covered/total*100):100,
+    missingByTable,
+    examples
+  };
+}
+
+function v228Coverage(){
+  const proof=v228TrueCloudCoverage();
+
+  if(proof.proofAvailable){
+    return proof;
+  }
+
+  const structural=
+    typeof v227IdReadinessCoverage==='function'
+      ?v227IdReadinessCoverage()
+      :{
+        total:0,
+        cloudReady:0,
+        localOnly:0,
+        percent:0
+      };
+
+  return {
+    ...structural,
+    proofAvailable:false,
+    proofFresh:false,
+    source:'structural_fallback_v227'
+  };
+}
+
 function v198CloudCoverage(){
+  return v228Coverage();
+}
+
+function v228CoverageBreakdownText(
+  coverage=v228Coverage()
+){
+  if(!coverage?.proofAvailable){
+    return 'Chưa có Cloud Pull để đối chiếu trực tiếp.';
+  }
+
+  const labels={
+    warehouses:'kho',
+    suppliers:'NCC',
+    ingredients:'nguyên liệu',
+    inventory:'tồn kho',
+    products:'sản phẩm',
+    recipe_items:'công thức',
+    prepared_ingredient_items:'NL sơ chế',
+    sales:'phiếu bán',
+    sale_items:'chi tiết bán',
+    stock_transactions:'biến động kho'
+  };
+
+  const parts=[];
+
+  for(const [table,count] of Object.entries(coverage.missingByTable||{})){
+    if(Number(count||0)>0){
+      parts.push(`${labels[table]||table}:${Number(count)}`);
+    }
+  }
+
+  return (
+    parts.join(' • ')||
+    `Cloud xác nhận ${coverage.covered}/${coverage.total} record`
+  );
+}
+
+function v228ClearProvenStaleFlags(data=db){
+  if(!v228CloudProof?.at){
+    return 0;
+  }
+
+  let changed=0;
+
+  for(const [table,rows] of Object.entries(v228LocalTableRows(data))){
+    const proofSet=v228CloudProof.tables?.[table]||new Set();
+
+    for(const row of rows){
+      if(row?._sync_status==='pending'){
+        continue;
+      }
+
+      const proven=v228KeyCandidates(table,row).some(key=>proofSet.has(key));
+      if(!proven)continue;
+
+      if(row._local_only===true){
+        delete row._local_only;
+        changed++;
+      }
+
+      if(row._recipe_local_only===true){
+        delete row._recipe_local_only;
+        changed++;
+      }
+
+      if(row._sync_error){
+        delete row._sync_error;
+        changed++;
+      }
+    }
+  }
+
+  if(changed){
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+  }
+
+  return changed;
+}
+
+function v227IdReadinessCoverage(){
   let total=0;
   let cloudReady=0;
 
-  const count=(ready)=>{
+  const invalid={
+    warehouses:0,
+    suppliers:0,
+    ingredients:0,
+    products:0,
+    inventory:0,
+    recipe_items:0,
+    prepared_items:0,
+    sales:0,
+    sale_items:0,
+    movements:0,
+    sale_reference:0,
+    legacy_ghosts:0
+  };
+
+  const count=(ready,type)=>{
     total++;
     if(ready)cloudReady++;
+    else if(type)invalid[type]=Number(invalid[type]||0)+1;
   };
+
+  const uuidOrEmpty=value=>!value||isUuidValue(value);
 
   for(const x of db.warehouses||[]){
     count(
       isUuidValue(x.id) &&
-      !v205IsSupersededLegacyId('warehouses',x.id)
+      !v205IsSupersededLegacyId('warehouses',x.id),
+      'warehouses'
+    );
+  }
+
+  for(const x of db.suppliers||[]){
+    count(
+      isUuidValue(x.id) &&
+      !v205IsSupersededLegacyId('suppliers',x.id),
+      'suppliers'
     );
   }
 
   for(const x of db.ingredients||[]){
     count(
       isUuidValue(x.id) &&
-      !v205IsSupersededLegacyId('ingredients',x.id)
+      !v205IsSupersededLegacyId('ingredients',x.id),
+      'ingredients'
     );
   }
 
   for(const x of db.products||[]){
     count(
       isUuidValue(x.id) &&
-      !v205IsSupersededLegacyId('products',x.id)
+      !v205IsSupersededLegacyId('products',x.id),
+      'products'
     );
   }
 
@@ -18549,22 +19011,85 @@ function v198CloudCoverage(){
       isUuidValue(x.warehouse_id) &&
       isUuidValue(x.ingredient_id) &&
       !v205IsSupersededLegacyId('warehouses',x.warehouse_id) &&
-      !v205IsSupersededLegacyId('ingredients',x.ingredient_id)
+      !v205IsSupersededLegacyId('ingredients',x.ingredient_id),
+      'inventory'
+    );
+  }
+
+  for(const x of db.recipeItems||[]){
+    count(
+      uuidOrEmpty(x.id) &&
+      isUuidValue(x.product_id) &&
+      isUuidValue(x.ingredient_id) &&
+      !v205IsSupersededLegacyId('products',x.product_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.ingredient_id),
+      'recipe_items'
+    );
+  }
+
+  for(const x of db.preparedItems||[]){
+    count(
+      uuidOrEmpty(x.id) &&
+      isUuidValue(x.prepared_ingredient_id) &&
+      isUuidValue(x.source_ingredient_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.prepared_ingredient_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.source_ingredient_id),
+      'prepared_items'
+    );
+  }
+
+  for(const x of db.sales||[]){
+    count(
+      isUuidValue(x.id) &&
+      isUuidValue(x.warehouse_id) &&
+      !v205IsSupersededLegacyId('references',x.id) &&
+      !v205IsSupersededLegacyId('warehouses',x.warehouse_id),
+      'sales'
+    );
+  }
+
+  for(const x of db.saleItems||[]){
+    count(
+      uuidOrEmpty(x.id) &&
+      isUuidValue(x.sale_id) &&
+      isUuidValue(x.product_id) &&
+      !v205IsSupersededLegacyId('references',x.sale_id) &&
+      !v205IsSupersededLegacyId('products',x.product_id),
+      'sale_items'
     );
   }
 
   for(const x of db.movements||[]){
-    count(
+    const type=String(x.transaction_type||'').toUpperCase();
+
+    /*
+      V227:
+      SALE.reference_id points to sales.id, so it must be UUID.
+      IMPORT / EXPORT / ADJUSTMENT reference_id is a business receipt/session
+      identifier and is allowed to be human-readable text.
+    */
+    const saleReferenceReady=
+      type!=='SALE' ||
+      !x.reference_id ||
+      (
+        isUuidValue(x.reference_id) &&
+        !v205IsSupersededLegacyId('references',x.reference_id)
+      );
+
+    const ready=
+      uuidOrEmpty(x.id) &&
       isUuidValue(x.warehouse_id) &&
       isUuidValue(x.ingredient_id) &&
-      (
-        !x.reference_id ||
-        isUuidValue(x.reference_id)
-      ) &&
+      uuidOrEmpty(x.supplier_id) &&
       !v205IsSupersededLegacyId('warehouses',x.warehouse_id) &&
       !v205IsSupersededLegacyId('ingredients',x.ingredient_id) &&
-      !v205IsSupersededLegacyId('references',x.reference_id)
-    );
+      saleReferenceReady;
+
+    count(ready,'movements');
+
+    if(!saleReferenceReady){
+      invalid.sale_reference++;
+    }
   }
 
   const ghosts=
@@ -18572,24 +19097,19 @@ function v198CloudCoverage(){
       ?v205LegacyGhostCount(db)
       :0;
 
-  const baseLocalOnly=
-    Math.max(
-      0,
-      total-cloudReady
-    );
+  invalid.legacy_ghosts=ghosts;
+
+  const baseLocalOnly=Math.max(0,total-cloudReady);
+  const localOnly=baseLocalOnly+ghosts;
 
   return {
     total,
     cloudReady,
-    localOnly:
-      baseLocalOnly+ghosts,
+    localOnly,
     legacyGhosts:ghosts,
-    percent:
-      total
-        ?Math.round(
-            cloudReady/total*100
-          )
-        :100
+    invalid,
+    percent:total?Math.round(cloudReady/total*100):100,
+    semantics:'cloud_id_readiness_v227'
   };
 }
 
@@ -19446,13 +19966,13 @@ async function migrateLocalDataToCloudV199(){
   await loadCloud();
 
   const coverage=
-    v198CloudCoverage();
+    v228Coverage();
 
   if(
     coverage.localOnly>0
   ){
     throw new Error(
-      `Migration chưa hoàn tất: còn ${coverage.localOnly} record local`
+      `Migration chưa hoàn tất: Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
     );
   }
 
@@ -19552,81 +20072,71 @@ async function syncNow(){
       `${v191PendingCount()} mục pending`
     );
 
-    const retry=
-      await runPendingRetriesV202();
+    await runPendingRetriesV202();
 
     updateSyncProgress(
-      45,
+      42,
       'Đang tải Cloud',
-      'Tải dữ liệu mới nhất'
+      'Lấy dữ liệu thật từ Supabase để đối chiếu'
     );
 
     await loadCloudFastV202(true);
 
     updateSyncProgress(
-      72,
+      70,
       'Đồng bộ thiết bị',
       'Đang hợp nhất dữ liệu local'
     );
 
-    const cred=
-      autoSyncCredentials();
-
+    const cred=autoSyncCredentials();
     let canonical=null;
 
-    if(
-      cred.code&&
-      cred.passphrase
-    ){
-      canonical=
-        await v189CanonicalSync(
-          cred.code,
-          cred.passphrase
-        );
+    if(cred.code&&cred.passphrase){
+      canonical=await v189CanonicalSync(
+        cred.code,
+        cred.passphrase
+      );
 
       saveFastSyncStateV202({
-        last_revision:
-          Number(
-            canonical?.revision||0
-          )
+        last_revision:Number(canonical?.revision||0)
       });
     }
 
     updateSyncProgress(
       90,
-      'Xác minh',
-      'Kiểm tra pending và Cloud coverage'
+      'Đối chiếu Cloud thật',
+      'So từng record local với dữ liệu Supabase vừa tải'
     );
 
-    const pending=
-      v191PendingCount();
-
-    const coverage=
-      v198CloudCoverage();
+    const cleaned=v228ClearProvenStaleFlags();
+    const pending=v191PendingCount();
+    const coverage=v228Coverage();
 
     const success=
-      cloudOnline&&
-      pending===0&&
-      coverage.localOnly===0&&
-      (
-        !canonical||
-        canonical.converged
-      );
+      cloudOnline &&
+      coverage.proofAvailable &&
+      pending===0 &&
+      coverage.localOnly===0 &&
+      (!canonical||canonical.converged);
 
     finishSyncProgress({
       success,
       pending,
-      stage:
-        success
-          ?'Đã đồng bộ'
-          :'Chưa đồng bộ hết',
+      stage:success?'Đã đồng bộ':'Chưa đồng bộ hết',
       detail:
         success
-          ?'Cloud và thiết bị đã đồng bộ.'
+          ?(
+            `Cloud xác nhận ${coverage.covered}/${coverage.total} record`+
+            (cleaned?` • dọn ${cleaned} cờ local cũ`:'')
+          )
           :(
-            coverage.localOnly
-              ?`Còn ${coverage.localOnly} record local`
-              :`Còn ${pending} pending`
+            coverage.proofAvailable
+              ?(
+                coverage.localOnly
+                  ?`Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
+                  :`Còn ${pending} pending`
+              )
+              :'Chưa có bằng chứng Cloud để xác minh'
           )
     });
 
@@ -37395,7 +37905,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V226',
+    app_version:'V228',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -37704,7 +38214,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:226,
+    version:228,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -37886,13 +38396,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:226,
+    version:228,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V226',storage:'supabase-storage',
+      schema:185,app_version:'V228',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -39098,7 +39608,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:226,
+    version:228,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -40996,8 +41506,12 @@ async function autoSyncNow(options={}){
 
     // When unresolved local records exist, background sync must not trigger
     // aggressive authoritative pulls. Safe merge still protects manual pull.
+    const proofFresh=
+      v228CloudProofFresh();
+
     const allowPull=
       force ||
+      !proofFresh ||
       localOnlyBefore===0 ||
       retry.changed;
 
@@ -41008,7 +41522,7 @@ async function autoSyncNow(options={}){
         :'Giữ dữ liệu local',
       allowPull
         ?'Đang merge Cloud an toàn'
-        :`Bỏ qua pull nền vì còn ${localOnlyBefore} record local`
+        :`Bỏ qua pull nền vì Cloud đã xác nhận còn ${localOnlyBefore} record cần bảo vệ`
     );
 
     if(allowPull){
@@ -41071,7 +41585,7 @@ async function autoSyncNow(options={}){
       v191PendingCount();
 
     const coverage=
-      v198CloudCoverage();
+      v228Coverage();
 
     const now=
       new Date().toISOString();
@@ -41113,7 +41627,7 @@ async function autoSyncNow(options={}){
           ?'Đã đồng bộ'
           :(
             coverage.localOnly
-              ?'Đang bảo vệ dữ liệu local'
+              ?'Đang bảo vệ dữ liệu chưa được Cloud xác nhận'
               :'Chưa đồng bộ hết'
           ),
       detail:
@@ -41121,7 +41635,7 @@ async function autoSyncNow(options={}){
           ?`Rev ${canonical.revision}`
           :(
             coverage.localOnly
-              ?`Còn ${coverage.localOnly} record chưa có trên Cloud. Auto Sync không được phép xóa chúng.`
+              ?`Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
               :`Còn ${pending} pending`
           )
     });
@@ -41132,7 +41646,7 @@ async function autoSyncNow(options={}){
           ?`Đã đồng bộ • 100% • Rev ${canonical.revision}`
           :(
             coverage.localOnly
-              ?`Đã bảo vệ ${coverage.localOnly} record local`
+              ?`Cloud chưa xác nhận ${coverage.localOnly} record`
               :`Đồng bộ ${loadSyncProgress().percent}%`
           )
       );
@@ -41659,7 +42173,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V226',
+      app_version:'V228',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -41674,7 +42188,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:226,
+      version:228,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -41951,7 +42465,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v226-full-backup-'+
+    'lat-yen-v228-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -42083,7 +42597,7 @@ function renderSettings(){
             <b id="syncProgressPending">${Number(loadSyncProgress().pending||0)}</b>
           </span>
           <span>
-            100% khi pending = 0 và không còn dữ liệu chỉ nằm local
+            100% khi pending = 0 và Supabase xác nhận toàn bộ record
           </span>
         </div>
       </div>

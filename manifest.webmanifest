@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V226",
+  "name": "Quản Lý Lát Yên V228",
   "short_name": "Lát Yên",
-  "description": "Native Chrome App notifications for realtime sales, low stock and sync errors, with Web Push receiver support.",
+  "description": "True Cloud Proof reconciliation: verifies actual Supabase row presence instead of inferring Cloud coverage from UUID format.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

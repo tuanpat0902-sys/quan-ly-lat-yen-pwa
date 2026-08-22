@@ -1,0 +1,17 @@
+V228 - TRUE CLOUD PROOF
+
+- Không suy luận Cloud Coverage từ UUID nữa.
+- Mỗi Cloud Pull dùng chính dữ liệu Supabase vừa trả về làm bằng chứng.
+- So từng record local với Cloud bằng khóa thật.
+- Chỉ record không có trong Supabase thật mới bị tính missing.
+- Record đã có trên Cloud nhưng còn cờ _local_only cũ sẽ được dọn cờ an toàn.
+- Không dọn record đang pending.
+- Manual Đồng bộ ngay luôn tạo proof mới.
+- Auto Sync tự tạo proof mới nếu proof chưa có hoặc đã cũ, tránh tự kẹt 92%.
+- Nếu Cloud thật sự thiếu record, không tự ghi stock transaction/inventory mù quáng.
+- Không xóa record, không sửa số lượng tồn kho, không tự migrate, không cần SQL mới.
+
+Sau deploy:
+Cài đặt > Đồng bộ ngay.
+Kỳ vọng: Cloud xác nhận X/X record và 100%.
+Nếu vẫn thiếu, diagnostics sẽ nêu đúng bảng thật sự thiếu.
