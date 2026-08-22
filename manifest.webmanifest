@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V190",
+  "name": "Quản Lý Lát Yên V192",
   "short_name": "Lát Yên",
-  "description": "Bán hàng và tồn kho atomic transaction, an toàn khi nhiều thiết bị bán đồng thời.",
+  "description": "Full-menu sync audit: atomic sales/import/export/stocktake and canonical local modules.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

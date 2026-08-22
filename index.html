@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V190 ATOMIC SALES ===== */
+/* ===== V192 FULL MENU SYNC ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10926,6 +10926,329 @@ async function syncPendingSaleReceipts(){
   };
 }
 
+
+/* ===== V191 TRUE PENDING ACCOUNTING ===== */
+function v191PendingBusinessRows(){
+  const rows=[];
+
+  // Chỉ _sync_status=pending mới là lỗi/chờ Cloud thật.
+  // _local_only đơn thuần có thể là dữ liệu Excel hoặc audit-only hợp lệ.
+  const addPending=(type,list)=>{
+    for(const x of list||[]){
+      if(x?._sync_status==='pending'){
+        rows.push({
+          type,
+          id:
+            x.id||
+            x.reference_id||
+            `${x.warehouse_id||''}:${x.ingredient_id||''}`
+        });
+      }
+    }
+  };
+
+  addPending('inventory',db.inventory);
+  addPending('movement',db.movements);
+  addPending('supplier',db.suppliers);
+  addPending('ingredient',db.ingredients);
+  addPending('sale',db.sales);
+  addPending('sale_item',db.saleItems);
+  addPending('product',db.products);
+  addPending('recipe_item',db.recipeItems);
+
+  return rows;
+}
+
+function v191PendingCount(){
+  return getPendingSync().length+
+    v191PendingBusinessRows().length;
+}
+
+function v191PendingImportMovements(){
+  return (db.movements||[])
+    .filter(x=>
+      String(x.transaction_type||'').toUpperCase()==='IMPORT' &&
+      (
+        x._sync_status==='pending' ||
+        x._local_only===true
+      ) &&
+      isUuidValue(x.warehouse_id) &&
+      isUuidValue(x.ingredient_id)
+    );
+}
+
+
+async function syncPendingSuppliersV191(){
+  const pending=
+    (db.suppliers||[])
+      .filter(x=>
+        x._sync_status==='pending' ||
+        x._local_only===true
+      );
+
+  let synced=0;
+  let remaining=0;
+
+  for(const supplier of pending){
+    try{
+      const name=
+        String(supplier.name||'').trim();
+
+      if(!name){
+        remaining++;
+        continue;
+      }
+
+      let existing=
+        await sb.from('suppliers')
+          .select('*')
+          .ilike('name',name)
+          .limit(1)
+          .maybeSingle();
+
+      if(existing.error){
+        throw existing.error;
+      }
+
+      let cloud=
+        existing.data;
+
+      if(!cloud){
+        const ins=
+          await sb.from('suppliers')
+            .insert({
+              name,
+              phone:supplier.phone||'',
+              address:supplier.address||'',
+              note:supplier.note||''
+            })
+            .select()
+            .single();
+
+        if(ins.error)throw ins.error;
+        cloud=ins.data;
+      }
+
+      const oldId=supplier.id;
+
+      Object.assign(
+        supplier,
+        cloud
+      );
+
+      delete supplier._local_only;
+      delete supplier._sync_status;
+      delete supplier._sync_error;
+
+      if(oldId!==supplier.id){
+        for(const m of db.movements||[]){
+          if(m.supplier_id===oldId){
+            m.supplier_id=supplier.id;
+          }
+        }
+      }
+
+      synced++;
+
+    }catch(e){
+      supplier._sync_status='pending';
+      supplier._sync_error=e?.message||String(e);
+      remaining++;
+    }
+  }
+
+  cacheSave();
+
+  return {synced,remaining};
+}
+
+
+async function syncPendingImportReceiptsV191(){
+  if(!navigator.onLine){
+    return {pending:v191PendingImportMovements().length,synced:0};
+  }
+
+  const rows=
+    v191PendingImportMovements();
+
+  const groups=
+    new Map();
+
+  for(const row of rows){
+    const ref=
+      String(row.reference_id||'').trim();
+
+    if(!ref || !isUuidValue(ref)){
+      continue;
+    }
+
+    if(!groups.has(ref)){
+      groups.set(ref,[]);
+    }
+
+    groups.get(ref).push(row);
+  }
+
+  let synced=0;
+  let pending=0;
+
+  for(const [referenceId,movements] of groups){
+    try{
+      const warehouseId=
+        movements[0]?.warehouse_id;
+
+      const payload=
+        movements.map(row=>({
+          ingredient_id:row.ingredient_id,
+          quantity:Number(row.quantity||0),
+          note:String(row.note||''),
+          unit_cost:Number(row.unit_cost||0),
+          total_cost:Number(row.total_cost||0),
+          supplier_id:
+            isUuidValue(row.supplier_id)
+              ?row.supplier_id
+              :null
+        }));
+
+      const r=
+        await promiseWithTimeout(
+          sb.rpc(
+            'commit_import_receipt_v191',
+            {
+              p_reference_id:referenceId,
+              p_warehouse_id:warehouseId,
+              p_movements:payload,
+              p_idempotency_key:
+                `import:${referenceId}`
+            }
+          ),
+          18000,
+          'Đồng bộ phiếu nhập atomic'
+        );
+
+      if(r.error){
+        throw r.error;
+      }
+
+      const data=
+        Array.isArray(r.data)
+          ?r.data[0]
+          :r.data;
+
+      const cloudMovements=
+        Array.isArray(data?.stock_transactions)
+          ?data.stock_transactions
+          :[];
+
+      // Xóa các local pending row cùng reference rồi thay bằng Cloud authoritative.
+      db.movements=
+        (db.movements||[])
+          .filter(x=>!(
+            String(x.transaction_type||'').toUpperCase()==='IMPORT' &&
+            String(x.reference_id||'')===referenceId
+          ));
+
+      db.movements.unshift(...cloudMovements);
+
+      const inventoryRows=
+        Array.isArray(data?.inventory)
+          ?data.inventory
+          :[];
+
+      for(const cloudInv of inventoryRows){
+        const idx=
+          (db.inventory||[])
+            .findIndex(x=>
+              x.warehouse_id===cloudInv.warehouse_id &&
+              x.ingredient_id===cloudInv.ingredient_id
+            );
+
+        if(idx>=0){
+          db.inventory[idx]={
+            ...db.inventory[idx],
+            ...cloudInv
+          };
+          delete db.inventory[idx]._local_only;
+          delete db.inventory[idx]._sync_status;
+          delete db.inventory[idx]._sync_error;
+        }else{
+          db.inventory.push(cloudInv);
+        }
+      }
+
+      synced+=movements.length;
+
+    }catch(e){
+      pending+=movements.length;
+
+      for(const row of movements){
+        row._sync_status='pending';
+        row._local_only=true;
+        row._sync_error=e?.message||String(e);
+      }
+
+      console.warn(
+        'V191 import retry pending',
+        referenceId,
+        e
+      );
+    }
+  }
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+
+  return {pending,synced};
+}
+
+
+/* ===== V192 DELETION RETRY ===== */
+async function syncDeletionTombstonesV192(){
+  if(!navigator.onLine)return;
+
+  // Export deletions: RPC also reverses inventory effect if rows still exist.
+  for(const ref of getDeletedExportReceiptRefs()){
+    if(isUuidValue(ref)){
+      try{
+        await deleteExportCloudByReference(ref);
+      }catch(e){}
+    }
+  }
+
+  // Stocktake deletions: reverse adjustment atomically if still on Cloud.
+  for(const key of getDeletedStocktakeReceiptKeys()){
+    if(String(key).startsWith('ref:')){
+      try{
+        await deleteStocktakeReceiptCloudByKey(key,[]);
+      }catch(e){}
+    }
+  }
+
+  // Warehouse deletions retry until Cloud is clean.
+  for(const id of getDeletedWarehouseIds()){
+    if(isUuidValue(id)){
+      try{
+        await tryDeleteWarehouseCloud(id);
+      }catch(e){}
+    }
+  }
+
+  // Ingredient deletion in one warehouse.
+  for(const scoped of deletedScopeSet(DELETED_INGREDIENT_SCOPE_KEY)){
+    const p=String(scoped).split('|');
+    if(p.length!==2)continue;
+    const [warehouseId,ingredientId]=p;
+    if(!isUuidValue(warehouseId)||!isUuidValue(ingredientId))continue;
+    try{
+      await sb.from('inventory')
+        .delete()
+        .eq('warehouse_id',warehouseId)
+        .eq('ingredient_id',ingredientId);
+    }catch(e){}
+  }
+}
+
 async function syncNow(){
   if(syncing){
     cloudReloadRequested=true;
@@ -10934,53 +11257,40 @@ async function syncNow(){
   }
 
   try{
-    // V189: PUSH trước.
-    try{
-      await syncDeletedImportMovementTombstones();
-    }catch(e){
-      console.warn(e);
-    }
+    try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
+    try{await syncDeletionTombstonesV192()}catch(e){console.warn(e)}
+    try{await syncPendingSuppliersV191()}catch(e){console.warn('Supplier retry',e)}
+    try{await syncPendingImportReceiptsV191()}catch(e){console.warn('Import retry',e)}
+    try{await syncPendingExportReceiptsV192()}catch(e){console.warn('Export retry',e)}
+    try{await syncPendingStocktakeReceiptsV192()}catch(e){console.warn('Stocktake retry',e)}
+    try{await syncPendingOperations()}catch(e){console.warn('Pending operation',e)}
+    try{await syncPendingSaleReceipts()}catch(e){console.warn('Pending sale',e)}
 
-    try{
-      await syncPendingOperations();
-    }catch(e){
-      console.warn(
-        'Pending sync remains:',
-        e
-      );
-    }
-
-    try{
-      await syncPendingSaleReceipts();
-    }catch(e){
-      console.warn(
-        'Pending sale sync remains:',
-        e
-      );
-    }
-
-    // Sau push phải PULL lại toàn bộ Cloud.
     await loadCloud();
 
-    // Nếu realtime/ghi Cloud vừa phát sinh trong lúc pull,
-    // loadCloud sẽ tự xếp thêm một lần reload.
+    // Local-only nghiệp vụ: nhân viên, thu/chi, chấm công, lịch sử, cấu hình.
+    const cred=autoSyncCredentials();
+    if(cred.code&&cred.passphrase){
+      try{
+        await v189CanonicalSync(cred.code,cred.passphrase);
+      }catch(e){
+        console.warn('Canonical local sync',e);
+      }
+    }
+
+    await loadCloud();
+
+    const pending=v191PendingCount();
     updatePendingSyncBadge();
 
     toastMsg(
-      cloudOnline
-        ?'Đã đẩy và tải lại dữ liệu Cloud'
-        :'Đang ở chế độ offline'
+      cloudOnline&&pending===0
+        ?'Đã đồng bộ toàn bộ dữ liệu'
+        :`Còn ${pending} mục chờ đồng bộ`
     );
-
   }catch(e){
-    console.error(
-      'syncNow',
-      e
-    );
-
-    toastMsg(
-      'Đồng bộ chưa hoàn tất. Dữ liệu local vẫn an toàn.'
-    );
+    console.error('syncNow',e);
+    toastMsg(`Đồng bộ chưa hoàn tất • còn ${v191PendingCount()} mục chờ`);
   }
 }
 function setupRealtime(){
@@ -13970,7 +14280,7 @@ function editExportReceipt(encodedReferenceId){
 }
 
 async function deleteExportCloudByReference(referenceId){
-  const ref=String(referenceId||'').trim();
+  const ref=String(referenceId||'').replace(/^ref:/,'').trim();
 
   if(!ref || !navigator.onLine || !isUuidValue(ref)){
     return {deleted:0,pending:ref?1:0};
@@ -13978,20 +14288,22 @@ async function deleteExportCloudByReference(referenceId){
 
   try{
     const r=await promiseWithTimeout(
-      sb.from('stock_transactions')
-        .delete()
-        .eq('reference_id',ref)
-        .eq('transaction_type','EXPORT'),
-      12000,
-      'Xóa phiên bản cũ phiếu xuất'
+      sb.rpc(
+        'delete_export_receipt_v192',
+        {
+          p_reference_id:ref,
+          p_warehouse_id:currentWarehouseId
+        }
+      ),
+      15000,
+      'Xóa phiếu xuất atomic'
     );
 
     if(r.error)throw r.error;
 
     return {deleted:1,pending:0};
-
   }catch(e){
-    console.warn('Delete old export Cloud pending',ref,e);
+    console.warn('Delete export Cloud pending',ref,e);
     return {deleted:0,pending:1};
   }
 }
@@ -14003,49 +14315,22 @@ function queueEditedExportReceiptCloudSync({
   movementItems
 },receiptNo){
   setTimeout(()=>{
-    try{
-      Promise.all([
-        syncSaleInventoryBatchCloud(inventoryUpdates),
-
-        (async()=>{
-          const del=await deleteExportCloudByReference(oldReferenceId);
-          const ins=await syncExportMovementsBatch(
-            newReferenceId,
-            movementItems
-          );
-
-          return {
-            pending:
-              Number(del?.pending||0)+
-              Number(ins?.pending||0),
-            synced:
-              Number(del?.deleted||0)+
-              Number(ins?.synced||0)
-          };
-        })()
-      ]).then(([invResult,movementResult])=>{
-        const pending=
-          Number(invResult?.pending||0)+
-          Number(movementResult?.pending||0);
-
-        if(pending){
-          console.warn(
-            `Phiếu xuất ${receiptNo}: còn ${pending} tác vụ Cloud chờ đồng bộ sau khi sửa`
-          );
-        }
-
-        cacheSave();
-      }).catch(e=>{
-        console.warn(`Cloud sync phiếu xuất sửa ${receiptNo}`,e);
-      });
-
-    }catch(e){
-      console.warn(
-        `Không khởi động được Cloud sync phiếu xuất sửa ${receiptNo}`,
-        e
-      );
-    }
-  },500);
+    syncExportReceiptAtomicV192(
+      oldReferenceId,
+      newReferenceId,
+      movementItems
+    ).then(result=>{
+      if(Number(result?.pending||0)>0){
+        console.warn(
+          `Phiếu xuất sửa ${receiptNo}: còn ${result.pending} tác vụ Cloud`
+        );
+      }else if(navigator.onLine){
+        setTimeout(()=>loadCloud(),120);
+      }
+    }).catch(e=>{
+      console.warn(`Cloud sync phiếu xuất sửa ${receiptNo}`,e);
+    });
+  },0);
 }
 
 function toggleExportReceiptForm(forceOpen=null){
@@ -14142,20 +14427,23 @@ function stageExportMovementLocal({
   };
 }
 
-async function syncExportMovementsBatch(referenceId,items){
-  const ref=String(referenceId||'');
 
-  if(isExportReceiptDeleted(ref)){
-    return {pending:0,synced:0};
-  }
+/* ===== V192 ATOMIC EXPORT ===== */
+async function syncExportReceiptAtomicV192(
+  oldReferenceId,
+  newReferenceId,
+  items
+){
+  const ref=String(newReferenceId||'').trim();
+  const oldRef=String(oldReferenceId||'').replace(/^ref:/,'').trim();
 
   const active=(items||[]).filter(x=>
     x.cloudEligible &&
-    !isExportReceiptDeleted(ref)
+    isUuidValue(x.payload?.ingredient_id)
   );
 
-  if(!active.length){
-    return {pending:0,synced:0};
+  if(!ref || !isUuidValue(ref)){
+    return {pending:active.length,synced:0};
   }
 
   if(!navigator.onLine){
@@ -14163,81 +14451,126 @@ async function syncExportMovementsBatch(referenceId,items){
   }
 
   try{
-    if(isExportReceiptDeleted(ref)){
-      return {pending:0,synced:0};
-    }
-
     const r=await promiseWithTimeout(
-      sb.from('stock_transactions')
-        .insert(active.map(x=>x.payload))
-        .select(),
-      12000,
-      'Đồng bộ phiếu xuất kho'
+      sb.rpc(
+        'commit_export_receipt_v192',
+        {
+          p_reference_id:ref,
+          p_old_reference_id:
+            isUuidValue(oldRef)?oldRef:null,
+          p_warehouse_id:currentWarehouseId,
+          p_movements:
+            active.map(x=>({
+              ingredient_id:x.payload.ingredient_id,
+              quantity:Number(x.payload.quantity||0),
+              note:String(x.payload.note||''),
+              unit_cost:Number(x.row?.unit_cost||0),
+              total_cost:Number(x.row?.total_cost||0)
+            })),
+          p_idempotency_key:`export:${ref}`
+        }
+      ),
+      18000,
+      'Đồng bộ phiếu xuất atomic'
     );
 
     if(r.error)throw r.error;
 
-    const cloudRows=Array.isArray(r.data)?r.data:[];
+    const data=Array.isArray(r.data)?r.data[0]:r.data;
+    const cloudMovements=Array.isArray(data?.stock_transactions)
+      ?data.stock_transactions:[];
+    const inventoryRows=Array.isArray(data?.inventory)
+      ?data.inventory:[];
 
-    // Nếu người dùng xóa phiếu đúng lúc batch vừa ghi xong,
-    // xóa luôn các dòng vừa ghi để tránh xuất hiện lại.
-    if(isExportReceiptDeleted(ref)){
-      try{
-        await promiseWithTimeout(
-          sb.from('stock_transactions')
-            .delete()
-            .eq('reference_id',ref)
-            .eq('transaction_type','EXPORT'),
-          12000,
-          'Dọn phiếu xuất đã xóa'
-        );
-      }catch(e){
-        console.warn('Export race cleanup pending',e);
-      }
+    db.movements=(db.movements||[]).filter(m=>!(
+      String(m.transaction_type||'').toUpperCase()==='EXPORT' &&
+      String(m.reference_id||'')===ref
+    ));
+    db.movements.unshift(...cloudMovements);
 
-      return {pending:0,synced:0};
-    }
-
-    for(let i=0;i<active.length;i++){
-      const item=active[i];
-      const idx=(db.movements||[]).findIndex(x=>
-        String(x.id)===String(item.localId)
+    for(const cloudInv of inventoryRows){
+      const idx=(db.inventory||[]).findIndex(x=>
+        x.warehouse_id===cloudInv.warehouse_id &&
+        x.ingredient_id===cloudInv.ingredient_id
       );
-
-      if(idx>=0 && cloudRows[i]){
-        db.movements[idx]={
-          ...cloudRows[i],
-          unit_cost:Number(item.row?.unit_cost||0),
-          total_cost:Number(item.row?.total_cost||0)
-        };
-      }else if(idx>=0){
-        delete db.movements[idx]._local_only;
-        delete db.movements[idx]._sync_status;
-        delete db.movements[idx]._sync_error;
+      if(idx>=0){
+        db.inventory[idx]={...db.inventory[idx],...cloudInv};
+        delete db.inventory[idx]._local_only;
+        delete db.inventory[idx]._sync_status;
+        delete db.inventory[idx]._sync_error;
+      }else{
+        db.inventory.push(cloudInv);
       }
     }
 
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
     cacheSave();
-    return {pending:0,synced:active.length};
 
+    return {
+      pending:0,
+      synced:cloudMovements.length+inventoryRows.length,
+      atomic:true
+    };
   }catch(e){
     for(const item of active){
-      const row=(db.movements||[]).find(x=>
-        String(x.id)===String(item.localId)
-      );
-
+      const row=(db.movements||[]).find(x=>String(x.id)===String(item.localId));
       if(row){
         row._local_only=true;
         row._sync_status='pending';
         row._sync_error=e?.message||String(e);
       }
     }
-
     cacheSave();
-    console.warn('Export movement Cloud pending',e);
-
-    return {pending:active.length,synced:0};
+    console.warn('V192 export pending',ref,e);
+    return {pending:active.length,synced:0,error:e?.message||String(e)};
   }
+}
+
+async function syncPendingExportReceiptsV192(){
+  const pending=(db.movements||[]).filter(m=>
+    String(m.transaction_type||'').toUpperCase()==='EXPORT' &&
+    m._sync_status==='pending' &&
+    isUuidValue(m.reference_id) &&
+    isUuidValue(m.warehouse_id) &&
+    isUuidValue(m.ingredient_id) &&
+    !isExportReceiptDeleted(m.reference_id)
+  );
+
+  const groups=new Map();
+  for(const row of pending){
+    const ref=String(row.reference_id);
+    if(!groups.has(ref))groups.set(ref,[]);
+    groups.get(ref).push({
+      localId:row.id,
+      row,
+      cloudEligible:true,
+      payload:{
+        warehouse_id:row.warehouse_id,
+        ingredient_id:row.ingredient_id,
+        transaction_type:'EXPORT',
+        quantity:Number(row.quantity||0),
+        note:String(row.note||''),
+        reference_id:ref
+      }
+    });
+  }
+
+  let synced=0,pendingCount=0;
+  for(const [ref,items] of groups){
+    const r=await syncExportReceiptAtomicV192(null,ref,items);
+    synced+=Number(r?.synced||0);
+    pendingCount+=Number(r?.pending||0);
+  }
+  return {synced,pending:pendingCount};
+}
+
+async function syncExportMovementsBatch(referenceId,items){
+  return syncExportReceiptAtomicV192(
+    null,
+    referenceId,
+    items
+  );
 }
 
 function queueExportReceiptCloudSync({
@@ -14246,29 +14579,22 @@ function queueExportReceiptCloudSync({
   movementItems
 },receiptNo){
   setTimeout(()=>{
-    try{
-      Promise.all([
-        syncSaleInventoryBatchCloud(inventoryUpdates),
-        syncExportMovementsBatch(referenceId,movementItems)
-      ]).then(([invResult,movementResult])=>{
-        const pending=
-          Number(invResult?.pending||0)+
-          Number(movementResult?.pending||0);
-
-        if(pending){
-          console.warn(
-            `Phiếu xuất ${receiptNo}: còn ${pending} tác vụ Cloud chờ đồng bộ`
-          );
-        }
-
-        cacheSave();
-      }).catch(e=>{
-        console.warn(`Cloud sync phiếu xuất ${receiptNo}`,e);
-      });
-    }catch(e){
-      console.warn(`Không khởi động được Cloud sync phiếu xuất ${receiptNo}`,e);
-    }
-  },500);
+    syncExportReceiptAtomicV192(
+      null,
+      referenceId,
+      movementItems
+    ).then(result=>{
+      if(Number(result?.pending||0)>0){
+        console.warn(
+          `Phiếu xuất ${receiptNo}: còn ${result.pending} tác vụ Cloud`
+        );
+      }else if(navigator.onLine){
+        setTimeout(()=>loadCloud(),120);
+      }
+    }).catch(e=>{
+      console.warn(`Cloud sync phiếu xuất ${receiptNo}`,e);
+    });
+  },0);
 }
 
 async function saveExportReceipt(){
@@ -16233,65 +16559,58 @@ async function saveImportMovementLocalFirst({
   invalidateDataIndexes();
   cacheSave();
 
-  try{
-    const basePayload={
-      warehouse_id:currentWarehouseId,
-      ingredient_id:ingredientId,
-      transaction_type:'IMPORT',
-      quantity:Number(quantity),
-      note,
-      reference_id:referenceId
-    };
+  // V191: không insert từng movement rời rạc nữa.
+  // Cả phiếu sẽ được commit atomically sau khi các dòng local đã hoàn tất.
+  return {
+    row:localRow,
+    pending:true,
+    staged:true
+  };
+}
 
-    const extended={
-      ...basePayload,
-      unit_cost:Number(unitCost||0),
-      total_cost:Number(totalCost||0),
-      supplier_id:(supplierId && !String(supplierId).startsWith('local_supplier_'))?supplierId:null
-    };
 
-    let result=await sb.from('stock_transactions')
-      .insert(extended)
-      .select()
-      .single();
+function stageImportInventoryLocal(
+  warehouseId,
+  ingredientId,
+  newQty
+){
+  const quantity=Number(newQty);
 
-    if(result.error){
-      const msg=String(result.error.message||'');
-      const optionalColumnIssue=
-        msg.includes('supplier_id') ||
-        msg.includes('unit_cost') ||
-        msg.includes('total_cost');
-
-      if(optionalColumnIssue){
-        result=await sb.from('stock_transactions')
-          .insert(basePayload)
-          .select()
-          .single();
-      }
-    }
-
-    if(result.error)throw result.error;
-
-    if(result.data){
-      const idx=db.movements.findIndex(x=>x.id===localRow.id);
-      const cloudRow={
-        ...result.data,
-        unit_cost:Number(unitCost||0),
-        total_cost:Number(totalCost||0),
-        supplier_id:supplierId||null
-      };
-      if(idx>=0)db.movements[idx]=cloudRow;
-    }
-
-    cacheSave();
-    return {row:result.data||localRow,pending:false};
-
-  }catch(e){
-    localRow._sync_error=e?.message||String(e);
-    cacheSave();
-    console.warn('Import movement saved locally, Cloud pending:',e);
-    return {row:localRow,pending:true};
+  if(!Number.isFinite(quantity)){
+    throw new Error('Tồn kho không hợp lệ');
   }
+
+  let row=
+    (db.inventory||[])
+      .find(x=>
+        x.warehouse_id===warehouseId &&
+        x.ingredient_id===ingredientId
+      );
+
+  const payload={
+    warehouse_id:warehouseId,
+    ingredient_id:ingredientId,
+    quantity,
+    updated_at:new Date().toISOString()
+  };
+
+  if(row){
+    Object.assign(row,payload);
+    invalidateDerivedCaches();
+  }else{
+    row={
+      id:uid(),
+      ...payload
+    };
+    db.inventory.push(row);
+    invalidateDataIndexes();
+  }
+
+  row._local_only=true;
+  row._sync_status='pending';
+
+  cacheSave();
+  return row;
 }
 
 async function saveImportReceipt(){
@@ -16364,7 +16683,7 @@ async function saveImportReceipt(){
       grandTotal+=lineTotal;
 
       // 3. Tồn kho local-first.
-      const inv=await setInventory(currentWarehouseId,ing.id,newQty);
+      const inv=stageImportInventoryLocal(currentWarehouseId,ing.id,newQty);
       if(inv?._sync_status==='pending')pending=true;
 
       // 4. Giá vốn cập nhật local ngay, Cloud best-effort.
@@ -16412,7 +16731,21 @@ async function saveImportReceipt(){
       affectedByEdit.add(ing.id);
     }
 
-    // 6. Tính lại giá vốn dựa trên lịch sử nhập local hiện có.
+    // 6. V191: sau khi toàn bộ dòng đã stage local, commit cả phiếu atomic.
+    if(navigator.onLine){
+      try{
+        const importSync=await syncPendingImportReceiptsV191();
+        if(Number(importSync.pending||0)>0)pending=true;
+        else pending=false;
+      }catch(e){
+        pending=true;
+        console.warn('Atomic import commit pending:',e);
+      }
+    }else{
+      pending=true;
+    }
+
+    // 7. Tính lại giá vốn dựa trên lịch sử nhập local hiện có.
     for(const ingredientId of affectedByEdit){
       const cost=recalcIngredientCostFromImports(ingredientId);
       const ing=db.ingredients.find(i=>i.id===ingredientId);
@@ -20365,49 +20698,44 @@ function filterDeletedStocktakeMovements(rows){
 
 async function deleteStocktakeReceiptCloudByKey(key,rows=[]){
   const canonical=String(key||'').trim();
-  const ref=canonical.startsWith('ref:')?canonical.slice(4):'';
+  const ref=canonical.startsWith('ref:')
+    ?canonical.slice(4)
+    :'';
 
   if(!navigator.onLine){
     return {deleted:0,pending:1};
   }
 
-  try{
-    // Ưu tiên xóa theo reference_id để bắt cả bản ghi vừa được batch sync
-    // nhưng local chưa kịp nhận cloud id.
-    if(ref && isUuidValue(ref)){
-      const r=await promiseWithTimeout(
-        sb.from('stock_transactions')
-          .delete()
-          .eq('warehouse_id',currentWarehouseId)
-          .eq('transaction_type','ADJUSTMENT')
-          .eq('reference_id',ref),
-        12000,
-        'Xóa phiếu kiểm kê trên Cloud'
-      );
-
-      if(r.error)throw r.error;
-
-      // Giữ receipt tombstone thêm một thời gian trong local để realtime cũ
-      // không kéo dữ liệu trở lại trong phiên hiện tại.
-      return {deleted:Math.max(1,(rows||[]).length),pending:0};
-    }
-
-    // Legacy receipt: fallback xóa theo id đã biết.
-    const cloudRows=(rows||[]).filter(m=>!m._local_only && m.id);
+  if(!ref || !isUuidValue(ref)){
+    // legacy fallback
+    const cloudRows=(rows||[]).filter(m=>!m._local_only&&m.id);
     if(!cloudRows.length)return {deleted:0,pending:0};
+    try{
+      const ids=cloudRows.map(m=>m.id);
+      const r=await sb.from('stock_transactions').delete().in('id',ids);
+      if(r.error)throw r.error;
+      return {deleted:ids.length,pending:0};
+    }catch(e){
+      return {deleted:0,pending:1};
+    }
+  }
 
-    const ids=cloudRows.map(m=>m.id);
+  try{
     const r=await promiseWithTimeout(
-      sb.from('stock_transactions').delete().in('id',ids),
-      12000,
-      'Xóa phiếu kiểm kê trên Cloud'
+      sb.rpc(
+        'delete_stocktake_receipt_v192',
+        {
+          p_reference_id:ref,
+          p_warehouse_id:currentWarehouseId
+        }
+      ),
+      15000,
+      'Xóa kiểm kê atomic'
     );
-
     if(r.error)throw r.error;
-    return {deleted:ids.length,pending:0};
-
+    return {deleted:Math.max(1,(rows||[]).length),pending:0};
   }catch(e){
-    console.warn('Delete stocktake receipt Cloud pending',canonical,e);
+    console.warn('Delete stocktake pending',ref,e);
     return {deleted:0,pending:1};
   }
 }
@@ -20548,138 +20876,188 @@ function stageStocktakeMovementLocal({
   };
 }
 
-async function syncStocktakeBatchCloud(batch){
-  const inventoryUpdates=(batch?.inventoryUpdates||[]).filter(x=>x.cloudEligible);
-  const movements=(batch?.movements||[]).filter(x=>{
-    if(!x.cloudEligible)return false;
 
-    const key=x?.payload?.reference_id
-      ? `ref:${x.payload.reference_id}`
-      : '';
+/* ===== V192 ATOMIC STOCKTAKE ===== */
+function v192StocktakeActualFromNote(note){
+  const m=String(note||'').match(/Thực tế:([-+]?\d+(?:[.,]\d+)?)/i);
+  if(!m)return null;
+  const n=Number(String(m[1]).replace(',','.'));
+  return Number.isFinite(n)?n:null;
+}
 
-    return !key || !isStocktakeReceiptDeleted(key);
-  });
+async function syncStocktakeAtomicV192(
+  oldReferenceId,
+  newReferenceId,
+  movements
+){
+  const ref=String(newReferenceId||'').replace(/^ref:/,'').trim();
+  const oldRef=String(oldReferenceId||'').replace(/^ref:/,'').trim();
 
-  if(!navigator.onLine){
-    return {pending:inventoryUpdates.length+movements.length,synced:0};
+  if(!ref || !isUuidValue(ref)){
+    return {pending:0,synced:0};
   }
 
-  let pending=0;
-  let synced=0;
+  const lines=[];
+  for(const item of movements||[]){
+    const row=item.row||{};
+    const ingredientId=item.payload?.ingredient_id||row.ingredient_id;
+    if(!isUuidValue(ingredientId)||isExcelLocalIngredient(ingredientId))continue;
 
-  const inventoryTask=(async()=>{
-    if(!inventoryUpdates.length)return;
+    const actual=v192StocktakeActualFromNote(
+      item.payload?.note||row.note
+    );
+    if(actual===null)continue;
 
-    try{
-      const payloads=inventoryUpdates.map(x=>x.payload);
+    lines.push({
+      ingredient_id:ingredientId,
+      actual,
+      note:String(item.payload?.note||row.note||'')
+    });
+  }
 
-      const r=await promiseWithTimeout(
-        sb.from('inventory')
-          .upsert(payloads,{onConflict:'warehouse_id,ingredient_id'})
-          .select(),
-        12000,
-        'Đồng bộ tồn kiểm kê'
-      );
+  if(!navigator.onLine){
+    return {pending:lines.length,synced:0};
+  }
 
-      if(r.error)throw r.error;
-
-      const cloudRows=Array.isArray(r.data)?r.data:[];
-
-      for(const item of inventoryUpdates){
-        const local=item.row;
-        const cloud=cloudRows.find(x=>
-          x.warehouse_id===item.payload.warehouse_id &&
-          x.ingredient_id===item.payload.ingredient_id
-        );
-
-        if(cloud)Object.assign(local,cloud);
-
-        delete local._local_only;
-        delete local._sync_status;
-        delete local._sync_error;
-        synced++;
-      }
-
-    }catch(e){
-      pending+=inventoryUpdates.length;
-      for(const item of inventoryUpdates){
-        item.row._sync_status='pending';
-        item.row._sync_error=e?.message||String(e);
-      }
-      console.warn('Stocktake inventory batch pending',e);
-    }
-  })();
-
-  const movementTask=(async()=>{
-    if(!movements.length)return;
-
-    try{
-      const activeMovements=movements.filter(x=>{
-        const key=x?.payload?.reference_id?`ref:${x.payload.reference_id}`:'';
-        return !key || !isStocktakeReceiptDeleted(key);
-      });
-
-      if(!activeMovements.length)return;
-
-      const r=await promiseWithTimeout(
-        sb.from('stock_transactions')
-          .insert(activeMovements.map(x=>x.payload))
-          .select(),
-        12000,
-        'Đồng bộ phiếu kiểm kê'
-      );
-
-      if(r.error)throw r.error;
-
-      const cloudRows=Array.isArray(r.data)?r.data:[];
-
-      for(const item of activeMovements){
-        const cloud=cloudRows.find(x=>
-          x.ingredient_id===item.payload.ingredient_id &&
-          x.reference_id===item.payload.reference_id
-        );
-
-        const index=(db.movements||[]).findIndex(x=>
-          String(x.id)===String(item.localId)
-        );
-
-        if(index>=0 && cloud){
-          db.movements[index]={
-            ...cloud,
-            _stocktake_audit_only:false
-          };
-        }else if(index>=0){
-          delete db.movements[index]._sync_status;
-          delete db.movements[index]._sync_error;
+  try{
+    const r=await promiseWithTimeout(
+      sb.rpc(
+        'commit_stocktake_receipt_v192',
+        {
+          p_reference_id:ref,
+          p_old_reference_id:isUuidValue(oldRef)?oldRef:null,
+          p_warehouse_id:currentWarehouseId,
+          p_lines:lines,
+          p_idempotency_key:`stocktake:${ref}`
         }
+      ),
+      18000,
+      'Đồng bộ kiểm kê atomic'
+    );
 
-        synced++;
-      }
+    if(r.error)throw r.error;
 
-    }catch(e){
-      pending+=movements.length;
+    const data=Array.isArray(r.data)?r.data[0]:r.data;
+    const cloudMovements=Array.isArray(data?.stock_transactions)
+      ?data.stock_transactions:[];
+    const inventoryRows=Array.isArray(data?.inventory)
+      ?data.inventory:[];
 
-      for(const item of movements){
-        const key=item?.payload?.reference_id?`ref:${item.payload.reference_id}`:'';
-        if(key && isStocktakeReceiptDeleted(key))continue;
+    // Giữ audit-only dòng khớp để lịch sử chi tiết không mất.
+    const auditOnly=(db.movements||[]).filter(m=>
+      String(m.transaction_type||'').toUpperCase()==='ADJUSTMENT' &&
+      String(m.reference_id||'')===ref &&
+      m._stocktake_audit_only===true
+    );
 
-        const row=(db.movements||[]).find(x=>
-          String(x.id)===String(item.localId)
-        );
-        if(row){
-          row._sync_status='pending';
-          row._sync_error=e?.message||String(e);
-        }
-      }
+    db.movements=(db.movements||[]).filter(m=>!(
+      String(m.transaction_type||'').toUpperCase()==='ADJUSTMENT' &&
+      String(m.reference_id||'')===ref
+    ));
 
-      console.warn('Stocktake movement batch pending',e);
+    for(const row of auditOnly){
+      delete row._sync_status;
+      delete row._sync_error;
+      db.movements.unshift(row);
     }
-  })();
+    db.movements.unshift(...cloudMovements);
 
-  await Promise.all([inventoryTask,movementTask]);
-  cacheSave();
+    for(const cloudInv of inventoryRows){
+      const idx=(db.inventory||[]).findIndex(x=>
+        x.warehouse_id===cloudInv.warehouse_id &&
+        x.ingredient_id===cloudInv.ingredient_id
+      );
+      if(idx>=0){
+        db.inventory[idx]={...db.inventory[idx],...cloudInv};
+        delete db.inventory[idx]._local_only;
+        delete db.inventory[idx]._sync_status;
+        delete db.inventory[idx]._sync_error;
+      }else{
+        db.inventory.push(cloudInv);
+      }
+    }
 
-  return {pending,synced};
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+
+    return {
+      pending:0,
+      synced:cloudMovements.length+inventoryRows.length,
+      atomic:true
+    };
+  }catch(e){
+    for(const item of movements||[]){
+      if(!item.cloudEligible)continue;
+      const row=(db.movements||[]).find(x=>String(x.id)===String(item.localId));
+      if(row){
+        row._sync_status='pending';
+        row._sync_error=e?.message||String(e);
+      }
+    }
+    cacheSave();
+    console.warn('V192 stocktake pending',ref,e);
+    return {pending:lines.length,synced:0,error:e?.message||String(e)};
+  }
+}
+
+async function syncPendingStocktakeReceiptsV192(){
+  const rows=(db.movements||[]).filter(m=>
+    String(m.transaction_type||'').toUpperCase()==='ADJUSTMENT' &&
+    m._sync_status==='pending' &&
+    isUuidValue(m.reference_id) &&
+    !isStocktakeReceiptDeleted(`ref:${m.reference_id}`)
+  );
+
+  const groups=new Map();
+  for(const row of rows){
+    const ref=String(row.reference_id);
+    if(!groups.has(ref))groups.set(ref,[]);
+    groups.get(ref).push({
+      localId:row.id,
+      row,
+      cloudEligible:true,
+      payload:{
+        ingredient_id:row.ingredient_id,
+        quantity:Number(row.quantity||0),
+        note:String(row.note||''),
+        reference_id:ref
+      }
+    });
+  }
+
+  let synced=0,pending=0;
+  for(const [ref,items] of groups){
+    const r=await syncStocktakeAtomicV192(null,ref,items);
+    synced+=Number(r?.synced||0);
+    pending+=Number(r?.pending||0);
+  }
+  return {synced,pending};
+}
+
+async function syncStocktakeReplaceV192(oldKey,newReferenceId,movements){
+  const oldRef=String(oldKey||'').replace(/^ref:/,'').trim();
+  return syncStocktakeAtomicV192(oldRef,newReferenceId,movements);
+}
+
+async function syncStocktakeBatchCloud(batch){
+  const movements=(batch?.movements||[]);
+
+  if(!movements.length){
+    return {pending:0,synced:0};
+  }
+
+  const ref=String(
+    movements[0]?.payload?.reference_id||
+    movements[0]?.row?.reference_id||
+    ''
+  );
+
+  return syncStocktakeAtomicV192(
+    null,
+    ref,
+    movements
+  );
 }
 
 async function deleteStocktakeRowsCloudBatch(rows){
@@ -20960,20 +21338,18 @@ async function deleteStocktakeReceipt(encodedKey){
     // - upsert tồn sau hoàn tác
     // - xóa receipt theo reference_id (bắt cả race-condition batch V156)
     finishStocktakeBackgroundSync(
-      Promise.all([
-        syncStocktakeBatchCloud({
-          inventoryUpdates,
-          movements:[]
-        }),
-        deleteStocktakeReceiptCloudByKey(groupKey,rows)
-      ]).then(([syncResult,deleteResult])=>({
-        pending:
-          Number(syncResult?.pending||0)+
-          Number(deleteResult?.pending||0),
-        synced:
-          Number(syncResult?.synced||0)+
-          Number(deleteResult?.deleted||0)
-      })),
+      deleteStocktakeReceiptCloudByKey(
+        groupKey,
+        rows
+      ).then(result=>{
+        if(Number(result?.pending||0)===0 && navigator.onLine){
+          setTimeout(()=>loadCloud(),120);
+        }
+        return {
+          pending:Number(result?.pending||0),
+          synced:Number(result?.deleted||0)
+        };
+      }),
       receiptNo
     );
 
@@ -21133,17 +21509,16 @@ async function saveEditedStocktakeReceipt(editKey,receiptNo,receiptDate,generalN
 
   // Xóa phiếu cũ + upsert tồn + insert movement mới chạy đồng thời.
   finishStocktakeBackgroundSync(
-    Promise.all([
-      syncStocktakeBatchCloud({inventoryUpdates,movements}),
-      deleteStocktakeRowsCloudBatch(rows)
-    ]).then(([syncResult,deleteResult])=>({
-      pending:
-        Number(syncResult?.pending||0)+
-        Number(deleteResult?.pending||0),
-      synced:
-        Number(syncResult?.synced||0)+
-        Number(deleteResult?.deleted||0)
-    })),
+    syncStocktakeReplaceV192(
+      editKey,
+      sessionId,
+      movements
+    ).then(result=>{
+      if(Number(result?.pending||0)===0 && navigator.onLine){
+        setTimeout(()=>loadCloud(),120);
+      }
+      return result;
+    }),
     receiptNo
   );
 
@@ -27356,27 +27731,41 @@ function confirmDeleteWarehouse(id){
 async function tryDeleteWarehouseCloud(id){
   const errors=[];
 
+  let saleIds=[];
   try{
-    const salesOfWarehouse=(db.sales||[]).filter(s=>s.warehouse_id===id);
-    const saleIds=salesOfWarehouse.map(s=>s.id).filter(Boolean);
+    const sr=await sb.from('sales')
+      .select('id')
+      .eq('warehouse_id',id);
+    if(sr.error)throw sr.error;
+    saleIds=(sr.data||[]).map(x=>x.id).filter(Boolean);
+  }catch(e){
+    errors.push('sales lookup: '+(e?.message||e));
+  }
 
-    if(saleIds.length){
+  if(saleIds.length){
+    try{
       const r=await sb.from('sale_items').delete().in('sale_id',saleIds);
       if(r.error)errors.push('sale_items: '+r.error.message);
+    }catch(e){
+      errors.push('sale_items: '+(e?.message||e));
     }
-  }catch(e){errors.push('sale_items: '+(e?.message||e))}
+  }
 
   for(const table of ['stock_transactions','inventory','sales']){
     try{
       const r=await sb.from(table).delete().eq('warehouse_id',id);
       if(r.error)errors.push(table+': '+r.error.message);
-    }catch(e){errors.push(table+': '+(e?.message||e))}
+    }catch(e){
+      errors.push(table+': '+(e?.message||e));
+    }
   }
 
   try{
     const wr=await sb.from('warehouses').delete().eq('id',id);
     if(wr.error)errors.push('warehouses: '+wr.error.message);
-  }catch(e){errors.push('warehouses: '+(e?.message||e))}
+  }catch(e){
+    errors.push('warehouses: '+(e?.message||e));
+  }
 
   return errors;
 }
@@ -28152,7 +28541,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V190',
+    app_version:'V192',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -28461,7 +28850,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:190,
+    version:192,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -28643,13 +29032,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:190,
+    version:192,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V190',storage:'supabase-storage',
+      schema:185,app_version:'V192',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -28700,30 +29089,56 @@ function concurrentSyncKeys(){
     typeof EMP_ATTENDANCE_KEY!=='undefined'?EMP_ATTENDANCE_KEY:'lat_yen_employee_attendance_v1',
     typeof EMP_SALARY_REPORT_KEY!=='undefined'?EMP_SALARY_REPORT_KEY:'lat_yen_employee_salary_report_v1',
     typeof APP_BRAND_KEY!=='undefined'?APP_BRAND_KEY:'lat_yen_app_brand_v1',
+
+    // V192: các trạng thái nghiệp vụ local cũng phải giống nhau giữa thiết bị.
+    typeof AUDIT_LOG_KEY!=='undefined'?AUDIT_LOG_KEY:'lat_yen_audit_log_v1',
+    typeof PRODUCT_WAREHOUSE_KEY!=='undefined'?PRODUCT_WAREHOUSE_KEY:'lat_yen_product_warehouse_v1',
+    typeof DELETED_IMPORT_MOVEMENT_IDS_KEY!=='undefined'?DELETED_IMPORT_MOVEMENT_IDS_KEY:'lat_yen_deleted_import_movement_ids_v1',
+    typeof DELETED_INGREDIENT_SCOPE_KEY!=='undefined'?DELETED_INGREDIENT_SCOPE_KEY:'lat_yen_deleted_ingredient_scopes_v1',
+    typeof DELETED_PRODUCT_SCOPE_KEY!=='undefined'?DELETED_PRODUCT_SCOPE_KEY:'lat_yen_deleted_product_scopes_v1',
+    typeof DELETED_EXPORT_RECEIPT_REFS_KEY!=='undefined'?DELETED_EXPORT_RECEIPT_REFS_KEY:'lat_yen_deleted_export_receipt_refs_v1',
+    typeof DELETED_STOCKTAKE_RECEIPT_KEYS_KEY!=='undefined'?DELETED_STOCKTAKE_RECEIPT_KEYS_KEY:'lat_yen_deleted_stocktake_receipt_keys_v1',
+    typeof DELETED_WAREHOUSE_KEY!=='undefined'?DELETED_WAREHOUSE_KEY:'lat_yen_deleted_warehouses_v1',
+
     '__latyen_product_units',
     '__latyen_sale_sources'
   ].filter(Boolean);
 }
 
 function concurrentKeyMode(key,value){
-  if(
-    key===CASHFLOW_KEY ||
-    key===EMPLOYEE_KEY
-  ){
+  const arrayKeys=new Set([
+    CASHFLOW_KEY,
+    EMPLOYEE_KEY,
+    typeof AUDIT_LOG_KEY!=='undefined'?AUDIT_LOG_KEY:'lat_yen_audit_log_v1'
+  ]);
+
+  if(arrayKeys.has(key)){
     return 'array';
   }
 
-  if(
-    key===EMP_ATTENDANCE_KEY ||
-    key===EMP_PAYROLL_KEY ||
-    key===EMP_SALARY_REPORT_KEY
-  ){
+  const mapKeys=new Set([
+    EMP_ATTENDANCE_KEY,
+    EMP_PAYROLL_KEY,
+    EMP_SALARY_REPORT_KEY,
+    typeof PRODUCT_WAREHOUSE_KEY!=='undefined'?PRODUCT_WAREHOUSE_KEY:'lat_yen_product_warehouse_v1',
+    '__latyen_product_units'
+  ]);
+
+  if(mapKeys.has(key)){
     return 'map';
   }
 
-  if(
-    key===DELETED_EMPLOYEE_KEY
-  ){
+  const setKeys=new Set([
+    DELETED_EMPLOYEE_KEY,
+    typeof DELETED_IMPORT_MOVEMENT_IDS_KEY!=='undefined'?DELETED_IMPORT_MOVEMENT_IDS_KEY:'lat_yen_deleted_import_movement_ids_v1',
+    typeof DELETED_INGREDIENT_SCOPE_KEY!=='undefined'?DELETED_INGREDIENT_SCOPE_KEY:'lat_yen_deleted_ingredient_scopes_v1',
+    typeof DELETED_PRODUCT_SCOPE_KEY!=='undefined'?DELETED_PRODUCT_SCOPE_KEY:'lat_yen_deleted_product_scopes_v1',
+    typeof DELETED_EXPORT_RECEIPT_REFS_KEY!=='undefined'?DELETED_EXPORT_RECEIPT_REFS_KEY:'lat_yen_deleted_export_receipt_refs_v1',
+    typeof DELETED_STOCKTAKE_RECEIPT_KEYS_KEY!=='undefined'?DELETED_STOCKTAKE_RECEIPT_KEYS_KEY:'lat_yen_deleted_stocktake_receipt_keys_v1',
+    typeof DELETED_WAREHOUSE_KEY!=='undefined'?DELETED_WAREHOUSE_KEY:'lat_yen_deleted_warehouses_v1'
+  ]);
+
+  if(setKeys.has(key)){
     return 'set';
   }
 
@@ -29836,7 +30251,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:190,
+    version:192,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -30021,98 +30436,37 @@ async function v189CanonicalSync(
 }
 
 async function autoSyncNow(options={}){
-  const {
-    force=false,
-    reason='timer',
-    silent=true
-  }=options;
+  const {force=false,reason='timer',silent=true}=options;
+  const cfg=loadAutoSyncConfig();
 
-  const cfg=
-    loadAutoSyncConfig();
+  if(autoSyncBusy||!cfg.enabled||!navigator.onLine)return null;
 
-  if(
-    autoSyncBusy||
-    !cfg.enabled||
-    !navigator.onLine
-  ){
-    return null;
-  }
-
-  const cred=
-    autoSyncCredentials();
-
-  if(
-    !cred.code||
-    !cred.passphrase
-  ){
-    return null;
-  }
+  const cred=autoSyncCredentials();
+  if(!cred.code||!cred.passphrase)return null;
 
   autoSyncBusy=true;
-
-  const statusEl=
-    $('autoSyncLiveStatus');
-
-  if(statusEl){
-    statusEl.textContent=
-      'Đang đồng bộ…';
-  }
+  const statusEl=$('autoSyncLiveStatus');
+  if(statusEl)statusEl.textContent='Đang đồng bộ…';
 
   try{
-    // 1. PUSH mọi pending nghiệp vụ.
-    try{
-      await syncDeletedImportMovementTombstones();
-    }catch(e){
-      console.warn(e);
-    }
+    try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
+    try{await syncDeletionTombstonesV192()}catch(e){console.warn(e)}
+    try{await syncPendingSuppliersV191()}catch(e){console.warn('Supplier retry',e)}
+    try{await syncPendingImportReceiptsV191()}catch(e){console.warn('Import retry',e)}
+    try{await syncPendingExportReceiptsV192()}catch(e){console.warn('Export retry',e)}
+    try{await syncPendingStocktakeReceiptsV192()}catch(e){console.warn('Stocktake retry',e)}
+    try{await syncPendingOperations()}catch(e){console.warn('Pending business',e)}
+    try{await syncPendingSaleReceipts()}catch(e){console.warn('Pending sale',e)}
 
-    try{
-      await syncPendingOperations();
-    }catch(e){
-      console.warn(
-        'Pending business sync',
-        e
-      );
-    }
-
-    try{
-      await syncPendingSaleReceipts();
-    }catch(e){
-      console.warn(
-        'Pending sale sync',
-        e
-      );
-    }
-
-    // 2. PULL toàn bộ database nghiệp vụ, có pagination.
     await loadCloud();
 
-    // 3. Local-only dùng DB transaction CAS.
-    const canonical=
-      await v189CanonicalSync(
-        cred.code,
-        cred.passphrase
-      );
+    const canonical=await v189CanonicalSync(cred.code,cred.passphrase);
 
-    // 4. PULL lần cuối để chắc chắn UI/cache nghiệp vụ
-    //    không đứng ở trạng thái trước commit của thiết bị khác.
     await loadCloud();
 
-    const now=
-      new Date().toISOString();
-
-    const pending=
-      getPendingSync().length+
-      (db.sales||[])
-        .filter(x=>
-          x._sync_status==='pending'||
-          x._local_only===true
-        ).length;
-
-    const fullySynced=
-      canonical.converged&&
-      pending===0&&
-      cloudOnline;
+    const now=new Date().toISOString();
+    const pending=v191PendingCount();
+    const fullySynced=canonical.converged&&pending===0&&cloudOnline;
 
     saveAutoSyncConfig({
       code:cred.code,
@@ -30120,91 +30474,52 @@ async function autoSyncNow(options={}){
       last_sync_at:now,
       last_result:
         fullySynced
-          ?(
-            canonical.conflicts
-              ?'merged_conflicts'
-              :'synced'
-          )
+          ?(canonical.conflicts?'merged_conflicts':'synced')
           :'catching_up',
-      cloud_revision:
-        canonical.revision||0,
-      cloud_revision_token:
-        String(
-          canonical.revision||0
-        )
+      cloud_revision:canonical.revision||0,
+      cloud_revision_token:String(canonical.revision||0)
     });
 
-    saveMultiDeviceConfig({
-      code:cred.code,
-      last_cloud_at:now
-    });
+    saveMultiDeviceConfig({code:cred.code,last_cloud_at:now});
 
     if(!silent){
-      if(fullySynced){
-        toastMsg(
-          `Đã đồng bộ hoàn toàn • Rev ${canonical.revision}`
-        );
-      }else{
-        toastMsg(
-          `Đang hoàn tất đồng bộ • Rev ${canonical.revision} • ${pending} mục chờ`
-        );
-      }
-    }
-
-    return {
-      direction:'db-canonical',
-      converged:fullySynced,
-      revision:
-        canonical.revision,
-      conflicts:
-        canonical.conflicts,
-      pending
-    };
-
-  }catch(e){
-    console.warn(
-      'V189 sync',
-      reason,
-      e
-    );
-
-    saveAutoSyncConfig({
-      last_result:'error'
-    });
-
-    if(!silent&&reason!=='timer'){
-      alert(
-        'Đồng bộ V189 chưa hoàn tất.\n\n'+
-        String(e?.message||e)+
-        '\n\nNếu đây là lần đầu dùng V189, hãy chạy file SQL V189 trong Supabase SQL Editor.'
+      toastMsg(
+        fullySynced
+          ?`Đã đồng bộ hoàn toàn • Rev ${canonical.revision}`
+          :`Chưa đồng bộ hết • Rev ${canonical.revision} • ${pending} mục chờ`
       );
     }
 
     return {
-      direction:'error',
-      error:e
+      direction:'v192-full-sync',
+      converged:fullySynced,
+      revision:canonical.revision,
+      conflicts:canonical.conflicts,
+      pending
     };
-
+  }catch(e){
+    console.warn('V192 sync',reason,e);
+    saveAutoSyncConfig({last_result:'error'});
+    if(!silent&&reason!=='timer'){
+      alert(
+        'Đồng bộ V192 chưa hoàn tất.\n\n'+
+        String(e?.message||e)+
+        '\n\nKiểm tra đã chạy SQL V189, V190, V191 và V192.'
+      );
+    }
+    return {direction:'error',error:e};
   }finally{
     autoSyncBusy=false;
-
-    const current=
-      loadAutoSyncConfig();
-
+    const current=loadAutoSyncConfig();
     if(statusEl){
-      const label={
-        synced:'Đã đồng bộ hoàn toàn',
-        merged_conflicts:'Đã đồng bộ • có lịch sử xung đột',
-        catching_up:'Đang hoàn tất đồng bộ',
-        error:'Lỗi đồng bộ',
-        paired:'Đã ghép'
-      }[current.last_result]||
-        'Sẵn sàng';
-
-      statusEl.textContent=
-        current.cloud_revision
-          ?`${label} • Rev ${current.cloud_revision}`
-          :label;
+      const pending=v191PendingCount();
+      const label=
+        pending===0&&['synced','merged_conflicts'].includes(current.last_result)
+          ?'Đã đồng bộ hoàn toàn'
+          :(current.last_result==='error'?'Lỗi đồng bộ':`Còn ${pending} mục chờ`);
+      statusEl.textContent=current.cloud_revision
+        ?`${label} • Rev ${current.cloud_revision}`
+        :label;
     }
   }
 }
@@ -30476,7 +30791,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V190',
+      app_version:'V192',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -30491,7 +30806,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:190,
+      version:192,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -30768,7 +31083,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v190-full-backup-'+
+    'lat-yen-v192-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -30856,7 +31171,7 @@ function renderSettings(){
           <div>
             <h2>Đồng bộ dữ liệu</h2>
             <div class="muted">
-              Cloud là nguồn dữ liệu chính. V190 ghi phiếu bán + chi tiết + biến động kho + tồn kho trong một transaction PostgreSQL duy nhất.
+              Cloud là nguồn dữ liệu chính. V192 kiểm tra và đồng bộ toàn bộ menu: Bán/Nhập/Xuất/Kiểm kê dùng transaction; Nhân viên/Thu-Chi/Lịch sử/Cài đặt dùng canonical sync.
             </div>
           </div>
         </div>

@@ -1,0 +1,44 @@
+V192 - FULL MENU SYNC AUDIT
+
+Đã rà toàn bộ menu và sửa các lỗi cùng loại với Nhập kho:
+
+1. XUẤT KHO
+- V190 vô hiệu ghi tồn tuyệt đối nhưng Export vẫn gọi hàm cũ.
+- Có thể movement lên Cloud nhưng inventory không đổi.
+- V192 dùng commit_export_receipt_v192: movement + inventory delta trong 1 transaction.
+- Có retry pending theo reference_id.
+- Xóa phiếu export đảo ngược tồn atomic.
+
+2. KIỂM KÊ
+- Trước V192 vẫn upsert quantity tuyệt đối => race giữa nhiều thiết bị.
+- V192 RPC khóa inventory row, đọc tồn Cloud tại thời điểm transaction,
+  tính diff = actual - current, set actual và ghi ADJUSTMENT trong cùng transaction.
+- Có retry pending.
+- Sửa/xóa phiếu đảo tác động tồn bằng transaction.
+
+3. TRẠNG THÁI PENDING
+- Không còn coi mọi _local_only là pending.
+- Chỉ _sync_status='pending' mới là chờ Cloud thật.
+- Excel và audit-only hợp lệ không làm trạng thái treo.
+
+4. NHÂN VIÊN / THU-CHI / CHẤM CÔNG / LƯƠNG
+- Đồng bộ qua canonical encrypted state.
+- Merge theo ID/key.
+
+5. LỊCH SỬ
+- AUDIT_LOG_KEY đã được thêm vào canonical sync.
+- Nhật ký thay đổi giữa các thiết bị sẽ được merge theo audit ID.
+
+6. XÓA KHO / NGUYÊN LIỆU / EXPORT / KIỂM KÊ
+- Tombstone được retry ở mỗi sync.
+- Xóa kho query sale IDs trực tiếp từ Cloud trước khi xóa sale_items.
+
+7. THỰC ĐƠN
+- Product/recipe UUID dùng pending queue và retry.
+- Dữ liệu Excel/local không thể đưa lên FK UUID; đây là trạng thái local-only có chủ ý.
+
+CÀI ĐẶT:
+- Giữ SQL V189, V190, V191 đã chạy.
+- Chạy thêm SUPABASE-V192-FULL-MENU-SYNC.sql.
+- Deploy V192 lên tất cả thiết bị.
+- Reload và bấm Đồng bộ ngay một lần.
