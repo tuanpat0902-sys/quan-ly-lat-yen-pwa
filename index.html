@@ -11456,6 +11456,165 @@ html.v257-device-locked body{
   box-shadow:none!important;
 }
 </style>
+
+<style id="fresh-final-polish">
+/* ===== Fresh Core final UI polish ===== */
+
+/* 1) Sidebar logo: larger and clearer */
+.app-logo-slot{
+  width:58px!important;
+  height:58px!important;
+  min-width:58px!important;
+  min-height:58px!important;
+  flex:0 0 58px!important;
+}
+.app-logo-slot img{
+  width:58px!important;
+  height:58px!important;
+  max-width:58px!important;
+  max-height:58px!important;
+  object-fit:contain!important;
+  border-radius:12px!important;
+}
+.brand-preview-logo{
+  width:82px!important;
+  height:82px!important;
+  max-width:82px!important;
+  max-height:82px!important;
+  object-fit:contain!important;
+  padding:5px!important;
+}
+
+/* 2) Fix root "Bán hàng" active/focus state explicitly */
+#nav>button[data-panel="sales"].active,
+#nav>button[data-panel="sales"].active:hover,
+#nav>button[data-panel="sales"].active:focus,
+#nav>button[data-panel="sales"].active:focus-visible,
+#nav>button[data-panel="sales"].active:active{
+  background:#087f73!important;
+  color:#fff!important;
+  border-color:#087f73!important;
+  box-shadow:none!important;
+}
+#nav>button[data-panel="sales"].active .nav-icon,
+#nav>button[data-panel="sales"].active:hover .nav-icon,
+#nav>button[data-panel="sales"].active:focus .nav-icon{
+  background:rgba(255,255,255,.14)!important;
+  border-color:rgba(255,255,255,.24)!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+#nav>button[data-panel="sales"]:not(.active):focus,
+#nav>button[data-panel="sales"]:not(.active):active{
+  background:#f5f7f9!important;
+  color:#17212b!important;
+}
+
+/* 3) Larger, calmer in-app notification toast */
+.toast{
+  right:22px!important;
+  bottom:22px!important;
+  width:min(520px,calc(100vw - 28px))!important;
+  max-width:520px!important;
+  min-height:56px!important;
+  padding:14px 18px!important;
+  border-radius:12px!important;
+  background:#172b3a!important;
+  color:#fff!important;
+  font-size:13px!important;
+  line-height:1.45!important;
+  font-weight:650!important;
+  box-shadow:0 14px 36px rgba(15,23,42,.25)!important;
+  z-index:20000!important;
+  align-items:center;
+}
+.toast.show{display:flex!important}
+
+/* 4) Chrome notification settings card: bigger and more usable */
+.v226-notification-card{
+  border-left:4px solid #087f73!important;
+  padding:16px!important;
+}
+.v226-notify-head{
+  align-items:center!important;
+  gap:12px!important;
+}
+.v226-notify-head h3{
+  font-size:15px!important;
+  margin:0 0 3px!important;
+}
+.v226-notify-actions{
+  gap:8px!important;
+  margin-top:12px!important;
+}
+.v226-notify-actions button{
+  min-height:36px!important;
+  padding:7px 12px!important;
+}
+.v226-notify-options{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+  margin-top:12px!important;
+  padding-top:10px!important;
+}
+.v226-notify-options label{
+  min-height:38px!important;
+  padding:8px 10px!important;
+  border:1px solid #e1e8ec!important;
+  border-radius:8px!important;
+  background:#f8fafb!important;
+  font-size:11.5px!important;
+  font-weight:600!important;
+}
+.v226-notify-options input{
+  width:16px!important;
+  height:16px!important;
+}
+.v226-notify-note{
+  margin-top:9px!important;
+  font-size:10.5px!important;
+  line-height:1.4!important;
+}
+
+/* Compact settings layout */
+#settings .fresh-settings-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);
+  gap:12px;
+  align-items:start;
+}
+#settings .fresh-settings-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+#settings .fresh-settings-status{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:12px;
+}
+#settings .fresh-settings-status-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:#22a06b;
+}
+@media(max-width:760px){
+  .app-logo-slot,
+  .app-logo-slot img{
+    width:52px!important;height:52px!important;
+    min-width:52px!important;min-height:52px!important;
+  }
+  #settings .fresh-settings-grid{grid-template-columns:1fr}
+  .v226-notify-options{grid-template-columns:1fr!important}
+  .toast{
+    right:14px!important;
+    bottom:14px!important;
+    width:calc(100vw - 28px)!important;
+  }
+}
+</style>
 </head>
 <body>
 <header>
@@ -56362,13 +56521,14 @@ window.__lyFreshOrgId=null;
 window.__lyFreshRealtime=null;
 window.__lyFreshReloadTimer=null;
 window.__lyFreshLoading=false;
+window.__lyFreshCashflow=[];
 
 const LY_FRESH_TABLES=[
   'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
   'ly_products','ly_recipe_items','ly_inventory',
   'ly_import_receipts','ly_import_items','ly_export_receipts','ly_export_items',
   'ly_stocktake_receipts','ly_stocktake_items','ly_sales','ly_sale_items',
-  'ly_stock_transactions'
+  'ly_stock_transactions','ly_cashflow_entries'
 ];
 
 function lyFreshRef(value){
@@ -56523,7 +56683,7 @@ loadCloud=async function(){
     const [
       warehouses,suppliers,ingredients,preparedItems,products,recipeItems,inventory,
       importReceipts,importItems,exportReceipts,exportItems,stocktakeReceipts,stocktakeItems,
-      sales,saleItems,transactions
+      sales,saleItems,transactions,cashflowEntries
     ]=await Promise.all([
       lyFreshFetch('ly_warehouses','created_at',true),
       lyFreshFetch('ly_suppliers','name',true),
@@ -56540,7 +56700,8 @@ loadCloud=async function(){
       lyFreshFetch('ly_stocktake_items','line_order',true),
       lyFreshFetch('ly_sales','sold_at',false),
       lyFreshFetch('ly_sale_items','created_at',true),
-      lyFreshFetch('ly_stock_transactions','created_at',false)
+      lyFreshFetch('ly_stock_transactions','created_at',false),
+      lyFreshFetch('ly_cashflow_entries','entry_date',false)
     ]);
 
     const mappedSales=(sales||[]).map(s=>({
@@ -56568,6 +56729,19 @@ loadCloud=async function(){
       imports:importReceipts,exports:exportReceipts,stocktakes:stocktakeReceipts,
       sales,importItems,exportItems,stocktakeItems,transactions
     };
+
+    window.__lyFreshCashflow=(cashflowEntries||[]).map(x=>({
+      id:x.id,
+      warehouse_id:x.warehouse_id,
+      type:x.entry_type,
+      date:x.entry_date,
+      category:x.category,
+      amount:Number(x.amount||0),
+      note:x.note||'',
+      finance_scope:x.finance_scope||undefined,
+      created_at:x.created_at,
+      updated_at:x.updated_at
+    }));
 
     if(!currentWarehouseId||!db.warehouses.some(w=>w.id===currentWarehouseId)){
       currentWarehouseId=db.warehouses[0]?.id||'';
@@ -57066,6 +57240,321 @@ init();
     });
   };
 })();
+</script>
+
+<script id="fresh-toast-polish">
+toastMsg=function(message){
+  if(!E?.toast)return;
+  const s=String(message||'').trim();
+  if(!s)return;
+  E.toast.textContent=s;
+  E.toast.classList.add('show');
+  clearTimeout(E.toast._v222Timer);
+  const duration=Math.min(5200,Math.max(2800,1800+s.length*26));
+  E.toast._v222Timer=setTimeout(()=>E.toast?.classList.remove('show'),duration);
+};
+</script>
+
+<script id="fresh-notification-polish">
+v226RenderNotificationCard=function(){
+  const settings=E?.settings;
+  if(!settings)return;
+
+  let card=document.getElementById('v226NotificationCard');
+  if(!card){
+    card=document.createElement('div');
+    card.id='v226NotificationCard';
+    card.className='card section-gap v226-notification-card';
+    settings.prepend(card);
+  }
+
+  const prefs=v226NotifyPrefs();
+  const permission=v226NotificationPermission();
+
+  card.innerHTML=`
+    <div class="v226-notify-head">
+      <div>
+        <h3>Thông báo Chrome App</h3>
+        <div class="muted">Nhận cảnh báo quan trọng khi PWA đang chạy nền.</div>
+      </div>
+      <span class="v226-permission ${permission}">${esc(v226PermissionLabel())}</span>
+    </div>
+
+    <div class="v226-notify-actions">
+      <button type="button" class="primary sm" onclick="v226RequestNotificationPermission()">
+        ${permission==='granted'?'Đã bật thông báo':'Bật thông báo'}
+      </button>
+      <button type="button" class="secondary sm" onclick="v226TestNotification()">Gửi thử</button>
+    </div>
+
+    <div class="v226-notify-options">
+      <label><input type="checkbox" ${prefs.sales?'checked':''}
+        onchange="v226SaveNotifyPrefs({sales:this.checked})"> Bán hàng mới</label>
+      <label><input type="checkbox" ${prefs.lowStock?'checked':''}
+        onchange="v226SaveNotifyPrefs({lowStock:this.checked})"> Tồn kho thấp</label>
+      <label><input type="checkbox" ${prefs.syncError?'checked':''}
+        onchange="v226SaveNotifyPrefs({syncError:this.checked})"> Lỗi Cloud</label>
+    </div>
+
+    <div class="v226-notify-note">
+      Chrome/Windows có thể giới hạn thông báo khi app bị đóng hoàn toàn.
+    </div>`;
+};
+</script>
+
+<script id="fresh-settings-compact">
+renderSettings=function(){
+  const root=E?.settings||document.getElementById('settings');
+  if(!root)return;
+
+  const brand=loadAppBrand();
+  const online=navigator.onLine;
+
+  root.innerHTML=`
+    <div class="fresh-settings-grid">
+      <div>
+        <div class="card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <h2 style="margin:0 0 4px">Cloud & tài khoản</h2>
+              <div class="muted">Dữ liệu nghiệp vụ lưu trực tiếp trên Supabase.</div>
+            </div>
+            <div class="fresh-settings-status">
+              <span class="fresh-settings-status-dot" style="${online?'':'background:#d64545'}"></span>
+              ${online?'Online':'Offline'}
+            </div>
+          </div>
+
+          <div style="margin-top:10px">
+            <b>${esc(v260AccountEmail()||'admin@latyen.vn')}</b>
+          </div>
+
+          <div class="fresh-settings-actions">
+            <button class="primary" onclick="loadCloud()">Tải lại Cloud</button>
+            <button class="secondary" onclick="setupRealtime();toastMsg('Đang kết nối lại Realtime')">Kết nối Realtime</button>
+            <button class="secondary" onclick="v260LogoutAndWipe()">Đăng xuất</button>
+          </div>
+        </div>
+
+        <div id="freshNotifyHost"></div>
+      </div>
+
+      <div>
+        <div class="card brand-settings-card">
+          <div class="brand-settings-head">
+            <div>
+              <h2>Nhận diện phần mềm</h2>
+              <div class="muted">Tên và logo hiển thị.</div>
+            </div>
+            ${brand.logo?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`:''}
+          </div>
+
+          <div class="field">
+            <label>Tên phần mềm</label>
+            <div class="brand-name-actions">
+              <input id="brandNameInput" maxlength="80" value="${esc(brand.name)}">
+              <button class="primary" onclick="saveAppName()">Lưu</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>Logo</label>
+            <input id="brandLogoInput" type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              style="display:none" onchange="handleAppLogo(this)">
+            <div class="brand-logo-actions">
+              <button class="secondary" onclick="selectAppLogo()">${brand.logo?'Thay logo':'Thêm logo'}</button>
+              ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa</button>`:''}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  v226RenderNotificationCard();
+
+  const card=document.getElementById('v226NotificationCard');
+  const host=document.getElementById('freshNotifyHost');
+  if(card&&host)host.appendChild(card);
+};
+</script>
+
+<script id="fresh-nav-sales-fix">
+(function(){
+  const oldShowTab=showTab;
+  showTab=function(id,btn){
+    oldShowTab(id,btn);
+    requestAnimationFrame(()=>{
+      document.querySelectorAll('#nav button[data-panel]').forEach(x=>{
+        x.classList.toggle('active',x.dataset.panel===id);
+      });
+      if(id==='sales'){
+        const sales=document.querySelector('#nav>button[data-panel="sales"]');
+        sales?.classList.add('active');
+        sales?.blur?.();
+      }
+    });
+  };
+})();
+</script>
+
+<script id="fresh-cashflow-cloud-core">
+/* Thu/Chi — Fresh Cloud Core.
+   No localStorage source; one Cloud row = one Thu/Chi entry. */
+
+loadCashflow=function(){
+  return (window.__lyFreshCashflow||[])
+    .filter(x=>x.warehouse_id===currentWarehouseId)
+    .sort((a,b)=>{
+      const da=String(a.date||'')+' '+String(a.created_at||'');
+      const dbb=String(b.date||'')+' '+String(b.created_at||'');
+      return dbb.localeCompare(da);
+    });
+};
+
+/* Legacy writer is intentionally disabled. */
+saveCashflowList=function(){
+  invalidateDerivedCaches?.();
+};
+
+addCashflowEntry=async function(){
+  if(!lyFreshRequireOnline())return;
+
+  const type=$('cashflowType')?.value||'expense';
+  const date=$('cashflowDate')?.value||todayLocalISO();
+  const category=($('cashflowCategory')?.value||'').trim();
+  const amount=Math.max(0,Number($('cashflowAmount')?.value||0));
+  const note=($('cashflowNote')?.value||'').trim();
+
+  if(!category)return alert('Vui lòng nhập nội dung thu/chi.');
+  if(amount<=0)return alert('Vui lòng nhập số tiền.');
+
+  const existing=cashflowEditId
+    ?loadCashflow().find(x=>x.id===cashflowEditId)
+    :null;
+
+  if(cashflowEditId&&!existing){
+    cashflowEditId='';
+    cashflowFormOpen=false;
+    renderCashflow();
+    return alert('Không tìm thấy phiếu Thu/Chi trên Cloud.');
+  }
+
+  const financeScope=(
+    type==='expense' &&
+    category===INVENTORY_PAYMENT_CASHFLOW_CATEGORY
+  )?'inventory_asset':null;
+
+  const id=existing?.id||uid();
+
+  const row={
+    id,
+    org_id:window.__lyFreshOrgId,
+    warehouse_id:currentWarehouseId,
+    entry_type:type,
+    entry_date:date,
+    category,
+    amount,
+    note,
+    finance_scope:financeScope
+  };
+
+  const submitBtn=document.querySelector('.cashflow-form-actions .primary');
+
+  try{
+    if(submitBtn){
+      submitBtn.disabled=true;
+      submitBtn.textContent='Đang lưu Cloud…';
+    }
+
+    const {error}=await sb
+      .from('ly_cashflow_entries')
+      .upsert(row,{onConflict:'id'});
+
+    if(error)throw error;
+
+    const {data:verify,error:verifyError}=await sb
+      .from('ly_cashflow_entries')
+      .select('id,entry_type,entry_date,category,amount,note,finance_scope,warehouse_id,created_at,updated_at')
+      .eq('id',id)
+      .eq('org_id',window.__lyFreshOrgId)
+      .single();
+
+    if(verifyError||!verify){
+      throw verifyError||new Error('Cloud chưa xác nhận phiếu Thu/Chi.');
+    }
+
+    cashflowEditId='';
+    cashflowFormOpen=false;
+
+    await loadCloud();
+
+    invalidateDerivedCaches?.();
+    renderCashflow?.();
+    renderFinance?.();
+
+    toastMsg(
+      existing
+        ?'Đã sửa phiếu Thu/Chi trên Cloud'
+        :(type==='income'
+          ?'Đã lưu phiếu Thu trên Cloud'
+          :'Đã lưu phiếu Chi trên Cloud')
+    );
+
+  }catch(e){
+    console.error('Fresh cashflow save',e);
+    alert('Lỗi lưu Thu/Chi: '+(e?.message||e));
+  }finally{
+    if(submitBtn){
+      submitBtn.disabled=false;
+      submitBtn.textContent=existing?'Lưu thay đổi':'Lưu phiếu';
+    }
+  }
+};
+
+deleteCashflowEntry=async function(id){
+  if(!lyFreshRequireOnline())return;
+
+  if(!confirm('Xóa khoản thu/chi này?'))return;
+
+  try{
+    const {error}=await sb
+      .from('ly_cashflow_entries')
+      .delete()
+      .eq('id',id)
+      .eq('org_id',window.__lyFreshOrgId);
+
+    if(error)throw error;
+
+    const {data:verify,error:verifyError}=await sb
+      .from('ly_cashflow_entries')
+      .select('id')
+      .eq('id',id)
+      .eq('org_id',window.__lyFreshOrgId)
+      .maybeSingle();
+
+    if(verifyError)throw verifyError;
+    if(verify)throw new Error('Cloud chưa xác nhận xóa phiếu Thu/Chi.');
+
+    if(cashflowEditId===id){
+      cashflowEditId='';
+      cashflowFormOpen=false;
+    }
+
+    await loadCloud();
+
+    invalidateDerivedCaches?.();
+    renderCashflow?.();
+    renderFinance?.();
+
+    toastMsg('Đã xóa phiếu Thu/Chi');
+
+  }catch(e){
+    console.error('Fresh cashflow delete',e);
+    alert('Lỗi xóa Thu/Chi: '+(e?.message||e));
+  }
+};
 </script>
 </body>
 </html>
