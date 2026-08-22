@@ -1,4 +1,4 @@
-const CACHE_NAME='lat-yen-pwa-v182';
+const CACHE_NAME='lat-yen-pwa-v184';
 const APP_SHELL=[
   './',
   './index.html',

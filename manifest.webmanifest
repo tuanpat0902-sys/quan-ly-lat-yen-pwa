@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "Quản Lý Lát Yên",
+  "name": "Quản Lý Lát Yên V184",
   "short_name": "Lát Yên",
-  "description": "Quản lý bán hàng, kho, Thu/Chi, nhân viên và báo cáo tài chính Lát Yên.",
+  "description": "Quản lý Lát Yên với sao lưu mã hóa đa thiết bị qua Supabase Storage.",
   "lang": "vi",
   "start_url": "./index.html",
   "scope": "./",

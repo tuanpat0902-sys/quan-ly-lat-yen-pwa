@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V182 ANDROID PWA ===== */
+/* ===== V184 STORAGE BACKUP ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -6248,7 +6248,7 @@ table.app-aligned-table td > .muted{
 }
 
 
-/* ===== V181 EDIT SALES CASHFLOW SIDEBAR ===== */
+/* ===== V183 MULTI DEVICE SYNC SIDEBAR ===== */
 
 /* Logo sử dụng tối đa chiều ngang khả dụng của menu trái */
 @media(min-width:761px){
@@ -6526,7 +6526,7 @@ table.app-aligned-table td > .muted{
 }
 
 
-/* ===== V180 PERFORMANCE CORE DIFFERENCE ===== */
+/* ===== V183 MULTI DEVICE SYNC DIFFERENCE ===== */
 
 /* Header phải full width để thẳng cột với dữ liệu; nút cuộn nằm trên riêng. */
 #stocktake .stocktake-list-toolbar{
@@ -7031,7 +7031,7 @@ table.app-aligned-table td > .muted{
 }
 
 
-/* ===== V181 EDIT SALES CASHFLOW HISTORY ===== */
+/* ===== V184 STORAGE BACKUP HISTORY ===== */
 .ingredient-usage-head{
   display:flex;
   align-items:flex-start;
@@ -8640,7 +8640,7 @@ table.app-aligned-table td > .muted{
 }
 
 
-/* ===== V182 ANDROID PWA ===== */
+/* ===== V184 STORAGE BACKUP ===== */
 :root{
   --safe-top:env(safe-area-inset-top,0px);
   --safe-right:env(safe-area-inset-right,0px);
@@ -8852,6 +8852,116 @@ button{
   textarea{
     user-select:text;
   }
+}
+
+
+/* ===== V183 MULTI-DEVICE BACKUP ===== */
+.multi-device-card{
+  border-top:3px solid #7c3aed;
+}
+
+.multi-device-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.multi-code-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:6px;
+}
+
+.multi-code-row input{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+
+.multi-device-actions{
+  display:flex!important;
+  flex-wrap:wrap;
+  gap:7px!important;
+}
+
+.multi-device-security-note{
+  margin-top:9px;
+  padding:8px 10px;
+  border-left:3px solid #7c3aed;
+  border-radius:0 8px 8px 0;
+  background:#f5f3ff;
+  color:#5b21b6;
+  font-size:10px;
+  line-height:1.4;
+}
+
+.multi-sync-status{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 10px;
+  border:1px solid #e2e8f0;
+  border-radius:8px;
+  background:#f8fafc;
+}
+
+.multi-sync-status b{
+  font-size:10.5px;
+}
+
+.multi-sync-status span{
+  color:#64748b;
+  font-size:9.5px;
+}
+
+.multi-sync-status.ok{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+  color:#15803d;
+}
+
+.multi-sync-status.warn{
+  border-color:#fde68a;
+  background:#fffbeb;
+  color:#92400e;
+}
+
+.multi-sync-status.danger{
+  border-color:#fecaca;
+  background:#fef2f2;
+  color:#b91c1c;
+}
+
+@media(max-width:700px){
+  .multi-device-grid{
+    grid-template-columns:1fr;
+  }
+
+  .multi-device-actions>*{
+    width:100%;
+  }
+
+  .multi-sync-status{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
+
+
+/* ===== V184 SUPABASE STORAGE BACKUP ===== */
+.multi-device-storage-note{
+  margin-top:9px;
+  padding:8px 10px;
+  border:1px solid #bfdbfe;
+  border-radius:8px;
+  background:#eff6ff;
+  color:#1e40af;
+  font-size:10px;
+  line-height:1.4;
+}
+.multi-device-storage-note code{
+  font-weight:800;
 }
 
 </style>
@@ -27456,64 +27566,1234 @@ function manualOptimizeStorage(){
   renderSettings();
 }
 
-function renderSettings(){E.settings.innerHTML=`
+
+/* ===== V183 MULTI-DEVICE ENCRYPTED BACKUP ===== */
+const MULTI_DEVICE_CONFIG_KEY='lat_yen_multidevice_config_v1';
+const MULTI_DEVICE_TABLE='__storage_v184_unused';
+const MULTI_DEVICE_SCHEMA=184;
+
+const MULTI_DEVICE_BUCKET='lat-yen-backups';
+const MULTI_DEVICE_STORAGE_DIR='v184';
+
+async function storageBackupPath(code){
+  const lookup=await backupLookupKey(code);
+  return `${MULTI_DEVICE_STORAGE_DIR}/${lookup}.json`;
+}
+
+function storageMissingError(error){
+  const status=Number(
+    error?.statusCode||
+    error?.status||
+    0
+  );
+
+  const msg=String(
+    error?.message||
+    error?.error||
+    ''
+  ).toLowerCase();
+
+  return (
+    status===404 ||
+    status===400 &&
+      (
+        msg.includes('not found') ||
+        msg.includes('object not found')
+      )
+  );
+}
+
+async function fetchCloudBackupEnvelope(code){
+  if(!navigator.onLine){
+    throw new Error('Thiết bị đang offline.');
+  }
+
+  const path=await storageBackupPath(code);
+
+  const r=await promiseWithTimeout(
+    sb.storage
+      .from(MULTI_DEVICE_BUCKET)
+      .download(path),
+    15000,
+    'Tải Cloud Backup Storage'
+  );
+
+  if(r.error){
+    if(storageMissingError(r.error)){
+      return null;
+    }
+
+    const message=String(
+      r.error?.message||
+      r.error
+    );
+
+    if(
+      message.toLowerCase().includes('bucket') &&
+      message.toLowerCase().includes('not found')
+    ){
+      throw new Error(
+        `Chưa tạo bucket "${MULTI_DEVICE_BUCKET}" trên Supabase Storage.`
+      );
+    }
+
+    throw r.error;
+  }
+
+  if(!r.data){
+    return null;
+  }
+
+  let text='';
+
+  if(typeof r.data.text==='function'){
+    text=await r.data.text();
+  }else{
+    text=await new Response(r.data).text();
+  }
+
+  let envelope;
+
+  try{
+    envelope=JSON.parse(text);
+  }catch(e){
+    throw new Error(
+      'File Cloud Backup bị lỗi hoặc không đúng định dạng JSON.'
+    );
+  }
+
+  return {
+    ...envelope,
+    storage_path:path
+  };
+}
+
+async function uploadCloudBackupEnvelope(code,envelope){
+  if(!navigator.onLine){
+    throw new Error('Thiết bị đang offline.');
+  }
+
+  const path=await storageBackupPath(code);
+
+  const body=new Blob(
+    [JSON.stringify(envelope)],
+    {type:'application/json'}
+  );
+
+  const r=await promiseWithTimeout(
+    sb.storage
+      .from(MULTI_DEVICE_BUCKET)
+      .upload(
+        path,
+        body,
+        {
+          contentType:'application/json',
+          upsert:true,
+          cacheControl:'0'
+        }
+      ),
+    15000,
+    'Sao lưu lên Supabase Storage'
+  );
+
+  if(r.error){
+    const msg=String(
+      r.error?.message||
+      r.error
+    );
+
+    if(
+      msg.toLowerCase().includes('bucket') &&
+      msg.toLowerCase().includes('not found')
+    ){
+      throw new Error(
+        `Chưa tạo bucket "${MULTI_DEVICE_BUCKET}" trên Supabase Storage.`
+      );
+    }
+
+    if(
+      msg.toLowerCase().includes('row-level security') ||
+      msg.toLowerCase().includes('unauthorized') ||
+      msg.toLowerCase().includes('permission')
+    ){
+      throw new Error(
+        `Bucket "${MULTI_DEVICE_BUCKET}" chưa cho phép ứng dụng Upload/Update. `+
+        'Mở Supabase Storage → Policies và cấp quyền cho anon/authenticated.'
+      );
+    }
+
+    throw r.error;
+  }
+
+  return {
+    path,
+    data:r.data
+  };
+}
+
+
+function multiDeviceConfig(){
+  try{
+    const x=JSON.parse(
+      localStorage.getItem(MULTI_DEVICE_CONFIG_KEY)||'{}'
+    );
+    return {
+      code:String(x.code||''),
+      last_cloud_hash:String(x.last_cloud_hash||''),
+      last_cloud_at:String(x.last_cloud_at||''),
+      last_device_name:String(x.last_device_name||'')
+    };
+  }catch(e){
+    return {
+      code:'',
+      last_cloud_hash:'',
+      last_cloud_at:'',
+      last_device_name:''
+    };
+  }
+}
+
+function saveMultiDeviceConfig(patch){
+  const next={
+    ...multiDeviceConfig(),
+    ...(patch||{})
+  };
+  localStorage.setItem(
+    MULTI_DEVICE_CONFIG_KEY,
+    JSON.stringify(next)
+  );
+  return next;
+}
+
+function multiDeviceDeviceId(){
+  const key='lat_yen_multidevice_device_id_v1';
+  let id=localStorage.getItem(key)||'';
+  if(!id){
+    id='dev_'+
+      Array.from(
+        crypto.getRandomValues(new Uint8Array(12)),
+        b=>b.toString(16).padStart(2,'0')
+      ).join('');
+    localStorage.setItem(key,id);
+  }
+  return id;
+}
+
+function multiDeviceDeviceName(){
+  const ua=navigator.userAgent||'';
+  if(/Android/i.test(ua))return 'Android';
+  if(/Windows/i.test(ua))return 'Windows';
+  if(/iPhone|iPad/i.test(ua))return 'iOS';
+  return 'Thiết bị';
+}
+
+function generateMultiDeviceCode(){
+  const bytes=crypto.getRandomValues(new Uint8Array(10));
+  const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let body='';
+  for(const b of bytes){
+    body+=alphabet[b%alphabet.length];
+  }
+  return `LY-${body.slice(0,5)}-${body.slice(5)}`;
+}
+
+function newMultiDeviceCode(){
+  const code=generateMultiDeviceCode();
+  saveMultiDeviceConfig({
+    code,
+    last_cloud_hash:'',
+    last_cloud_at:'',
+    last_device_name:''
+  });
+  renderSettings();
+  setTimeout(()=>{
+    const el=$('multiDeviceCode');
+    if(el)el.value=code;
+  },0);
+  toastMsg('Đã tạo mã đồng bộ mới');
+}
+
+function localBackupKeys(){
+  const out={};
+  const allowed=[
+    'lat_yen_',
+    '__latyen_',
+    'kho_v3_'
+  ];
+  const excluded=[
+    MULTI_DEVICE_CONFIG_KEY,
+    'lat_yen_multidevice_device_id_v1',
+    'lat_yen_storage_optimized_at'
+  ];
+
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i)||'';
+    if(excluded.includes(key))continue;
+    if(!allowed.some(prefix=>key.startsWith(prefix)))continue;
+    out[key]=localStorage.getItem(key);
+  }
+  return out;
+}
+
+function buildFullBackupSnapshot(){
+  return {
+    schema:MULTI_DEVICE_SCHEMA,
+    app_version:'V184',
+    exported_at:new Date().toISOString(),
+    warehouse_id:currentWarehouseId||'',
+    db:JSON.parse(JSON.stringify(db||{})),
+    local_storage:localBackupKeys()
+  };
+}
+
+function backupSnapshotSummary(snapshot){
+  const d=snapshot?.db||{};
+  return {
+    warehouses:(d.warehouses||[]).length,
+    ingredients:(d.ingredients||[]).length,
+    products:(d.products||[]).length,
+    sales:(d.sales||[]).length,
+    movements:(d.movements||[]).length,
+    local_keys:Object.keys(snapshot?.local_storage||{}).length
+  };
+}
+
+function bytesToBase64(bytes){
+  let binary='';
+  const chunk=0x8000;
+  for(let i=0;i<bytes.length;i+=chunk){
+    binary+=String.fromCharCode(
+      ...bytes.subarray(i,Math.min(i+chunk,bytes.length))
+    );
+  }
+  return btoa(binary);
+}
+
+function base64ToBytes(value){
+  const binary=atob(String(value||''));
+  const bytes=new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++){
+    bytes[i]=binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function sha256Text(value){
+  const bytes=new TextEncoder().encode(String(value||''));
+  const digest=await crypto.subtle.digest('SHA-256',bytes);
+  return Array.from(new Uint8Array(digest))
+    .map(b=>b.toString(16).padStart(2,'0'))
+    .join('');
+}
+
+async function snapshotContentHash(snapshot){
+  return sha256Text(
+    JSON.stringify(snapshot)
+  );
+}
+
+async function deriveBackupKey(passphrase,salt){
+  const material=await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(passphrase),
+    'PBKDF2',
+    false,
+    ['deriveKey']
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name:'PBKDF2',
+      salt,
+      iterations:180000,
+      hash:'SHA-256'
+    },
+    material,
+    {
+      name:'AES-GCM',
+      length:256
+    },
+    false,
+    ['encrypt','decrypt']
+  );
+}
+
+async function compressBackupText(text){
+  const raw=new TextEncoder().encode(text);
+
+  if(typeof CompressionStream==='undefined'){
+    return {
+      bytes:raw,
+      compression:'none'
+    };
+  }
+
+  const stream=new Blob([raw])
+    .stream()
+    .pipeThrough(new CompressionStream('gzip'));
+
+  return {
+    bytes:new Uint8Array(
+      await new Response(stream).arrayBuffer()
+    ),
+    compression:'gzip'
+  };
+}
+
+async function decompressBackupBytes(bytes,compression){
+  if(
+    compression!=='gzip' ||
+    typeof DecompressionStream==='undefined'
+  ){
+    return new TextDecoder().decode(bytes);
+  }
+
+  const stream=new Blob([bytes])
+    .stream()
+    .pipeThrough(new DecompressionStream('gzip'));
+
+  return new Response(stream).text();
+}
+
+async function encryptBackupSnapshot(snapshot,passphrase){
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await deriveBackupKey(passphrase,salt);
+  const packed=await compressBackupText(
+    JSON.stringify(snapshot)
+  );
+
+  const cipher=await crypto.subtle.encrypt(
+    {
+      name:'AES-GCM',
+      iv
+    },
+    key,
+    packed.bytes
+  );
+
+  return {
+    ciphertext:bytesToBase64(new Uint8Array(cipher)),
+    iv:bytesToBase64(iv),
+    salt:bytesToBase64(salt),
+    compression:packed.compression
+  };
+}
+
+async function decryptBackupSnapshot(row,passphrase){
+  const salt=base64ToBytes(row.salt);
+  const iv=base64ToBytes(row.iv);
+  const cipher=base64ToBytes(row.ciphertext);
+  const key=await deriveBackupKey(passphrase,salt);
+
+  const plain=await crypto.subtle.decrypt(
+    {
+      name:'AES-GCM',
+      iv
+    },
+    key,
+    cipher
+  );
+
+  const compression=
+    row?.meta?.compression||
+    'none';
+
+  const text=await decompressBackupBytes(
+    new Uint8Array(plain),
+    compression
+  );
+
+  return JSON.parse(text);
+}
+
+async function backupLookupKey(code){
+  return sha256Text(
+    'lat-yen-v183|'+
+    String(code||'').trim().toUpperCase()
+  );
+}
+
+function multiDeviceFormValues(){
+  return {
+    code:(
+      $('multiDeviceCode')?.value||
+      multiDeviceConfig().code||
+      ''
+    ).trim().toUpperCase(),
+    passphrase:
+      $('multiDevicePassphrase')?.value||
+      ''
+  };
+}
+
+function validateMultiDeviceCredentials(values){
+  if(!/^LY-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(values.code)){
+    alert('Mã đồng bộ chưa đúng định dạng LY-XXXXX-XXXXX.');
+    return false;
+  }
+  if(String(values.passphrase||'').length<6){
+    alert('Mật khẩu mã hóa cần ít nhất 6 ký tự.');
+    return false;
+  }
+  return true;
+}
+
+async function getCloudBackupMeta(code){
+  const envelope=
+    await fetchCloudBackupEnvelope(code);
+
+  if(!envelope){
+    return null;
+  }
+
+  return {
+    backup_key:envelope.backup_key||'',
+    meta:envelope.meta||{},
+    updated_at:
+      envelope.updated_at||
+      envelope.meta?.updated_at||
+      ''
+  };
+}
+
+async function currentLocalSnapshotAndHash(){
+  const snapshot=buildFullBackupSnapshot();
+  return {
+    snapshot,
+    hash:await snapshotContentHash(snapshot)
+  };
+}
+
+async function cloudBackupStatus(){
+  const values=multiDeviceFormValues();
+
+  if(!values.code){
+    return {
+      state:'no-code',
+      text:'Chưa có mã đồng bộ'
+    };
+  }
+
+  try{
+    const local=await currentLocalSnapshotAndHash();
+    const cloud=await getCloudBackupMeta(values.code);
+    const cfg=multiDeviceConfig();
+
+    if(!cloud){
+      return {
+        state:'empty',
+        text:'Cloud chưa có bản sao lưu',
+        localHash:local.hash
+      };
+    }
+
+    const cloudHash=
+      String(cloud?.meta?.content_hash||'');
+
+    if(cloudHash && cloudHash===local.hash){
+      return {
+        state:'synced',
+        text:'Đã đồng bộ',
+        cloud,
+        localHash:local.hash
+      };
+    }
+
+    const lastHash=cfg.last_cloud_hash||'';
+    const localChanged=
+      !!lastHash &&
+      local.hash!==lastHash;
+    const cloudChanged=
+      !!lastHash &&
+      cloudHash &&
+      cloudHash!==lastHash;
+
+    if(localChanged && cloudChanged){
+      return {
+        state:'conflict',
+        text:'Có thay đổi ở cả thiết bị và Cloud',
+        cloud,
+        localHash:local.hash
+      };
+    }
+
+    if(cloudChanged){
+      return {
+        state:'cloud-newer',
+        text:'Cloud có dữ liệu mới hơn',
+        cloud,
+        localHash:local.hash
+      };
+    }
+
+    return {
+      state:'local-newer',
+      text:'Thiết bị có thay đổi chưa sao lưu',
+      cloud,
+      localHash:local.hash
+    };
+  }catch(e){
+    return {
+      state:'error',
+      text:
+        String(e?.message||e)
+          .includes('app_backups')
+          ?'Chưa tạo bảng app_backups trên Supabase'
+          :'Không kiểm tra được Cloud Backup',
+      error:e
+    };
+  }
+}
+
+async function refreshMultiDeviceStatus(){
+  const box=$('multiDeviceStatus');
+  if(!box)return;
+
+  box.innerHTML='<span class="muted">Đang kiểm tra…</span>';
+  const status=await cloudBackupStatus();
+
+  const cls={
+    synced:'ok',
+    conflict:'danger',
+    'cloud-newer':'warn',
+    'local-newer':'warn',
+    empty:'neutral',
+    'no-code':'neutral',
+    error:'danger'
+  }[status.state]||'neutral';
+
+  const cloudAt=
+    status.cloud?.updated_at
+      ?dt(status.cloud.updated_at)
+      :'—';
+
+  box.innerHTML=`
+    <div class="multi-sync-status ${cls}">
+      <b>${esc(status.text)}</b>
+      <span>Cloud cập nhật: ${esc(cloudAt)}</span>
+    </div>
+  `;
+}
+
+async function backupToCloud(){
+  const values=multiDeviceFormValues();
+
+  if(!validateMultiDeviceCredentials(values)){
+    return;
+  }
+
+  const btn=$('backupToCloudBtn');
+
+  try{
+    if(btn){
+      btn.disabled=true;
+      btn.textContent='Đang mã hóa & sao lưu…';
+    }
+
+    const local=
+      await currentLocalSnapshotAndHash();
+
+    const remote=
+      await getCloudBackupMeta(
+        values.code
+      );
+
+    const cfg=
+      multiDeviceConfig();
+
+    if(
+      remote?.meta?.content_hash &&
+      cfg.last_cloud_hash &&
+      remote.meta.content_hash!==cfg.last_cloud_hash &&
+      local.hash!==cfg.last_cloud_hash
+    ){
+      const ok=await appConfirm(
+        'Cloud và thiết bị này đều đã thay đổi kể từ lần đồng bộ cuối. '+
+        'Nếu tiếp tục, bản trên thiết bị này sẽ ghi đè Cloud. Bạn có chắc chắn?',
+        'Phát hiện xung đột dữ liệu'
+      );
+
+      if(!ok){
+        return;
+      }
+    }
+
+    const encrypted=
+      await encryptBackupSnapshot(
+        local.snapshot,
+        values.passphrase
+      );
+
+    const backupKey=
+      await backupLookupKey(
+        values.code
+      );
+
+    const updatedAt=
+      new Date().toISOString();
+
+    const meta={
+      schema:MULTI_DEVICE_SCHEMA,
+      app_version:'V184',
+      storage:'supabase-storage',
+      bucket:MULTI_DEVICE_BUCKET,
+      content_hash:local.hash,
+      compression:encrypted.compression,
+      device_id:multiDeviceDeviceId(),
+      device_name:multiDeviceDeviceName(),
+      updated_at:updatedAt,
+      summary:
+        backupSnapshotSummary(
+          local.snapshot
+        )
+    };
+
+    const envelope={
+      version:184,
+      backup_key:backupKey,
+      ciphertext:encrypted.ciphertext,
+      iv:encrypted.iv,
+      salt:encrypted.salt,
+      meta,
+      updated_at:updatedAt
+    };
+
+    await uploadCloudBackupEnvelope(
+      values.code,
+      envelope
+    );
+
+    saveMultiDeviceConfig({
+      code:values.code,
+      last_cloud_hash:local.hash,
+      last_cloud_at:updatedAt,
+      last_device_name:
+        multiDeviceDeviceName()
+    });
+
+    auditLog(
+      'Cài đặt',
+      'Sao lưu Cloud',
+      'Sao lưu đa thiết bị V184',
+      `Supabase Storage • ${multiDeviceDeviceName()}`
+    );
+
+    toastMsg(
+      'Đã sao lưu lên Supabase Storage'
+    );
+
+    await refreshMultiDeviceStatus();
+
+  }catch(e){
+    console.error(
+      'backupToCloud',
+      e
+    );
+
+    alert(
+      'Không sao lưu được lên Cloud.\n\n'+
+      String(e?.message||e)
+    );
+
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.textContent='Sao lưu lên Cloud';
+    }
+  }
+}
+
+function restoreLocalStorageSnapshot(values){
+  for(const [key,value] of Object.entries(values||{})){
+    if(
+      key===MULTI_DEVICE_CONFIG_KEY ||
+      key==='lat_yen_multidevice_device_id_v1'
+    )continue;
+
+    if(value===null || value===undefined){
+      localStorage.removeItem(key);
+    }else{
+      localStorage.setItem(key,String(value));
+    }
+  }
+  resetEmployeeStorageCaches();
+}
+
+async function applyFullBackupSnapshot(snapshot){
+  if(!snapshot || Number(snapshot.schema||0)<3){
+    throw new Error('File/bản sao lưu không hợp lệ.');
+  }
+
+  restoreLocalStorageSnapshot(
+    snapshot.local_storage||{}
+  );
+
+  if(snapshot.db && typeof snapshot.db==='object'){
+    db=JSON.parse(JSON.stringify(snapshot.db));
+    invalidateDataIndexes();
+    cacheSave();
+    flushCacheSave();
+  }
+
+  const wid=
+    snapshot.warehouse_id||
+    localStorage.getItem('kho_v3_warehouse')||
+    currentWarehouseId;
+
+  if(wid){
+    currentWarehouseId=wid;
+    localStorage.setItem('kho_v3_warehouse',wid);
+  }
+
+  applyAppBrand();
+
+  if(navigator.onLine){
+    try{
+      await loadCloud();
+    }catch(e){
+      console.warn('Cloud refresh after restore',e);
+    }
+  }
+
+  renderPanel(activePanelId||'settings');
+}
+
+async function restoreFromCloud(){
+  const values=multiDeviceFormValues();
+
+  if(!validateMultiDeviceCredentials(values)){
+    return;
+  }
+
+  const btn=$('restoreFromCloudBtn');
+
+  try{
+    if(btn){
+      btn.disabled=true;
+      btn.textContent='Đang tải & giải mã…';
+    }
+
+    const envelope=
+      await fetchCloudBackupEnvelope(
+        values.code
+      );
+
+    if(!envelope){
+      alert(
+        'Chưa có bản sao lưu Cloud cho mã này.'
+      );
+      return;
+    }
+
+    const local=
+      await currentLocalSnapshotAndHash();
+
+    const cfg=
+      multiDeviceConfig();
+
+    if(
+      cfg.last_cloud_hash &&
+      local.hash!==cfg.last_cloud_hash &&
+      envelope?.meta?.content_hash!==local.hash
+    ){
+      const ok=await appConfirm(
+        'Thiết bị này có thay đổi chưa được sao lưu. '+
+        'Khôi phục Cloud có thể thay thế dữ liệu local hiện tại. Tiếp tục?',
+        'Khôi phục dữ liệu Cloud'
+      );
+
+      if(!ok){
+        return;
+      }
+
+    }else{
+      const ok=await appConfirm(
+        `Khôi phục bản sao lưu Cloud cập nhật ${
+          envelope.updated_at
+            ?dt(envelope.updated_at)
+            :'gần nhất'
+        }?`,
+        'Khôi phục dữ liệu đa thiết bị'
+      );
+
+      if(!ok){
+        return;
+      }
+    }
+
+    let snapshot;
+
+    try{
+      snapshot=
+        await decryptBackupSnapshot(
+          envelope,
+          values.passphrase
+        );
+
+    }catch(e){
+      throw new Error(
+        'Không giải mã được backup. Kiểm tra lại mật khẩu mã hóa.'
+      );
+    }
+
+    await applyFullBackupSnapshot(
+      snapshot
+    );
+
+    const restoredHash=
+      await snapshotContentHash(
+        snapshot
+      );
+
+    saveMultiDeviceConfig({
+      code:values.code,
+      last_cloud_hash:
+        envelope?.meta?.content_hash||
+        restoredHash,
+      last_cloud_at:
+        envelope.updated_at||
+        new Date().toISOString(),
+      last_device_name:
+        envelope?.meta?.device_name||
+        ''
+    });
+
+    auditLog(
+      'Cài đặt',
+      'Khôi phục Cloud',
+      'Khôi phục đa thiết bị V184',
+      `Supabase Storage • ${
+        envelope.updated_at||''
+      }`
+    );
+
+    toastMsg(
+      'Đã khôi phục dữ liệu từ Supabase Storage'
+    );
+
+    renderSettings();
+
+    setTimeout(
+      refreshMultiDeviceStatus,
+      100
+    );
+
+  }catch(e){
+    console.error(
+      'restoreFromCloud',
+      e
+    );
+
+    alert(
+      'Không khôi phục được.\n\n'+
+      String(e?.message||e)
+    );
+
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.textContent='Khôi phục từ Cloud';
+    }
+  }
+}
+
+async function exportBackup(){
+  const snapshot=buildFullBackupSnapshot();
+  const blob=new Blob(
+    [JSON.stringify(snapshot,null,2)],
+    {type:'application/json'}
+  );
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=
+    'lat-yen-v184-full-backup-'+
+    new Date().toISOString().slice(0,10)+
+    '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toastMsg('Đã xuất file sao lưu toàn bộ');
+}
+
+function selectBackupImport(){
+  $('backupImportInput')?.click();
+}
+
+async function importBackupFile(input){
+  const file=input?.files?.[0];
+  if(!file)return;
+
+  try{
+    const text=await file.text();
+    const snapshot=JSON.parse(text);
+
+    if(!snapshot?.db || !snapshot?.schema){
+      throw new Error('File backup không đúng định dạng.');
+    }
+
+    const ok=await appConfirm(
+      `Khôi phục file "${file.name}"? Dữ liệu local hiện tại có thể bị thay thế.`,
+      'Nhập file sao lưu'
+    );
+    if(!ok)return;
+
+    await applyFullBackupSnapshot(snapshot);
+
+    auditLog(
+      'Cài đặt',
+      'Nhập Backup',
+      'Khôi phục từ file V184',
+      file.name
+    );
+
+    toastMsg('Đã khôi phục file sao lưu');
+    renderSettings();
+
+  }catch(e){
+    alert(
+      'Không nhập được file backup.\n\n'+
+      String(e?.message||e)
+    );
+  }finally{
+    if(input)input.value='';
+  }
+}
+
+function renderSettings(){
+  const brand=loadAppBrand();
+  const cfg=multiDeviceConfig();
+
+  E.settings.innerHTML=`
+    <div class="card settings-sync-card multi-device-card">
+      <div class="settings-sync-head">
+        <div>
+          <h2>Đồng bộ & Sao lưu đa thiết bị</h2>
+          <div class="muted">
+            Windows và Android dùng chung dữ liệu Cloud; dữ liệu local được sao lưu mã hóa để chuyển/khôi phục giữa các thiết bị.
+          </div>
+        </div>
+        <span class="cloud settings-cloud-status">
+          ${cloudOnline?'Cloud Online':'Offline / Cache'}
+        </span>
+      </div>
+
+      <div class="multi-device-grid section-gap">
+        <div>
+          <label>Mã đồng bộ</label>
+          <div class="multi-code-row">
+            <input
+              id="multiDeviceCode"
+              autocomplete="off"
+              spellcheck="false"
+              value="${esc(cfg.code||'')}"
+              placeholder="LY-XXXXX-XXXXX"
+            >
+            <button
+              type="button"
+              class="secondary"
+              onclick="newMultiDeviceCode()"
+            >Tạo mã</button>
+          </div>
+          <div class="muted">
+            Dùng cùng mã này trên các thiết bị. Có thể lưu mã; không nên chia sẻ công khai.
+          </div>
+        </div>
+
+        <div>
+          <label>Mật khẩu mã hóa</label>
+          <input
+            id="multiDevicePassphrase"
+            type="password"
+            minlength="6"
+            autocomplete="new-password"
+            placeholder="Ít nhất 6 ký tự"
+          >
+          <div class="muted">
+            Mật khẩu không được lưu trên Cloud hoặc thiết bị. Cần nhập lại khi sao lưu/khôi phục.
+          </div>
+        </div>
+      </div>
+
+      <div id="multiDeviceStatus" class="section-gap">
+        <span class="muted">Bấm “Kiểm tra trạng thái” để so sánh thiết bị với Cloud.</span>
+      </div>
+
+      <div class="settings-sync-actions multi-device-actions section-gap">
+        <button
+          id="backupToCloudBtn"
+          class="primary"
+          onclick="backupToCloud()"
+        >Sao lưu lên Cloud</button>
+
+        <button
+          id="restoreFromCloudBtn"
+          class="secondary"
+          onclick="restoreFromCloud()"
+        >Khôi phục từ Cloud</button>
+
+        <button
+          class="secondary"
+          onclick="refreshMultiDeviceStatus()"
+        >Kiểm tra trạng thái</button>
+      </div>
+
+      <div class="multi-device-storage-note">
+        <b>Storage:</b>
+        backup được lưu tại bucket <code>lat-yen-backups</code>.
+        Chỉ cần tạo bucket và cấp quyền Upload/Update/Select trong Storage Policies.
+      </div>
+
+      <div class="multi-device-security-note">
+        <b>Mã hóa đầu-cuối:</b>
+        nội dung backup được mã hóa AES‑GCM bằng mật khẩu của bạn trước khi gửi lên Supabase.
+        Hệ thống cảnh báo nếu Cloud và thiết bị cùng thay đổi để hạn chế ghi đè nhầm.
+      </div>
+    </div>
+
+    <div class="section-gap"></div>
+
     <div class="card settings-sync-card">
       <div class="settings-sync-head">
         <div>
-          <h2>Đồng bộ & Sao lưu</h2>
-          <div class="muted">Các chức năng đồng bộ Cloud và Backup chỉ được hiển thị trong mục Cài đặt.</div>
+          <h2>Đồng bộ dữ liệu nghiệp vụ</h2>
+          <div class="muted">
+            Đồng bộ các bảng Supabase hiện có: kho, nguyên liệu, công thức, bán hàng và giao dịch kho.
+          </div>
         </div>
-        <span class="cloud settings-cloud-status">${cloudOnline?'Cloud Online':'Offline / Cache'}</span>
+        <span class="cloud settings-cloud-status">
+          ${cloudOnline?'Cloud Online':'Offline / Cache'}
+        </span>
       </div>
+
       <div class="settings-sync-actions section-gap">
         <button class="primary" onclick="syncNow()">Đồng bộ ngay</button>
-        <button class="secondary" onclick="exportBackup()">Backup dữ liệu</button>
+        <button class="secondary" onclick="exportBackup()">Xuất backup toàn bộ</button>
+        <button class="secondary" onclick="selectBackupImport()">Nhập backup</button>
+        <input
+          id="backupImportInput"
+          type="file"
+          accept="application/json,.json"
+          style="display:none"
+          onchange="importBackupFile(this)"
+        >
+      </div>
+
+      <div class="muted section-gap">
+        Đang chờ đồng bộ: <b>${getPendingSync().length}</b>
+        ${cfg.last_cloud_at
+          ?` • Backup Cloud gần nhất trên thiết bị này: <b>${esc(dt(cfg.last_cloud_at))}</b>`
+          :''}
       </div>
     </div>
+
     <div class="section-gap"></div>
 
     <div class="card brand-settings-card">
       <div class="brand-settings-head">
         <div>
           <h2>Nhận diện phần mềm</h2>
-          <div class="muted">Tùy chỉnh tên và logo hiển thị ở đầu phần mềm.</div>
+          <div class="muted">
+            Tùy chỉnh tên và logo hiển thị ở đầu phần mềm.
+          </div>
         </div>
-        ${loadAppBrand().logo?`<img class="brand-preview-logo" src="${loadAppBrand().logo}" alt="Logo">`:''}
+        ${brand.logo
+          ?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`
+          :''}
       </div>
 
       <div class="brand-settings-grid">
         <div>
           <label>Tên phần mềm</label>
           <div class="brand-name-actions">
-            <input id="brandNameInput" maxlength="80" value="${esc(loadAppBrand().name)}">
+            <input
+              id="brandNameInput"
+              maxlength="80"
+              value="${esc(brand.name)}"
+            >
             <button class="primary" onclick="saveAppName()">Lưu tên</button>
           </div>
         </div>
 
         <div>
           <label>Logo phần mềm</label>
-          <input id="brandLogoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAppLogo(this)">
+          <input
+            id="brandLogoInput"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            style="display:none"
+            onchange="handleAppLogo(this)"
+          >
           <div class="brand-logo-actions">
-            <button class="secondary" onclick="selectAppLogo()">${loadAppBrand().logo?'Thay logo':'Thêm logo'}</button>
-            ${loadAppBrand().logo?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`:''}
+            <button class="secondary" onclick="selectAppLogo()">
+              ${brand.logo?'Thay logo':'Thêm logo'}
+            </button>
+            ${brand.logo
+              ?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`
+              :''}
           </div>
-          <div class="muted brand-logo-note">PNG, JPG hoặc WebP • tối đa 2 MB • tự nén còn tối đa 256 px.</div>
+          <div class="muted brand-logo-note">
+            PNG, JPG hoặc WebP • tối đa 2 MB • tự nén còn tối đa 256 px.
+          </div>
         </div>
       </div>
     </div>
+
     <div class="section-gap"></div>
-<div class="card storage-card">
+
+    <div class="card storage-card">
       <div class="storage-card-head">
         <div>
           <h3>Dung lượng lưu trữ</h3>
-          <div class="muted">Tự động dọn dữ liệu thừa mỗi 7 ngày. Nhật ký giữ tối đa 1.500 hoạt động trong 12 tháng gần nhất.</div>
+          <div class="muted">
+            Tự động dọn dữ liệu thừa mỗi 7 ngày. Nhật ký giữ tối đa 1.500 hoạt động trong 12 tháng gần nhất.
+          </div>
         </div>
         <div class="storage-size">${storageHuman(storageBytes())}</div>
       </div>
       <button class="secondary sm" onclick="manualOptimizeStorage()">Tối ưu ngay</button>
     </div>
+
     <div class="section-gap"></div>
-<div class="grid2"><div class="card"><h2>Kết nối Supabase</h2><p><b>Project:</b> hbffhiipryqvgwpccqtx</p><p><b>Project URL:</b><br><span class="muted">${SUPABASE_URL}</span></p><p><b>Trạng thái:</b> ${cloudOnline?'<span class="badge okb">Online</span>':'<span class="badge warnb">Offline/cache</span>'}</p></div><div class="card"><h2>Di chuyển dữ liệu V2</h2><p class="muted">Nếu thiết bị này có dữ liệu V2 cũ trong localStorage, có thể import lên Supabase một lần. Chỉ nên chạy khi Cloud đang trống để tránh dữ liệu trùng.</p><button class="secondary" onclick="migrateV2ToCloud()">Import dữ liệu V2 lên Cloud</button></div></div><div class="card section-gap"><h2>Local-first</h2><p class="muted">Dữ liệu nguyên liệu/ dụng cụ/công thức pha chế được lưu trên thiết bị trước. Nếu Cloud lỗi hoặc thiếu schema, app vẫn giữ dữ liệu local và đưa vào hàng đợi đồng bộ.</p><p><b>Đang chờ đồng bộ:</b> ${getPendingSync().length}</p></div><div class="warnbox section-gap"><b>Bảo mật:</b> database hiện đang dùng policy test cho anon/publishable key. Trước khi dùng chính thức với dữ liệu kinh doanh, nên chuyển sang Supabase Auth + RLS theo người dùng/chi nhánh.</div>`}
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Kết nối Supabase</h2>
+        <p><b>Project:</b> hbffhiipryqvgwpccqtx</p>
+        <p>
+          <b>Trạng thái:</b>
+          ${cloudOnline
+            ?'<span class="badge okb">Online</span>'
+            :'<span class="badge warnb">Offline/cache</span>'}
+        </p>
+        <p class="muted">
+          V184 dùng bucket Supabase Storage <b>lat-yen-backups</b>; không cần tạo bảng app_backups.
+        </p>
+      </div>
+
+      <div class="card">
+        <h2>Di chuyển dữ liệu V2</h2>
+        <p class="muted">
+          Nếu thiết bị này có dữ liệu V2 cũ trong localStorage, có thể import lên Supabase một lần.
+        </p>
+        <button class="secondary" onclick="migrateV2ToCloud()">
+          Import dữ liệu V2 lên Cloud
+        </button>
+      </div>
+    </div>
+
+    <div class="warnbox section-gap">
+      <b>Bảo mật database:</b>
+      database nghiệp vụ hiện vẫn dùng policy test cho anon/publishable key.
+      Backup V184 đã được mã hóa phía client, nhưng trước khi triển khai quy mô lớn vẫn nên chuyển dữ liệu nghiệp vụ sang Supabase Auth + RLS.
+    </div>
+  `;
+
+  setTimeout(()=>{
+    if(cfg.code){
+      refreshMultiDeviceStatus();
+    }
+  },120);
+}
 
 async function migrateV2ToCloud(){let old;try{old=JSON.parse(localStorage.getItem(V2_KEY)||'null')}catch(e){}if(!old)return alert('Không tìm thấy dữ liệu V2 trên thiết bị này.');if(!confirm('Import dữ liệu V2 hiện tại lên Supabase? Nên dùng khi Cloud đang trống.'))return;try{
  // warehouses
@@ -27552,7 +28832,7 @@ function exportIngredientsCsv(){
 }
 function exportSalesCsv(){csvDownload('doanh-thu-v3-'+new Date().toISOString().slice(0,10)+'.csv',[['Thời gian','Kho','Nguồn','Doanh thu'],...db.sales.map(s=>[dt(s.sold_at),db.warehouses.find(w=>w.id===s.warehouse_id)?.name,s.source,s.total_amount])])}
 function exportMovementsCsv(){csvDownload('bien-dong-kho-v3-'+new Date().toISOString().slice(0,10)+'.csv',[['Thời gian','Kho','Loại','Nguyên liệu/ Dụng cụ','Số lượng','Ghi chú'],...db.movements.map(m=>[dt(m.created_at),db.warehouses.find(w=>w.id===m.warehouse_id)?.name,m.transaction_type,db.ingredients.find(i=>i.id===m.ingredient_id)?.name,m.quantity,m.note])])}
-function exportBackup(){let blob=new Blob([JSON.stringify({version:3,exported_at:new Date().toISOString(),db},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kho-v3-cloud-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
+function exportBackupLegacyV182(){let blob=new Blob([JSON.stringify({version:3,exported_at:new Date().toISOString(),db},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kho-v3-cloud-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
 
 
 function normalizeTableHeader(table){
