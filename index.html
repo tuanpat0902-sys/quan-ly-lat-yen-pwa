@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V196 DIAGNOSTICS FIX ===== */
+/* ===== V197 SYNC REPAIR ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9726,6 +9726,19 @@ button{
   font-size:8.5px;
 }
 
+
+/* ===== V197 REPAIR HINT ===== */
+.sync-v197-repair-note{
+  margin-top:6px;
+  padding:6px 8px;
+  border-radius:7px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#1e40af;
+  font-size:8.3px;
+  line-height:1.4;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -12419,7 +12432,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:196,
+    version:197,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -12935,6 +12948,175 @@ function renderPendingBlockersV196(){
   `;
 }
 
+
+/* ===== V197 LOCAL-ONLY PENDING REPAIR ===== */
+const V197_REPAIR_KEY='lat_yen_local_pending_repair_v197';
+
+function isCloudUuidEntityV197(value){
+  return isUuidValue(value);
+}
+
+function repairFalsePendingLocalRowsV197(){
+  let repaired=0;
+  const details={
+    inventory:0,
+    movements:0,
+    ingredients:0,
+    products:0,
+    recipes:0,
+    suppliers:0,
+    sales:0,
+    sale_items:0
+  };
+
+  // Inventory backed by Excel/local IDs must NEVER enter Cloud UUID queue.
+  for(const row of db.inventory||[]){
+    const localOnly=
+      !isCloudUuidEntityV197(row.warehouse_id) ||
+      !isCloudUuidEntityV197(row.ingredient_id) ||
+      String(row.id||'').startsWith('excel_') ||
+      String(row.ingredient_id||'').startsWith('excel_') ||
+      String(row.warehouse_id||'').startsWith('excel_') ||
+      String(row.warehouse_id||'').startsWith('local_');
+
+    if(localOnly && row._sync_status==='pending'){
+      delete row._sync_status;
+      delete row._sync_error;
+      row._local_only=true;
+      repaired++;
+      details.inventory++;
+    }
+  }
+
+  // Legacy stock movements with local/excel FK cannot be written to UUID columns.
+  for(const row of db.movements||[]){
+    const localOnly=
+      !isCloudUuidEntityV197(row.warehouse_id) ||
+      !isCloudUuidEntityV197(row.ingredient_id) ||
+      (
+        row.reference_id &&
+        !isCloudUuidEntityV197(row.reference_id)
+      ) ||
+      String(row.ingredient_id||'').startsWith('excel_');
+
+    if(localOnly && row._sync_status==='pending'){
+      delete row._sync_status;
+      delete row._sync_error;
+      row._local_only=true;
+      repaired++;
+      details.movements++;
+    }
+  }
+
+  // Excel/local ingredients intentionally remain device-local.
+  for(const row of db.ingredients||[]){
+    const localOnly=
+      !isCloudUuidEntityV197(row.id) ||
+      String(row.id||'').startsWith('excel_') ||
+      String(row.id||'').startsWith('local_');
+
+    if(localOnly && row._sync_status==='pending'){
+      delete row._sync_status;
+      delete row._sync_error;
+      row._local_only=true;
+      repaired++;
+      details.ingredients++;
+    }
+  }
+
+  // Local products/recipes using non UUID ingredients cannot satisfy Cloud FK.
+  for(const row of db.recipeItems||[]){
+    const localOnly=
+      !isCloudUuidEntityV197(row.product_id) ||
+      !isCloudUuidEntityV197(row.ingredient_id);
+
+    if(localOnly && row._sync_status==='pending'){
+      delete row._sync_status;
+      delete row._sync_error;
+      row._local_only=true;
+      row._recipe_local_only=true;
+      repaired++;
+      details.recipes++;
+    }
+  }
+
+  // Remove queue operations that are guaranteed to be local-only.
+  const cleaned=[];
+  for(const op of getPendingSync()){
+    let keep=true;
+
+    if(op?.kind==='save_ingredient'){
+      const id=String(op.ingredient_id||'');
+      if(!isCloudUuidEntityV197(id)){
+        keep=false;
+      }
+    }
+
+    if(op?.kind==='save_recipe'){
+      const productId=String(op.product_id||'');
+      const lines=op.lines||[];
+      if(
+        !isCloudUuidEntityV197(productId) ||
+        lines.some(x=>!isCloudUuidEntityV197(x.ingredient_id))
+      ){
+        keep=false;
+      }
+    }
+
+    if(keep)cleaned.push(op);
+    else repaired++;
+  }
+
+  setPendingSync(cleaned);
+
+  localStorage.setItem(
+    V197_REPAIR_KEY,
+    JSON.stringify({
+      repaired,
+      details,
+      at:new Date().toISOString()
+    })
+  );
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+  flushCacheSave();
+
+  return {repaired,details};
+}
+
+function v197RepairSummary(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(V197_REPAIR_KEY)||'{}'
+    );
+  }catch(e){
+    return {};
+  }
+}
+
+async function repairAndRetrySyncV197(){
+  const repair=repairFalsePendingLocalRowsV197();
+
+  toastMsg(
+    repair.repaired
+      ?`Đã chuyển ${repair.repaired} record Excel/local về local-only • đang retry Cloud…`
+      :'Không có false-pending local • đang retry Cloud…'
+  );
+
+  await syncNow();
+
+  renderPendingInspector();
+  renderPendingBlockersV196();
+  renderSyncDiagnostics();
+
+  return {
+    repaired:repair.repaired,
+    pending:v191PendingCount()
+  };
+}
+
 async function syncNow(){
   if(syncing||autoSyncBusy){
     cloudReloadRequested=true;
@@ -12942,6 +13124,7 @@ async function syncNow(){
     return;
   }
 
+  repairFalsePendingLocalRowsV197();
   beginSyncProgress();
 
   try{
@@ -30374,7 +30557,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V196',
+    app_version:'V197',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -30683,7 +30866,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:196,
+    version:197,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -30865,13 +31048,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:196,
+    version:197,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V196',storage:'supabase-storage',
+      schema:185,app_version:'V197',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -32084,7 +32267,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:196,
+    version:197,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -32297,6 +32480,7 @@ async function autoSyncNow(options={}){
   }
 
   autoSyncBusy=true;
+  repairFalsePendingLocalRowsV197();
   beginSyncProgress();
 
   const statusEl=
@@ -32850,7 +33034,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V196',
+      app_version:'V197',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -32865,7 +33049,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:196,
+      version:197,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -33142,7 +33326,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v196-full-backup-'+
+    'lat-yen-v197-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -33383,6 +33567,11 @@ function renderSettings(){
               class="secondary sm"
               onclick="renderPendingInspector()"
             >Làm mới</button>
+
+            <button
+              class="secondary sm"
+              onclick="repairAndRetrySyncV197()"
+            >Sửa pending local</button>
 
             <button
               class="sm"

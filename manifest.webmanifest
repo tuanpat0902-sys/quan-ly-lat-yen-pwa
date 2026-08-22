@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V196",
+  "name": "Quản Lý Lát Yên V197",
   "short_name": "Lát Yên",
-  "description": "Fixed RPC diagnostics, unique pending counts, and legacy pending blocker analysis.",
+  "description": "Fix pgcrypto RPC resolution and repair false pending Excel/local rows.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
