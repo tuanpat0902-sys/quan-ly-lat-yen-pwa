@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V206 REALTIME FAST ===== */
+/* ===== V207 INCREMENTAL REALTIME ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -13405,7 +13405,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:206,
+    version:207,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -16247,36 +16247,255 @@ async function v206RealtimePull(){
   }
 }
 
-function debouncedCloudReload(){
-  clearTimeout(rtTimer);
 
-  if(document.hidden){
-    cloudReloadRequested=true;
-    return;
+
+
+/* ===== V207 INCREMENTAL REALTIME SYNC ===== */
+const V207_UI_DEBOUNCE_MS=80;
+const V207_VERIFY_QUIET_MS=2200;
+const V207_FULL_VERIFY_MIN_GAP_MS=12000;
+const V207_CANONICAL_IDLE_MS=15000;
+
+let v207RenderTimer=null;
+let v207VerifyTimer=null;
+let v207LastFullVerifyAt=0;
+let v207RealtimeApplied=0;
+let v207RealtimeSkippedPending=0;
+
+function v207RowKey(table,row){
+  if(!row)return '';
+
+  switch(table){
+    case 'inventory':
+      return `${row.warehouse_id||''}|${row.ingredient_id||''}`;
+
+    case 'recipe_items':
+      return row.id||`${row.product_id||''}|${row.ingredient_id||''}`;
+
+    case 'prepared_ingredient_items':
+      return row.id||`${row.prepared_ingredient_id||''}|${row.source_ingredient_id||''}`;
+
+    case 'sale_items':
+      return row.id||`${row.sale_id||''}|${row.product_id||''}`;
+
+    case 'stock_transactions':
+      return row.id||
+        `${row.transaction_type||''}|${row.reference_id||''}|${row.ingredient_id||''}|${row.created_at||''}`;
+
+    default:
+      return row.id||'';
+  }
+}
+
+function v207ArrayForTable(table){
+  const map={
+    warehouses:'warehouses',
+    suppliers:'suppliers',
+    ingredients:'ingredients',
+    inventory:'inventory',
+    products:'products',
+    recipe_items:'recipeItems',
+    prepared_ingredient_items:'preparedItems',
+    sales:'sales',
+    sale_items:'saleItems',
+    stock_transactions:'movements'
+  };
+
+  const key=map[table];
+
+  return key
+    ?{key,rows:db[key]||[]}
+    :null;
+}
+
+function v207HasPendingLocal(table,row){
+  const target=v207ArrayForTable(table);
+  if(!target)return false;
+
+  const key=v207RowKey(table,row);
+  if(!key)return false;
+
+  const local=target.rows.find(
+    x=>String(v207RowKey(table,x))===String(key)
+  );
+
+  return !!(
+    local &&
+    (
+      local._sync_status==='pending' ||
+      local._local_only===true
+    )
+  );
+}
+
+function v207ApplyRealtimeRow(table,payload){
+  const target=v207ArrayForTable(table);
+  if(!target)return false;
+
+  const eventType=String(payload?.eventType||payload?.type||'').toUpperCase();
+  const newRow=payload?.new||null;
+  const oldRow=payload?.old||null;
+  const keyRow=eventType==='DELETE'?oldRow:newRow;
+
+  if(!keyRow)return false;
+
+  const key=v207RowKey(table,keyRow);
+  if(!key)return false;
+
+  // Never overwrite a local unsynced row with Realtime.
+  if(
+    eventType!=='DELETE' &&
+    v207HasPendingLocal(table,newRow)
+  ){
+    v207RealtimeSkippedPending++;
+    return false;
   }
 
-  rtTimer=setTimeout(
-    ()=>v206RealtimePull(),
-    V206_REALTIME_DEBOUNCE_MS
+  const idx=target.rows.findIndex(
+    x=>String(v207RowKey(table,x))===String(key)
   );
 
-  // A transaction can emit several table events.
-  // One verification pull catches late-arriving related rows.
-  clearTimeout(v206RealtimeVerifyTimer);
+  if(eventType==='DELETE'){
+    if(idx<0)return false;
 
-  v206RealtimeVerifyTimer=setTimeout(
+    const local=target.rows[idx];
+
+    if(
+      local?._sync_status==='pending' ||
+      local?._local_only===true
+    ){
+      v207RealtimeSkippedPending++;
+      return false;
+    }
+
+    target.rows.splice(idx,1);
+
+  }else{
+    const clean={
+      ...(idx>=0?target.rows[idx]:{}),
+      ...newRow
+    };
+
+    delete clean._sync_status;
+    delete clean._sync_error;
+
+    if(idx>=0){
+      target.rows[idx]=clean;
+    }else{
+      target.rows.unshift(clean);
+    }
+  }
+
+  db[target.key]=target.rows;
+
+  v207RealtimeApplied++;
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+
+  return true;
+}
+
+function v207ScheduleActiveRender(){
+  clearTimeout(v207RenderTimer);
+
+  v207RenderTimer=setTimeout(
     ()=>{
-      if(
-        !document.hidden &&
-        navigator.onLine &&
-        !v206RealtimePullBusy
-      ){
-        v206RealtimePull();
+      renderPanel(
+        activePanelId||
+        document.querySelector('.panel.active')?.id||
+        'finance'
+      );
+
+      if(activePanelId==='settings'){
+        renderSyncProgressLive();
       }
     },
-    V206_REALTIME_DEBOUNCE_MS+
-    V206_REALTIME_VERIFY_MS
+    V207_UI_DEBOUNCE_MS
   );
+}
+
+function v207ScheduleVerify(){
+  clearTimeout(v207VerifyTimer);
+
+  v207VerifyTimer=setTimeout(
+    async()=>{
+      if(
+        document.hidden||
+        !navigator.onLine||
+        autoSyncBusy||
+        syncing
+      ){
+        return;
+      }
+
+      const now=Date.now();
+
+      if(
+        now-v207LastFullVerifyAt<
+        V207_FULL_VERIFY_MIN_GAP_MS
+      ){
+        return;
+      }
+
+      v207LastFullVerifyAt=now;
+
+      try{
+        await loadCloudFastV202(true);
+      }catch(e){
+        console.warn(
+          'V207 background verify',
+          e
+        );
+      }
+    },
+    V207_VERIFY_QUIET_MS
+  );
+}
+
+function v207RealtimeHandler(table){
+  return payload=>{
+    if(document.hidden){
+      cloudReloadRequested=true;
+      return;
+    }
+
+    const applied=
+      v207ApplyRealtimeRow(
+        table,
+        payload
+      );
+
+    if(applied){
+      cloudOnline=true;
+      setCloudStatus(
+        'Realtime • đã nhận thay đổi',
+        'online'
+      );
+
+      v207ScheduleActiveRender();
+    }
+
+    // Correlated business writes can span several tables.
+    // Verify later, but do not block immediate UI update.
+    if(
+      table==='sales'||
+      table==='sale_items'||
+      table==='stock_transactions'||
+      table==='inventory'
+    ){
+      v207ScheduleVerify();
+    }
+  };
+}
+
+function v207RealtimeStats(){
+  return {
+    applied:v207RealtimeApplied,
+    skipped_pending:v207RealtimeSkippedPending,
+    last_verify_at:v207LastFullVerifyAt
+  };
 }
 
 function setupRealtime(){
@@ -16285,60 +16504,64 @@ function setupRealtime(){
   }
 
   realtimeChannel=
-    sb.channel('kho-v206-live')
+    sb.channel('kho-v207-incremental')
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'inventory'},
-        debouncedCloudReload
+        v207RealtimeHandler('inventory')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'stock_transactions'},
-        debouncedCloudReload
+        v207RealtimeHandler('stock_transactions')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'sales'},
-        debouncedCloudReload
+        v207RealtimeHandler('sales')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'sale_items'},
-        debouncedCloudReload
+        v207RealtimeHandler('sale_items')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'ingredients'},
-        debouncedCloudReload
+        v207RealtimeHandler('ingredients')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'products'},
-        debouncedCloudReload
+        v207RealtimeHandler('products')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'recipe_items'},
-        debouncedCloudReload
+        v207RealtimeHandler('recipe_items')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'prepared_ingredient_items'},
-        debouncedCloudReload
+        v207RealtimeHandler('prepared_ingredient_items')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'warehouses'},
-        debouncedCloudReload
+        v207RealtimeHandler('warehouses')
       )
       .on(
         'postgres_changes',
         {event:'*',schema:'public',table:'suppliers'},
-        debouncedCloudReload
+        v207RealtimeHandler('suppliers')
       )
       .subscribe(status=>{
         if(status==='SUBSCRIBED'){
           cloudOnline=true;
+          setCloudStatus(
+            'Realtime Online',
+            'online'
+          );
         }
       });
 }
@@ -33566,7 +33789,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V206',
+    app_version:'V207',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -33875,7 +34098,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:206,
+    version:207,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -34057,13 +34280,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:206,
+    version:207,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V206',storage:'supabase-storage',
+      schema:185,app_version:'V207',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -35276,7 +35499,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:206,
+    version:207,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -35463,7 +35686,7 @@ async function v189CanonicalSync(
 
 /* ===== V202 FAST SYNC ===== */
 const V202_FAST_SYNC_KEY='lat_yen_fast_sync_v202';
-const V202_MIN_PULL_GAP_MS=2000;
+const V202_MIN_PULL_GAP_MS=1000;
 
 function loadFastSyncStateV202(){
   try{
@@ -35831,9 +36054,9 @@ function setAutoSyncEnabled(enabled){
 
 
 /* ===== V203 LOW RESOURCE MODE ===== */
-const V203_IDLE_SYNC_MS=30000;
-const V203_PENDING_SYNC_MS=5000;
-const V203_FOCUS_SYNC_MIN_GAP_MS=5000;
+const V203_IDLE_SYNC_MS=15000;
+const V203_PENDING_SYNC_MS=3000;
+const V203_FOCUS_SYNC_MIN_GAP_MS=3000;
 const V203_STATUS_CACHE_MS=15000;
 
 let v203StatusCache={
@@ -36267,7 +36490,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V206',
+      app_version:'V207',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -36282,7 +36505,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:206,
+      version:207,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -36559,7 +36782,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v206-full-backup-'+
+    'lat-yen-v207-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
