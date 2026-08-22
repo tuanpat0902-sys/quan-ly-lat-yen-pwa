@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V241",
+  "name": "Quản Lý Lát Yên V243",
   "short_name": "Lát Yên",
-  "description": "Normalizes legacy technical recipe/prepared row IDs to deterministic UUIDs before controlled Cloud reset, while keeping business foreign-key validation strict.",
+  "description": "Extends technical-ID normalization to legacy stock transaction IDs before controlled Cloud reset, using the original V198 movement UUID namespace.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

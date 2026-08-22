@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V241 TECHNICAL ID NORMALIZER ===== */
+/* ===== V243 MOVEMENT ID NORMALIZER ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11623,6 +11623,16 @@ textarea::placeholder{
   }
 }
 
+
+/* ===== V242 LOCAL-FIRST WAREHOUSE UX ===== */
+#saveWarehouseBtn{
+  min-width:130px;
+}
+
+.warehouse-local-pending{
+  color:#a15c00;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -11656,7 +11666,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V241</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V243</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -17607,6 +17617,41 @@ async function loadCloud(){
     if(deletedWarehouseIds.has(movements[i].warehouse_id))movements.splice(i,1);
   }
 
+  /*
+    V242: a warehouse created/edited local-first must survive a Cloud pull
+    until Supabase confirms it. Otherwise loadCloud could make the new
+    warehouse disappear immediately after creation.
+  */
+  const pendingWarehouses=
+    (localBefore.warehouses||[])
+      .filter(x=>
+        (
+          x?._sync_status==='pending' ||
+          x?._local_only===true
+        ) &&
+        !deletedWarehouseIds.has(
+          x.id
+        )
+      );
+
+  for(const localWarehouse of pendingWarehouses){
+    const idx=
+      warehouses.findIndex(x=>
+        x.id===localWarehouse.id
+      );
+
+    if(idx>=0){
+      warehouses[idx]={
+        ...warehouses[idx],
+        ...localWarehouse
+      };
+    }else{
+      warehouses.push(
+        localWarehouse
+      );
+    }
+  }
+
   // Cloud is authoritative for synced records, but never discard local records waiting for sync.
   const pendingIngredients=(localBefore.ingredients||[]).filter(x=>pendingIds.has(x.id)||x._sync_status==='pending');
   for(const li of pendingIngredients){
@@ -18053,11 +18098,11 @@ async function syncPendingSaleReceipts(){
 function v191PendingBusinessRows(){
   const rows=[];
 
-  // Chỉ _sync_status=pending mới là lỗi/chờ Cloud thật.
-  // _local_only đơn thuần có thể là dữ liệu Excel hoặc audit-only hợp lệ.
   const addPending=(type,list)=>{
     for(const x of list||[]){
-      if(x?._sync_status==='pending'){
+      if(
+        x?._sync_status==='pending'
+      ){
         rows.push({
           type,
           id:
@@ -18069,14 +18114,50 @@ function v191PendingBusinessRows(){
     }
   };
 
-  addPending('inventory',db.inventory);
-  addPending('movement',db.movements);
-  addPending('supplier',db.suppliers);
-  addPending('ingredient',db.ingredients);
-  addPending('sale',db.sales);
-  addPending('sale_item',db.saleItems);
-  addPending('product',db.products);
-  addPending('recipe_item',db.recipeItems);
+  addPending(
+    'warehouse',
+    db.warehouses
+  );
+
+  addPending(
+    'inventory',
+    db.inventory
+  );
+
+  addPending(
+    'movement',
+    db.movements
+  );
+
+  addPending(
+    'supplier',
+    db.suppliers
+  );
+
+  addPending(
+    'ingredient',
+    db.ingredients
+  );
+
+  addPending(
+    'sale',
+    db.sales
+  );
+
+  addPending(
+    'sale_item',
+    db.saleItems
+  );
+
+  addPending(
+    'product',
+    db.products
+  );
+
+  addPending(
+    'recipe_item',
+    db.recipeItems
+  );
 
   return rows;
 }
@@ -19210,6 +19291,40 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V242 warehouse creation/sync health.
+  try{
+    const pendingWarehouses=
+      (db.warehouses||[])
+        .filter(x=>
+          x?._sync_status==='pending' ||
+          x?._local_only===true
+        );
+
+    const invalidWarehouses=
+      (db.warehouses||[])
+        .filter(x=>
+          !isUuidValue(x.id)
+        );
+
+    add(
+      'Warehouse Local-First V242',
+      invalidWarehouses.length===0,
+      invalidWarehouses.length
+        ?`${invalidWarehouses.length} kho chưa có UUID chuẩn`
+        :(
+          pendingWarehouses.length
+            ?`${pendingWarehouses.length} kho đang chờ Cloud • vẫn sử dụng local bình thường`
+            :'Tất cả kho dùng UUID chuẩn và không có kho pending'
+        )
+    );
+  }catch(e){
+    add(
+      'Warehouse Local-First V242',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V241 technical row IDs left behind by early Excel migrations.
   try{
     const tech=
@@ -19219,7 +19334,7 @@ async function runSyncDiagnostics(){
       'Technical IDs V241',
       true,
       tech.total
-        ?`${tech.recipe_items} dòng công thức + ${tech.prepared_items} dòng pha chế còn ID legacy; Reset Cloud V241 sẽ tự chuẩn hóa`
+        ?`${tech.recipe_items} dòng công thức + ${tech.prepared_items} dòng pha chế + ${tech.movements} dòng biến động còn ID legacy; Reset Cloud V243 sẽ tự chuẩn hóa`
         :'Không còn ID kỹ thuật legacy'
     );
   }catch(e){
@@ -19404,7 +19519,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:241,
+    version:243,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -41564,6 +41679,157 @@ async function tryDeleteWarehouseCloud(id){
   return errors;
 }
 
+
+/* ===== V242 LOCAL-FIRST WAREHOUSE ===== */
+function v242WarehouseCloudPayload(row){
+  return {
+    id:row.id,
+    name:String(row.name||'').trim(),
+    address:String(row.address||'').trim(),
+    active:row.active!==false
+  };
+}
+
+async function v242SyncWarehouseRow(
+  warehouseOrId
+){
+  const row=
+    typeof warehouseOrId==='string'
+      ?(db.warehouses||[])
+        .find(x=>
+          x.id===warehouseOrId
+        )
+      :warehouseOrId;
+
+  if(!row){
+    return {
+      synced:false,
+      missing:true
+    };
+  }
+
+  if(!isUuidValue(row.id)){
+    row._sync_status='pending';
+    row._local_only=true;
+    row._sync_error=
+      'Warehouse ID chưa phải UUID.';
+    cacheSave();
+
+    return {
+      synced:false,
+      invalid_id:true
+    };
+  }
+
+  if(!navigator.onLine){
+    row._sync_status='pending';
+    row._local_only=true;
+    cacheSave();
+
+    return {
+      synced:false,
+      offline:true
+    };
+  }
+
+  try{
+    const payload=
+      v242WarehouseCloudPayload(
+        row
+      );
+
+    const r=
+      await promiseWithTimeout(
+        sb.from('warehouses')
+          .upsert(
+            payload,
+            {
+              onConflict:'id'
+            }
+          )
+          .select()
+          .single(),
+        12000,
+        'Đồng bộ kho lên Cloud'
+      );
+
+    if(r.error){
+      throw r.error;
+    }
+
+    Object.assign(
+      row,
+      r.data||payload
+    );
+
+    delete row._sync_status;
+    delete row._sync_error;
+    delete row._local_only;
+
+    unmarkWarehouseDeleted(
+      row.id
+    );
+
+    cacheSave();
+
+    return {
+      synced:true,
+      row
+    };
+
+  }catch(e){
+    row._sync_status='pending';
+    row._local_only=true;
+    row._sync_error=
+      e?.message||
+      String(e);
+
+    cacheSave();
+
+    return {
+      synced:false,
+      error:
+        row._sync_error
+    };
+  }
+}
+
+async function syncPendingWarehousesV242(){
+  const pending=
+    (db.warehouses||[])
+      .filter(row=>
+        row?._sync_status==='pending' ||
+        row?._local_only===true
+      )
+      .filter(row=>
+        !getDeletedWarehouseIds()
+          .has(row.id)
+      );
+
+  let synced=0;
+  let remaining=0;
+
+  for(const row of pending){
+    const result=
+      await v242SyncWarehouseRow(
+        row
+      );
+
+    if(result.synced){
+      synced++;
+    }else{
+      remaining++;
+    }
+  }
+
+  cacheSave();
+
+  return {
+    synced,
+    remaining
+  };
+}
+
 function renderWarehouses(){
   E.warehouses.innerHTML=`
     <div class="toolbar">
@@ -41677,55 +41943,252 @@ async function deleteWarehouse(id){
   }
 }
 
-function warehouseModal(id=''){let w=db.warehouses.find(x=>x.id===id)||{name:'',address:''};openModal(`<div class="modal-head"><h3>${id?'Sửa':'Thêm'} kho</h3><button class="x" onclick="closeModal()">×</button></div><div class="form-grid"><div><label>Tên</label><input id="wName" value="${esc(w.name)}"></div><div class="full"><label>Địa chỉ</label><input id="wAddress" value="${esc(w.address||'')}"></div></div><button class="primary section-gap" onclick="saveWarehouse('${id}')">Lưu lên Cloud</button>`)}
+function warehouseModal(id=''){
+  const w=
+    (db.warehouses||[])
+      .find(x=>
+        x.id===id
+      )||
+    {
+      name:'',
+      address:''
+    };
+
+  openModal(`
+    <div class="modal-head">
+      <h3>${id?'Sửa':'Thêm'} kho / chi nhánh</h3>
+      <button class="x" onclick="closeModal()">×</button>
+    </div>
+
+    <div class="form-grid">
+      <div>
+        <label>Tên kho / chi nhánh</label>
+        <input
+          id="wName"
+          value="${esc(w.name)}"
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="full">
+        <label>Địa chỉ</label>
+        <input
+          id="wAddress"
+          value="${esc(w.address||'')}"
+          autocomplete="off"
+        >
+      </div>
+    </div>
+
+    <div class="muted section-gap-sm">
+      Kho mới được tạo ngay trên thiết bị với UUID chuẩn.
+      Nếu Cloud tạm thời lỗi, kho vẫn được giữ và tự đồng bộ lại sau.
+    </div>
+
+    <button
+      id="saveWarehouseBtn"
+      class="primary section-gap"
+      onclick="saveWarehouse('${id}')"
+    >
+      ${id?'Lưu thay đổi':'Tạo kho mới'}
+    </button>
+  `);
+}
 async function saveWarehouse(id){
-  const n=$('wName'),a=$('wAddress');
-  if(!n||!a)return alert('Không tìm thấy biểu mẫu kho');
+  const n=$('wName');
+  const a=$('wAddress');
+  const btn=$('saveWarehouseBtn');
 
-  const payload={
-    name:n.value.trim(),
-    address:a.value.trim(),
-    active:true
-  };
+  if(!n||!a){
+    return alert(
+      'Không tìm thấy biểu mẫu kho'
+    );
+  }
 
-  if(!payload.name)return alert('Nhập tên kho');
+  const name=
+    n.value.trim();
+
+  const address=
+    a.value.trim();
+
+  if(!name){
+    return alert(
+      'Nhập tên kho'
+    );
+  }
+
+  if(btn){
+    btn.disabled=true;
+    btn.textContent=
+      id
+        ?'Đang lưu…'
+        :'Đang tạo…';
+  }
+
+  let row=null;
+  let isNew=false;
 
   try{
     if(id){
-      const r=await sb.from('warehouses').update(payload).eq('id',id);
-      if(r.error)throw r.error;
-      closeModal();
-      await loadCloud();
-      toastMsg('Đã cập nhật kho');
-      return;
+      row=
+        (db.warehouses||[])
+          .find(x=>
+            x.id===id
+          );
+
+      if(!row){
+        throw new Error(
+          'Không tìm thấy kho cần sửa.'
+        );
+      }
+
+      row.name=name;
+      row.address=address;
+      row.active=true;
+      row.updated_at=
+        new Date().toISOString();
+      row._sync_status='pending';
+      row._local_only=true;
+
+    }else{
+      /*
+        V242 FIX:
+        Never ask Supabase to generate the warehouse ID.
+        The local device creates the UUID first, so a new clean warehouse
+        exists even if Cloud is offline/RLS temporarily fails.
+      */
+      const warehouseId=
+        uid();
+
+      if(!isUuidValue(warehouseId)){
+        throw new Error(
+          'Không tạo được UUID cho kho mới.'
+        );
+      }
+
+      row={
+        id:warehouseId,
+        name,
+        address,
+        active:true,
+        created_at:
+          new Date().toISOString(),
+        updated_at:
+          new Date().toISOString(),
+        _sync_status:'pending',
+        _local_only:true
+      };
+
+      db.warehouses=
+        db.warehouses||[];
+
+      db.warehouses.push(
+        row
+      );
+
+      isNew=true;
+
+      unmarkWarehouseDeleted(
+        warehouseId
+      );
+
+      /*
+        A clean warehouse intentionally starts with NO inventory rows,
+        recipes, movements or sales copied from another warehouse.
+      */
+      currentWarehouseId=
+        warehouseId;
+
+      localStorage.setItem(
+        'kho_v3_warehouse',
+        currentWarehouseId
+      );
     }
 
-    // Kho mới bắt đầu sạch: KHÔNG tạo sẵn inventory cho nguyên liệu/ dụng cụ của kho khác.
-    const {data,error}=await sb.from('warehouses')
-      .insert(payload)
-      .select()
-      .single();
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
 
-    if(error)throw error;
+    cacheSave();
+    flushCacheSave();
 
     closeModal();
-    await loadCloud();
-
-    unmarkWarehouseDeleted(data.id);
-    currentWarehouseId=data.id;
-    localStorage.setItem('kho_v3_warehouse',currentWarehouseId);
 
     renderWarehouseSelect();
-    renderAll();
+    renderWarehouses();
+    renderPanel(
+      activePanelId
+    );
 
-    toastMsg(`Đã tạo ${payload.name} • kho mới đang trống`);
+    auditLog(
+      'Kho/Chi nhánh',
+      isNew?'Tạo mới':'Cập nhật',
+      name,
+      isNew
+        ?'Kho mới trống • UUID local-first'
+        :'Cập nhật thông tin kho',
+      row.id
+    );
+
+    if(isNew){
+      toastMsg(
+        `Đã tạo ${name} • kho mới đang trống`
+      );
+    }else{
+      toastMsg(
+        `Đã lưu ${name}`
+      );
+    }
+
+    /*
+      Best effort only. Failure never rolls back the warehouse the user
+      just created/edited.
+    */
+    const cloud=
+      await v242SyncWarehouseRow(
+        row
+      );
+
+    if(cloud.synced){
+      toastMsg(
+        `${name} • Cloud đã xác nhận`
+      );
+    }else{
+      toastMsg(
+        `${name} • đã lưu local, Cloud sẽ tự đồng bộ`
+      );
+    }
 
   }catch(e){
-    alert('Lỗi: '+(e?.message||e));
+    console.error(
+      'saveWarehouse V242',
+      e
+    );
+
+    alert(
+      'Lỗi tạo/lưu kho: '+
+      (e?.message||e)
+    );
+
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=
+        id
+          ?'Lưu thay đổi'
+          :'Tạo kho mới';
+    }
   }
-  v208MarkBusinessAction('warehouse');
+
+  v208MarkBusinessAction(
+    isNew
+      ?'warehouse_create'
+      :'warehouse_update'
+  );
+
   if(v209CanScheduleActionSync()){
-    v208ScheduleActionSync('warehouse_save');
+    v208ScheduleActionSync(
+      'warehouse_save'
+    );
   }
 }
 
@@ -42343,7 +42806,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V241',
+    app_version:'V243',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -42652,7 +43115,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:241,
+    version:243,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -42834,13 +43297,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:241,
+    version:243,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V241',storage:'supabase-storage',
+      schema:185,app_version:'V243',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44052,7 +44515,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:241,
+    version:243,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -45890,6 +46353,7 @@ async function runPendingRetriesV202(){
 
   try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
   try{await syncDeletionTombstonesV192()}catch(e){console.warn(e)}
+  try{await syncPendingWarehousesV242()}catch(e){console.warn('warehouse',e)}
   try{await syncPendingSuppliersV191()}catch(e){console.warn('supplier',e)}
   try{await syncPendingOperations()}catch(e){console.warn('operation',e)}
   try{await syncPendingImportReceiptsV191()}catch(e){console.warn('import',e)}
@@ -46886,7 +47350,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V241',
+      app_version:'V243',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -46901,7 +47365,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:241,
+      version:243,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47178,7 +47642,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v241-full-backup-'+
+    'lat-yen-v243-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -47264,12 +47728,25 @@ function v241TechnicalLegacyStats(){
         !isUuidValue(row.id)
       );
 
+  const movementRows=
+    (db.movements||[])
+      .filter(row=>
+        row?._stocktake_audit_only!==true &&
+        row?.id &&
+        !isUuidValue(row.id)
+      );
+
   return {
-    recipe_items:recipeRows.length,
-    prepared_items:preparedRows.length,
+    recipe_items:
+      recipeRows.length,
+    prepared_items:
+      preparedRows.length,
+    movements:
+      movementRows.length,
     total:
       recipeRows.length+
-      preparedRows.length
+      preparedRows.length+
+      movementRows.length
   };
 }
 
@@ -47286,6 +47763,11 @@ function v241ResetPreflightReadiness(){
         const text=
           String(issue||'');
 
+        /*
+          These are row-primary-key IDs only.
+          They do not identify warehouse / ingredient / product / sale
+          business objects and can be deterministically regenerated.
+        */
         if(
           text.startsWith(
             'Công thức/id:'
@@ -47297,6 +47779,14 @@ function v241ResetPreflightReadiness(){
         if(
           text.startsWith(
             'Pha chế/id:'
+          )
+        ){
+          return false;
+        }
+
+        if(
+          text.startsWith(
+            'Biến động/id:'
           )
         ){
           return false;
@@ -47321,7 +47811,8 @@ function v241ResetPreflightReadiness(){
 async function v241NormalizeTechnicalLineIds(){
   const changed={
     recipe_items:0,
-    prepared_items:0
+    prepared_items:0,
+    movements:0
   };
 
   const recipeSeen=
@@ -47351,10 +47842,6 @@ async function v241NormalizeTechnicalLineIds(){
       changed.recipe_items++;
     }
 
-    /*
-      A deterministic ID collision should never happen for different old IDs.
-      Still fail before Cloud deletion rather than silently dropping a line.
-    */
     if(recipeSeen.has(row.id)){
       throw new Error(
         `Trùng UUID dòng công thức sau chuẩn hóa: ${row.id}`
@@ -47404,9 +47891,56 @@ async function v241NormalizeTechnicalLineIds(){
     );
   }
 
+  const movementSeen=
+    new Set();
+
+  for(
+    let i=0;
+    i<(db.movements||[]).length;
+    i++
+  ){
+    const row=
+      db.movements[i];
+
+    if(
+      !row ||
+      row._stocktake_audit_only===true
+    ){
+      continue;
+    }
+
+    if(!isUuidValue(row.id)){
+      const oldId=
+        row.id||
+        `${row.transaction_type||''}|${row.reference_id||''}|${row.ingredient_id||''}|${row.created_at||''}|${i}`;
+
+      /*
+        Exact same V198 namespace used by the original movement migration.
+      */
+      row.id=
+        await deterministicUuidV198(
+          'movement',
+          oldId
+        );
+
+      changed.movements++;
+    }
+
+    if(movementSeen.has(row.id)){
+      throw new Error(
+        `Trùng UUID dòng biến động sau chuẩn hóa: ${row.id}`
+      );
+    }
+
+    movementSeen.add(
+      row.id
+    );
+  }
+
   if(
     changed.recipe_items ||
-    changed.prepared_items
+    changed.prepared_items ||
+    changed.movements
   ){
     invalidateDataIndexes();
     invalidateDerivedCaches();
@@ -47418,7 +47952,8 @@ async function v241NormalizeTechnicalLineIds(){
     ...changed,
     total:
       changed.recipe_items+
-      changed.prepared_items
+      changed.prepared_items+
+      changed.movements
   };
 }
 
@@ -47902,14 +48437,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:241,
+    version:243,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V241',
+      app_version:'V243',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47961,10 +48496,9 @@ async function v239ResetCloudFromThisDevice(){
   normalizeLegacyCacheV205();
 
   /*
-    V241 preflight:
-    legacy IDs of recipe/prepared LINE rows are repairable technical IDs.
-    They do not block the confirmation screen. All foreign-key/business IDs
-    remain strict.
+    V243 preflight:
+    row IDs of recipe/prepared/movement can be regenerated safely.
+    Business/FK IDs remain strict blockers.
   */
   const preflight=
     v241ResetPreflightReadiness();
@@ -47980,18 +48514,22 @@ async function v239ResetCloudFromThisDevice(){
           ?`\n... và ${preflight.issues.length-12} lỗi khác`
           :''
       )+
-      '\n\nHãy chạy Chuẩn hóa/Migration trước.'
+      '\n\nCác ID kỹ thuật dòng công thức/pha chế/biến động sẽ được phần mềm tự sửa; các lỗi còn hiển thị ở đây là ID nghiệp vụ hoặc khóa ngoại cần kiểm tra.'
     );
 
     return;
   }
 
+  const tech=
+    preflight.technical;
+
   const technicalText=
-    preflight.technical.total
+    tech.total
       ?(
-        `\n\nPhần mềm sẽ tự chuẩn hóa ${preflight.technical.total} ID kỹ thuật trước khi Reset`+
-        ` (${preflight.technical.recipe_items} dòng công thức`+
-        ` + ${preflight.technical.prepared_items} dòng pha chế).`
+        `\n\nPhần mềm sẽ tự chuẩn hóa ${tech.total} ID kỹ thuật trước khi Reset:`+
+        `\n• ${tech.recipe_items} dòng công thức`+
+        `\n• ${tech.prepared_items} dòng pha chế`+
+        `\n• ${tech.movements} dòng biến động kho`
       )
       :'';
 
@@ -48010,7 +48548,7 @@ async function v239ResetCloudFromThisDevice(){
     await appConfirm(
       'Xác nhận lần cuối:\n\n'+
       '• KHÔNG xóa dữ liệu local trên thiết bị này.\n'+
-      '• ID kỹ thuật legacy sẽ được chuẩn hóa trước khi xóa Cloud.\n'+
+      '• ID kỹ thuật legacy của công thức / pha chế / biến động sẽ được đổi sang UUID trước.\n'+
       '• Cloud sẽ bị làm sạch hoàn toàn.\n'+
       '• Dữ liệu local hiện tại sẽ được nạp lại làm bản chuẩn.\n'+
       '• Canonical và Backup Cloud cũ sẽ được thay bằng bản mới.\n\n'+
@@ -48033,6 +48571,7 @@ async function v239ResetCloudFromThisDevice(){
     normalized_technical_ids:0,
     normalized_recipe_items:0,
     normalized_prepared_items:0,
+    normalized_movements:0,
     deleted:[],
     seeded:0,
     canonical_revision:0,
@@ -48044,11 +48583,10 @@ async function v239ResetCloudFromThisDevice(){
 
   try{
     /*
-      Snapshot BEFORE any local technical-ID mutation.
-      If anything goes wrong, the user has a precise pre-reset recovery point.
+      Snapshot is BEFORE any local ID mutation.
     */
     v204EmergencySnapshot(
-      'v241_before_technical_normalize_and_cloud_reset'
+      'v243_before_technical_normalize_and_cloud_reset'
     );
 
     updateSyncProgress(
@@ -48070,6 +48608,9 @@ async function v239ResetCloudFromThisDevice(){
 
     report.normalized_prepared_items=
       normalized.prepared_items;
+
+    report.normalized_movements=
+      normalized.movements;
 
     const readiness=
       v241StrictReadinessAfterNormalize();
@@ -48197,7 +48738,6 @@ async function v239ResetCloudFromThisDevice(){
     }
 
     setPendingSync([]);
-
     repairFalsePendingLocalRowsV197();
 
     const now=
@@ -48212,7 +48752,7 @@ async function v239ResetCloudFromThisDevice(){
         autoBefore.passphrase,
       last_sync_at:now,
       last_result:
-        'v241_clean_takeover',
+        'v243_clean_takeover',
       cloud_revision:
         report.canonical_revision,
       cloud_revision_token:
@@ -48250,7 +48790,12 @@ async function v239ResetCloudFromThisDevice(){
       'Đã đặt lại Cloud thành công.\n\n'+
       (
         normalized.total
-          ?`Đã chuẩn hóa ${normalized.recipe_items} dòng công thức và ${normalized.prepared_items} dòng pha chế.\n`
+          ?(
+            `Đã chuẩn hóa:\n`+
+            `• ${normalized.recipe_items} dòng công thức\n`+
+            `• ${normalized.prepared_items} dòng pha chế\n`+
+            `• ${normalized.movements} dòng biến động kho\n`
+          )
           :''
       )+
       `Đã nạp lại ${report.seeded} lượt record.\n`+
@@ -48260,7 +48805,7 @@ async function v239ResetCloudFromThisDevice(){
 
   }catch(e){
     console.error(
-      'V241 Cloud Reset',
+      'V243 Cloud Reset',
       e
     );
 
@@ -48287,10 +48832,6 @@ async function v239ResetCloudFromThisDevice(){
         report.error
     });
 
-    /*
-      If Cloud deletion had already begun, reseed it from current local.
-      Local still has the emergency snapshot from BEFORE technical ID changes.
-    */
     try{
       const payload=
         await v239BuildCloudSeed();
@@ -48300,7 +48841,7 @@ async function v239ResetCloudFromThisDevice(){
       );
     }catch(recoveryError){
       console.error(
-        'V241 emergency reseed',
+        'V243 emergency reseed',
         recoveryError
       );
     }
