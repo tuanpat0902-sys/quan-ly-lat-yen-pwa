@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V210 DEVICE LOOP BREAKER ===== */
+/* ===== V212 STRICT SALE RECONCILE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -13972,7 +13972,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:210,
+    version:212,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -34452,7 +34452,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V210',
+    app_version:'V212',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34761,7 +34761,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:210,
+    version:212,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -34943,13 +34943,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:210,
+    version:212,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V210',storage:'supabase-storage',
+      schema:185,app_version:'V212',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -36162,7 +36162,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:210,
+    version:212,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -36410,6 +36410,342 @@ async function loadCloudFastV202(force=false){
   };
 }
 
+
+/* ===== V211 RECONCILE ORPHAN SALE MOVEMENTS ===== */
+function v211PendingSaleMovements(){
+  return (db.movements||[])
+    .filter(row=>
+      row?._sync_status==='pending' &&
+      String(
+        row.transaction_type||''
+      ).toUpperCase()==='SALE' &&
+      row.reference_id
+    );
+}
+
+function v211MovementMatchKey(row){
+  return [
+    String(row?.reference_id||''),
+    String(row?.warehouse_id||''),
+    String(row?.ingredient_id||''),
+    Number(row?.quantity||0).toFixed(6)
+  ].join('|');
+}
+
+async function reconcilePendingSaleMovementsV211(){
+  const pending=
+    v211PendingSaleMovements();
+
+  if(
+    !pending.length ||
+    !navigator.onLine
+  ){
+    return {
+      pending:pending.length,
+      reconciled:0,
+      references:0
+    };
+  }
+
+  const refs=
+    [...new Set(
+      pending
+        .map(x=>
+          String(
+            x.reference_id||''
+          )
+        )
+        .filter(Boolean)
+    )];
+
+  if(!refs.length){
+    return {
+      pending:pending.length,
+      reconciled:0,
+      references:0
+    };
+  }
+
+  let cloudSales=[];
+  let cloudMovements=[];
+
+  const CHUNK=50;
+
+  for(
+    let i=0;
+    i<refs.length;
+    i+=CHUNK
+  ){
+    const part=
+      refs.slice(
+        i,
+        i+CHUNK
+      );
+
+    const [
+      salesResult,
+      movementResult
+    ]=
+      await Promise.all([
+        promiseWithTimeout(
+          sb.from('sales')
+            .select('id')
+            .in('id',part),
+          10000,
+          'Đối chiếu phiếu bán Cloud'
+        ),
+
+        promiseWithTimeout(
+          sb.from('stock_transactions')
+            .select('*')
+            .eq(
+              'transaction_type',
+              'SALE'
+            )
+            .in(
+              'reference_id',
+              part
+            ),
+          10000,
+          'Đối chiếu movement bán Cloud'
+        )
+      ]);
+
+    if(salesResult.error){
+      throw salesResult.error;
+    }
+
+    if(movementResult.error){
+      throw movementResult.error;
+    }
+
+    cloudSales.push(
+      ...(salesResult.data||[])
+    );
+
+    cloudMovements.push(
+      ...(movementResult.data||[])
+    );
+  }
+
+  const cloudSaleIds=
+    new Set(
+      cloudSales.map(
+        x=>String(x.id)
+      )
+    );
+
+  const cloudByKey=
+    new Map();
+
+  for(const row of cloudMovements){
+    const key=
+      v211MovementMatchKey(row);
+
+    if(!cloudByKey.has(key)){
+      cloudByKey.set(
+        key,
+        []
+      );
+    }
+
+    cloudByKey.get(key)
+      .push(row);
+  }
+
+  const pendingByRef=
+    new Map();
+
+  for(const row of pending){
+    const ref=
+      String(
+        row.reference_id
+      );
+
+    if(!pendingByRef.has(ref)){
+      pendingByRef.set(
+        ref,
+        []
+      );
+    }
+
+    pendingByRef.get(ref)
+      .push(row);
+  }
+
+  let reconciled=0;
+  const confirmedRefs=
+    new Set();
+
+  for(
+    const [
+      ref,
+      localRows
+    ] of pendingByRef
+  ){
+    if(
+      !cloudSaleIds.has(ref)
+    ){
+      continue;
+    }
+
+    const usedCloudIds=
+      new Set();
+
+    const matchedCloud=[];
+    let complete=true;
+
+    // Safety rule:
+    // every pending local movement must have one distinct Cloud match.
+    for(const local of localRows){
+      const key=
+        v211MovementMatchKey(
+          local
+        );
+
+      const candidates=
+        cloudByKey.get(key)||[];
+
+      const cloud=
+        candidates.find(row=>{
+          const identity=
+            String(
+              row.id||
+              v211MovementMatchKey(row)
+            );
+
+          return !usedCloudIds.has(
+            identity
+          );
+        });
+
+      if(!cloud){
+        complete=false;
+        break;
+      }
+
+      matchedCloud.push(cloud);
+
+      usedCloudIds.add(
+        String(
+          cloud.id||
+          v211MovementMatchKey(cloud)
+        )
+      );
+    }
+
+    if(!complete){
+      continue;
+    }
+
+    confirmedRefs.add(ref);
+
+    // Remove ONLY stale pending SALE movements.
+    // Do not modify sale or saleItems status.
+    db.movements=
+      (db.movements||[])
+        .filter(row=>!(
+          row?._sync_status===
+            'pending' &&
+          String(
+            row.transaction_type||''
+          ).toUpperCase()==='SALE' &&
+          String(
+            row.reference_id||''
+          )===ref
+        ));
+
+    // Avoid duplicate Cloud movements by both id and semantic movement key.
+    const existingIds=
+      new Set(
+        (db.movements||[])
+          .map(x=>
+            String(
+              x.id||''
+            )
+          )
+          .filter(Boolean)
+      );
+
+    const existingKeys=
+      new Set(
+        (db.movements||[])
+          .filter(x=>
+            String(
+              x.transaction_type||''
+            ).toUpperCase()==='SALE'
+          )
+          .map(
+            v211MovementMatchKey
+          )
+      );
+
+    const authoritative=
+      cloudMovements
+        .filter(row=>
+          String(
+            row.reference_id||''
+          )===ref
+        );
+
+    for(const cloud of authoritative){
+      const id=
+        String(
+          cloud.id||''
+        );
+
+      const key=
+        v211MovementMatchKey(
+          cloud
+        );
+
+      if(
+        (
+          id &&
+          existingIds.has(id)
+        ) ||
+        existingKeys.has(key)
+      ){
+        continue;
+      }
+
+      db.movements.unshift(
+        cloud
+      );
+
+      if(id){
+        existingIds.add(id);
+      }
+
+      existingKeys.add(key);
+    }
+
+    reconciled+=
+      localRows.length;
+  }
+
+  if(reconciled>0){
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+    flushCacheSave();
+    updatePendingSyncBadge();
+
+    console.info(
+      `V212 reconciled ${reconciled} stale SALE movements across ${confirmedRefs.size} receipts`
+    );
+  }
+
+  return {
+    pending:
+      v211PendingSaleMovements()
+        .length,
+    reconciled,
+    references:
+      confirmedRefs.size
+  };
+}
+
 async function runPendingRetriesV202(){
   const before=v191PendingCount();
 
@@ -36421,6 +36757,16 @@ async function runPendingRetriesV202(){
     };
   }
 
+  // V211: first clear SALE movements that are already committed on Cloud.
+  try{
+    await reconcilePendingSaleMovementsV211();
+  }catch(e){
+    console.warn(
+      'sale reconcile',
+      e
+    );
+  }
+
   try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
   try{await syncDeletionTombstonesV192()}catch(e){console.warn(e)}
   try{await syncPendingSuppliersV191()}catch(e){console.warn('supplier',e)}
@@ -36429,6 +36775,17 @@ async function runPendingRetriesV202(){
   try{await syncPendingExportReceiptsV192()}catch(e){console.warn('export',e)}
   try{await syncPendingStocktakeReceiptsV192()}catch(e){console.warn('stocktake',e)}
   try{await syncPendingSaleReceipts()}catch(e){console.warn('sale',e)}
+
+  // One more reconcile catches a successful idempotent RPC whose local movement
+  // flags remained stale.
+  try{
+    await reconcilePendingSaleMovementsV211();
+  }catch(e){
+    console.warn(
+      'sale reconcile final',
+      e
+    );
+  }
 
   const after=v191PendingCount();
 
@@ -37167,7 +37524,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V210',
+      app_version:'V212',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -37182,7 +37539,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:210,
+      version:212,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -37459,7 +37816,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v210-full-backup-'+
+    'lat-yen-v212-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();

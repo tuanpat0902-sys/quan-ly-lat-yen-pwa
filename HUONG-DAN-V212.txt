@@ -1,0 +1,19 @@
+V212 - STRICT SALE RECONCILE
+
+Đã audit lại V211.
+
+Điểm được siết chặt:
+- Chỉ xử lý Movement bán đang _sync_status=pending.
+- Không xóa/đổi trạng thái sale.
+- Không xóa/đổi trạng thái sale_items.
+- Cloud phải có sale id tương ứng.
+- Mỗi movement local phải có 1 movement Cloud riêng biệt khớp:
+  reference_id + warehouse_id + ingredient_id + quantity.
+- Nếu thiếu chỉ 1 movement: không reconcile cả receipt.
+- Khi chèn Cloud authoritative, chống trùng theo cả Cloud id và semantic key.
+- Không gọi lại commit_sale_receipt RPC chỉ để dọn stale movement.
+- Vì vậy không phát sinh trừ tồn kho lần 2 từ bước reconcile.
+
+Vẫn giữ V210 Device Loop Breaker + V204 Safe Merge.
+
+Không cần SQL mới.

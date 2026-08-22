@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V210",
+  "name": "Quản Lý Lát Yên V212",
   "short_name": "Lát Yên",
-  "description": "Single-tab sync ownership, circuit breaker, and forced PWA cache refresh.",
+  "description": "Strict stale-sale-movement reconciliation without touching sale or sale-item status.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
