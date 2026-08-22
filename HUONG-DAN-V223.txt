@@ -1,0 +1,17 @@
+V223 - PRINT & REPORT
+
+Tính năng in:
+- Tự thêm nút In cạnh các tiêu đề Phiếu / Báo cáo / Kiểm kê / Doanh thu / Lịch sử.
+- Modal phiếu có nút In phiếu.
+- Ctrl/Cmd + P in nội dung đang xem; nếu modal đang mở thì in modal phiếu.
+- Ctrl/Cmd + K có thêm lệnh "In nội dung đang xem".
+- Bản in A4 tự thêm:
+  + tên phần mềm
+  + tên kho/chi nhánh
+  + tiêu đề phiếu/báo cáo
+  + thời gian in
+- Tự ẩn menu, button, input, select, bộ lọc và thanh scroll khi in.
+- Table dùng header rõ, giữ dòng không bị cắt giữa trang.
+- Cashflow report render xong cũng tự có nút In.
+
+Không cần SQL mới.

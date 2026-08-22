@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V218",
+  "name": "Quản Lý Lát Yên V226",
   "short_name": "Lát Yên",
-  "description": "Production-lite build with realtime-first sync, throttled snapshots, lazy diagnostics, and reduced rendering.",
+  "description": "Native Chrome App notifications for realtime sales, low stock and sync errors, with Web Push receiver support.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,0 +1,20 @@
+V220 - FAST INPUT / KEYBOARD FIRST
+
+Nhập nhanh dropdown:
+- Focus vào select rồi gõ chữ/mã -> mở ô tìm.
+- Enter hoặc F2 -> mở tìm kiếm.
+- Gõ không dấu cũng tìm được tiếng Việt có dấu.
+- ↑ / ↓ di chuyển.
+- Enter chọn.
+- Esc đóng.
+- Double click vào dropdown cũng mở tìm.
+- Áp dụng generic cho toàn bộ select trong app.
+
+Tăng tốc:
+- Warehouse select dùng cache option HTML.
+- Chuyển kho chỉ render panel hiện tại thay vì renderAll.
+- Có render debounce 50ms.
+- Giữ Interaction Guard V219 nên sync không làm mất form.
+- Giữ Production Lite V218 / Realtime / Safe Merge.
+
+Không cần SQL mới.

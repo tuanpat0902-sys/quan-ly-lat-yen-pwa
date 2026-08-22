@@ -1,0 +1,20 @@
+V219 - INTERACTION SAFE
+
+1. Cloud status:
+- Dòng chữ Cloud đã đồng bộ/Realtime Online trên header được thay bằng icon Cloud.
+- Hover/tap vẫn có title/aria-label trạng thái thật.
+- Online: icon cloud + check.
+- Offline: icon cloud gạch.
+
+2. Không bị thoát/mất form khi sync:
+- Khi input/textarea/select/contenteditable đang focus: background sync không render lại panel.
+- Khi modal đang mở: background sync không render lại panel.
+- Có grace period 900ms sau khi nhập.
+- Realtime, Cloud Pull, Canonical Merge, follower-tab refresh đều đi qua interaction guard.
+- Dữ liệu vẫn sync nền bình thường; UI update được defer.
+- Sau blur/đóng modal, panel mới refresh.
+- Không renderAll từ loadCloud trong khi thao tác nữa.
+
+Giữ nguyên V218 Production Lite + Safe Merge + Loop Breaker + Stable Canonical.
+
+Không cần SQL mới.

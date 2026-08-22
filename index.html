@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>QUẢN LÝ LÁT YÊN</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V218 PRODUCTION LITE ===== */
+/* ===== V226 NATIVE PUSH ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10091,6 +10091,647 @@ button{
   contain:none;
 }
 
+
+/* ===== V219 CLOUD ICON + INTERACTION SAFE ===== */
+.cloud.cloud-icon{
+  width:30px;
+  height:28px;
+  min-width:30px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border-radius:8px;
+  cursor:default;
+}
+
+.cloud.cloud-icon svg{
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.cloud.cloud-icon.online{
+  color:#087f6f;
+  background:#ecfdf5;
+  border-color:#a7f3d0;
+}
+
+.cloud.cloud-icon.offline{
+  color:#b91c1c;
+  background:#fef2f2;
+  border-color:#fecaca;
+}
+
+
+/* ===== V220 TYPE-TO-SELECT ===== */
+.v220-combo{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:10050;
+  pointer-events:none;
+}
+
+.v220-combo.open{
+  display:block;
+}
+
+.v220-combo-box{
+  position:fixed;
+  pointer-events:auto;
+  padding:6px;
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 12px 30px rgba(15,23,42,.16);
+}
+
+#v220ComboInput{
+  width:100%;
+  height:34px;
+  padding:6px 8px;
+  border:1px solid #94a3b8;
+  border-radius:7px;
+  font-size:12px;
+  outline:none;
+}
+
+#v220ComboInput:focus{
+  border-color:#0f766e;
+  box-shadow:0 0 0 2px rgba(15,118,110,.12);
+}
+
+.v220-combo-list{
+  max-height:240px;
+  overflow:auto;
+  margin-top:5px;
+}
+
+.v220-combo-item{
+  display:block;
+  width:100%;
+  padding:6px 8px;
+  border:0;
+  border-radius:5px;
+  background:transparent;
+  text-align:left;
+  font-size:11px;
+  cursor:pointer;
+}
+
+.v220-combo-item:hover,
+.v220-combo-item.active{
+  background:#ecfdf5;
+  color:#065f46;
+}
+
+.v220-combo-empty{
+  padding:10px 8px;
+  color:#64748b;
+  font-size:10px;
+}
+
+select{
+  cursor:text;
+}
+
+
+.v221-health{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;padding:7px 9px;border-radius:8px;font-size:9px}
+.v221-health b{white-space:nowrap}.v221-health span{color:#475569}
+.v221-health.ok{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534}
+.v221-health.warn{border:1px solid #fed7aa;background:#fff7ed;color:#9a3412}
+@media(max-width:700px){.v221-health{align-items:flex-start;flex-direction:column;gap:2px}}
+
+
+/* ===== V222 UX REFRESH ===== */
+:root{
+  --v222-border:#d7e0e7;
+  --v222-border-strong:#b8c7d3;
+  --v222-surface:#ffffff;
+  --v222-soft:#f7f9fb;
+  --v222-text:#17212b;
+  --v222-muted:#64748b;
+  --v222-accent:#0f766e;
+  --v222-accent-soft:#ecfdf5;
+  --v222-danger:#b42318;
+  --v222-radius:8px;
+}
+
+*{
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  color:var(--v222-text);
+}
+
+header{
+  border-bottom:1px solid var(--v222-border);
+}
+
+.top{
+  min-height:54px;
+  gap:10px;
+}
+
+.top-actions{
+  gap:7px!important;
+}
+
+#warehouseSelect{
+  min-width:165px;
+  max-width:260px;
+}
+
+nav button{
+  min-height:34px;
+  border-radius:7px;
+  transition:background .12s ease,border-color .12s ease,color .12s ease;
+}
+
+nav button.active{
+  font-weight:750!important;
+  color:#075e56!important;
+  background:var(--v222-accent-soft)!important;
+  box-shadow:inset 3px 0 0 var(--v222-accent);
+}
+
+nav button:hover:not(.active){
+  background:#f5f7f9;
+}
+
+.panel{
+  padding-top:14px;
+}
+
+.v222-title{
+  margin:0 0 10px!important;
+  padding-bottom:7px;
+  border-bottom:1px solid #e5ebf0;
+  font-size:16px!important;
+  letter-spacing:-.01em;
+}
+
+.card{
+  border-color:var(--v222-border)!important;
+  border-radius:var(--v222-radius)!important;
+  box-shadow:0 1px 2px rgba(15,23,42,.025);
+}
+
+.card h3{
+  margin-top:0;
+}
+
+button,
+input,
+select,
+textarea{
+  border-radius:7px!important;
+}
+
+button{
+  min-height:31px;
+}
+
+button:not(.nav-group-toggle):not(.v222-command):not(.v222-command-trigger){
+  transition:transform .08s ease,box-shadow .12s ease,border-color .12s ease;
+}
+
+button:active:not(:disabled){
+  transform:translateY(1px);
+}
+
+input,
+select,
+textarea{
+  border-color:#c8d3dc!important;
+  background:#fff;
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:#4d9a92!important;
+  box-shadow:0 0 0 2px rgba(15,118,110,.10)!important;
+  outline:none!important;
+}
+
+:focus-visible{
+  outline:2px solid rgba(15,118,110,.45)!important;
+  outline-offset:2px;
+}
+
+table{
+  border-color:#d8e0e6!important;
+}
+
+table th{
+  background:#f4f7f9!important;
+  color:#334155;
+  font-weight:700;
+}
+
+table tbody tr:hover td{
+  background:#f8fbfc;
+}
+
+table td,
+table th{
+  vertical-align:middle;
+}
+
+.empty{
+  border:1px dashed #cbd5e1;
+  border-radius:8px;
+  padding:14px!important;
+  background:#fafbfc;
+  color:#64748b;
+}
+
+.muted{
+  color:#64748b!important;
+}
+
+.modal{
+  background:rgba(15,23,42,.38)!important;
+}
+
+.modal-box{
+  width:min(94vw,760px);
+  max-height:88vh;
+  overflow:auto;
+  border-radius:10px!important;
+  box-shadow:0 24px 60px rgba(15,23,42,.22)!important;
+  overscroll-behavior:contain;
+}
+
+.toast{
+  max-width:min(90vw,440px);
+  border-radius:8px!important;
+  box-shadow:0 10px 28px rgba(15,23,42,.18);
+}
+
+.v220-combo-box{
+  border-radius:10px!important;
+}
+
+.v220-combo-item{
+  min-height:32px;
+}
+
+.v222-palette{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:12000;
+  background:rgba(15,23,42,.34);
+  padding:10vh 12px 12px;
+}
+
+.v222-palette.open{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+}
+
+.v222-palette-card{
+  width:min(620px,96vw);
+  overflow:hidden;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 24px 70px rgba(15,23,42,.25);
+}
+
+.v222-palette-search{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:8px;
+  padding:9px 11px;
+  border-bottom:1px solid #e2e8f0;
+}
+
+.v222-palette-search>span{
+  color:#64748b;
+  font-size:18px;
+}
+
+#v222PaletteInput{
+  width:100%;
+  height:34px;
+  border:0!important;
+  box-shadow:none!important;
+  padding:0;
+  font-size:13px;
+}
+
+kbd{
+  display:inline-flex;
+  min-width:21px;
+  height:20px;
+  align-items:center;
+  justify-content:center;
+  padding:0 5px;
+  border:1px solid #d1d9e0;
+  border-bottom-color:#b6c1ca;
+  border-radius:5px;
+  background:#f8fafc;
+  color:#64748b;
+  font:10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+.v222-palette-list{
+  max-height:min(430px,58vh);
+  overflow:auto;
+  padding:6px;
+}
+
+.v222-command{
+  width:100%;
+  min-height:48px;
+  display:grid;
+  grid-template-columns:30px 1fr auto;
+  align-items:center;
+  gap:9px;
+  padding:6px 9px;
+  border:0;
+  background:transparent;
+  text-align:left;
+}
+
+.v222-command:hover,
+.v222-command.active{
+  background:#f0fdfa;
+}
+
+.v222-command-icon{
+  width:28px;
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:7px;
+  background:#f1f5f9;
+  color:#475569;
+  font-size:14px;
+}
+
+.v222-command-copy{
+  min-width:0;
+}
+
+.v222-command-copy b,
+.v222-command-copy small{
+  display:block;
+}
+
+.v222-command-copy b{
+  color:#1e293b;
+  font-size:11px;
+}
+
+.v222-command-copy small{
+  margin-top:2px;
+  color:#64748b;
+  font-size:9px;
+}
+
+.v222-current{
+  padding:2px 6px;
+  border-radius:999px;
+  background:#dcfce7;
+  color:#166534;
+  font-size:8px;
+}
+
+.v222-palette-foot{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  padding:7px 10px;
+  border-top:1px solid #e2e8f0;
+  background:#fafbfc;
+  color:#64748b;
+  font-size:9px;
+}
+
+.v222-palette-empty{
+  padding:24px 12px;
+  text-align:center;
+  color:#64748b;
+  font-size:10px;
+}
+
+@media(max-width:700px){
+  .top{
+    align-items:center;
+  }
+
+  #warehouseSelect{
+    min-width:120px;
+    max-width:44vw;
+  }
+
+  button,
+  input,
+  select{
+    min-height:36px;
+  }
+
+  .panel{
+    padding-top:10px;
+  }
+
+  .card{
+    border-radius:7px!important;
+  }
+
+  .v222-title{
+    font-size:15px!important;
+  }
+
+  table td,
+  table th{
+    padding-top:7px!important;
+    padding-bottom:7px!important;
+  }
+
+  .modal-box{
+    width:96vw;
+    max-height:92vh;
+  }
+
+  .v222-palette{
+    padding-top:8vh;
+  }
+
+  .v222-palette-card{
+    width:98vw;
+  }
+}
+
+
+/* ===== V223 PRINT UI ===== */
+.v223-print-inline{
+  display:inline-flex;
+  margin-left:7px;
+  vertical-align:middle;
+}
+
+.v223-print-btn{
+  min-height:25px!important;
+  height:25px;
+  padding:2px 7px!important;
+  font-size:9px!important;
+  font-weight:600;
+}
+
+.v223-modal-print{
+  display:flex;
+  justify-content:flex-end;
+  margin:-2px 0 8px;
+  padding-bottom:7px;
+  border-bottom:1px solid #e2e8f0;
+}
+
+@media(max-width:700px){
+  .v223-print-btn span{
+    display:none;
+  }
+
+  .v223-print-btn{
+    min-width:30px;
+    padding:2px 5px!important;
+  }
+}
+
+@media print{
+  header,
+  nav,
+  .sidebar,
+  .top,
+  button,
+  .no-print,
+  .toast{
+    display:none!important;
+  }
+}
+
+
+/* ===== V224 APP ZOOM LOCK ===== */
+html.v224-app-mode,
+html.v224-app-mode body{
+  touch-action:manipulation;
+  overscroll-behavior:none;
+}
+
+html.v224-app-mode input,
+html.v224-app-mode select,
+html.v224-app-mode textarea,
+html.v224-app-mode button{
+  touch-action:manipulation;
+}
+
+/* iOS may auto-zoom focused inputs below 16px. */
+@media (pointer:coarse){
+  html.v224-app-mode input,
+  html.v224-app-mode select,
+  html.v224-app-mode textarea{
+    font-size:16px!important;
+  }
+}
+
+
+/* ===== V226 NATIVE NOTIFICATIONS ===== */
+.v226-notification-card{
+  border-left:3px solid #0f766e!important;
+}
+
+.v226-notify-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.v226-notify-head h3{
+  margin:0 0 3px;
+}
+
+.v226-permission{
+  white-space:nowrap;
+  padding:3px 7px;
+  border-radius:999px;
+  border:1px solid #cbd5e1;
+  background:#f8fafc;
+  color:#475569;
+  font-size:8px;
+  font-weight:700;
+}
+
+.v226-permission.granted{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+  color:#166534;
+}
+
+.v226-permission.denied{
+  border-color:#fecaca;
+  background:#fef2f2;
+  color:#b91c1c;
+}
+
+.v226-notify-actions{
+  display:flex;
+  gap:6px;
+  margin-top:8px;
+}
+
+.v226-notify-options{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px 14px;
+  margin-top:9px;
+  padding-top:8px;
+  border-top:1px solid #e2e8f0;
+}
+
+.v226-notify-options label{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin:0;
+  font-size:9px;
+  cursor:pointer;
+}
+
+.v226-notify-options input{
+  min-height:auto!important;
+}
+
+.v226-notify-note{
+  margin-top:7px;
+  color:#64748b;
+  font-size:8px;
+  line-height:1.45;
+}
+
+@media(max-width:700px){
+  .v226-notify-head{
+    flex-direction:column;
+  }
+
+  .v226-notify-actions{
+    flex-wrap:wrap;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -10131,8 +10772,7 @@ button{
   <div class="top-actions">
    <select id="warehouseSelect" onchange="setWarehouse(this.value)"></select>
    <span id="cloudStatus" class="cloud">Đang kết nối…</span>
-
-  </div>
+</div>
  </div>
  <nav id="nav"></nav>
 </header>
@@ -10542,8 +11182,1960 @@ const money=v=>MONEY_FORMATTER.format(Number(v||0));
 const dt=v=>v?new Date(v).toLocaleString('vi-VN'):'—';
 const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const uid=()=>{try{if(globalThis.crypto&&typeof globalThis.crypto.randomUUID==='function')return globalThis.crypto.randomUUID()}catch(e){}return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{let r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)})};
-function toastMsg(s){if(!E.toast)return;E.toast.textContent=s;E.toast.classList.add('show');setTimeout(()=>E.toast?.classList.remove('show'),2500)}
-function setCloudStatus(text,state=''){if(!E.cloudStatus)return;E.cloudStatus.textContent=text;E.cloudStatus.className='cloud '+state}
+function toastMsg(s){
+  if(!E.toast)return;
+
+  E.toast.textContent=s;
+  E.toast.classList.add('show');
+
+  clearTimeout(E.toast._v222Timer);
+
+  E.toast._v222Timer=setTimeout(
+    ()=>E.toast?.classList.remove('show'),
+    2200
+  );
+}
+
+/* ===== V219 INTERACTION-SAFE UI ===== */
+const V219_EDIT_GRACE_MS=900;
+let v219LastUserEditAt=0;
+let v219DeferredRender=false;
+let v219DeferredTimer=null;
+
+function v219EditableElement(el){
+  if(!el)return false;
+
+  return !!(
+    el.matches?.(
+      'input, textarea, select, [contenteditable="true"]'
+    )
+  );
+}
+
+function v219InteractionActive(){
+  const active=document.activeElement;
+
+  const modalOpen=
+    !!document.querySelector(
+      '#modal.open'
+    );
+
+  const editing=
+    v219EditableElement(active);
+
+  const recentEdit=
+    Date.now()-v219LastUserEditAt<
+    V219_EDIT_GRACE_MS;
+
+  return (
+    modalOpen ||
+    editing ||
+    recentEdit
+  );
+}
+
+function v219MarkEditing(){
+  v219LastUserEditAt=Date.now();
+}
+
+function v219ActivePanel(){
+  return (
+    activePanelId ||
+    document.querySelector(
+      '.panel.active'
+    )?.id ||
+    'finance'
+  );
+}
+
+function v219FlushDeferredRender(){
+  clearTimeout(
+    v219DeferredTimer
+  );
+
+  if(!v219DeferredRender){
+    return;
+  }
+
+  if(v219InteractionActive()){
+    v219DeferredTimer=
+      setTimeout(
+        v219FlushDeferredRender,
+        350
+      );
+
+    return;
+  }
+
+  v219DeferredRender=false;
+
+  try{
+    renderWarehouseSelect();
+    renderPanel(
+      v219ActivePanel()
+    );
+    updatePendingSyncBadge();
+  }catch(e){
+    console.warn(
+      'V219 deferred render',
+      e
+    );
+  }
+}
+
+function v219SafeBackgroundRender(){
+  if(v219InteractionActive()){
+    v219DeferredRender=true;
+
+    clearTimeout(
+      v219DeferredTimer
+    );
+
+    v219DeferredTimer=
+      setTimeout(
+        v219FlushDeferredRender,
+        450
+      );
+
+    return false;
+  }
+
+  renderWarehouseSelect();
+  renderPanel(
+    v219ActivePanel()
+  );
+  updatePendingSyncBadge();
+
+  return true;
+}
+
+function v219InstallInteractionGuard(){
+  document.addEventListener(
+    'input',
+    event=>{
+      if(v219EditableElement(event.target)){
+        v219MarkEditing();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'change',
+    event=>{
+      if(v219EditableElement(event.target)){
+        v219MarkEditing();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'focusout',
+    ()=>{
+      clearTimeout(
+        v219DeferredTimer
+      );
+
+      v219DeferredTimer=
+        setTimeout(
+          v219FlushDeferredRender,
+          V219_EDIT_GRACE_MS+80
+        );
+    },
+    true
+  );
+}
+
+function v219CloudIcon(state=''){
+  const cls=
+    state==='offline'
+      ?'offline'
+      :'online';
+
+  if(cls==='offline'){
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7.5 18H17a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.4 8.3 4.5 4.5 0 0 0 7.5 18Z"/>
+        <path d="m5 5 14 14"/>
+      </svg>
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7.5 18H17a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.4 8.3 4.5 4.5 0 0 0 7.5 18Z"/>
+      <path d="m9.2 13.1 2 2 4-4"/>
+    </svg>
+  `;
+}
+
+
+/* ===== V220 FAST INPUT / KEYBOARD FIRST ===== */
+const V220_SELECT_SEARCH_DELAY_MS=60;
+const V220_RENDER_DEBOUNCE_MS=50;
+
+let v220Combo=null;
+let v220ComboInput=null;
+let v220ComboList=null;
+let v220ComboSelect=null;
+let v220ComboIndex=0;
+let v220ComboItems=[];
+let v220RenderTimer=null;
+
+const v220OptionHtmlCache=new Map();
+
+function v220Norm(value){
+  return String(value||'')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/đ/g,'d')
+    .replace(/Đ/g,'D')
+    .toLowerCase()
+    .trim();
+}
+
+function v220OptionSearchText(option){
+  return v220Norm(
+    [
+      option.textContent,
+      option.value,
+      option.dataset?.code,
+      option.dataset?.name
+    ]
+      .filter(Boolean)
+      .join(' ')
+  );
+}
+
+function v220CreateCombo(){
+  if(v220Combo)return;
+
+  v220Combo=document.createElement('div');
+  v220Combo.className='v220-combo';
+
+  v220Combo.innerHTML=`
+    <div class="v220-combo-box">
+      <input
+        id="v220ComboInput"
+        type="text"
+        autocomplete="off"
+        placeholder="Gõ để tìm..."
+      >
+      <div
+        id="v220ComboList"
+        class="v220-combo-list"
+      ></div>
+    </div>
+  `;
+
+  document.body.appendChild(
+    v220Combo
+  );
+
+  v220ComboInput=
+    v220Combo.querySelector(
+      '#v220ComboInput'
+    );
+
+  v220ComboList=
+    v220Combo.querySelector(
+      '#v220ComboList'
+    );
+
+  v220ComboInput.addEventListener(
+    'input',
+    ()=>v220RenderComboItems(
+      v220ComboInput.value
+    )
+  );
+
+  v220ComboInput.addEventListener(
+    'keydown',
+    event=>{
+      if(event.key==='ArrowDown'){
+        event.preventDefault();
+
+        v220ComboIndex=
+          Math.min(
+            v220ComboItems.length-1,
+            v220ComboIndex+1
+          );
+
+        v220PaintComboActive();
+        return;
+      }
+
+      if(event.key==='ArrowUp'){
+        event.preventDefault();
+
+        v220ComboIndex=
+          Math.max(
+            0,
+            v220ComboIndex-1
+          );
+
+        v220PaintComboActive();
+        return;
+      }
+
+      if(event.key==='Enter'){
+        event.preventDefault();
+
+        const item=
+          v220ComboItems[
+            v220ComboIndex
+          ];
+
+        if(item){
+          v220ChooseOption(
+            item.option
+          );
+        }
+
+        return;
+      }
+
+      if(event.key==='Escape'){
+        event.preventDefault();
+        v220CloseCombo();
+      }
+    }
+  );
+
+  v220Combo.addEventListener(
+    'mousedown',
+    event=>{
+      if(event.target===v220Combo){
+        event.preventDefault();
+        v220CloseCombo();
+      }
+    }
+  );
+}
+
+function v220PositionCombo(select){
+  const rect=
+    select.getBoundingClientRect();
+
+  const width=
+    Math.max(
+      260,
+      Math.min(
+        560,
+        rect.width
+      )
+    );
+
+  const left=
+    Math.max(
+      8,
+      Math.min(
+        window.innerWidth-width-8,
+        rect.left
+      )
+    );
+
+  const top=
+    Math.min(
+      window.innerHeight-260,
+      rect.bottom+4
+    );
+
+  const box=
+    v220Combo.querySelector(
+      '.v220-combo-box'
+    );
+
+  box.style.width=
+    width+'px';
+
+  box.style.left=
+    left+'px';
+
+  box.style.top=
+    Math.max(
+      8,
+      top
+    )+'px';
+}
+
+function v220OpenCombo(
+  select,
+  initialText=''
+){
+  if(
+    !select ||
+    select.disabled ||
+    select.multiple ||
+    select.size>1
+  ){
+    return;
+  }
+
+  v220CreateCombo();
+
+  v220ComboSelect=
+    select;
+
+  v220PositionCombo(
+    select
+  );
+
+  v220Combo.classList.add(
+    'open'
+  );
+
+  v220ComboInput.value=
+    String(initialText||'');
+
+  v220RenderComboItems(
+    v220ComboInput.value
+  );
+
+  setTimeout(
+    ()=>{
+      v220ComboInput.focus();
+      v220ComboInput.select();
+    },
+    0
+  );
+}
+
+function v220CloseCombo(){
+  if(!v220Combo)return;
+
+  v220Combo.classList.remove(
+    'open'
+  );
+
+  const select=
+    v220ComboSelect;
+
+  v220ComboSelect=null;
+  v220ComboItems=[];
+  v220ComboIndex=0;
+
+  if(select){
+    setTimeout(
+      ()=>{
+        try{
+          select.focus({
+            preventScroll:true
+          });
+        }catch(e){}
+      },
+      0
+    );
+  }
+}
+
+function v220RenderComboItems(query=''){
+  const select=
+    v220ComboSelect;
+
+  if(!select)return;
+
+  const needle=
+    v220Norm(query);
+
+  const all=
+    [...select.options]
+      .map((option,index)=>({
+        option,
+        index,
+        text:
+          String(
+            option.textContent||''
+          ),
+        search:
+          v220OptionSearchText(
+            option
+          )
+      }));
+
+  let matches=
+    needle
+      ?all.filter(x=>
+          x.search.includes(
+            needle
+          )
+        )
+      :all;
+
+  matches.sort((a,b)=>{
+    const aStart=needle&&a.search.startsWith(needle)?0:1;
+    const bStart=needle&&b.search.startsWith(needle)?0:1;
+    return aStart-bStart||v221RecentRank(select,a.option)-v221RecentRank(select,b.option)||a.index-b.index;
+  });
+
+  v220ComboItems=
+    matches.slice(
+      0,
+      80
+    );
+
+  v220ComboIndex=0;
+
+  v220ComboList.innerHTML=
+    v220ComboItems.length
+      ?v220ComboItems
+          .map(
+            (item,index)=>`
+              <button
+                type="button"
+                class="v220-combo-item ${index===0?'active':''}"
+                data-index="${index}"
+              >
+                ${esc(item.text)}
+              </button>
+            `
+          )
+          .join('')
+      :`<div class="v220-combo-empty">Không tìm thấy</div>`;
+
+  for(
+    const btn of
+    v220ComboList
+      .querySelectorAll(
+        '.v220-combo-item'
+      )
+  ){
+    btn.addEventListener(
+      'mousedown',
+      event=>{
+        event.preventDefault();
+
+        const index=
+          Number(
+            btn.dataset.index||0
+          );
+
+        const item=
+          v220ComboItems[index];
+
+        if(item){
+          v220ChooseOption(
+            item.option
+          );
+        }
+      }
+    );
+  }
+}
+
+function v220PaintComboActive(){
+  const buttons=
+    [
+      ...v220ComboList
+        .querySelectorAll(
+          '.v220-combo-item'
+        )
+    ];
+
+  buttons.forEach(
+    (button,index)=>{
+      button.classList.toggle(
+        'active',
+        index===v220ComboIndex
+      );
+    }
+  );
+
+  buttons[
+    v220ComboIndex
+  ]?.scrollIntoView({
+    block:'nearest'
+  });
+}
+
+function v220ChooseOption(option){
+  const select=
+    v220ComboSelect;
+
+  if(
+    !select ||
+    !option
+  ){
+    return;
+  }
+
+  const previous=
+    select.value;
+
+  select.value=
+    option.value;
+
+  v221RememberSelect(select,option.value);
+
+  v220CloseCombo();
+
+  if(previous!==select.value){
+    select.dispatchEvent(
+      new Event(
+        'change',
+        {bubbles:true}
+      )
+    );
+  }
+}
+
+function v220InstallSelectTyping(){
+  document.addEventListener(
+    'keydown',
+    event=>{
+      const select=
+        event.target?.closest?.(
+          'select'
+        );
+
+      if(!select)return;
+
+      if(
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      ){
+        return;
+      }
+
+      if(
+        event.key==='Enter' ||
+        event.key==='F2'
+      ){
+        event.preventDefault();
+
+        v220OpenCombo(
+          select,
+          ''
+        );
+
+        return;
+      }
+
+      if(
+        event.key.length===1 &&
+        !/\s/.test(event.key)
+      ){
+        event.preventDefault();
+
+        v220OpenCombo(
+          select,
+          event.key
+        );
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'dblclick',
+    event=>{
+      const select=
+        event.target?.closest?.(
+          'select'
+        );
+
+      if(select){
+        v220OpenCombo(
+          select,
+          ''
+        );
+      }
+    },
+    true
+  );
+
+  window.addEventListener(
+    'resize',
+    ()=>{
+      if(
+        v220Combo?.classList.contains(
+          'open'
+        ) &&
+        v220ComboSelect
+      ){
+        v220PositionCombo(
+          v220ComboSelect
+        );
+      }
+    }
+  );
+
+  window.addEventListener(
+    'scroll',
+    ()=>{
+      if(
+        v220Combo?.classList.contains(
+          'open'
+        ) &&
+        v220ComboSelect
+      ){
+        v220PositionCombo(
+          v220ComboSelect
+        );
+      }
+    },
+    {passive:true}
+  );
+}
+
+function v220SchedulePanelRender(
+  panelId=null
+){
+  clearTimeout(
+    v220RenderTimer
+  );
+
+  v220RenderTimer=
+    setTimeout(
+      ()=>{
+        if(v219InteractionActive()){
+          v219DeferredRender=true;
+          return;
+        }
+
+        renderPanel(
+          panelId||
+          v219ActivePanel()
+        );
+      },
+      V220_RENDER_DEBOUNCE_MS
+    );
+}
+
+function v220CachedOptions(
+  key,
+  rows,
+  valueFn,
+  labelFn
+){
+  const safeRows=
+    Array.isArray(rows)
+      ?rows
+      :[];
+
+  const signature=
+    safeRows
+      .map(row=>
+        [
+          valueFn(row),
+          labelFn(row)
+        ].join(':')
+      )
+      .join('|');
+
+  const cached=
+    v220OptionHtmlCache.get(
+      key
+    );
+
+  if(
+    cached &&
+    cached.signature===signature
+  ){
+    return cached.html;
+  }
+
+  const html=
+    safeRows
+      .map(row=>
+        `<option value="${esc(valueFn(row))}">${esc(labelFn(row))}</option>`
+      )
+      .join('');
+
+  v220OptionHtmlCache.set(
+    key,
+    {
+      signature,
+      html
+    }
+  );
+
+  return html;
+}
+
+
+/* ===== V221 SMART OPERATIONS ===== */
+const V221_ACTIVE_WINDOW_MS=45000;
+const V221_IDLE_SYNC_MS=120000;
+const V221_ACTIVE_SYNC_MS=45000;
+const V221_PENDING_SYNC_MS=3000;
+const V221_VERIFY_QUIET_MS=4000;
+const V221_VERIFY_MIN_GAP_MS=30000;
+const V221_RECENT_SELECT_KEY='lat_yen_recent_select_v221';
+let v221LastUserActivityAt=Date.now();
+let v221AffectedPanels=new Set();
+let v221SmartRenderTimer=null;
+
+function v221MarkUserActivity(){v221LastUserActivityAt=Date.now()}
+function v221UserIsActive(){return Date.now()-v221LastUserActivityAt<V221_ACTIVE_WINDOW_MS}
+function v221SmartSyncDelay(){
+  if(v191PendingCount()>0)return V221_PENDING_SYNC_MS;
+  return v221UserIsActive()?V221_ACTIVE_SYNC_MS:V221_IDLE_SYNC_MS;
+}
+function v203NextSyncDelay(){return v221SmartSyncDelay()}
+
+function v221PanelsForTable(table){
+  const map={
+    inventory:['dashboard','ingredients','imports','sales','stocktake','reports','history'],
+    stock_transactions:['dashboard','ingredients','imports','sales','stocktake','reports','history'],
+    sales:['dashboard','sales','reports','history','finance'],
+    sale_items:['dashboard','sales','reports','history','finance'],
+    ingredients:['ingredients','imports','recipes','stocktake','reports'],
+    products:['recipes','sales','reports'],
+    recipe_items:['recipes','sales','reports'],
+    prepared_ingredient_items:['recipes','sales','reports'],
+    warehouses:['dashboard','warehouses','ingredients','imports','sales','stocktake','reports'],
+    suppliers:['suppliers','imports']
+  };
+  return map[String(table||'')]||[v219ActivePanel()];
+}
+
+function v221SmartRender(table=''){
+  if(table)for(const p of v221PanelsForTable(table))v221AffectedPanels.add(p);
+  clearTimeout(v221SmartRenderTimer);
+  v221SmartRenderTimer=setTimeout(()=>{
+    const active=v219ActivePanel();
+    if(active==='settings'){
+      if(!v219InteractionActive())renderSyncProgressLive();
+      v221AffectedPanels.clear();
+      return;
+    }
+    if(v221AffectedPanels.size&&!v221AffectedPanels.has(active))return;
+    v219SafeBackgroundRender();
+    v221AffectedPanels.clear();
+  },90);
+}
+
+function v221SystemHealth(){
+  const pending=Number(v191PendingCount()||0);
+  const localOnly=Number(v198CloudCoverage()?.localOnly||0);
+  return {pending,localOnly,clean:pending===0&&localOnly===0&&!!cloudOnline};
+}
+function v221UpdateSettingsHealth(){
+  const el=document.getElementById('v221SettingsHealth');
+  if(!el)return;
+  const h=v221SystemHealth();
+  el.className='v221-health '+(h.clean?'ok':'warn');
+  el.innerHTML=h.clean
+    ?'<b>✓ Hệ thống ổn định</b><span>Cloud sạch • không pending • không dữ liệu local tồn đọng</span>'
+    :`<b>⚠ Cần xử lý đồng bộ</b><span>${h.pending} pending • ${h.localOnly} local-only</span>`;
+}
+
+function v221RecentSelections(){
+  try{return JSON.parse(localStorage.getItem(V221_RECENT_SELECT_KEY)||'{}')||{}}catch(e){return{}}
+}
+function v221SelectIdentity(select){return select?.id||select?.name||select?.dataset?.field||select?.closest?.('.panel')?.id||'generic'}
+function v221RememberSelect(select,value){
+  if(!select||!value)return;
+  const key=v221SelectIdentity(select), all=v221RecentSelections(), cur=Array.isArray(all[key])?all[key]:[];
+  all[key]=[String(value),...cur.filter(x=>String(x)!==String(value))].slice(0,8);
+  localStorage.setItem(V221_RECENT_SELECT_KEY,JSON.stringify(all));
+}
+function v221RecentRank(select,option){
+  const list=v221RecentSelections()[v221SelectIdentity(select)]||[];
+  const i=list.indexOf(String(option?.value||''));
+  return i<0?999:i;
+}
+function v221InstallSmartActivity(){
+  for(const e of ['pointerdown','keydown','input','change'])document.addEventListener(e,v221MarkUserActivity,true);
+}
+
+
+/* ===== V222 UX REFRESH / COMMAND PALETTE ===== */
+const V222_COMMANDS=[
+  {id:'finance',label:'Báo cáo tài chính',hint:'Báo cáo • doanh thu • lợi nhuận',icon:'▥'},
+  {id:'ingredients',label:'Nguyên liệu / Dụng cụ',hint:'Tồn kho • định mức • giá vốn',icon:'◫'},
+  {id:'imports',label:'Xuất / Nhập kho',hint:'Phiếu nhập • phiếu xuất',icon:'⇄'},
+  {id:'recipes',label:'Thực đơn',hint:'Sản phẩm • công thức',icon:'≡'},
+  {id:'stocktake',label:'Kiểm kê',hint:'Tồn thực tế • điều chỉnh',icon:'✓'},
+  {id:'employees',label:'Quản lý nhân viên',hint:'Nhân viên • chấm công • lương',icon:'♙'},
+  {id:'sales',label:'Quản lý bán hàng',hint:'Phiếu bán • doanh thu',icon:'▣'},
+  {id:'cashflow',label:'Quản lý Thu / Chi',hint:'Dòng tiền • khoản thu chi',icon:'₫'},
+  {id:'warehouses',label:'Kho / Chi nhánh',hint:'Kho • chi nhánh',icon:'⌂'},
+  {id:'history',label:'Lịch sử',hint:'Biến động • nhật ký',icon:'↶'},
+  {id:'settings',label:'Cài đặt',hint:'Đồng bộ • hệ thống',icon:'⚙'},
+  {id:'__sync',label:'Đồng bộ ngay',hint:'Đẩy và nhận dữ liệu Cloud',icon:'☁',action:()=>syncNow()},
+  {id:'__print',label:'In nội dung đang xem',hint:'In phiếu hoặc báo cáo hiện tại',icon:'⎙',action:()=>v223PrintCurrentPanel()}
+];
+
+let v222Palette=null;
+let v222PaletteInput=null;
+let v222PaletteList=null;
+let v222PaletteResults=[];
+let v222PaletteIndex=0;
+
+function v222NavButtonForPanel(id){
+  return [...document.querySelectorAll('nav button')]
+    .find(btn=>
+      String(btn.getAttribute('onclick')||'')
+        .includes(`showTab('${id}'`)
+    )||null;
+}
+
+function v222GoPanel(id){
+  const btn=v222NavButtonForPanel(id);
+  showTab(id,btn);
+  v222ClosePalette();
+}
+
+function v222CreatePalette(){
+  if(v222Palette)return;
+
+  v222Palette=document.createElement('div');
+  v222Palette.className='v222-palette';
+  v222Palette.innerHTML=`
+    <div class="v222-palette-card" role="dialog" aria-modal="true" aria-label="Tìm nhanh">
+      <div class="v222-palette-search">
+        <span aria-hidden="true">⌕</span>
+        <input id="v222PaletteInput" type="text" autocomplete="off" placeholder="Tìm menu hoặc chức năng…">
+        <kbd>Esc</kbd>
+      </div>
+      <div id="v222PaletteList" class="v222-palette-list"></div>
+      <div class="v222-palette-foot">
+        <span><kbd>↑</kbd><kbd>↓</kbd> di chuyển</span>
+        <span><kbd>Enter</kbd> mở</span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(v222Palette);
+
+  v222PaletteInput=v222Palette.querySelector('#v222PaletteInput');
+  v222PaletteList=v222Palette.querySelector('#v222PaletteList');
+
+  v222Palette.addEventListener('mousedown',e=>{
+    if(e.target===v222Palette){
+      e.preventDefault();
+      v222ClosePalette();
+    }
+  });
+
+  v222PaletteInput.addEventListener('input',()=>{
+    v222RenderPalette(v222PaletteInput.value);
+  });
+
+  v222PaletteInput.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'){
+      e.preventDefault();
+      v222PaletteIndex=Math.min(v222PaletteResults.length-1,v222PaletteIndex+1);
+      v222PaintPaletteActive();
+    }else if(e.key==='ArrowUp'){
+      e.preventDefault();
+      v222PaletteIndex=Math.max(0,v222PaletteIndex-1);
+      v222PaintPaletteActive();
+    }else if(e.key==='Enter'){
+      e.preventDefault();
+      v222RunCommand(v222PaletteResults[v222PaletteIndex]);
+    }else if(e.key==='Escape'){
+      e.preventDefault();
+      v222ClosePalette();
+    }
+  });
+}
+
+function v222OpenPalette(){
+  v222CreatePalette();
+  v222Palette.classList.add('open');
+  v222PaletteInput.value='';
+  v222RenderPalette('');
+  setTimeout(()=>v222PaletteInput.focus(),0);
+}
+
+function v222ClosePalette(){
+  v222Palette?.classList.remove('open');
+}
+
+function v222RunCommand(cmd){
+  if(!cmd)return;
+  if(typeof cmd.action==='function'){
+    v222ClosePalette();
+    cmd.action();
+    return;
+  }
+  v222GoPanel(cmd.id);
+}
+
+function v222RenderPalette(query=''){
+  const q=v220Norm(query);
+  const active=v219ActivePanel();
+
+  let rows=V222_COMMANDS.map((cmd,index)=>{
+    const search=v220Norm(`${cmd.label} ${cmd.hint||''}`);
+    let score=index+20;
+    if(cmd.id===active)score-=8;
+    if(q){
+      if(v220Norm(cmd.label).startsWith(q))score-=15;
+      else if(search.includes(q))score-=8;
+      else score+=1000;
+    }
+    return {cmd,score};
+  }).filter(x=>x.score<1000);
+
+  rows.sort((a,b)=>a.score-b.score);
+  v222PaletteResults=rows.map(x=>x.cmd).slice(0,12);
+  v222PaletteIndex=0;
+
+  v222PaletteList.innerHTML=v222PaletteResults.length
+    ?v222PaletteResults.map((cmd,index)=>`
+      <button type="button" class="v222-command ${index===0?'active':''}" data-index="${index}">
+        <span class="v222-command-icon">${esc(cmd.icon||'•')}</span>
+        <span class="v222-command-copy">
+          <b>${esc(cmd.label)}</b>
+          <small>${esc(cmd.hint||'')}</small>
+        </span>
+        ${cmd.id===active?'<span class="v222-current">Đang mở</span>':''}
+      </button>
+    `).join('')
+    :'<div class="v222-palette-empty">Không tìm thấy chức năng phù hợp</div>';
+
+  for(const btn of v222PaletteList.querySelectorAll('.v222-command')){
+    btn.addEventListener('mousedown',e=>{
+      e.preventDefault();
+      v222RunCommand(v222PaletteResults[Number(btn.dataset.index||0)]);
+    });
+  }
+}
+
+function v222PaintPaletteActive(){
+  const buttons=[...v222PaletteList.querySelectorAll('.v222-command')];
+  buttons.forEach((btn,index)=>btn.classList.toggle('active',index===v222PaletteIndex));
+  buttons[v222PaletteIndex]?.scrollIntoView({block:'nearest'});
+}
+
+function v222InstallUxShortcuts(){
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
+      e.preventDefault();
+      if(v222Palette?.classList.contains('open'))v222ClosePalette();
+      else v222OpenPalette();
+      return;
+    }
+
+    if(e.key==='Escape'&&v222Palette?.classList.contains('open')){
+      e.preventDefault();
+      v222ClosePalette();
+    }
+  },true);
+}
+
+function v222EnhancePanelHead(panel){
+  if(!panel)return;
+  const first=panel.querySelector(':scope > h2');
+  if(first&&!first.classList.contains('v222-title')){
+    first.classList.add('v222-title');
+  }
+}
+
+
+/* ===== V223 PRINT & REPORT ===== */
+function v223PrintTimestamp(){
+  try{
+    return new Intl.DateTimeFormat(
+      'vi-VN',
+      {
+        dateStyle:'short',
+        timeStyle:'short'
+      }
+    ).format(new Date());
+  }catch(e){
+    return new Date().toLocaleString();
+  }
+}
+
+function v223PrintTitleFromElement(el){
+  const heading=
+    el?.querySelector?.(
+      'h1,h2,h3,.cashflow-period-label'
+    );
+
+  return (
+    heading?.textContent?.trim() ||
+    'Báo cáo'
+  );
+}
+
+function v223PrintableClone(el){
+  const clone=el.cloneNode(true);
+
+  for(const node of clone.querySelectorAll(
+    'button, input, select, textarea, .no-print, .v223-print-btn, .cashflow-filter-row, .history-filter-grid'
+  )){
+    node.remove();
+  }
+
+  for(const details of clone.querySelectorAll('details')){
+    details.open=true;
+  }
+
+  for(const scroll of clone.querySelectorAll('.scroll')){
+    scroll.classList.remove('scroll');
+    scroll.style.overflow='visible';
+    scroll.style.maxHeight='none';
+  }
+
+  return clone;
+}
+
+function v223PrintHtml(el,title=''){
+  const brand=loadAppBrand();
+  const wh=warehouse()?.name||'';
+  const clone=v223PrintableClone(el);
+  const safeTitle=title||v223PrintTitleFromElement(el);
+
+  return `<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>${esc(safeTitle)}</title>
+<style>
+  @page{size:A4;margin:12mm}
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;color:#111827;font-size:10.5pt;line-height:1.35;margin:0}
+  .print-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-bottom:1.5px solid #111827;padding-bottom:7px;margin-bottom:10px}
+  .print-brand{font-weight:700;font-size:13pt}
+  .print-meta{text-align:right;font-size:8.5pt;color:#475569}
+  h1,h2,h3{margin:8px 0 6px;color:#111827}
+  h2{font-size:15pt} h3{font-size:11.5pt}
+  .card{border:0!important;box-shadow:none!important;padding:0!important;margin:0 0 10px!important}
+  .grid,.grid2,.cashflow-summary,.cashflow-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .metric,.cashflow-kpi{border:1px solid #cbd5e1!important;padding:7px!important;border-radius:4px}
+  table{width:100%;border-collapse:collapse;margin:5px 0 10px}
+  th,td{border:1px solid #cbd5e1;padding:4px 5px;vertical-align:top}
+  th{background:#f1f5f9;font-weight:700;text-align:left}
+  .right{text-align:right}.center{text-align:center}
+  .muted{color:#64748b}.neg,.low{color:#b42318}.ok,.profit{color:#047857}
+  .badge,.cashflow-type,.audit-module,.audit-action{border:1px solid #cbd5e1;border-radius:3px;padding:1px 4px;background:#fff}
+  .empty{padding:8px;border:1px dashed #cbd5e1;color:#64748b}
+  .section-gap{margin-top:10px!important}
+  img{max-width:100%}
+  nav,header,.sidebar,.top,.toast,.modal{display:none!important}
+  tr{page-break-inside:avoid}
+  thead{display:table-header-group}
+</style>
+</head>
+<body>
+  <div class="print-head">
+    <div>
+      <div class="print-brand">${esc(brand.name||'QUẢN LÝ LÁT YÊN')}</div>
+      <div>${esc(safeTitle)}</div>
+    </div>
+    <div class="print-meta">
+      ${wh?`Kho/Chi nhánh: ${esc(wh)}<br>`:''}
+      In lúc: ${esc(v223PrintTimestamp())}
+    </div>
+  </div>
+  ${clone.outerHTML}
+</body>
+</html>`;
+}
+
+function v223PrintElement(el,title=''){
+  if(!el){
+    toastMsg('Không tìm thấy nội dung để in');
+    return;
+  }
+
+  const frame=document.createElement('iframe');
+  frame.setAttribute('aria-hidden','true');
+  frame.style.position='fixed';
+  frame.style.right='0';
+  frame.style.bottom='0';
+  frame.style.width='0';
+  frame.style.height='0';
+  frame.style.border='0';
+  frame.style.opacity='0';
+
+  document.body.appendChild(frame);
+
+  const doc=frame.contentDocument||frame.contentWindow.document;
+  doc.open();
+  doc.write(v223PrintHtml(el,title));
+  doc.close();
+
+  setTimeout(()=>{
+    try{
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    }catch(e){
+      console.error('Print error',e);
+      toastMsg('Không mở được hộp thoại in');
+    }
+
+    setTimeout(()=>frame.remove(),1200);
+  },180);
+}
+
+function v223PrintCurrentPanel(){
+  const panel=document.querySelector('.panel.active');
+  if(!panel)return;
+  v223PrintElement(panel,v223PrintTitleFromElement(panel));
+}
+
+function v223TargetForHeading(heading){
+  if(!heading)return null;
+
+  return (
+    heading.closest('.card') ||
+    heading.closest('.modal-box') ||
+    heading.closest('.panel') ||
+    heading.parentElement
+  );
+}
+
+function v223ShouldOfferPrint(heading){
+  const text=v220Norm(heading?.textContent||'');
+
+  return (
+    text.includes('phieu') ||
+    text.includes('bao cao') ||
+    text.includes('lich su') ||
+    text.includes('kiem ke') ||
+    text.includes('doanh thu')
+  );
+}
+
+function v223AddPrintButton(heading){
+  if(
+    !heading ||
+    heading.dataset.v223Print==='1' ||
+    !v223ShouldOfferPrint(heading)
+  ){
+    return;
+  }
+
+  heading.dataset.v223Print='1';
+
+  const wrap=document.createElement('span');
+  wrap.className='v223-print-inline no-print';
+
+  const btn=document.createElement('button');
+  btn.type='button';
+  btn.className='secondary sm v223-print-btn';
+  btn.innerHTML='⎙ <span>In</span>';
+  btn.title='In nội dung này';
+
+  btn.addEventListener('click',event=>{
+    event.preventDefault();
+    event.stopPropagation();
+
+    const target=v223TargetForHeading(heading);
+    v223PrintElement(
+      target,
+      heading.textContent.trim()
+    );
+  });
+
+  wrap.appendChild(btn);
+  heading.appendChild(wrap);
+}
+
+function v223EnhancePrintActions(root=document){
+  if(!root?.querySelectorAll)return;
+
+  const headings=[
+    ...(root.matches?.('h2,h3')?[root]:[]),
+    ...root.querySelectorAll('h2,h3')
+  ];
+
+  for(const heading of headings){
+    v223AddPrintButton(heading);
+  }
+}
+
+function v223AddModalPrintAction(){
+  const box=E.modalBox;
+  if(!box)return;
+
+  const text=v220Norm(box.textContent||'');
+
+  if(
+    !text.includes('phieu') &&
+    !box.querySelector('table')
+  ){
+    return;
+  }
+
+  if(box.querySelector('.v223-modal-print'))return;
+
+  const toolbar=document.createElement('div');
+  toolbar.className='v223-modal-print no-print';
+  toolbar.innerHTML=`
+    <button type="button" class="secondary sm">⎙ In phiếu</button>
+  `;
+
+  toolbar.querySelector('button').addEventListener('click',()=>{
+    v223PrintElement(
+      box,
+      v223PrintTitleFromElement(box)
+    );
+  });
+
+  box.insertBefore(toolbar,box.firstChild);
+}
+
+function v223InstallPrintShortcut(){
+  document.addEventListener('keydown',event=>{
+    if(
+      (event.ctrlKey||event.metaKey) &&
+      event.key.toLowerCase()==='p' &&
+      !v222Palette?.classList.contains('open')
+    ){
+      event.preventDefault();
+
+      if(E.modal?.classList.contains('open')){
+        v223PrintElement(
+          E.modalBox,
+          v223PrintTitleFromElement(E.modalBox)
+        );
+      }else{
+        v223PrintCurrentPanel();
+      }
+    }
+  },true);
+}
+
+
+/* ===== V224 APP ZOOM LOCK ===== */
+function v224IsAppMode(){
+  return (
+    window.matchMedia?.('(display-mode: standalone)')?.matches ||
+    window.matchMedia?.('(display-mode: fullscreen)')?.matches ||
+    navigator.standalone===true ||
+    /(^|\s)--app(=|\s|$)/i.test(
+      String(
+        window?.chrome?.app?.isInstalled||
+        ''
+      )
+    )
+  );
+}
+
+function v224InstallZoomLock(){
+  const appMode=
+    v224IsAppMode();
+
+  if(!appMode){
+    return;
+  }
+
+  document.documentElement.classList.add(
+    'v224-app-mode'
+  );
+
+  // Ctrl/Cmd +/-/0
+  document.addEventListener(
+    'keydown',
+    event=>{
+      if(
+        (event.ctrlKey||event.metaKey) &&
+        (
+          event.key==='+' ||
+          event.key==='=' ||
+          event.key==='-' ||
+          event.key==='0'
+        )
+      ){
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    true
+  );
+
+  // Ctrl/Cmd + mouse wheel zoom.
+  document.addEventListener(
+    'wheel',
+    event=>{
+      if(event.ctrlKey||event.metaKey){
+        event.preventDefault();
+      }
+    },
+    {
+      passive:false,
+      capture:true
+    }
+  );
+
+  // Safari/iOS gesture events where available.
+  for(
+    const name of
+    [
+      'gesturestart',
+      'gesturechange',
+      'gestureend'
+    ]
+  ){
+    document.addEventListener(
+      name,
+      event=>{
+        event.preventDefault();
+      },
+      {
+        passive:false,
+        capture:true
+      }
+    );
+  }
+
+  // Prevent rapid double-tap zoom while still allowing normal taps.
+  let lastTouchEnd=0;
+
+  document.addEventListener(
+    'touchend',
+    event=>{
+      const now=Date.now();
+
+      if(
+        now-lastTouchEnd<=300
+      ){
+        event.preventDefault();
+      }
+
+      lastTouchEnd=now;
+    },
+    {
+      passive:false,
+      capture:true
+    }
+  );
+}
+
+
+/* ===== V226 NATIVE PUSH NOTIFICATIONS ===== */
+const V226_NOTIFY_PREF_KEY='lat_yen_notify_pref_v226';
+const V226_NOTIFY_COOLDOWN_MS=45000;
+const V226_LAST_NOTICE=new Map();
+
+function v226NotifyPrefs(){
+  try{
+    return {
+      enabled:true,
+      sales:true,
+      lowStock:true,
+      syncError:true,
+      ...JSON.parse(
+        localStorage.getItem(
+          V226_NOTIFY_PREF_KEY
+        )||'{}'
+      )
+    };
+  }catch(e){
+    return {
+      enabled:true,
+      sales:true,
+      lowStock:true,
+      syncError:true
+    };
+  }
+}
+
+function v226SaveNotifyPrefs(next){
+  localStorage.setItem(
+    V226_NOTIFY_PREF_KEY,
+    JSON.stringify({
+      ...v226NotifyPrefs(),
+      ...(next||{})
+    })
+  );
+
+  v226RenderNotificationCard();
+}
+
+function v226NotificationSupported(){
+  return (
+    'Notification' in window
+  );
+}
+
+function v226NotificationPermission(){
+  return v226NotificationSupported()
+    ?Notification.permission
+    :'unsupported';
+}
+
+async function v226RequestNotificationPermission(){
+  if(!v226NotificationSupported()){
+    toastMsg('Thiết bị/trình duyệt này không hỗ trợ thông báo hệ thống');
+    return false;
+  }
+
+  let permission=
+    Notification.permission;
+
+  if(permission==='default'){
+    permission=
+      await Notification.requestPermission();
+  }
+
+  if(permission==='granted'){
+    v226SaveNotifyPrefs({
+      enabled:true
+    });
+
+    toastMsg('Đã bật thông báo Chrome App');
+
+    await v226SystemNotify({
+      title:'Quản Lý Lát Yên',
+      body:'Thông báo hệ thống đã được bật.',
+      tag:'lat-yen-notify-enabled',
+      force:true
+    });
+
+    return true;
+  }
+
+  toastMsg(
+    permission==='denied'
+      ?'Thông báo đang bị chặn trong Chrome'
+      :'Chưa cấp quyền thông báo'
+  );
+
+  v226RenderNotificationCard();
+  return false;
+}
+
+function v226CanNotify(kind='general'){
+  const prefs=
+    v226NotifyPrefs();
+
+  if(
+    !prefs.enabled ||
+    Notification.permission!=='granted'
+  ){
+    return false;
+  }
+
+  if(kind==='sale'&&!prefs.sales)return false;
+  if(kind==='low_stock'&&!prefs.lowStock)return false;
+  if(kind==='sync_error'&&!prefs.syncError)return false;
+
+  return true;
+}
+
+function v226NoticeAllowed(tag){
+  const now=Date.now();
+  const last=
+    Number(
+      V226_LAST_NOTICE.get(tag)||0
+    );
+
+  if(now-last<V226_NOTIFY_COOLDOWN_MS){
+    return false;
+  }
+
+  V226_LAST_NOTICE.set(
+    tag,
+    now
+  );
+
+  return true;
+}
+
+async function v226SystemNotify({
+  title,
+  body,
+  tag='lat-yen',
+  kind='general',
+  data={},
+  force=false
+}){
+  if(!v226NotificationSupported())return false;
+
+  if(
+    !force &&
+    !v226CanNotify(kind)
+  ){
+    return false;
+  }
+
+  if(
+    !force &&
+    !v226NoticeAllowed(tag)
+  ){
+    return false;
+  }
+
+  const options={
+    body:String(body||''),
+    tag,
+    renotify:false,
+    silent:false,
+    icon:'./icon.svg',
+    badge:'./icon.svg',
+    data:{
+      panel:data.panel||'',
+      url:data.url||'./',
+      ...data
+    }
+  };
+
+  try{
+    const registration=
+      await navigator.serviceWorker?.ready;
+
+    if(registration?.showNotification){
+      await registration.showNotification(
+        String(title||'Quản Lý Lát Yên'),
+        options
+      );
+
+      return true;
+    }
+  }catch(e){
+    console.warn(
+      'V226 SW notification fallback',
+      e
+    );
+  }
+
+  try{
+    new Notification(
+      String(title||'Quản Lý Lát Yên'),
+      options
+    );
+
+    return true;
+  }catch(e){
+    console.warn(
+      'V226 notification',
+      e
+    );
+
+    return false;
+  }
+}
+
+function v226RealtimeNotification(
+  table,
+  payload
+){
+  if(
+    document.visibilityState==='visible'
+  ){
+    return;
+  }
+
+  const eventType=
+    String(payload?.eventType||'')
+      .toUpperCase();
+
+  const row=
+    payload?.new||
+    payload?.record||
+    {};
+
+  if(
+    table==='sales' &&
+    eventType==='INSERT'
+  ){
+    const total=
+      Number(
+        row.total_amount||0
+      );
+
+    v226SystemNotify({
+      title:'Có phiếu bán mới',
+      body:
+        total
+          ?`${money(total)} • ${warehouse()?.name||'Lát Yên'}`
+          :'Một phiếu bán mới vừa được đồng bộ.',
+      tag:
+        'sale-'+
+        String(row.id||Date.now()),
+      kind:'sale',
+      data:{
+        panel:'sales'
+      }
+    });
+
+    return;
+  }
+
+  if(
+    table==='inventory' &&
+    (
+      eventType==='INSERT' ||
+      eventType==='UPDATE'
+    )
+  ){
+    const ingredient=
+      (db.ingredients||[])
+        .find(x=>
+          String(x.id||'')===
+          String(row.ingredient_id||'')
+        );
+
+    if(!ingredient)return;
+
+    const qty=
+      Number(
+        row.quantity??
+        row.stock??
+        0
+      );
+
+    const minimum=
+      Number(
+        ingredient.minimum_stock||0
+      );
+
+    if(
+      qty<=minimum
+    ){
+      v226SystemNotify({
+        title:'Tồn kho thấp',
+        body:
+          `${ingredient.name}: ${num(qty)} ${ingredient.unit||''} • tối thiểu ${num(minimum)}`,
+        tag:
+          'low-stock-'+
+          ingredient.id,
+        kind:'low_stock',
+        data:{
+          panel:'ingredients'
+        }
+      });
+    }
+  }
+}
+
+function v226NotifySyncError(message){
+  if(
+    document.visibilityState==='visible'
+  ){
+    return;
+  }
+
+  v226SystemNotify({
+    title:'Đồng bộ cần chú ý',
+    body:
+      String(
+        message||
+        'Không thể hoàn tất đồng bộ dữ liệu.'
+      ).slice(
+        0,
+        180
+      ),
+    tag:'sync-error',
+    kind:'sync_error',
+    data:{
+      panel:'settings'
+    }
+  });
+}
+
+async function v226TestNotification(){
+  if(
+    Notification.permission!=='granted'
+  ){
+    const ok=
+      await v226RequestNotificationPermission();
+
+    if(!ok)return;
+  }
+
+  await v226SystemNotify({
+    title:'Thông báo thử',
+    body:'Chrome App đang nhận thông báo như ứng dụng thông thường.',
+    tag:'lat-yen-test',
+    force:true,
+    data:{
+      panel:'dashboard'
+    }
+  });
+}
+
+function v226PermissionLabel(){
+  const p=
+    v226NotificationPermission();
+
+  if(p==='granted')return 'Đã cho phép';
+  if(p==='denied')return 'Đang bị Chrome chặn';
+  if(p==='default')return 'Chưa cấp quyền';
+  return 'Không hỗ trợ';
+}
+
+function v226RenderNotificationCard(){
+  const settings=
+    E.settings;
+
+  if(!settings)return;
+
+  let card=
+    document.getElementById(
+      'v226NotificationCard'
+    );
+
+  if(!card){
+    card=
+      document.createElement(
+        'div'
+      );
+
+    card.id=
+      'v226NotificationCard';
+
+    card.className=
+      'card section-gap v226-notification-card';
+
+    settings.prepend(
+      card
+    );
+  }
+
+  const prefs=
+    v226NotifyPrefs();
+
+  const permission=
+    v226NotificationPermission();
+
+  card.innerHTML=`
+    <div class="v226-notify-head">
+      <div>
+        <h3>Thông báo Chrome App</h3>
+        <div class="muted">
+          Hiển thị thông báo hệ thống khi app đang chạy nền.
+        </div>
+      </div>
+
+      <span class="v226-permission ${permission}">
+        ${esc(v226PermissionLabel())}
+      </span>
+    </div>
+
+    <div class="v226-notify-actions">
+      <button
+        type="button"
+        class="primary sm"
+        onclick="v226RequestNotificationPermission()"
+      >
+        ${permission==='granted'
+          ?'Thông báo đã bật'
+          :'Bật thông báo'}
+      </button>
+
+      <button
+        type="button"
+        class="secondary sm"
+        onclick="v226TestNotification()"
+      >Gửi thử</button>
+    </div>
+
+    <div class="v226-notify-options">
+      <label>
+        <input
+          type="checkbox"
+          ${prefs.sales?'checked':''}
+          onchange="v226SaveNotifyPrefs({sales:this.checked})"
+        >
+        Phiếu bán mới
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          ${prefs.lowStock?'checked':''}
+          onchange="v226SaveNotifyPrefs({lowStock:this.checked})"
+        >
+        Tồn kho thấp
+      </label>
+
+      <label>
+        <input
+          type="checkbox"
+          ${prefs.syncError?'checked':''}
+          onchange="v226SaveNotifyPrefs({syncError:this.checked})"
+        >
+        Lỗi đồng bộ
+      </label>
+    </div>
+
+    <div class="v226-notify-note">
+      Thông báo nền hoạt động khi Chrome App/PWA còn được hệ thống duy trì.
+      Service Worker V226 cũng đã có bộ nhận Web Push để dùng cho thông báo từ máy chủ khi app đóng hoàn toàn.
+    </div>
+  `;
+}
+
+function v226HandleNotificationOpenMessage(event){
+  const data=
+    event?.data;
+
+  if(
+    !data ||
+    data.type!=='LAT_YEN_NOTIFICATION_OPEN'
+  ){
+    return;
+  }
+
+  const panel=
+    String(
+      data.panel||''
+    );
+
+  if(panel){
+    const btn=
+      v222NavButtonForPanel?.(
+        panel
+      );
+
+    showTab(
+      panel,
+      btn
+    );
+  }
+
+  try{
+    window.focus();
+  }catch(e){}
+}
+
+function v226InstallNotifications(){
+  if(
+    'serviceWorker' in navigator
+  ){
+    navigator.serviceWorker.addEventListener(
+      'message',
+      v226HandleNotificationOpenMessage
+    );
+  }
+}
+
+function setCloudStatus(
+  text,
+  state=''
+){
+  if(!E.cloudStatus)return;
+
+  const normalized=
+    String(state||'').toLowerCase();
+
+  const iconState=
+    normalized==='offline'
+      ?'offline'
+      :'online';
+
+  E.cloudStatus.innerHTML=
+    v219CloudIcon(
+      iconState
+    );
+
+  E.cloudStatus.className=
+    'cloud cloud-icon '+
+    iconState;
+
+  E.cloudStatus.title=
+    String(
+      text||''
+    );
+
+  E.cloudStatus.setAttribute(
+    'aria-label',
+    String(
+      text||'Trạng thái Cloud'
+    )
+  );
+}
 let cacheSaveTimer=null;
 let cacheSaveDirty=false;
 let cacheWriteInProgress=false;
@@ -11215,19 +13807,11 @@ function v218FollowerRefresh(){
     setTimeout(
       ()=>{
         try{
-          // Only load cache once per burst and render the currently visible panel.
           cacheLoad();
-
-          const active=
-            activePanelId||
-            document.querySelector('.panel.active')?.id||
-            'finance';
-
-          renderWarehouseSelect();
-          renderPanel(active);
+          v219SafeBackgroundRender();
         }catch(e){
           console.warn(
-            'V218 follower refresh',
+            'V219 follower refresh',
             e
           );
         }
@@ -12860,8 +15444,8 @@ async function loadCloud(){
 
   ensureProductWarehouseOwnership(db.products);
   if(!currentWarehouseId||!db.warehouses.some(w=>w.id===currentWarehouseId))currentWarehouseId=db.warehouses[0]?.id||'';
-  localStorage.setItem('kho_v3_warehouse',currentWarehouseId);cleanupInvalidExcelSyncQueue();cacheSave();cloudOnline=true;setCloudStatus('Cloud đã đồng bộ','online');renderAll();
- }catch(e){console.error(e);cloudOnline=false;setCloudStatus('Offline • dùng cache','offline');cacheLoad();renderAll();toastMsg('Không kết nối được Supabase. Đang dùng dữ liệu cache.');}
+  localStorage.setItem('kho_v3_warehouse',currentWarehouseId);cleanupInvalidExcelSyncQueue();cacheSave();cloudOnline=true;setCloudStatus('Cloud đã đồng bộ','online');v219SafeBackgroundRender();
+ }catch(e){console.error(e);cloudOnline=false;setCloudStatus('Offline • dùng cache','offline');cacheLoad();v219SafeBackgroundRender();toastMsg('Không kết nối được Supabase. Đang dùng dữ liệu cache.');v226NotifySyncError(e?.message||'Không kết nối được Supabase.');}
  finally{
   syncing=false;
 
@@ -14313,7 +16897,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:218,
+    version:226,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -17331,13 +19915,12 @@ function v207ScheduleActiveRender(){
 
   v207RenderTimer=setTimeout(
     ()=>{
-      renderPanel(
-        activePanelId||
-        document.querySelector('.panel.active')?.id||
-        'finance'
-      );
+      v219SafeBackgroundRender();
 
-      if(activePanelId==='settings'){
+      if(
+        activePanelId==='settings' &&
+        !v219InteractionActive()
+      ){
         renderSyncProgressLive();
       }
     },
@@ -17347,50 +19930,29 @@ function v207ScheduleActiveRender(){
 
 function v207ScheduleVerify(){
   clearTimeout(v207VerifyTimer);
-
-  v207VerifyTimer=setTimeout(
-    async()=>{
-      if(
-        document.hidden||
-        !navigator.onLine||
-        autoSyncBusy||
-        syncing
-      ){
-        return;
-      }
-
-      const now=Date.now();
-
-      if(
-        now-v207LastFullVerifyAt<
-        V207_FULL_VERIFY_MIN_GAP_MS
-      ){
-        return;
-      }
-
-      v207LastFullVerifyAt=now;
-
-      try{
-        await loadCloudFastV202(true);
-      }catch(e){
-        console.warn(
-          'V207 background verify',
-          e
-        );
-      }
-    },
-    V207_VERIFY_QUIET_MS
-  );
+  v207VerifyTimer=setTimeout(async()=>{
+    if(document.hidden||!navigator.onLine||autoSyncBusy||syncing||v219InteractionActive())return;
+    const now=Date.now();
+    if(now-v207LastFullVerifyAt<V221_VERIFY_MIN_GAP_MS)return;
+    v207LastFullVerifyAt=now;
+    try{await loadCloudFastV202(true)}catch(e){console.warn('V221 background verify',e)}
+  },V221_VERIFY_QUIET_MS);
 }
 
 function v207RealtimeHandler(table){
   return payload=>{
     if(document.hidden){
       cloudReloadRequested=true;
+
+      // V226: native notification can still be shown while the app is in background.
+      v226RealtimeNotification(
+        table,
+        payload
+      );
+
       return;
     }
 
-    // Only one instance on this device applies Realtime.
     if(!v210CanOwnSync()){
       return;
     }
@@ -17409,7 +19971,7 @@ function v207RealtimeHandler(table){
         'online'
       );
 
-      v207ScheduleActiveRender();
+      v221SmartRender(table);
       v210NotifyFollowers();
     }
 
@@ -17634,14 +20196,28 @@ function renderPanel(id){
   scheduleRender(
     'panel:'+id,
     ()=>{
-      // Nếu người dùng đã chuyển tab trước khi RAF chạy,
-      // không render panel cũ nữa.
       if(id!==activePanelId)return;
 
       map[id]();
 
+      const panel=
+        E[id]||
+        document.querySelector('.panel.active');
+
+      v222EnhancePanelHead(panel);
+      if(id==='settings'){
+        v226RenderNotificationCard();
+      }
+      v223EnhancePrintActions(panel);
+
+      // Some report bodies render asynchronously after parent panel.
+      setTimeout(
+        ()=>v223EnhancePrintActions(panel),
+        120
+      );
+
       scheduleTableEnhancements(
-        E[id]||document.querySelector('.panel.active')||document
+        panel||document
       );
     }
   );
@@ -17668,14 +20244,33 @@ function showTab(id,btn){
   }
   renderPanel(activePanelId);
 }
-function renderWarehouseSelect(){if(!E.warehouseSelect)return;E.warehouseSelect.innerHTML=db.warehouses.map(w=>`<option value="${w.id}" ${w.id===currentWarehouseId?'selected':''}>${esc(w.name)}</option>`).join('')}
+function renderWarehouseSelect(){
+  if(!E.warehouseSelect)return;
+
+  const current=
+    currentWarehouseId;
+
+  const base=
+    v220CachedOptions(
+      'warehouses',
+      db.warehouses||[],
+      w=>w.id,
+      w=>w.name
+    );
+
+  E.warehouseSelect.innerHTML=
+    base;
+
+  E.warehouseSelect.value=
+    current;
+}
 function setWarehouse(id){
   const previous=currentWarehouseId;
   currentWarehouseId=id;
   localStorage.setItem('kho_v3_warehouse',id);
   auditLog('Hệ thống','Chuyển kho',warehouse()?.name||id,`Từ ${db.warehouses.find(w=>w.id===previous)?.name||'—'} sang ${warehouse()?.name||id}`,id);
   cacheSave();
-  renderAll();
+  v220SchedulePanelRender();
 }
 
 function renderDashboard(){
@@ -29838,6 +32433,13 @@ function renderCashflowReport(){
       `:'<div class="empty">Chưa có khoản thu/chi nào trong kỳ.</div>'}
     </div>
   `;
+
+  setTimeout(
+    ()=>v223EnhancePrintActions(
+      area
+    ),
+    0
+  );
 }
 
 
@@ -34793,7 +37395,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V218',
+    app_version:'V226',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -35102,7 +37704,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:218,
+    version:226,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -35284,13 +37886,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:218,
+    version:226,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V218',storage:'supabase-storage',
+      schema:185,app_version:'V226',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -36018,15 +38620,8 @@ function applyConcurrentMergedState(result){
     invalidateDerivedCaches();
     applyAppBrand();
 
-    if(
-      activePanelId==='settings'
-    ){
-      // tránh render lặp trong lúc auto sync
-    }else{
-      renderPanel(
-        activePanelId||
-        'finance'
-      );
+    if(activePanelId!=='settings'){
+      v219SafeBackgroundRender();
     }
   }
 
@@ -36503,7 +39098,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:218,
+    version:226,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -39064,7 +41659,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V218',
+      app_version:'V226',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -39079,7 +41674,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:218,
+      version:226,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -39356,7 +41951,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v218-full-backup-'+
+    'lat-yen-v226-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -39437,6 +42032,8 @@ function renderSettings(){
       );
 
   E.settings.innerHTML=`
+    <div id="v221SettingsHealth" class="v221-health"></div>
+
     <div class="card sync-v186-card">
       <div class="sync-v186-top">
         <div class="sync-v186-title">
@@ -39986,6 +42583,8 @@ function renderSettings(){
       );
     }
   },120);
+
+  setTimeout(v221UpdateSettingsHealth,0);
 }
 
 async function migrateV2ToCloud(){let old;try{old=JSON.parse(localStorage.getItem(V2_KEY)||'null')}catch(e){}if(!old)return alert('Không tìm thấy dữ liệu V2 trên thiết bị này.');if(!confirm('Import dữ liệu V2 hiện tại lên Supabase? Nên dùng khi Cloud đang trống.'))return;try{
@@ -40003,7 +42602,33 @@ async function migrateV2ToCloud(){let old;try{old=JSON.parse(localStorage.getIte
  }catch(e){alert('Import V2 dừng do lỗi: '+e.message+'\nCó thể một phần dữ liệu đã được import.')}
 }
 
-function openModal(html){if(!E.modal||!E.modalBox)return;E.modalBox.innerHTML=html;E.modal.classList.add('open')}function closeModal(){E.modal?.classList.remove('open')}
+function openModal(html){
+  if(!E.modal||!E.modalBox)return;
+
+  E.modalBox.innerHTML=html;
+  E.modal.classList.add('open');
+
+  v223EnhancePrintActions(E.modalBox);
+  v223AddModalPrintAction();
+
+  requestAnimationFrame(()=>{
+    const focusable=
+      E.modalBox.querySelector(
+        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])'
+      );
+
+    if(focusable&&!v219InteractionActive()){
+      try{focusable.focus({preventScroll:true})}catch(e){}
+    }
+  });
+}function closeModal(){
+  E.modal?.classList.remove('open');
+
+  setTimeout(
+    v219FlushDeferredRender,
+    120
+  );
+}
 function csvDownload(name,rows){let csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n'),blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}
 function exportIngredientsCsv(){
   const rows=purchasedWarehouseIngredientsInDisplayOrder();
@@ -40618,6 +43243,13 @@ function renderAll(){
 }
 
 installV208StorageSyncHook();
+v219InstallInteractionGuard();
+v220InstallSelectTyping();
+v221InstallSmartActivity();
+v222InstallUxShortcuts();
+v223InstallPrintShortcut();
+v224InstallZoomLock();
+v226InstallNotifications();
 v210InitLeaderElection();
 
 async function init(){
