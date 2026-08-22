@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V255 WAREHOUSE SELF HEAL ===== */
+/* ===== V257 DEVICE DISCONNECT ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11418,6 +11418,142 @@ textarea::placeholder{
   color:#a15c00;
 }
 
+
+/* V256 Sync Lab + Cloud Usage */
+.v256-cloud-card{
+  margin-top:10px;
+  padding:12px;
+  border:1px solid var(--line,#d7e0e8);
+  border-radius:10px;
+  background:var(--card,#fff);
+}
+.v256-cloud-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:10px;
+}
+.v256-cloud-head,.v256-cloud-foot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.v256-cloud-head span{
+  display:block;
+  font-size:11px;
+  margin-top:2px;
+  color:var(--muted,#64748b);
+}
+.v256-cloud-track{
+  height:8px;
+  border-radius:999px;
+  overflow:hidden;
+  background:#e8eef3;
+  margin:8px 0;
+}
+.v256-cloud-fill{
+  height:100%;
+  background:#0f8f73;
+}
+.v256-cloud-foot{
+  font-size:11px;
+  color:var(--muted,#64748b);
+}
+.v256-cloud-foot label{
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.v256-cloud-foot input{
+  width:84px;
+  height:28px;
+}
+.v256-lab-line{
+  display:flex;
+  gap:7px;
+  align-items:flex-start;
+  padding:4px 0;
+}
+@media(max-width:800px){
+  .v256-cloud-grid{grid-template-columns:1fr}
+}
+
+
+/* V257 device disconnect gate */
+.v257-disconnected-gate{
+  position:fixed;
+  inset:0;
+  z-index:2147483000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  background:#f5f8fa;
+}
+.v257-lock-card{
+  width:min(520px,100%);
+  background:#fff;
+  border:1px solid #d9e2e8;
+  border-radius:16px;
+  padding:26px;
+  box-shadow:0 18px 50px rgba(15,23,42,.13);
+}
+.v257-lock-icon{
+  width:48px;
+  height:48px;
+  display:grid;
+  place-items:center;
+  border-radius:12px;
+  background:#eaf8f3;
+  font-size:25px;
+  margin-bottom:12px;
+}
+.v257-lock-card h1{
+  margin:0 0 8px;
+  font-size:22px;
+}
+.v257-lock-card p{
+  margin:0 0 12px;
+  line-height:1.55;
+}
+.v257-lock-note{
+  padding:10px 12px;
+  border:1px solid #f0d7a7;
+  background:#fff8e9;
+  border-radius:9px;
+  font-size:12px;
+  line-height:1.5;
+}
+.v257-lock-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.v257-manual{
+  margin-top:14px;
+  border-top:1px solid #e2e8f0;
+  padding-top:12px;
+}
+.v257-manual label{
+  display:block;
+  margin:10px 0;
+  font-size:12px;
+}
+.v257-manual input{
+  width:100%;
+  margin-top:4px;
+}
+.v257-pair-status{
+  margin-top:12px;
+  font-size:12px;
+  line-height:1.5;
+}
+html.v257-device-locked body{
+  overflow:hidden!important;
+}
+
 </style>
 </head>
 <body>
@@ -11425,7 +11561,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V255</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V257</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -16693,34 +16829,581 @@ function v252ClearPendingFlags(row){
   return changed;
 }
 
-async function v252FetchExactCloud(){
-  /* Reuse the exact rows from the just-finished Cloud Pull: no duplicate API load. */
+
+/* ===== V256 SYNC LAB + CLOUD USAGE ===== */
+const V256_CLOUD_QUOTA_KEY='lat_yen_cloud_quota_mb_v256';
+const V256_SYNC_LAB_REPORT_KEY='lat_yen_sync_lab_report_v256';
+const V256_CLOUD_USAGE_REPORT_KEY='lat_yen_cloud_usage_report_v256';
+const V256_SNAPSHOT_TTL_MS=60000;
+
+let v256SnapshotPromise=null;
+let v256SyncLabBusy=false;
+
+function v256CloudQuotaMb(){
+  const value=Number(
+    localStorage.getItem(
+      V256_CLOUD_QUOTA_KEY
+    )||500
+  );
+
+  return (
+    Number.isFinite(value)&&value>0
+      ?value
+      :500
+  );
+}
+
+function v256SetCloudQuotaMb(value){
+  const n=Math.max(
+    1,
+    Number(value||0)
+  );
+
+  localStorage.setItem(
+    V256_CLOUD_QUOTA_KEY,
+    String(n)
+  );
+
+  renderCloudUsageV256(true);
+}
+
+function v256Utf8Bytes(value){
+  try{
+    return new TextEncoder()
+      .encode(
+        JSON.stringify(value??null)
+      )
+      .byteLength;
+  }catch(e){
+    return 0;
+  }
+}
+
+function v256SnapshotRows(snapshot){
+  return {
+    warehouses:snapshot?.warehouses||[],
+    suppliers:snapshot?.suppliers||[],
+    ingredients:snapshot?.ingredients||[],
+    inventory:snapshot?.inventory||[],
+    products:snapshot?.products||[],
+    recipe_items:snapshot?.recipeItems||snapshot?.recipe_items||[],
+    prepared_ingredient_items:snapshot?.preparedItems||snapshot?.prepared_ingredient_items||[],
+    sales:snapshot?.sales||[],
+    sale_items:snapshot?.saleItems||snapshot?.sale_items||[],
+    stock_transactions:snapshot?.movements||snapshot?.stock_transactions||[]
+  };
+}
+
+function v256MeasureCloudUsage(snapshot){
+  const tables=v256SnapshotRows(snapshot);
+
+  const byTable={};
+  let bytes=0;
+  let records=0;
+
+  for(const [table,rows] of Object.entries(tables)){
+    const tableBytes=v256Utf8Bytes(rows);
+    byTable[table]={
+      records:(rows||[]).length,
+      bytes:tableBytes
+    };
+    bytes+=tableBytes;
+    records+=(rows||[]).length;
+  }
+
+  /*
+    JSON payload size is a conservative client-visible estimate, not physical
+    PostgreSQL disk size. Use a 1.35 overhead factor for indexes/row metadata.
+  */
+  const estimatedDbBytes=
+    Math.ceil(bytes*1.35);
+
+  const quotaBytes=
+    v256CloudQuotaMb()*
+    1024*1024;
+
+  const percent=
+    quotaBytes>0
+      ?Math.min(
+          100,
+          estimatedDbBytes/
+          quotaBytes*100
+        )
+      :0;
+
+  return {
+    at:new Date().toISOString(),
+    records,
+    payload_bytes:bytes,
+    estimated_db_bytes:estimatedDbBytes,
+    quota_mb:v256CloudQuotaMb(),
+    percent,
+    by_table:byTable,
+    method:'client_json_x_1_35'
+  };
+}
+
+function v256HumanBytes(bytes){
+  const n=Number(bytes||0);
+
+  if(n<1024)return `${Math.round(n)} B`;
+  if(n<1024*1024)return `${(n/1024).toFixed(1)} KB`;
+  if(n<1024*1024*1024)return `${(n/1024/1024).toFixed(2)} MB`;
+
+  return `${(n/1024/1024/1024).toFixed(2)} GB`;
+}
+
+async function v256GetCloudSnapshot(force=false){
   if(
+    !force &&
     v252LastCloudSnapshot?.at &&
-    Date.now()-Number(v252LastCloudSnapshot.at)<30000
+    Date.now()-Number(v252LastCloudSnapshot.at)<
+      V256_SNAPSHOT_TTL_MS
   ){
     return v252LastCloudSnapshot;
   }
 
-  const [warehouses,suppliers,ingredients,inventory,products,recipeItems,preparedItems,sales,saleItems,movements]=await Promise.all([
-    fetchAllCloudRows('warehouses'),
-    fetchAllCloudRows('suppliers'),
-    fetchAllCloudRows('ingredients'),
-    fetchAllCloudRows('inventory'),
-    fetchAllCloudRows('products'),
-    fetchAllCloudRows('recipe_items'),
-    fetchAllCloudRows('prepared_ingredient_items'),
-    fetchAllCloudRows('sales'),
-    fetchAllCloudRows('sale_items'),
-    fetchAllCloudRows('stock_transactions')
-  ]);
+  if(v256SnapshotPromise){
+    return v256SnapshotPromise;
+  }
 
-  v252LastCloudSnapshot={
-    at:Date.now(),
-    warehouses,suppliers,ingredients,inventory,products,recipeItems,preparedItems,sales,saleItems,movements
+  v256SnapshotPromise=(async()=>{
+    try{
+      return await v252FetchExactCloud();
+    }finally{
+      v256SnapshotPromise=null;
+    }
+  })();
+
+  return v256SnapshotPromise;
+}
+
+async function renderCloudUsageV256(force=false){
+  const host=
+    document.getElementById(
+      'v256CloudUsage'
+    );
+
+  if(!host)return;
+
+  host.innerHTML=
+    '<span class="muted">Đang đo dữ liệu Cloud…</span>';
+
+  try{
+    const snapshot=
+      await v256GetCloudSnapshot(
+        force
+      );
+
+    const usage=
+      v256MeasureCloudUsage(
+        snapshot
+      );
+
+    try{
+      localStorage.setItem(
+        V256_CLOUD_USAGE_REPORT_KEY,
+        JSON.stringify(usage)
+      );
+    }catch(e){}
+
+    const pct=
+      Math.max(
+        0,
+        Math.min(
+          100,
+          usage.percent
+        )
+      );
+
+    host.innerHTML=`
+      <div class="v256-cloud-head">
+        <div>
+          <b>${pct.toFixed(pct<1?2:1)}% đã sử dụng</b>
+          <span>
+            ${esc(v256HumanBytes(usage.estimated_db_bytes))}
+            / ${num(usage.quota_mb)} MB theo hạn mức theo dõi
+          </span>
+        </div>
+        <b>${num(usage.records)} record</b>
+      </div>
+
+      <div class="v256-cloud-track">
+        <div
+          class="v256-cloud-fill"
+          style="width:${pct}%"
+        ></div>
+      </div>
+
+      <div class="v256-cloud-foot">
+        <span>
+          Ước tính từ dữ liệu app trên Supabase; không phải số dung lượng vật lý của Dashboard.
+        </span>
+
+        <label>
+          Hạn mức
+          <input
+            type="number"
+            min="1"
+            step="50"
+            value="${esc(String(usage.quota_mb))}"
+            onchange="v256SetCloudQuotaMb(this.value)"
+          >
+          MB
+        </label>
+
+        <button
+          class="secondary sm"
+          onclick="renderCloudUsageV256(true)"
+        >Đo lại</button>
+      </div>
+    `;
+
+  }catch(e){
+    host.innerHTML=`
+      <span class="warn-text">
+        Không đo được Cloud: ${esc(e?.message||String(e))}
+      </span>
+    `;
+  }
+}
+
+function v256CloneSnapshotState(snapshot){
+  return JSON.parse(
+    JSON.stringify(
+      snapshot||{}
+    )
+  );
+}
+
+function v256LocalCloudSimulation(snapshot){
+  const proofBefore=v228Coverage();
+
+  const tables=v256SnapshotRows(snapshot);
+  const localTables=v228LocalTableRows(db);
+
+  const tableResult={};
+  let localTotal=0;
+  let matched=0;
+
+  for(const [table,rows] of Object.entries(localTables)){
+    const cloudRows=tables[table]||[];
+    const cloudKeys=new Set();
+
+    for(const row of cloudRows){
+      for(const key of v228KeyCandidates(table,row)){
+        cloudKeys.add(key);
+      }
+    }
+
+    let tableMatched=0;
+
+    for(const row of rows||[]){
+      localTotal++;
+
+      if(
+        v228KeyCandidates(table,row)
+          .some(key=>
+            cloudKeys.has(key)
+          )
+      ){
+        matched++;
+        tableMatched++;
+      }
+    }
+
+    tableResult[table]={
+      local:(rows||[]).length,
+      cloud:cloudRows.length,
+      matched:tableMatched
+    };
+  }
+
+  return {
+    direction:'Local → Cloud',
+    local_total:localTotal,
+    matched,
+    missing:
+      Math.max(
+        0,
+        localTotal-matched
+      ),
+    percent:
+      localTotal
+        ?matched/localTotal*100
+        :100,
+    proof_available:
+      !!proofBefore.proofAvailable,
+    tables:tableResult
   };
+}
 
-  return v252LastCloudSnapshot;
+async function v256DeviceToDeviceSimulation(){
+  const cred=
+    autoSyncCredentials();
+
+  if(
+    !cred.code ||
+    !cred.passphrase
+  ){
+    return {
+      direction:'Thiết bị A → Canonical → Thiết bị B',
+      ok:false,
+      error:'Thiết bị chưa ghép đồng bộ.'
+    };
+  }
+
+  /*
+    prepareConcurrentLocalState only refreshes sync metadata; business data is
+    not changed. No RPC commit/apply is performed by this simulation.
+  */
+  const local=
+    prepareConcurrentLocalState();
+
+  const remote=
+    await v189FetchCanonical(
+      cred.code,
+      cred.passphrase
+    );
+
+  const simulatedDeviceB=
+    v256CloneSnapshotState(
+      remote.payload?.state
+        ?remote.payload
+        :{
+          schema:189,
+          device_id:'SIMULATED-B',
+          device_name:'Thiết bị mô phỏng B',
+          updated_at:new Date().toISOString(),
+          state:{}
+        }
+    );
+
+  simulatedDeviceB.device_id=
+    'SIMULATED-B';
+
+  simulatedDeviceB.device_name=
+    'Thiết bị mô phỏng B';
+
+  const merged=
+    mergeConcurrentStates([
+      simulatedDeviceB,
+      local
+    ]);
+
+  const sourceEntries=
+    Object.values(
+      local.state||{}
+    )
+      .reduce(
+        (sum,keyState)=>
+          sum+
+          Object.keys(
+            keyState?.entries||{}
+          ).length,
+        0
+      );
+
+  const mergedEntries=
+    Object.values(
+      merged.merged||{}
+    )
+      .reduce(
+        (sum,keyState)=>
+          sum+
+          Object.keys(
+            keyState?.entries||{}
+          ).length,
+        0
+      );
+
+  return {
+    direction:'Thiết bị A → Canonical → Thiết bị B',
+    ok:true,
+    canonical_revision:
+      Number(
+        remote.revision||0
+      ),
+    source_entries:sourceEntries,
+    target_entries:mergedEntries,
+    conflicts:
+      merged.conflicts?.length||0,
+    would_apply:
+      !v213CanonicalStatesEqual(
+        simulatedDeviceB.state||{},
+        merged.merged||{}
+      )
+  };
+}
+
+async function runSyncSimulationV256(){
+  if(v256SyncLabBusy){
+    toastMsg(
+      'Đang chạy mô phỏng đồng bộ'
+    );
+    return;
+  }
+
+  v256SyncLabBusy=true;
+
+  const host=
+    document.getElementById(
+      'v256SyncLabResult'
+    );
+
+  if(host){
+    host.innerHTML=
+      '<span class="muted">Đang mô phỏng Local → Cloud → Thiết bị B…</span>';
+  }
+
+  try{
+    const snapshot=
+      await v256GetCloudSnapshot(
+        true
+      );
+
+    const localCloud=
+      v256LocalCloudSimulation(
+        snapshot
+      );
+
+    const devices=
+      await v256DeviceToDeviceSimulation();
+
+    const report={
+      at:new Date().toISOString(),
+      local_cloud:localCloud,
+      device_device:devices,
+      safe_mode:true,
+      wrote_business_data:false,
+      committed_canonical:false
+    };
+
+    localStorage.setItem(
+      V256_SYNC_LAB_REPORT_KEY,
+      JSON.stringify(report)
+    );
+
+    if(host){
+      const localOk=
+        localCloud.missing===0;
+
+      const deviceOk=
+        devices.ok &&
+        Number(devices.conflicts||0)===0;
+
+      host.innerHTML=`
+        <div class="v256-lab-line ${localOk?'ok-text':'warn-text'}">
+          <b>${localOk?'✓':'!'}</b>
+          <span>
+            Local → Cloud:
+            ${localCloud.matched}/${localCloud.local_total}
+            record khớp
+            • ${localCloud.percent.toFixed(1)}%
+          </span>
+        </div>
+
+        <div class="v256-lab-line ${deviceOk?'ok-text':'warn-text'}">
+          <b>${deviceOk?'✓':'!'}</b>
+          <span>
+            Thiết bị A → Canonical → B:
+            Rev ${Number(devices.canonical_revision||0)}
+            • ${Number(devices.target_entries||0)} entry
+            • ${Number(devices.conflicts||0)} conflict
+            ${
+              devices.would_apply
+                ?'• B sẽ nhận thay đổi'
+                :'• đã hội tụ'
+            }
+          </span>
+        </div>
+
+        <small class="muted">
+          Chế độ mô phỏng: không ghi bảng nghiệp vụ và không commit Canonical.
+        </small>
+      `;
+    }
+
+  }catch(e){
+    if(host){
+      host.innerHTML=`
+        <span class="warn-text">
+          Mô phỏng lỗi: ${esc(e?.message||String(e))}
+        </span>
+      `;
+    }
+  }finally{
+    v256SyncLabBusy=false;
+  }
+}
+
+async function v252FetchExactCloud(){
+  /*
+    V256:
+    60-second snapshot cache + in-flight de-duplication avoids 10-table
+    duplicate reads when SyncNow, Exact ACK, usage meter and diagnostics run
+    back-to-back.
+  */
+  if(
+    v252LastCloudSnapshot?.at &&
+    Date.now()-Number(v252LastCloudSnapshot.at)<
+      V256_SNAPSHOT_TTL_MS
+  ){
+    return v252LastCloudSnapshot;
+  }
+
+  if(v256SnapshotPromise){
+    return v256SnapshotPromise;
+  }
+
+  v256SnapshotPromise=(async()=>{
+    try{
+      const [
+        warehouses,
+        suppliers,
+        ingredients,
+        inventory,
+        products,
+        recipeItems,
+        preparedItems,
+        sales,
+        saleItems,
+        movements
+      ]=await Promise.all([
+        fetchAllCloudRows('warehouses'),
+        fetchAllCloudRows('suppliers'),
+        fetchAllCloudRows('ingredients'),
+        fetchAllCloudRows('inventory'),
+        fetchAllCloudRows('products'),
+        fetchAllCloudRows('recipe_items'),
+        fetchAllCloudRows('prepared_ingredient_items'),
+        fetchAllCloudRows('sales'),
+        fetchAllCloudRows('sale_items'),
+        fetchAllCloudRows('stock_transactions')
+      ]);
+
+      v252LastCloudSnapshot={
+        at:Date.now(),
+        warehouses,
+        suppliers,
+        ingredients,
+        inventory,
+        products,
+        recipeItems,
+        preparedItems,
+        sales,
+        saleItems,
+        movements
+      };
+
+      return v252LastCloudSnapshot;
+
+    }finally{
+      v256SnapshotPromise=null;
+    }
+  })();
+
+  return v256SnapshotPromise;
 }
 
 function v252ExactPendingMatch(type,local,cloud){
@@ -43607,7 +44290,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V255',
+    app_version:'V257',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -44012,17 +44695,63 @@ function closePairingScanner(){
 }
 
 async function applyPairingPayload(payload){
-  const code=String(payload.code||'').trim().toUpperCase();
-  const passphrase=String(payload.passphrase||'');
-  saveMultiDeviceConfig({code,last_cloud_hash:'',last_cloud_at:''});
-  saveAutoSyncConfig({
-    enabled:true,code,passphrase,last_hash:'',last_sync_at:'',
-    last_result:'paired',paired_at:new Date().toISOString()
+  const code=
+    String(payload.code||'')
+      .trim()
+      .toUpperCase();
+
+  const passphrase=
+    String(
+      payload.passphrase||''
+    );
+
+  const reconnecting=
+    v257IsDisconnected();
+
+  saveMultiDeviceConfig({
+    code,
+    last_cloud_hash:'',
+    last_cloud_at:''
   });
+
+  saveAutoSyncConfig({
+    enabled:true,
+    code,
+    passphrase,
+    last_hash:'',
+    last_sync_at:'',
+    last_result:
+      reconnecting
+        ?'v257_pairing'
+        :'paired',
+    paired_at:
+      new Date().toISOString()
+  });
+
   closePairingScanner();
-  toastMsg('Đã ghép thiết bị • đang đồng bộ…');
+
+  if(reconnecting){
+    await v257RestoreAfterPairing(
+      code,
+      passphrase
+    );
+    return;
+  }
+
+  toastMsg(
+    'Đã ghép thiết bị • đang đồng bộ…'
+  );
+
   renderSettings();
-  setTimeout(()=>autoSyncNow({force:true,reason:'pairing',silent:false}),200);
+
+  setTimeout(
+    ()=>autoSyncNow({
+      force:true,
+      reason:'pairing',
+      silent:false
+    }),
+    200
+  );
 }
 
 async function scanPairingQr(){
@@ -44104,7 +44833,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V255',storage:'supabase-storage',
+      schema:185,app_version:'V257',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -47919,7 +48648,461 @@ function startAutoSyncLoop(){
 
 
 
+
+/* ===== V257 DEVICE DISCONNECT + LOCAL WIPE ===== */
+const V257_DISCONNECTED_KEY='lat_yen_device_disconnected_v257';
+let v257PairingAfterDisconnect=false;
+
+function v257DisconnectedState(){
+  try{
+    const x=JSON.parse(
+      localStorage.getItem(
+        V257_DISCONNECTED_KEY
+      )||'null'
+    );
+
+    return (
+      x?.disconnected===true
+        ?x
+        :null
+    );
+  }catch(e){
+    return null;
+  }
+}
+
+function v257IsDisconnected(){
+  return !!v257DisconnectedState();
+}
+
+function v257SetDisconnectedState(extra={}){
+  localStorage.setItem(
+    V257_DISCONNECTED_KEY,
+    JSON.stringify({
+      disconnected:true,
+      at:new Date().toISOString(),
+      device_name:
+        multiDeviceDeviceName?.()||
+        'Thiết bị',
+      ...extra
+    })
+  );
+}
+
+function v257ClearDisconnectedState(){
+  localStorage.removeItem(
+    V257_DISCONNECTED_KEY
+  );
+}
+
+async function v257DeleteIndexedDbData(){
+  if(
+    !window.indexedDB ||
+    typeof indexedDB.databases!=='function'
+  ){
+    return;
+  }
+
+  try{
+    const dbs=
+      await indexedDB.databases();
+
+    await Promise.all(
+      (dbs||[])
+        .filter(x=>x?.name)
+        .map(x=>
+          new Promise(resolve=>{
+            try{
+              const req=
+                indexedDB.deleteDatabase(
+                  x.name
+                );
+
+              req.onsuccess=
+              req.onerror=
+              req.onblocked=
+                ()=>resolve();
+            }catch(e){
+              resolve();
+            }
+          })
+        )
+    );
+  }catch(e){}
+}
+
+function v257EmptyRuntimeData(){
+  try{
+    db={
+      warehouses:[],
+      suppliers:[],
+      ingredients:[],
+      inventory:[],
+      products:[],
+      recipeItems:[],
+      preparedItems:[],
+      sales:[],
+      saleItems:[],
+      movements:[]
+    };
+  }catch(e){}
+
+  try{
+    invalidateDataIndexes?.();
+    invalidateDerivedCaches?.();
+    resetEmployeeStorageCaches?.();
+  }catch(e){}
+}
+
+async function disconnectThisDeviceV257(){
+  if(v257IsDisconnected()){
+    v257ShowDisconnectedGate();
+    return;
+  }
+
+  const first=
+    await appConfirm(
+      'Ngắt kết nối sẽ XÓA TOÀN BỘ dữ liệu lưu trên thiết bị này.\n\n'+
+      '• Dữ liệu Cloud KHÔNG bị xóa.\n'+
+      '• Thiết bị khác KHÔNG bị ảnh hưởng.\n'+
+      '• Mã ghép và mật khẩu trên thiết bị này sẽ bị xóa.\n'+
+      '• Muốn sử dụng lại phải ghép thiết bị bằng QR hoặc mã ghép từ thiết bị đang hoạt động.\n\n'+
+      'Tiếp tục?',
+      'Ngắt kết nối thiết bị'
+    );
+
+  if(!first)return;
+
+  const second=
+    await appConfirm(
+      'XÁC NHẬN LẦN CUỐI\n\n'+
+      'Sau thao tác này, dữ liệu local/cache/cấu hình đồng bộ trên thiết bị hiện tại sẽ bị xóa ngay và không thể mở phần mềm cho tới khi ghép lại.\n\n'+
+      'Cloud vẫn được giữ nguyên.',
+      'Xóa dữ liệu thiết bị & ngắt kết nối'
+    );
+
+  if(!second)return;
+
+  /*
+    Stop all writers before wiping credentials/data.
+  */
+  try{
+    stopAutoSyncLoop?.();
+  }catch(e){}
+
+  try{
+    closePairingScanner?.();
+  }catch(e){}
+
+  try{
+    flushCacheSave?.();
+  }catch(e){}
+
+  v257EmptyRuntimeData();
+
+  /*
+    Full localStorage/sessionStorage wipe is deliberate. Only the disconnected
+    sentinel is recreated afterwards. App code/service-worker files remain.
+  */
+  try{
+    localStorage.clear();
+  }catch(e){}
+
+  try{
+    sessionStorage.clear();
+  }catch(e){}
+
+  await v257DeleteIndexedDbData();
+
+  v257SetDisconnectedState({
+    reason:'user_disconnect'
+  });
+
+  /*
+    Reload tears down realtime/WebSocket/network state as well.
+  */
+  location.reload();
+}
+
+function v257GateHtml(){
+  return `
+    <div class="v257-lock-card">
+      <div class="v257-lock-icon">☁</div>
+
+      <h1>Thiết bị đã ngắt kết nối</h1>
+
+      <p>
+        Dữ liệu trên thiết bị này đã được xóa.
+        Cloud và các thiết bị khác vẫn được giữ nguyên.
+      </p>
+
+      <div class="v257-lock-note">
+        Muốn sử dụng phần mềm, hãy ghép lại từ một thiết bị đang hoạt động.
+        Thiết bị này không được tự tạo dữ liệu mới khi chưa ghép.
+      </div>
+
+      <div class="v257-lock-actions">
+        <button
+          class="primary"
+          onclick="scanPairingQr()"
+        >Quét QR ghép thiết bị</button>
+
+        <button
+          class="secondary"
+          onclick="pastePairingCode()"
+        >Dán mã QR đã sao chép</button>
+      </div>
+
+      <details class="v257-manual">
+        <summary>Nhập mã ghép thủ công</summary>
+
+        <label>
+          Mã đồng bộ
+          <input
+            id="v257PairCode"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="LY-XXXXX-XXXXX"
+          >
+        </label>
+
+        <label>
+          Mật khẩu mã hóa
+          <input
+            id="v257PairPass"
+            type="password"
+            minlength="6"
+            autocomplete="new-password"
+            placeholder="Mật khẩu từ thiết bị đang hoạt động"
+          >
+        </label>
+
+        <button
+          class="primary"
+          onclick="v257ManualPair()"
+        >Ghép và tải dữ liệu Cloud</button>
+      </details>
+
+      <div
+        id="v257PairStatus"
+        class="v257-pair-status muted"
+      ></div>
+    </div>
+  `;
+}
+
+function v257ShowDisconnectedGate(){
+  let gate=
+    document.getElementById(
+      'v257DisconnectedGate'
+    );
+
+  if(!gate){
+    gate=
+      document.createElement('div');
+
+    gate.id=
+      'v257DisconnectedGate';
+
+    gate.className=
+      'v257-disconnected-gate';
+
+    document.body.appendChild(
+      gate
+    );
+  }
+
+  gate.innerHTML=
+    v257GateHtml();
+
+  document.documentElement
+    .classList.add(
+      'v257-device-locked'
+    );
+}
+
+function v257HideDisconnectedGate(){
+  document.getElementById(
+    'v257DisconnectedGate'
+  )?.remove();
+
+  document.documentElement
+    .classList.remove(
+      'v257-device-locked'
+    );
+}
+
+function v257PairStatus(
+  text,
+  kind=''
+){
+  const el=
+    document.getElementById(
+      'v257PairStatus'
+    );
+
+  if(!el)return;
+
+  el.className=
+    `v257-pair-status ${kind}`;
+
+  el.textContent=
+    text||'';
+}
+
+async function v257ManualPair(){
+  const code=
+    String(
+      document.getElementById(
+        'v257PairCode'
+      )?.value||''
+    )
+      .trim()
+      .toUpperCase();
+
+  const passphrase=
+    String(
+      document.getElementById(
+        'v257PairPass'
+      )?.value||''
+    );
+
+  if(
+    !/^LY-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(
+      code
+    )
+  ){
+    v257PairStatus(
+      'Mã đồng bộ chưa đúng định dạng.',
+      'warn-text'
+    );
+    return;
+  }
+
+  if(passphrase.length<6){
+    v257PairStatus(
+      'Mật khẩu mã hóa cần ít nhất 6 ký tự.',
+      'warn-text'
+    );
+    return;
+  }
+
+  await applyPairingPayload({
+    type:'lat-yen-pairing',
+    version:185,
+    code,
+    passphrase,
+    bucket:MULTI_DEVICE_BUCKET
+  });
+}
+
+async function v257RestoreAfterPairing(
+  code,
+  passphrase
+){
+  v257PairingAfterDisconnect=true;
+
+  v257PairStatus(
+    'Đang xác minh và tải dữ liệu từ Cloud…'
+  );
+
+  /*
+    The disconnected device is empty. Pull business Cloud FIRST so this
+    device can never upload an empty local state over a valid Cloud.
+  */
+  try{
+    await loadCloud();
+
+    const coverage=
+      v228Coverage();
+
+    if(
+      !coverage.proofAvailable
+    ){
+      throw new Error(
+        'Chưa xác minh được dữ liệu Cloud.'
+      );
+    }
+
+    /*
+      Canonical is merged only AFTER business Cloud is present locally.
+    */
+    try{
+      await v189CanonicalSync(
+        code,
+        passphrase
+      );
+    }catch(e){
+      console.warn(
+        'V257 canonical after pairing',
+        e
+      );
+    }
+
+    saveAutoSyncConfig({
+      enabled:true,
+      code,
+      passphrase,
+      paired_at:
+        new Date().toISOString(),
+      last_result:
+        'v257_repaired'
+    });
+
+    saveMultiDeviceConfig({
+      code
+    });
+
+    v257ClearDisconnectedState();
+
+    v257PairStatus(
+      'Ghép thành công. Đang mở phần mềm…',
+      'ok-text'
+    );
+
+    setTimeout(
+      ()=>location.reload(),
+      500
+    );
+
+  }catch(e){
+    /*
+      Failed pairing stays locked. Remove credentials again so a partially
+      paired device cannot start background sync after reload.
+    */
+    try{
+      localStorage.clear();
+    }catch(x){}
+
+    v257SetDisconnectedState({
+      reason:'pairing_failed',
+      last_error:
+        e?.message||
+        String(e)
+    });
+
+    v257PairStatus(
+      'Không ghép được: '+
+      (
+        e?.message||
+        String(e)
+      ),
+      'warn-text'
+    );
+
+    throw e;
+
+  }finally{
+    v257PairingAfterDisconnect=false;
+  }
+}
+
 function initV185AutoSync(){
+  if(v257IsDisconnected()){
+    stopAutoSyncLoop();
+    return;
+  }
+
   const cfg=loadAutoSyncConfig();
 
   if(cfg.code){
@@ -48309,7 +49492,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V255',
+      app_version:'V257',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -48601,7 +49784,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v255-full-backup-'+
+    'lat-yen-v257-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -52874,7 +54057,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V255',
+      app_version:'V257',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53635,6 +54818,39 @@ function renderSettings(){
           :''
       }
 
+
+      <div class="v256-cloud-card">
+        <div class="v256-cloud-grid">
+          <div>
+            <div class="sync-v237-group-head">
+              <div>
+                <b>Dung lượng Cloud</b>
+                <span>Ước tính dữ liệu nghiệp vụ đang chiếm trên Supabase.</span>
+              </div>
+            </div>
+            <div id="v256CloudUsage">
+              <span class="muted">Đang đo dữ liệu Cloud…</span>
+            </div>
+          </div>
+
+          <div>
+            <div class="sync-v237-group-head">
+              <div>
+                <b>Mô phỏng đồng bộ</b>
+                <span>Kiểm thử Local → Cloud và Thiết bị A → B mà không ghi dữ liệu thật.</span>
+              </div>
+              <button
+                class="secondary sm"
+                onclick="runSyncSimulationV256()"
+              >Chạy mô phỏng</button>
+            </div>
+            <div id="v256SyncLabResult">
+              <span class="muted">Chưa chạy mô phỏng.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <details class="sync-v237-section">
         <summary>
           <span>
@@ -53693,6 +54909,25 @@ function renderSettings(){
                 <button class="secondary sm" onclick="pastePairingCode()">Dán mã ghép</button>
               </div>
             </details>
+          </div>
+
+          <div class="sync-v237-group v257-disconnect-setting">
+            <div class="sync-v237-group-head">
+              <div>
+                <b>Ngắt kết nối thiết bị</b>
+                <span>
+                  Xóa toàn bộ dữ liệu trên thiết bị này và bắt buộc ghép lại để sử dụng.
+                  Cloud và thiết bị khác không bị xóa.
+                </span>
+              </div>
+
+              <div class="sync-v237-row-actions">
+                <button
+                  class="danger sm"
+                  onclick="disconnectThisDeviceV257()"
+                >Ngắt kết nối & xóa thiết bị</button>
+              </div>
+            </div>
           </div>
 
           <div class="sync-v237-group">
@@ -53978,6 +55213,11 @@ function renderSettings(){
   },120);
 
   setTimeout(v221UpdateSettingsHealth,0);
+
+  setTimeout(
+    ()=>renderCloudUsageV256(false),
+    0
+  );
 }
 
 async function migrateV2ToCloud(){let old;try{old=JSON.parse(localStorage.getItem(V2_KEY)||'null')}catch(e){}if(!old)return alert('Không tìm thấy dữ liệu V2 trên thiết bị này.');if(!confirm('Import dữ liệu V2 hiện tại lên Supabase? Nên dùng khi Cloud đang trống.'))return;try{
@@ -54650,6 +55890,12 @@ v226InstallNotifications();
 v210InitLeaderElection();
 
 async function init(){
+  if(v257IsDisconnected()){
+    v257EmptyRuntimeData();
+    v257ShowDisconnectedGate();
+    return;
+  }
+
   normalizeAllTableHeaders(document);
   installPageStickyTableDock();
   installTableEnhancementObserver();

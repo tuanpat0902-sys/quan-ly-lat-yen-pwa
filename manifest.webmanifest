@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V255",
+  "name": "Quản Lý Lát Yên V257",
   "short_name": "Lát Yên",
-  "description": "Warehouse self-heal: missing local warehouse master rows are upserted and read-back verified independently, Cloud proof is refreshed, and a single missing warehouse no longer forces a full reset failure.",
+  "description": "Secure device disconnect: wipes all local data and credentials on the current device, leaves Cloud untouched, locks the app, and requires pairing before data can be used again.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,0 +1,40 @@
+V256 - SYNC LAB + CLOUD USAGE
+
+1. TỐI ƯU ĐỒNG BỘ
+- Exact Cloud snapshot cache tăng từ 30s lên 60s.
+- Các tác vụ chạy sát nhau dùng chung snapshot.
+- Có in-flight de-duplication: nếu một tác vụ đang fetch 10 bảng, tác vụ sau chờ cùng Promise thay vì fetch lại.
+- Giảm tải Supabase và giảm render/sync dư.
+
+2. MÔ PHỎNG LOCAL → CLOUD
+- Fetch dữ liệu Cloud thật.
+- Đối chiếu key coverage từng bảng.
+- Báo matched / total / %.
+- KHÔNG insert/update/delete.
+
+3. MÔ PHỎNG THIẾT BỊ A → CANONICAL → THIẾT BỊ B
+- Đọc Canonical hiện tại.
+- Tạo Device B giả trong RAM.
+- mergeConcurrentStates() trong bộ nhớ.
+- Báo revision, số entry, conflict, B có cần nhận thay đổi không.
+- KHÔNG commit Canonical.
+- KHÔNG apply dữ liệu vào app.
+
+4. DUNG LƯỢNG CLOUD
+- Đo kích thước JSON của 10 bảng nghiệp vụ app.
+- Nhân hệ số 1.35 để ước tính row/index overhead.
+- Hiển thị MB, record, %.
+- Quota theo dõi mặc định 500 MB và người dùng có thể sửa.
+- Đây là ƯỚC TÍNH phía client.
+- anon/publishable key không có quyền đọc physical database size / project quota từ Supabase Dashboard.
+- Nếu sau này có Management API/admin endpoint, có thể thay bằng số chính xác.
+
+5. GIỮ NGUYÊN
+V255 warehouse self-heal
+V254 absolute blank warehouse
+V253 pending convergence
+V252 exact ACK
+V251 recipe reconciliation
+V250 canonical fallback
+
+Không cần SQL mới.

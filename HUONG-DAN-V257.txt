@@ -1,0 +1,46 @@
+V257 - DEVICE DISCONNECT
+
+Tính năng mới:
+Cài đặt -> Thiết bị & sao lưu -> Ngắt kết nối thiết bị.
+
+Khi xác nhận 2 lần:
+1. Dừng Auto Sync.
+2. Dừng scanner và flush cache.
+3. Xóa dữ liệu runtime khỏi RAM.
+4. localStorage.clear().
+5. sessionStorage.clear().
+6. Xóa IndexedDB nếu trình duyệt cho phép.
+7. Ghi lại duy nhất cờ DISCONNECTED.
+8. Reload để đóng realtime/WebSocket/network state.
+
+KHÔNG XÓA:
+- dữ liệu Supabase Cloud
+- dữ liệu trên thiết bị khác
+- mã nguồn/PWA của phần mềm
+
+Sau reload:
+- app KHÔNG load cache
+- app KHÔNG load Cloud
+- app KHÔNG setup realtime
+- Auto Sync KHÔNG chạy
+- chỉ hiện màn hình "Thiết bị đã ngắt kết nối"
+
+Muốn dùng lại:
+- Quét QR từ thiết bị đang hoạt động; hoặc
+- Dán QR pairing text; hoặc
+- Nhập code + passphrase thủ công.
+
+AN TOÀN KHI GHÉP LẠI:
+Thiết bị vừa wipe là local rỗng.
+V257 bắt buộc LOAD CLOUD TRƯỚC.
+Chỉ sau khi business Cloud đã về local mới merge Canonical.
+Do đó thiết bị rỗng không thể upload dữ liệu trắng đè lên Cloud.
+
+Nếu pairing/load Cloud thất bại:
+- xóa credentials vừa nhập
+- giữ trạng thái DISCONNECTED
+- app vẫn bị khóa
+- không có background sync.
+
+Giữ toàn bộ V256/V255/V254/V253/V252/V251/V250.
+Không cần SQL mới.
