@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V194",
+  "name": "Quản Lý Lát Yên V196",
   "short_name": "Lát Yên",
-  "description": "Sync diagnostics with live DB/RPC/Storage/pending verification.",
+  "description": "Fixed RPC diagnostics, unique pending counts, and legacy pending blocker analysis.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

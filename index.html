@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V194 SYNC DIAGNOSTICS ===== */
+/* ===== V196 DIAGNOSTICS FIX ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9501,6 +9501,231 @@ button{
   }
 }
 
+
+/* ===== V195 PENDING INSPECTOR ===== */
+.sync-v195-pending-card{
+  margin-top:11px;
+  padding:10px;
+  border:1px solid #dbe5ea;
+  border-radius:10px;
+  background:#fff;
+}
+
+.sync-v195-pending-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.sync-v195-pending-head b{
+  display:block;
+  font-size:10px;
+}
+
+.sync-v195-pending-head span{
+  display:block;
+  margin-top:2px;
+  color:#64748b;
+  font-size:8.8px;
+}
+
+.sync-v195-actions{
+  display:flex;
+  gap:5px;
+  flex:0 0 auto;
+}
+
+.sync-v195-summary{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-top:8px;
+  padding:7px 8px;
+  border-radius:7px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+}
+
+.sync-v195-summary>div:first-child{
+  display:flex;
+  align-items:baseline;
+  gap:4px;
+}
+
+.sync-v195-summary strong{
+  font-size:15px;
+  color:#c2410c;
+}
+
+.sync-v195-summary span{
+  font-size:8.7px;
+  color:#64748b;
+}
+
+.sync-v195-group-pills{
+  display:flex;
+  gap:4px;
+  flex-wrap:wrap;
+}
+
+.sync-v195-group-pills span{
+  padding:3px 5px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  color:#334155;
+}
+
+.sync-v195-group-pills b{
+  display:inline;
+  margin-left:3px;
+  color:#c2410c;
+}
+
+.sync-v195-zero{
+  margin-top:8px;
+  padding:7px 8px;
+  border-radius:7px;
+  background:#f0fdf4;
+  border:1px solid #bbf7d0;
+  color:#15803d;
+  font-size:9px;
+  font-weight:700;
+}
+
+.sync-v195-pending-details{
+  margin-top:8px;
+}
+
+.sync-v195-pending-details>summary{
+  cursor:pointer;
+  font-size:9px;
+  color:#334155;
+}
+
+.sync-v195-list{
+  margin-top:7px;
+  max-height:360px;
+  overflow:auto;
+  border:1px solid #e2e8f0;
+  border-radius:7px;
+}
+
+.sync-v195-row{
+  display:grid;
+  grid-template-columns:28px minmax(0,1fr);
+  gap:7px;
+  padding:7px 8px;
+  border-bottom:1px solid #edf2f7;
+}
+
+.sync-v195-row:last-child{
+  border-bottom:0;
+}
+
+.sync-v195-stt{
+  color:#94a3b8;
+  font-size:8.5px;
+  text-align:center;
+  padding-top:2px;
+}
+
+.sync-v195-title{
+  display:flex;
+  gap:5px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+.sync-v195-title b{
+  font-size:9px;
+}
+
+.sync-v195-title span{
+  padding:2px 4px;
+  border-radius:4px;
+  background:#f1f5f9;
+  color:#475569;
+  font-size:8px;
+}
+
+.sync-v195-name{
+  margin-top:2px;
+  font-size:9px;
+  color:#0f172a;
+}
+
+.sync-v195-meta{
+  margin-top:2px;
+  color:#94a3b8;
+  font-size:7.8px;
+  word-break:break-all;
+}
+
+.sync-v195-error{
+  margin-top:3px;
+  color:#b91c1c;
+  font-size:8px;
+  line-height:1.35;
+}
+
+.sync-v195-noerror{
+  margin-top:3px;
+  color:#a16207;
+  font-size:8px;
+}
+
+.sync-v195-limit{
+  margin-top:5px;
+  color:#64748b;
+  font-size:8px;
+}
+
+@media(max-width:700px){
+  .sync-v195-pending-head{
+    flex-direction:column;
+  }
+
+  .sync-v195-actions{
+    width:100%;
+  }
+
+  .sync-v195-actions button{
+    flex:1;
+  }
+}
+
+
+/* ===== V196 BLOCKER ANALYSIS ===== */
+.sync-v196-warning{
+  margin-top:7px;
+  padding:7px 8px;
+  border:1px solid #fecaca;
+  border-radius:7px;
+  background:#fef2f2;
+  color:#991b1b;
+  font-size:8.5px;
+  line-height:1.45;
+}
+
+.sync-v196-warning>b{
+  display:block;
+  margin-bottom:3px;
+  font-size:9px;
+}
+
+.sync-v196-ok{
+  margin-top:7px;
+  padding:6px 8px;
+  border:1px solid #bbf7d0;
+  border-radius:7px;
+  background:#f0fdf4;
+  color:#15803d;
+  font-size:8.5px;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -11658,51 +11883,95 @@ function syncDiagPendingBreakdown(){
     sales:0,
     inventory:0,
     movements:0,
-    sale_items:0
+    sale_items:0,
+    other_movements:0,
+    unique_total:0
+  };
+
+  const unique=new Set();
+
+  const mark=(type,id)=>{
+    unique.add(`${type}:${String(id||'')}`);
   };
 
   for(const x of db.ingredients||[]){
-    if(x?._sync_status==='pending')out.ingredients++;
+    if(x?._sync_status!=='pending')continue;
+    out.ingredients++;
+    mark('ingredient',x.id);
   }
 
   for(const x of db.products||[]){
-    if(x?._sync_status==='pending')out.products++;
+    if(x?._sync_status!=='pending')continue;
+    out.products++;
+    mark('product',x.id);
   }
 
   for(const x of db.recipeItems||[]){
-    if(x?._sync_status==='pending')out.recipes++;
+    if(x?._sync_status!=='pending')continue;
+    out.recipes++;
+    mark('recipe',x.id||`${x.product_id}:${x.ingredient_id}`);
   }
 
   for(const x of db.suppliers||[]){
-    if(x?._sync_status==='pending')out.suppliers++;
+    if(x?._sync_status!=='pending')continue;
+    out.suppliers++;
+    mark('supplier',x.id);
   }
 
   for(const x of db.inventory||[]){
-    if(x?._sync_status==='pending')out.inventory++;
+    if(x?._sync_status!=='pending')continue;
+    out.inventory++;
+    mark('inventory',x.id||`${x.warehouse_id}:${x.ingredient_id}`);
   }
 
   for(const x of db.saleItems||[]){
-    if(x?._sync_status==='pending')out.sale_items++;
+    if(x?._sync_status!=='pending')continue;
+    out.sale_items++;
+    mark('sale_item',x.id||`${x.sale_id}:${x.product_id}`);
   }
 
   for(const x of db.sales||[]){
-    if(x?._sync_status==='pending')out.sales++;
+    if(x?._sync_status!=='pending')continue;
+    out.sales++;
+    mark('sale',x.id);
   }
 
   for(const x of db.movements||[]){
     if(x?._sync_status!=='pending')continue;
 
     out.movements++;
+    mark('movement',x.id||`${x.reference_id}:${x.ingredient_id}:${x.created_at}`);
 
-    const type=
-      String(x.transaction_type||'')
-        .toUpperCase();
+    const type=String(x.transaction_type||'').toUpperCase();
 
     if(type==='IMPORT')out.imports++;
-    if(type==='EXPORT')out.exports++;
-    if(type==='ADJUSTMENT')out.stocktakes++;
+    else if(type==='EXPORT')out.exports++;
+    else if(type==='ADJUSTMENT')out.stocktakes++;
+    else out.other_movements++;
   }
 
+  // Queue is a separate pending object only when it has no matching entity row.
+  for(const op of getPendingSync()){
+    if(!op)continue;
+
+    if(op.kind==='save_ingredient'){
+      const exists=(db.ingredients||[]).some(x=>
+        String(x.id)===String(op.ingredient_id) &&
+        x._sync_status==='pending'
+      );
+      if(!exists)mark('queue_ingredient',op.ingredient_id);
+    }else if(op.kind==='save_recipe'){
+      const exists=(db.products||[]).some(x=>
+        String(x.id)===String(op.product_id) &&
+        x._sync_status==='pending'
+      );
+      if(!exists)mark('queue_recipe',op.product_id);
+    }else{
+      mark('queue',op.id||op.kind||JSON.stringify(op));
+    }
+  }
+
+  out.unique_total=unique.size;
   return out;
 }
 
@@ -11837,70 +12106,101 @@ async function runSyncDiagnostics(){
     );
   }
 
-  // 3. RPC existence via harmless validation calls.
+  // 3. RPC existence: probe with the EXACT parameter names.
+  // A business validation error proves the RPC exists.
   const rpcTests=[
-    [
-      'RPC Sales V190',
-      'commit_sale_receipt_v190',
-      null
-    ],
-    [
-      'RPC Import V191',
-      'commit_import_receipt_v191',
-      null
-    ],
-    [
-      'RPC Export V192',
-      'commit_export_receipt_v192',
-      null
-    ],
-    [
-      'RPC Stocktake V192',
-      'commit_stocktake_receipt_v192',
-      null
-    ],
-    [
-      'RPC Canonical CAS',
-      'commit_app_sync_state',
-      null
-    ]
+    {
+      label:'RPC Sales V190',
+      rpc:'commit_sale_receipt_v190',
+      args:{
+        p_sale:{},
+        p_sale_items:[],
+        p_stock_movements:[],
+        p_idempotency_key:'diag-sale'
+      }
+    },
+    {
+      label:'RPC Import V191',
+      rpc:'commit_import_receipt_v191',
+      args:{
+        p_reference_id:null,
+        p_warehouse_id:null,
+        p_movements:[],
+        p_idempotency_key:'diag-import'
+      }
+    },
+    {
+      label:'RPC Export V192',
+      rpc:'commit_export_receipt_v192',
+      args:{
+        p_reference_id:null,
+        p_old_reference_id:null,
+        p_warehouse_id:null,
+        p_movements:[],
+        p_idempotency_key:'diag-export'
+      }
+    },
+    {
+      label:'RPC Stocktake V192',
+      rpc:'commit_stocktake_receipt_v192',
+      args:{
+        p_reference_id:null,
+        p_old_reference_id:null,
+        p_warehouse_id:null,
+        p_lines:[],
+        p_idempotency_key:'diag-stocktake'
+      }
+    }
   ];
 
-  for(const [label,rpc] of rpcTests){
+  for(const test of rpcTests){
     try{
-      // Probe function metadata through pg_proc is not exposed directly;
-      // PostgREST returns PGRST202 when RPC is missing. Invalid args yield another error,
-      // which still proves the function endpoint exists.
-      const r=
-        await sb.rpc(
-          rpc,
-          {}
-        );
+      const r=await sb.rpc(test.rpc,test.args);
 
-      if(
-        r.error &&
-        String(r.error.code||'')==='PGRST202'
-      ){
-        throw new Error(
-          'RPC chưa được cài đặt'
+      const code=String(r.error?.code||'');
+      const message=String(r.error?.message||'');
+
+      // Exact-signature PGRST202 is the only strong "missing RPC" signal here.
+      if(code==='PGRST202'){
+        add(test.label,false,'RPC chưa được cài hoặc schema cache chưa nhận chữ ký hàm');
+      }else{
+        add(
+          test.label,
+          true,
+          r.error
+            ?`RPC tồn tại • probe validation: ${message.slice(0,140)}`
+            :'RPC phản hồi thành công'
         );
       }
-
-      add(
-        label,
-        true,
-        r.error
-          ?'RPC tồn tại (probe nhận lỗi tham số như dự kiến)'
-          :'RPC endpoint phản hồi'
-      );
-
     }catch(e){
-      add(
-        label,
-        false,
-        e?.message||String(e)
-      );
+      add(test.label,false,e?.message||String(e));
     }
+  }
+
+  // Canonical RPC is better tested by the real CAS helper, not a dummy call.
+  try{
+    const cred=autoSyncCredentials();
+
+    if(!cred.code||!cred.passphrase){
+      throw new Error('Chưa có thông tin ghép thiết bị');
+    }
+
+    const canonicalProbe=await v189FetchCanonical(
+      cred.code,
+      cred.passphrase
+    );
+
+    add(
+      'RPC Canonical CAS',
+      true,
+      `Canonical API hoạt động • Revision ${Number(canonicalProbe.revision||0)}`
+    );
+  }catch(e){
+    add(
+      'RPC Canonical CAS',
+      false,
+      e?.message||String(e)
+    );
   }
 
   // 4. Storage permission: create/read/delete tiny diagnostic object.
@@ -12094,12 +12394,8 @@ async function runSyncDiagnostics(){
     syncDiagPendingBreakdown();
 
   const totalPending=
-    Object.values(
-      pendingAfter
-    ).reduce(
-      (sum,n)=>
-        sum+Number(n||0),
-      0
+    Number(
+      pendingAfter.unique_total||0
     );
 
   add(
@@ -12107,11 +12403,13 @@ async function runSyncDiagnostics(){
     totalPending===0,
     totalPending===0
       ?'Không còn record pending'
-      :`${totalPending} pending: `+
-        Object.entries(pendingAfter)
-          .filter(([,n])=>n)
-          .map(([k,n])=>`${k}:${n}`)
-          .join(', ')
+      :`${totalPending} record pending duy nhất • `+
+        `movement:${Number(pendingAfter.movements||0)} `+
+        `(import:${Number(pendingAfter.imports||0)}, `+
+        `export:${Number(pendingAfter.exports||0)}, `+
+        `stocktake:${Number(pendingAfter.stocktakes||0)}, `+
+        `other:${Number(pendingAfter.other_movements||0)}) • `+
+        `inventory:${Number(pendingAfter.inventory||0)}`
   );
 
   const passed=
@@ -12121,7 +12419,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:194,
+    version:196,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -12185,6 +12483,454 @@ function renderSyncDiagnostics(diag=loadSyncDiagnostics()){
           </div>
         </div>
       `).join('')}
+    </div>
+  `;
+}
+
+
+/* ===== V195 PENDING INSPECTOR ===== */
+function pendingInspectorRowsV195(){
+  const rows=[];
+
+  const ingById=
+    new Map(
+      (db.ingredients||[])
+        .map(x=>[String(x.id),x])
+    );
+
+  const productById=
+    new Map(
+      (db.products||[])
+        .map(x=>[String(x.id),x])
+    );
+
+  const add=(row)=>rows.push({
+    menu:row.menu||'Khác',
+    type:row.type||'record',
+    id:String(row.id||''),
+    reference:String(row.reference||''),
+    name:String(row.name||''),
+    error:String(row.error||''),
+    updated_at:String(row.updated_at||'')
+  });
+
+  for(const x of db.ingredients||[]){
+    if(x?._sync_status!=='pending')continue;
+    add({
+      menu:'Nguyên liệu/ Dụng cụ',
+      type:'Nguyên liệu',
+      id:x.id,
+      name:x.name,
+      error:x._sync_error,
+      updated_at:x.updated_at
+    });
+  }
+
+  for(const x of db.suppliers||[]){
+    if(x?._sync_status!=='pending')continue;
+    add({
+      menu:'Nhập/Xuất kho',
+      type:'Nhà cung cấp',
+      id:x.id,
+      name:x.name,
+      error:x._sync_error,
+      updated_at:x.updated_at||x.created_at
+    });
+  }
+
+  for(const x of db.products||[]){
+    if(x?._sync_status!=='pending')continue;
+    add({
+      menu:'Thực đơn',
+      type:'Sản phẩm/Công thức',
+      id:x.id,
+      name:x.name,
+      error:x._sync_error,
+      updated_at:x.updated_at
+    });
+  }
+
+  for(const x of db.recipeItems||[]){
+    if(x?._sync_status!=='pending')continue;
+    add({
+      menu:'Thực đơn',
+      type:'Thành phần công thức',
+      id:x.id,
+      reference:x.product_id,
+      name:
+        productById.get(String(x.product_id))?.name||
+        '',
+      error:x._sync_error,
+      updated_at:x.updated_at||x.created_at
+    });
+  }
+
+  for(const x of db.inventory||[]){
+    if(x?._sync_status!=='pending')continue;
+    add({
+      menu:'Kho/Tồn kho',
+      type:'Tồn kho',
+      id:x.id||
+        `${x.warehouse_id}:${x.ingredient_id}`,
+      reference:x.warehouse_id,
+      name:
+        ingById.get(String(x.ingredient_id))?.name||
+        x.ingredient_id,
+      error:x._sync_error,
+      updated_at:x.updated_at
+    });
+  }
+
+  for(const x of db.movements||[]){
+    if(x?._sync_status!=='pending')continue;
+
+    const tx=
+      String(x.transaction_type||'')
+        .toUpperCase();
+
+    let menu='Xuất/Nhập kho';
+    let type=tx||'Biến động kho';
+
+    if(tx==='IMPORT'){
+      menu='Nhập kho';
+      type='Movement nhập';
+    }else if(tx==='EXPORT'){
+      menu='Xuất kho';
+      type='Movement xuất';
+    }else if(tx==='ADJUSTMENT'){
+      menu='Kiểm kê';
+      type='Movement kiểm kê';
+    }else if(tx==='SALE'){
+      menu='Bán hàng';
+      type='Movement bán';
+    }
+
+    add({
+      menu,
+      type,
+      id:x.id,
+      reference:x.reference_id,
+      name:
+        ingById.get(String(x.ingredient_id))?.name||
+        x.ingredient_id,
+      error:x._sync_error,
+      updated_at:x.updated_at||x.created_at
+    });
+  }
+
+  for(const x of db.sales||[]){
+    if(x?._sync_status!=='pending')continue;
+    add({
+      menu:'Bán hàng',
+      type:'Phiếu bán',
+      id:x.id,
+      reference:x.id,
+      name:
+        typeof saleReceiptNumber==='function'
+          ?saleReceiptNumber(x)
+          :'',
+      error:x._sync_error,
+      updated_at:x.updated_at||x.sold_at||x.created_at
+    });
+  }
+
+  for(const x of db.saleItems||[]){
+    if(x?._sync_status!=='pending')continue;
+    add({
+      menu:'Bán hàng',
+      type:'Chi tiết món bán',
+      id:x.id,
+      reference:x.sale_id,
+      name:
+        productById.get(String(x.product_id))?.name||
+        x.product_id,
+      error:x._sync_error,
+      updated_at:x.updated_at||x.created_at
+    });
+  }
+
+  // Queue riêng của ingredient/recipe.
+  for(const op of getPendingSync()){
+    if(!op)continue;
+
+    if(op.kind==='save_ingredient'){
+      const ing=
+        ingById.get(
+          String(op.ingredient_id)
+        );
+
+      add({
+        menu:'Nguyên liệu/ Dụng cụ',
+        type:'Queue nguyên liệu',
+        id:
+          op.ingredient_id,
+        name:
+          ing?.name||
+          op.payload?.name||
+          '',
+        error:
+          op.last_error||
+          '',
+        updated_at:
+          op.updated_at||
+          ''
+      });
+
+    }else if(op.kind==='save_recipe'){
+      const product=
+        productById.get(
+          String(op.product_id)
+        );
+
+      add({
+        menu:'Thực đơn',
+        type:'Queue công thức',
+        id:
+          op.product_id,
+        name:
+          product?.name||
+          op.payload?.name||
+          '',
+        error:
+          op.last_error||
+          '',
+        updated_at:
+          op.updated_at||
+          ''
+      });
+
+    }else{
+      add({
+        menu:'Hệ thống',
+        type:
+          op.kind||
+          'Queue',
+        id:
+          op.id||
+          op.ingredient_id||
+          op.product_id||
+          '',
+        error:
+          op.last_error||
+          '',
+        updated_at:
+          op.updated_at||
+          ''
+      });
+    }
+  }
+
+  return rows;
+}
+
+function pendingInspectorGroupsV195(rows=pendingInspectorRowsV195()){
+  const map=new Map();
+
+  for(const row of rows){
+    const key=row.menu||'Khác';
+
+    if(!map.has(key)){
+      map.set(key,[]);
+    }
+
+    map.get(key).push(row);
+  }
+
+  return [...map.entries()]
+    .sort(
+      (a,b)=>
+        b[1].length-
+        a[1].length
+    );
+}
+
+function renderPendingInspector(){
+  const summary=
+    $('pendingInspectorSummary');
+
+  const list=
+    $('pendingInspectorList');
+
+  if(!summary||!list){
+    return;
+  }
+
+  const rows=
+    pendingInspectorRowsV195();
+
+  const groups=
+    pendingInspectorGroupsV195(rows);
+
+  if(!rows.length){
+    summary.innerHTML=
+      '<div class="sync-v195-zero">✓ Không còn record pending.</div>';
+
+    list.innerHTML=
+      '<div class="muted">Cloud queue đang sạch.</div>';
+
+    return;
+  }
+
+  summary.innerHTML=`
+    <div class="sync-v195-summary">
+      <div>
+        <strong>${rows.length}</strong>
+        <span>record pending</span>
+      </div>
+
+      <div class="sync-v195-group-pills">
+        ${groups.map(([menu,items])=>`
+          <span>
+            ${esc(menu)}
+            <b>${items.length}</b>
+          </span>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  list.innerHTML=`
+    <div class="sync-v195-list">
+      ${rows.slice(0,200).map((row,index)=>`
+        <div class="sync-v195-row">
+          <div class="sync-v195-stt">
+            ${index+1}
+          </div>
+
+          <div class="sync-v195-main">
+            <div class="sync-v195-title">
+              <b>${esc(row.menu)}</b>
+              <span>${esc(row.type)}</span>
+            </div>
+
+            <div class="sync-v195-name">
+              ${esc(row.name||row.reference||row.id||'Không có tên')}
+            </div>
+
+            <div class="sync-v195-meta">
+              ${row.reference
+                ?`Ref: ${esc(row.reference)}`
+                :''}
+              ${row.id
+                ?`${row.reference?' • ':''}ID: ${esc(row.id)}`
+                :''}
+            </div>
+
+            ${
+              row.error
+                ?`<div class="sync-v195-error">Lỗi: ${esc(row.error)}</div>`
+                :'<div class="sync-v195-noerror">Chưa có thông báo lỗi cụ thể.</div>'
+            }
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    ${
+      rows.length>200
+        ?`<div class="sync-v195-limit">
+            Đang hiển thị 200/${rows.length} record. Hãy đồng bộ lại để giảm queue.
+          </div>`
+        :''
+    }
+  `;
+}
+
+async function retryAllPendingV195(){
+  const btn=
+    event?.currentTarget;
+
+  if(btn){
+    btn.disabled=true;
+    btn.textContent='Đang thử lại…';
+  }
+
+  try{
+    await syncNow();
+
+  }finally{
+    renderPendingInspector();
+
+    if(btn){
+      btn.disabled=false;
+      btn.textContent='Thử đồng bộ lại';
+    }
+  }
+}
+
+
+/* ===== V196 PENDING BLOCKER ANALYSIS ===== */
+function pendingBlockersV196(){
+  const blockers=[];
+
+  const add=(kind,row,reason)=>blockers.push({
+    kind,
+    id:String(row?.id||''),
+    reference:String(row?.reference_id||''),
+    ingredient_id:String(row?.ingredient_id||''),
+    reason:String(reason||'')
+  });
+
+  for(const row of db.movements||[]){
+    if(row?._sync_status!=='pending')continue;
+
+    const type=String(row.transaction_type||'').toUpperCase();
+
+    if(type==='ADJUSTMENT'){
+      if(!isUuidValue(row.reference_id)){
+        add('Kiểm kê',row,'reference_id không phải UUID nên V192 không thể retry');
+        continue;
+      }
+
+      if(!isUuidValue(row.ingredient_id)){
+        add('Kiểm kê',row,'ingredient_id không phải UUID/đang là dữ liệu local');
+        continue;
+      }
+
+      if(v192StocktakeActualFromNote(row.note)===null){
+        add('Kiểm kê',row,'ghi chú cũ không có trường "Thực tế", không dựng lại được phiếu atomic');
+        continue;
+      }
+    }
+
+    if(type==='IMPORT' || type==='EXPORT'){
+      if(!isUuidValue(row.reference_id)){
+        add(type==='IMPORT'?'Nhập kho':'Xuất kho',row,'reference_id không phải UUID');
+      }else if(!isUuidValue(row.ingredient_id)){
+        add(type==='IMPORT'?'Nhập kho':'Xuất kho',row,'ingredient_id không phải UUID/local-only');
+      }
+    }
+  }
+
+  return blockers;
+}
+
+function renderPendingBlockersV196(){
+  const el=$('pendingBlockerAnalysis');
+  if(!el)return;
+
+  const blockers=pendingBlockersV196();
+
+  if(!blockers.length){
+    el.innerHTML=
+      '<div class="sync-v196-ok">✓ Không phát hiện pending bị chặn bởi dữ liệu legacy.</div>';
+    return;
+  }
+
+  const counts={};
+  for(const b of blockers){
+    const key=`${b.kind} • ${b.reason}`;
+    counts[key]=(counts[key]||0)+1;
+  }
+
+  el.innerHTML=`
+    <div class="sync-v196-warning">
+      <b>${blockers.length} record không thể tự retry theo cơ chế hiện tại</b>
+      <div>
+        ${Object.entries(counts).map(([reason,n])=>
+          `<div>• ${esc(reason)}: <b>${n}</b></div>`
+        ).join('')}
+      </div>
     </div>
   `;
 }
@@ -29628,7 +30374,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V194',
+    app_version:'V196',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -29937,7 +30683,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:194,
+    version:196,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -30119,13 +30865,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:194,
+    version:196,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V194',storage:'supabase-storage',
+      schema:185,app_version:'V196',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -31338,7 +32084,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:194,
+    version:196,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -32104,7 +32850,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V194',
+      app_version:'V196',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -32119,7 +32865,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:194,
+      version:196,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -32396,7 +33142,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v194-full-backup-'+
+    'lat-yen-v196-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -32621,6 +33367,40 @@ function renderSettings(){
           :''
       }
 
+
+
+      <div class="sync-v195-pending-card">
+        <div class="sync-v195-pending-head">
+          <div>
+            <b>Dữ liệu đang chờ Cloud</b>
+            <span>
+              Xem chính xác record nào đang pending và lỗi gần nhất.
+            </span>
+          </div>
+
+          <div class="sync-v195-actions">
+            <button
+              class="secondary sm"
+              onclick="renderPendingInspector()"
+            >Làm mới</button>
+
+            <button
+              class="sm"
+              onclick="retryAllPendingV195()"
+            >Thử đồng bộ lại</button>
+          </div>
+        </div>
+
+        <div id="pendingInspectorSummary"></div>
+        <div id="pendingBlockerAnalysis"></div>
+
+        <details class="sync-v195-pending-details" open>
+          <summary>
+            Xem chi tiết các mục đang chờ
+          </summary>
+          <div id="pendingInspectorList"></div>
+        </details>
+      </div>
 
       <div class="sync-v194-diagnostics">
         <div class="sync-v194-diag-head">
@@ -32873,6 +33653,8 @@ function renderSettings(){
   setTimeout(()=>{
     renderSyncProgressLive();
     renderSyncDiagnostics();
+    renderPendingInspector();
+    renderPendingBlockersV196();
 
     if(auto.code||cfg.code){
       refreshMultiDeviceStatus();
