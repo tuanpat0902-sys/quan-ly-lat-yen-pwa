@@ -1,0 +1,26 @@
+V246 - SCHEMA-COMPATIBLE PROBE
+
+Lỗi V245:
+Probe INSERT recipe_items quantity=0 vi phạm:
+recipe_items_quantity_check
+
+Đây là lỗi PROBE, không phải dữ liệu người dùng.
+Cloud thật chưa bị xóa.
+
+V246 sửa probe bằng giá trị hợp lệ:
+- recipe_items.quantity = 1
+- prepared_ingredient_items.quantity = 1
+- sale_items.quantity = 1
+- sale_items.unit_price = 1
+- sales.total_amount = 1
+- stock_transactions.quantity = 1
+- stock_transactions.transaction_type = ADJUSTMENT
+- stock_transactions.reference_id = null
+- inventory.quantity = 1
+- products.selling_price = 1
+- ingredients.cost = 1
+
+V246 còn xác minh sau DELETE trên toàn bộ probe tables, không chỉ warehouses.
+
+Giữ nguyên V245 Collision-Safe Normalizer và toàn bộ V244 safety audit.
+Không cần SQL mới.

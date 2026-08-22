@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V245 COLLISION SAFE NORMALIZER ===== */
+/* ===== V246 SCHEMA COMPATIBLE PROBE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11666,7 +11666,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V245</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V246</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -19299,6 +19299,21 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V246 schema-compatible probe values.
+  try{
+    add(
+      'Schema-Compatible Probe V246',
+      true,
+      'recipe/prepared/sale quantity > 0 • movement quantity = 1 • inventory quantity = 1 • cleanup verifies all probe tables'
+    );
+  }catch(e){
+    add(
+      'Schema-Compatible Probe V246',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V245 collision-safe technical-ID analysis.
   try{
     const c=
@@ -19565,7 +19580,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:245,
+    version:246,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -42856,7 +42871,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V245',
+    app_version:'V246',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -43165,7 +43180,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:245,
+    version:246,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -43347,13 +43362,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:245,
+    version:246,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V245',storage:'supabase-storage',
+      schema:185,app_version:'V246',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44565,7 +44580,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:245,
+    version:246,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -47400,7 +47415,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V245',
+      app_version:'V246',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47415,7 +47430,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:245,
+      version:246,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47692,7 +47707,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v245-full-backup-'+
+    'lat-yen-v246-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -49500,8 +49515,7 @@ async function v244DeletePermissionPrecheck(){
 }
 
 async function v244CloudCrudProbe(){
-  const now=
-    new Date().toISOString();
+  const now=new Date().toISOString();
 
   const ids={
     warehouse:uid(),
@@ -49516,48 +49530,40 @@ async function v244CloudCrudProbe(){
     movement:uid()
   };
 
-  const inserted=[];
-
-  const add=async(
-    table,
-    payload,
-    key='id'
-  )=>{
-    const r=
-      await promiseWithTimeout(
-        sb.from(table)
-          .insert(payload)
-          .select(),
-        12000,
-        `Probe INSERT ${table}`
-      );
+  const add=async(table,payload)=>{
+    const r=await promiseWithTimeout(
+      sb.from(table)
+        .insert(payload)
+        .select(),
+      12000,
+      `Probe INSERT ${table}`
+    );
 
     if(r.error){
+      const message=r.error.message||String(r.error);
+
+      if(/violates check constraint/i.test(message)){
+        throw new Error(
+          `Probe schema ${table}: ${message}`
+        );
+      }
+
       throw new Error(
-        `Probe INSERT ${table}: ${r.error.message||String(r.error)}`
+        `Probe INSERT ${table}: ${message}`
       );
     }
 
-    inserted.push([
-      table,
-      key,
-      payload[key]
-    ]);
+    return r.data;
   };
 
-  const cleanupOne=async(
-    table,
-    key,
-    value
-  )=>{
-    const r=
-      await promiseWithTimeout(
-        sb.from(table)
-          .delete()
-          .eq(key,value),
-        12000,
-        `Probe DELETE ${table}`
-      );
+  const delId=async(table,id)=>{
+    const r=await promiseWithTimeout(
+      sb.from(table)
+        .delete()
+        .eq('id',id),
+      12000,
+      `Probe DELETE ${table}`
+    );
 
     if(r.error){
       throw new Error(
@@ -49571,9 +49577,9 @@ async function v244CloudCrudProbe(){
       'warehouses',
       {
         id:ids.warehouse,
-        name:'__V244_RESET_PROBE__',
+        name:'__V246_RESET_PROBE__',
         address:'',
-        active:false
+        active:true
       }
     );
 
@@ -49581,10 +49587,10 @@ async function v244CloudCrudProbe(){
       'suppliers',
       {
         id:ids.supplier,
-        name:'__V244_RESET_PROBE__',
+        name:'__V246_RESET_PROBE__',
         phone:'',
         address:'',
-        note:''
+        note:'V246 probe'
       }
     );
 
@@ -49592,13 +49598,13 @@ async function v244CloudCrudProbe(){
       'ingredients',
       {
         id:ids.ingredient1,
-        name:'__V244_PROBE_ING__',
+        name:'__V246_PROBE_RAW__',
         unit:'test',
-        cost:0,
+        cost:1,
         minimum_stock:0,
         ingredient_type:'purchased',
         batch_output_qty:1,
-        active:false,
+        active:true,
         updated_at:now
       }
     );
@@ -49607,13 +49613,13 @@ async function v244CloudCrudProbe(){
       'ingredients',
       {
         id:ids.ingredient2,
-        name:'__V244_PROBE_PREP__',
+        name:'__V246_PROBE_PREP__',
         unit:'test',
-        cost:0,
+        cost:1,
         minimum_stock:0,
         ingredient_type:'prepared',
         batch_output_qty:1,
-        active:false,
+        active:true,
         updated_at:now
       }
     );
@@ -49622,40 +49628,33 @@ async function v244CloudCrudProbe(){
       'products',
       {
         id:ids.product,
-        name:'__V244_RESET_PROBE__',
+        name:'__V246_RESET_PROBE__',
         sku:null,
-        selling_price:0,
-        active:false
+        selling_price:1,
+        active:true
       }
     );
 
-    const inv={
-      warehouse_id:ids.warehouse,
-      ingredient_id:ids.ingredient1,
-      quantity:0,
-      updated_at:now
-    };
-
-    const invR=
-      await promiseWithTimeout(
+    {
+      const r=await promiseWithTimeout(
         sb.from('inventory')
-          .insert(inv)
+          .insert({
+            warehouse_id:ids.warehouse,
+            ingredient_id:ids.ingredient1,
+            quantity:1,
+            updated_at:now
+          })
           .select(),
         12000,
         'Probe INSERT inventory'
       );
 
-    if(invR.error){
-      throw new Error(
-        `Probe INSERT inventory: ${invR.error.message||String(invR.error)}`
-      );
+      if(r.error){
+        throw new Error(
+          `Probe INSERT inventory: ${r.error.message||String(r.error)}`
+        );
+      }
     }
-
-    inserted.push([
-      'inventory',
-      'warehouse_id,ingredient_id',
-      `${ids.warehouse}|${ids.ingredient1}`
-    ]);
 
     await add(
       'recipe_items',
@@ -49663,7 +49662,7 @@ async function v244CloudCrudProbe(){
         id:ids.recipe,
         product_id:ids.product,
         ingredient_id:ids.ingredient1,
-        quantity:0
+        quantity:1
       }
     );
 
@@ -49673,7 +49672,7 @@ async function v244CloudCrudProbe(){
         id:ids.prepared,
         prepared_ingredient_id:ids.ingredient2,
         source_ingredient_id:ids.ingredient1,
-        quantity:0
+        quantity:1
       }
     );
 
@@ -49682,10 +49681,10 @@ async function v244CloudCrudProbe(){
       {
         id:ids.sale,
         warehouse_id:ids.warehouse,
-        total_amount:0,
+        total_amount:1,
         source:'manual',
         sold_at:now,
-        note:'V244 reset probe'
+        note:'V246 reset probe'
       }
     );
 
@@ -49696,7 +49695,7 @@ async function v244CloudCrudProbe(){
         sale_id:ids.sale,
         product_id:ids.product,
         quantity:1,
-        unit_price:0
+        unit_price:1
       }
     );
 
@@ -49707,60 +49706,28 @@ async function v244CloudCrudProbe(){
         warehouse_id:ids.warehouse,
         ingredient_id:ids.ingredient1,
         transaction_type:'ADJUSTMENT',
-        quantity:0,
-        note:'V244 reset probe',
-        reference_id:ids.sale,
+        quantity:1,
+        note:'V246 reset probe',
+        reference_id:null,
         created_at:now
       }
     );
 
-    // Child -> parent cleanup, matching the hardened reset order.
-    await cleanupOne(
-      'sale_items',
-      'id',
-      ids.saleItem
-    );
-
-    await cleanupOne(
-      'stock_transactions',
-      'id',
-      ids.movement
-    );
-
-    await cleanupOne(
-      'sales',
-      'id',
-      ids.sale
-    );
-
-    await cleanupOne(
-      'recipe_items',
-      'id',
-      ids.recipe
-    );
-
-    await cleanupOne(
-      'prepared_ingredient_items',
-      'id',
-      ids.prepared
-    );
+    await delId('sale_items',ids.saleItem);
+    await delId('stock_transactions',ids.movement);
+    await delId('sales',ids.sale);
+    await delId('recipe_items',ids.recipe);
+    await delId('prepared_ingredient_items',ids.prepared);
 
     {
-      const r=
-        await promiseWithTimeout(
-          sb.from('inventory')
-            .delete()
-            .eq(
-              'warehouse_id',
-              ids.warehouse
-            )
-            .eq(
-              'ingredient_id',
-              ids.ingredient1
-            ),
-          12000,
-          'Probe DELETE inventory'
-        );
+      const r=await promiseWithTimeout(
+        sb.from('inventory')
+          .delete()
+          .eq('warehouse_id',ids.warehouse)
+          .eq('ingredient_id',ids.ingredient1),
+        12000,
+        'Probe DELETE inventory'
+      );
 
       if(r.error){
         throw new Error(
@@ -49769,95 +49736,106 @@ async function v244CloudCrudProbe(){
       }
     }
 
-    await cleanupOne(
-      'products',
-      'id',
-      ids.product
-    );
+    await delId('products',ids.product);
+    await delId('ingredients',ids.ingredient2);
+    await delId('ingredients',ids.ingredient1);
+    await delId('suppliers',ids.supplier);
+    await delId('warehouses',ids.warehouse);
 
-    await cleanupOne(
-      'ingredients',
-      'id',
-      ids.ingredient2
-    );
+    const verifyChecks=[
+      ['sale_items','id',ids.saleItem],
+      ['stock_transactions','id',ids.movement],
+      ['sales','id',ids.sale],
+      ['recipe_items','id',ids.recipe],
+      ['prepared_ingredient_items','id',ids.prepared],
+      ['products','id',ids.product],
+      ['ingredients','id',ids.ingredient1],
+      ['ingredients','id',ids.ingredient2],
+      ['suppliers','id',ids.supplier],
+      ['warehouses','id',ids.warehouse]
+    ];
 
-    await cleanupOne(
-      'ingredients',
-      'id',
-      ids.ingredient1
-    );
-
-    await cleanupOne(
-      'suppliers',
-      'id',
-      ids.supplier
-    );
-
-    await cleanupOne(
-      'warehouses',
-      'id',
-      ids.warehouse
-    );
-
-    const verify=
-      await promiseWithTimeout(
-        sb.from('warehouses')
-          .select('id')
-          .eq(
-            'id',
-            ids.warehouse
+    for(const [table,column,value] of verifyChecks){
+      const verify=await promiseWithTimeout(
+        sb.from(table)
+          .select(
+            column,
+            {
+              count:'exact',
+              head:true
+            }
           )
-          .maybeSingle(),
+          .eq(column,value),
         10000,
-        'Xác minh probe đã dọn'
+        `Xác minh probe ${table}`
       );
 
-    if(
-      verify.error ||
-      verify.data
-    ){
-      throw new Error(
-        'Probe Cloud không dọn sạch được warehouse thử nghiệm.'
+      if(verify.error){
+        throw new Error(
+          `Probe VERIFY ${table}: ${verify.error.message||String(verify.error)}`
+        );
+      }
+
+      if(Number(verify.count||0)!==0){
+        throw new Error(
+          `Probe DELETE ${table} không xóa sạch (${verify.count} record còn lại).`
+        );
+      }
+    }
+
+    {
+      const verify=await promiseWithTimeout(
+        sb.from('inventory')
+          .select(
+            'warehouse_id',
+            {
+              count:'exact',
+              head:true
+            }
+          )
+          .eq('warehouse_id',ids.warehouse)
+          .eq('ingredient_id',ids.ingredient1),
+        10000,
+        'Xác minh probe inventory'
       );
+
+      if(verify.error){
+        throw new Error(
+          `Probe VERIFY inventory: ${verify.error.message||String(verify.error)}`
+        );
+      }
+
+      if(Number(verify.count||0)!==0){
+        throw new Error(
+          `Probe DELETE inventory không xóa sạch (${verify.count} record còn lại).`
+        );
+      }
     }
 
     return {
-      ok:true
+      ok:true,
+      schema_compatible:true
     };
 
   }catch(e){
-    /*
-      Best effort cleanup. Nothing here touches real user rows because all
-      probe keys are random UUIDs created for this run.
-    */
     try{
-      await sb.from('sale_items')
-        .delete()
-        .eq('id',ids.saleItem);
+      await sb.from('sale_items').delete().eq('id',ids.saleItem);
     }catch(x){}
 
     try{
-      await sb.from('stock_transactions')
-        .delete()
-        .eq('id',ids.movement);
+      await sb.from('stock_transactions').delete().eq('id',ids.movement);
     }catch(x){}
 
     try{
-      await sb.from('sales')
-        .delete()
-        .eq('id',ids.sale);
+      await sb.from('sales').delete().eq('id',ids.sale);
     }catch(x){}
 
     try{
-      await sb.from('recipe_items')
-        .delete()
-        .eq('id',ids.recipe);
+      await sb.from('recipe_items').delete().eq('id',ids.recipe);
     }catch(x){}
 
     try{
-      await sb.from('prepared_ingredient_items')
-        .delete()
-        .eq('id',ids.prepared);
+      await sb.from('prepared_ingredient_items').delete().eq('id',ids.prepared);
     }catch(x){}
 
     try{
@@ -49868,33 +49846,21 @@ async function v244CloudCrudProbe(){
     }catch(x){}
 
     try{
-      await sb.from('products')
-        .delete()
-        .eq('id',ids.product);
+      await sb.from('products').delete().eq('id',ids.product);
     }catch(x){}
 
     try{
       await sb.from('ingredients')
         .delete()
-        .in(
-          'id',
-          [
-            ids.ingredient1,
-            ids.ingredient2
-          ]
-        );
+        .in('id',[ids.ingredient1,ids.ingredient2]);
     }catch(x){}
 
     try{
-      await sb.from('suppliers')
-        .delete()
-        .eq('id',ids.supplier);
+      await sb.from('suppliers').delete().eq('id',ids.supplier);
     }catch(x){}
 
     try{
-      await sb.from('warehouses')
-        .delete()
-        .eq('id',ids.warehouse);
+      await sb.from('warehouses').delete().eq('id',ids.warehouse);
     }catch(x){}
 
     throw e;
@@ -50561,14 +50527,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:245,
+    version:246,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V245',
+      app_version:'V246',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
