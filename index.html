@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V237 SYNC UX SIMPLIFIED ===== */
+/* ===== V238 NAV TYPOGRAPHY ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10999,6 +10999,465 @@ select:not([multiple]){
   }
 }
 
+
+/* ===== V238 NAVIGATION + TYPOGRAPHY REFRESH ===== */
+
+:root{
+  --v238-font:
+    "Segoe UI Variable Text",
+    "Segoe UI Variable",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    Arial,
+    sans-serif;
+  --v238-sidebar-width:258px;
+  --v238-ink:#17212b;
+  --v238-muted:#667085;
+  --v238-line:#e2e8f0;
+  --v238-nav-bg:#f8fafb;
+  --v238-nav-hover:#f0f5f4;
+  --v238-nav-active:#eaf7f4;
+  --v238-accent:#087f73;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea{
+  font-family:var(--v238-font)!important;
+  font-feature-settings:"kern" 1,"liga" 1;
+  text-rendering:optimizeLegibility;
+}
+
+body{
+  font-size:13px!important;
+  line-height:1.48!important;
+  letter-spacing:0!important;
+  color:var(--v238-ink)!important;
+}
+
+button,
+input,
+select,
+textarea{
+  font-size:13px!important;
+  line-height:1.35!important;
+}
+
+label{
+  font-size:12.5px!important;
+  line-height:1.35!important;
+  color:#475467!important;
+  font-weight:550;
+}
+
+h1,h2,h3,h4{
+  font-family:var(--v238-font)!important;
+  color:#182230;
+  letter-spacing:-.012em;
+}
+
+h2,
+.v222-title{
+  font-size:17px!important;
+  line-height:1.28!important;
+  font-weight:750!important;
+}
+
+h3{
+  font-size:14px!important;
+  line-height:1.35!important;
+  font-weight:700!important;
+}
+
+.muted,
+small{
+  line-height:1.45;
+}
+
+table th,
+table td{
+  font-size:12.5px!important;
+  line-height:1.38!important;
+}
+
+table th{
+  font-weight:650!important;
+  letter-spacing:.002em;
+}
+
+input::placeholder,
+textarea::placeholder{
+  color:#98a2b3!important;
+  opacity:1;
+}
+
+/* Desktop sidebar */
+@media(min-width:761px){
+  header{
+    width:var(--v238-sidebar-width)!important;
+    background:var(--v238-nav-bg)!important;
+    border-right:1px solid #dfe6eb!important;
+    box-shadow:2px 0 10px rgba(15,23,42,.025);
+    scrollbar-width:thin;
+    scrollbar-color:#cbd5df transparent;
+  }
+
+  main{
+    margin-left:var(--v238-sidebar-width)!important;
+    width:calc(100% - var(--v238-sidebar-width))!important;
+    padding:20px 22px!important;
+  }
+
+  header .top{
+    padding:13px 13px 11px!important;
+    border-bottom:1px solid #e5ebef;
+    background:#fff;
+  }
+
+  .brand-wrap{
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+    width:100%!important;
+    margin:0 0 10px!important;
+    padding:0!important;
+    text-align:left!important;
+  }
+
+  .app-logo-slot{
+    width:48px!important;
+    height:48px!important;
+    min-width:48px!important;
+    min-height:48px!important;
+    flex:0 0 48px!important;
+    margin:0!important;
+    padding:0!important;
+  }
+
+  .app-logo-slot img{
+    width:48px!important;
+    height:48px!important;
+    max-width:48px!important;
+    max-height:48px!important;
+    object-fit:contain!important;
+    border-radius:10px!important;
+  }
+
+  .brand-wrap .brand{
+    min-width:0!important;
+    flex:1!important;
+    margin:0!important;
+    text-align:left!important;
+    font-size:14px!important;
+    line-height:1.25!important;
+    font-weight:760!important;
+  }
+
+  #appNameText{
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:100%;
+  }
+
+  .brand-wrap .brand>.badge,
+  .brand-wrap .brand small{
+    display:none!important;
+  }
+
+  .top-actions{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 34px!important;
+    gap:7px!important;
+    margin:0!important;
+  }
+
+  .top-actions #warehouseSelect{
+    min-height:34px!important;
+    padding:6px 9px!important;
+    font-size:12.5px!important;
+    background:#fff!important;
+  }
+
+  .top-actions #cloudStatus{
+    width:34px!important;
+    min-width:34px!important;
+    max-width:34px!important;
+    height:34px!important;
+    min-height:34px!important;
+    padding:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    overflow:hidden;
+    font-size:0!important;
+    border-radius:9px!important;
+  }
+
+  .top-actions #cloudStatus::before{
+    content:"☁";
+    font-size:15px!important;
+    line-height:1;
+  }
+
+  #nav{
+    display:flex!important;
+    flex-direction:column!important;
+    gap:3px!important;
+    padding:10px 9px 14px!important;
+    min-height:calc(100vh - 118px);
+  }
+
+  #nav .v238-nav-section-label{
+    padding:7px 9px 4px;
+    color:#98a2b3;
+    font-size:9.5px;
+    line-height:1.2;
+    font-weight:750;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    user-select:none;
+  }
+
+  #nav .v238-nav-section-label-bottom{
+    margin-top:3px;
+    padding-top:9px;
+    border-top:1px solid #e5eaee;
+  }
+
+  #nav .v238-nav-spacer{
+    flex:1;
+    min-height:8px;
+  }
+
+  #nav>button,
+  #nav .nav-group-toggle,
+  #nav .nav-submenu button{
+    min-height:40px!important;
+    padding:6px 9px!important;
+    gap:9px!important;
+    border:1px solid transparent!important;
+    border-radius:8px!important;
+    background:transparent!important;
+    color:#344054!important;
+    font-size:13px!important;
+    font-weight:560!important;
+    line-height:1.28!important;
+    box-shadow:none!important;
+    transition:background .1s ease,border-color .1s ease,color .1s ease!important;
+  }
+
+  #nav>button:hover,
+  #nav .nav-group-toggle:hover,
+  #nav .nav-submenu button:hover{
+    background:var(--v238-nav-hover)!important;
+    color:#1f3b38!important;
+  }
+
+  #nav button.active{
+    background:var(--v238-nav-active)!important;
+    border-color:#cfe9e4!important;
+    color:#075e56!important;
+    font-size:13.5px!important;
+    font-weight:720!important;
+    box-shadow:inset 3px 0 0 var(--v238-accent)!important;
+  }
+
+  #nav .nav-icon{
+    width:28px!important;
+    min-width:28px!important;
+    height:28px!important;
+    border-radius:8px!important;
+    border:1px solid #e1e7ec!important;
+    background:#fff!important;
+    color:#52616f!important;
+    box-shadow:none!important;
+  }
+
+  #nav .nav-icon svg{
+    width:15px!important;
+    height:15px!important;
+    stroke-width:1.8!important;
+  }
+
+  #nav button.active .nav-icon{
+    color:var(--v238-accent)!important;
+    border-color:#bfe3dc!important;
+    background:#f7fffd!important;
+  }
+
+  #nav .nav-group-toggle{
+    min-height:38px!important;
+    color:#475467!important;
+    font-weight:650!important;
+  }
+
+  #nav .nav-group-toggle.open{
+    background:#f2f6f6!important;
+    color:#344054!important;
+  }
+
+  #nav .nav-group-toggle .nav-label{
+    gap:9px!important;
+    overflow:hidden;
+  }
+
+  #nav .nav-group-toggle .nav-label>span:last-child,
+  #nav>button>span:last-child,
+  #nav .nav-submenu button>span:last-child{
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  #nav .nav-chevron{
+    color:#98a2b3;
+    font-size:12px!important;
+    transition:none!important;
+  }
+
+  #nav .nav-submenu{
+    margin:2px 0 4px 14px!important;
+    padding:2px 0 2px 10px!important;
+    gap:2px!important;
+    border-left:1px solid #dbe3e8!important;
+  }
+
+  #nav .nav-submenu button{
+    min-height:36px!important;
+    padding:4px 7px!important;
+    font-size:12.5px!important;
+  }
+
+  #nav .nav-submenu button.active{
+    font-size:13px!important;
+  }
+
+  #nav .nav-submenu .nav-icon{
+    width:24px!important;
+    min-width:24px!important;
+    height:24px!important;
+  }
+
+  #nav .nav-submenu .nav-icon svg{
+    width:13px!important;
+    height:13px!important;
+  }
+
+  #nav .v238-settings-nav{
+    margin-top:0!important;
+  }
+}
+
+/* General reading comfort without bloating the dense business UI */
+.card{
+  line-height:1.46!important;
+}
+
+.toolbar{
+  gap:7px!important;
+}
+
+.primary,
+.secondary,
+.danger{
+  font-weight:600!important;
+}
+
+.sm{
+  font-size:12px!important;
+}
+
+.badge{
+  font-size:10.5px!important;
+}
+
+/* Mobile/tablet: keep navigation stable and compact */
+@media(max-width:760px){
+  body{
+    font-size:13px!important;
+  }
+
+  header .top{
+    padding:10px 12px!important;
+  }
+
+  .brand-wrap{
+    display:flex!important;
+    align-items:center!important;
+    gap:9px!important;
+    width:100%!important;
+    margin:0!important;
+  }
+
+  .app-logo-slot{
+    width:42px!important;
+    height:42px!important;
+    min-width:42px!important;
+    min-height:42px!important;
+    flex:0 0 42px!important;
+    margin:0!important;
+  }
+
+  .app-logo-slot img{
+    width:42px!important;
+    height:42px!important;
+    max-width:42px!important;
+    max-height:42px!important;
+    border-radius:9px!important;
+  }
+
+  .brand-wrap .brand{
+    font-size:14px!important;
+    line-height:1.25!important;
+  }
+
+  .brand-wrap .brand>.badge,
+  .brand-wrap .brand small{
+    display:none!important;
+  }
+
+  #nav{
+    gap:5px!important;
+    padding:8px 10px 10px!important;
+  }
+
+  #nav .v238-nav-section-label,
+  #nav .v238-nav-spacer{
+    display:none!important;
+  }
+
+  #nav .nav-group{
+    display:contents;
+  }
+
+  #nav .nav-group-toggle{
+    display:none!important;
+  }
+
+  #nav .nav-submenu{
+    display:contents!important;
+  }
+
+  #nav button{
+    min-height:38px!important;
+    padding:6px 8px!important;
+    font-size:12.5px!important;
+    border-radius:8px!important;
+  }
+
+  #nav .nav-icon{
+    width:25px!important;
+    min-width:25px!important;
+    height:25px!important;
+    border-radius:7px!important;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -11032,7 +11491,7 @@ select:not([multiple]){
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V173 INGREDIENT CHANGE HISTORY</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V238</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -18760,7 +19219,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:237,
+    version:238,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -24174,61 +24633,210 @@ function menuIcon(name, sub=false){
   return icons[name]||`<span class="${cls}"></span>`;
 }
 
+
+/* ===== V238 SIDEBAR STATE ===== */
+function restoreNavGroupStateV238(){
+  const groups=[
+    'stockSubmenu',
+    'financeSubmenu',
+    'operationSubmenu'
+  ];
+
+  for(const id of groups){
+    let saved='';
+
+    try{
+      saved=
+        localStorage.getItem(
+          'lat_yen_nav_group_'+id
+        )||'';
+    }catch(e){}
+
+    if(!saved)continue;
+
+    const submenu=
+      document.getElementById(
+        id
+      );
+
+    if(!submenu)continue;
+
+    const open=
+      saved==='1';
+
+    submenu.classList.toggle(
+      'open',
+      open
+    );
+
+    const toggle=
+      submenu.previousElementSibling;
+
+    toggle?.classList.toggle(
+      'open',
+      open
+    );
+
+    const chev=
+      toggle?.querySelector(
+        '.nav-chevron'
+      );
+
+    if(chev){
+      chev.textContent=
+        open?'▾':'▸';
+    }
+  }
+}
+
 function navInit(){
   if(!E.nav)return;
+
   E.nav.innerHTML=`
-    <button onclick="showTab('finance',this)">
-      ${menuIcon('finance')}<span>Báo cáo tài chính</span>
+    <div class="v238-nav-section-label">Chính</div>
+
+    <button onclick="showTab('dashboard',this)" data-panel="dashboard">
+      ${menuIcon('dashboard')}<span>Tổng quan</span>
     </button>
 
-    <div class="nav-group">
-      <button type="button" class="nav-group-toggle open" onclick="toggleManageMenu(this)">
-        <span class="nav-label">${menuIcon('manage')}<span>Quản lý Nguyên liệu/ Dụng cụ</span></span>
+    <button onclick="showTab('sales',this)" data-panel="sales">
+      ${menuIcon('sales')}<span>Bán hàng</span>
+    </button>
+
+    <div class="nav-group v238-nav-group">
+      <button
+        type="button"
+        class="nav-group-toggle open"
+        onclick="toggleNavGroupV238(this,'stockSubmenu')"
+      >
+        <span class="nav-label">
+          ${menuIcon('manage')}<span>Kho & nguyên liệu</span>
+        </span>
         <span class="nav-chevron">▾</span>
       </button>
-      <div id="manageSubmenu" class="nav-submenu open">
-        <button class="active" onclick="showTab('ingredients',this)">
-          ${menuIcon('ingredients',true)}<span>Nguyên liệu/ Dụng cụ</span>
+
+      <div id="stockSubmenu" class="nav-submenu open">
+        <button class="active" onclick="showTab('ingredients',this)" data-panel="ingredients">
+          ${menuIcon('ingredients',true)}<span>Nguyên liệu & dụng cụ</span>
         </button>
-        <button onclick="showTab('imports',this)">
-          ${menuIcon('imports',true)}<span>Xuất/ Nhập kho</span>
+
+        <button onclick="showTab('imports',this)" data-panel="imports">
+          ${menuIcon('imports',true)}<span>Nhập / xuất kho</span>
         </button>
-        <button onclick="showTab('recipes',this)">
-          ${menuIcon('recipes',true)}<span>Thực đơn</span>
-        </button>
-        <button onclick="showTab('stocktake',this)">
+
+        <button onclick="showTab('stocktake',this)" data-panel="stocktake">
           ${menuIcon('stocktake',true)}<span>Kiểm kê</span>
+        </button>
+
+        <button onclick="showTab('recipes',this)" data-panel="recipes">
+          ${menuIcon('recipes',true)}<span>Thực đơn & công thức</span>
         </button>
       </div>
     </div>
 
-    <button onclick="showTab('employees',this)">
-      ${menuIcon('employees')}<span>Quản lý nhân viên</span>
-    </button>
-    <button onclick="showTab('sales',this)">
-      ${menuIcon('sales')}<span>Quản lý bán hàng</span>
-    </button>
-    <button onclick="showTab('cashflow',this)">
-      ${menuIcon('cashflow')}<span>Quản lý Thu/Chi</span>
-    </button>
-    <button onclick="showTab('warehouses',this)">
-      ${menuIcon('warehouses')}<span>Quản lý Kho/Chi nhánh</span>
-    </button>
-    <button onclick="showTab('history',this)">
-      ${menuIcon('history')}<span>Lịch sử</span>
-    </button>
-    <button onclick="showTab('settings',this)">
+    <div class="nav-group v238-nav-group">
+      <button
+        type="button"
+        class="nav-group-toggle"
+        onclick="toggleNavGroupV238(this,'financeSubmenu')"
+      >
+        <span class="nav-label">
+          ${menuIcon('finance')}<span>Tài chính</span>
+        </span>
+        <span class="nav-chevron">▸</span>
+      </button>
+
+      <div id="financeSubmenu" class="nav-submenu">
+        <button onclick="showTab('finance',this)" data-panel="finance">
+          ${menuIcon('finance',true)}<span>Báo cáo tài chính</span>
+        </button>
+
+        <button onclick="showTab('cashflow',this)" data-panel="cashflow">
+          ${menuIcon('cashflow',true)}<span>Thu / Chi</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-group v238-nav-group">
+      <button
+        type="button"
+        class="nav-group-toggle"
+        onclick="toggleNavGroupV238(this,'operationSubmenu')"
+      >
+        <span class="nav-label">
+          ${menuIcon('employees')}<span>Vận hành</span>
+        </span>
+        <span class="nav-chevron">▸</span>
+      </button>
+
+      <div id="operationSubmenu" class="nav-submenu">
+        <button onclick="showTab('employees',this)" data-panel="employees">
+          ${menuIcon('employees',true)}<span>Nhân viên</span>
+        </button>
+
+        <button onclick="showTab('warehouses',this)" data-panel="warehouses">
+          ${menuIcon('warehouses',true)}<span>Kho / Chi nhánh</span>
+        </button>
+
+        <button onclick="showTab('history',this)" data-panel="history">
+          ${menuIcon('history',true)}<span>Lịch sử hoạt động</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="v238-nav-spacer"></div>
+
+    <div class="v238-nav-section-label v238-nav-section-label-bottom">Hệ thống</div>
+
+    <button class="v238-settings-nav" onclick="showTab('settings',this)" data-panel="settings">
       ${menuIcon('settings')}<span>Cài đặt</span>
     </button>
   `;
 }
 function toggleManageMenu(btn){
-  const submenu=document.getElementById('manageSubmenu');
+  toggleNavGroupV238(
+    btn,
+    'stockSubmenu'
+  );
+}
+
+function toggleNavGroupV238(
+  btn,
+  submenuId
+){
+  const submenu=
+    document.getElementById(
+      submenuId
+    );
+
   if(!submenu)return;
-  const isOpen=submenu.classList.toggle('open');
-  btn?.classList.toggle('open',isOpen);
-  const chev=btn?.querySelector('.nav-chevron');
-  if(chev)chev.textContent=isOpen?'▾':'▸';
+
+  const isOpen=
+    submenu.classList.toggle(
+      'open'
+    );
+
+  btn?.classList.toggle(
+    'open',
+    isOpen
+  );
+
+  const chev=
+    btn?.querySelector(
+      '.nav-chevron'
+    );
+
+  if(chev){
+    chev.textContent=
+      isOpen?'▾':'▸';
+  }
+
+  try{
+    localStorage.setItem(
+      'lat_yen_nav_group_'+submenuId,
+      isOpen?'1':'0'
+    );
+  }catch(e){}
 }
 
 let activePanelId='ingredients';
@@ -24319,20 +24927,83 @@ function debouncedHistoryRender(){
 }
 
 function showTab(id,btn){
-  activePanelId=id||'ingredients';
-  document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===activePanelId));
-  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
-  btn?.classList.add('active');
+  activePanelId=
+    id||
+    'ingredients';
 
-  if(['ingredients','imports','recipes','stocktake'].includes(activePanelId)){
-    const submenu=$('manageSubmenu');
-    submenu?.classList.add('open');
-    const toggle=document.querySelector('.nav-group-toggle');
-    toggle?.classList.add('open');
-    const chev=toggle?.querySelector('.nav-chevron');
-    if(chev)chev.textContent='▾';
+  document
+    .querySelectorAll(
+      '.panel'
+    )
+    .forEach(x=>
+      x.classList.toggle(
+        'active',
+        x.id===activePanelId
+      )
+    );
+
+  document
+    .querySelectorAll(
+      '#nav button[data-panel]'
+    )
+    .forEach(x=>
+      x.classList.remove(
+        'active'
+      )
+    );
+
+  btn?.classList.add(
+    'active'
+  );
+
+  const groups={
+    ingredients:'stockSubmenu',
+    imports:'stockSubmenu',
+    recipes:'stockSubmenu',
+    stocktake:'stockSubmenu',
+    finance:'financeSubmenu',
+    cashflow:'financeSubmenu',
+    employees:'operationSubmenu',
+    warehouses:'operationSubmenu',
+    history:'operationSubmenu'
+  };
+
+  const submenuId=
+    groups[
+      activePanelId
+    ];
+
+  if(submenuId){
+    const submenu=
+      document.getElementById(
+        submenuId
+      );
+
+    submenu?.classList.add(
+      'open'
+    );
+
+    const toggle=
+      submenu
+        ?.previousElementSibling;
+
+    toggle?.classList.add(
+      'open'
+    );
+
+    const chev=
+      toggle?.querySelector(
+        '.nav-chevron'
+      );
+
+    if(chev){
+      chev.textContent='▾';
+    }
   }
-  renderPanel(activePanelId);
+
+  renderPanel(
+    activePanelId
+  );
 }
 function renderWarehouseSelect(){
   if(!E.warehouseSelect)return;
@@ -41478,7 +42149,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V237',
+    app_version:'V238',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -41787,7 +42458,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:237,
+    version:238,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -41969,13 +42640,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:237,
+    version:238,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V237',storage:'supabase-storage',
+      schema:185,app_version:'V238',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -43187,7 +43858,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:237,
+    version:238,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -46021,7 +46692,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V237',
+      app_version:'V238',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -46036,7 +46707,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:237,
+      version:238,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -46313,7 +46984,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v237-full-backup-'+
+    'lat-yen-v238-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -47523,7 +48194,7 @@ async function init(){
   installStickyTableHeaders();
   installSerialNumbering();
   applyAppBrand();
-  maybeOptimizeStorage();navInit();installSaleHandler();
+  maybeOptimizeStorage();navInit();restoreNavGroupStateV238();installSaleHandler();
 
   window.addEventListener('beforeunload',flushCacheSave);
   document.addEventListener('visibilitychange',()=>{
