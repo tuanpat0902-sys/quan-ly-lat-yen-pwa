@@ -11419,7 +11419,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V271</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V272</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -18285,6 +18285,14 @@ async function loadCloud(){
     return;
   }
 
+  /*
+    V272:
+    Capture ONLY pending rows created/edited in the CURRENT live session.
+    No localStorage/IndexedDB data is read.
+  */
+  const sessionPending=
+    v272PendingBusinessRows();
+
   syncing=true;
   setCloudStatus('Đang tải Cloud…');
 
@@ -18301,39 +18309,16 @@ async function loadCloud(){
       saleItems,
       movementsRaw
     ]=await Promise.all([
-      fetchAllCloudRows(
-        'warehouses',
-        {orderColumn:'created_at',ascending:true}
-      ),
-      fetchAllCloudRows(
-        'suppliers',
-        {orderColumn:'created_at',ascending:true}
-      ),
-      fetchAllCloudRows(
-        'ingredients',
-        {orderColumn:'created_at',ascending:true}
-      ),
+      fetchAllCloudRows('warehouses',{orderColumn:'created_at',ascending:true}),
+      fetchAllCloudRows('suppliers',{orderColumn:'created_at',ascending:true}),
+      fetchAllCloudRows('ingredients',{orderColumn:'created_at',ascending:true}),
       fetchAllCloudRows('inventory'),
-      fetchAllCloudRows(
-        'products',
-        {orderColumn:'created_at',ascending:true}
-      ),
+      fetchAllCloudRows('products',{orderColumn:'created_at',ascending:true}),
       fetchAllCloudRows('recipe_items'),
-      fetchAllCloudRows(
-        'prepared_ingredient_items'
-      ),
-      fetchAllCloudRows(
-        'sales',
-        {orderColumn:'sold_at',ascending:false}
-      ),
-      fetchAllCloudRows(
-        'sale_items',
-        {orderColumn:'created_at',ascending:false}
-      ),
-      fetchAllCloudRows(
-        'stock_transactions',
-        {orderColumn:'created_at',ascending:false}
-      )
+      fetchAllCloudRows('prepared_ingredient_items'),
+      fetchAllCloudRows('sales',{orderColumn:'sold_at',ascending:false}),
+      fetchAllCloudRows('sale_items',{orderColumn:'created_at',ascending:false}),
+      fetchAllCloudRows('stock_transactions',{orderColumn:'created_at',ascending:false})
     ]);
 
     const movements=
@@ -18345,12 +18330,7 @@ async function loadCloud(){
         )
       );
 
-    /*
-      V271: direct Cloud replacement.
-      There is NO legacy local snapshot merge or pending overlay,
-      NO Excel resurrection, NO cache fallback.
-    */
-    db={
+    const cloudDb={
       warehouses:Array.isArray(warehouses)?warehouses:[],
       suppliers:Array.isArray(suppliers)?suppliers:[],
       ingredients:Array.isArray(ingredients)?ingredients:[],
@@ -18363,62 +18343,96 @@ async function loadCloud(){
       movements:Array.isArray(movements)?movements:[]
     };
 
+    /*
+      Cloud is authoritative for confirmed rows.
+      Only current-session pending rows may temporarily overlay it.
+      Historical local data can never enter here.
+    */
+    db=
+      v272OverlayPendingRows(
+        cloudDb,
+        sessionPending
+      );
+
     v228CaptureCloudProof({
-      warehouses:db.warehouses,
-      suppliers:db.suppliers,
-      ingredients:db.ingredients,
-      inventory:db.inventory,
-      products:db.products,
-      recipe_items:db.recipeItems,
-      prepared_ingredient_items:db.preparedItems,
-      sales:db.sales,
-      sale_items:db.saleItems,
+      warehouses:cloudDb.warehouses,
+      suppliers:cloudDb.suppliers,
+      ingredients:cloudDb.ingredients,
+      inventory:cloudDb.inventory,
+      products:cloudDb.products,
+      recipe_items:cloudDb.recipeItems,
+      prepared_ingredient_items:cloudDb.preparedItems,
+      sales:cloudDb.sales,
+      sale_items:cloudDb.saleItems,
       stock_transactions:
         Array.isArray(movementsRaw)
           ?movementsRaw
           :[]
     });
 
-    /*
-      Product warehouse local map is only a UI compatibility mirror
-      generated FROM Cloud rows. It is never used as an authoritative source.
-    */
     try{
       v266RepairProductWarehouseOwnership();
     }catch(e){}
 
-    currentWarehouseId=
-      db.warehouses[0]?.id||'';
+    if(
+      !currentWarehouseId ||
+      !db.warehouses.some(w=>
+        w.id===currentWarehouseId
+      )
+    ){
+      currentWarehouseId=
+        db.warehouses[0]?.id||'';
+    }
 
     invalidateDataIndexes();
     invalidateDerivedCaches();
 
     cloudOnline=true;
+
     setCloudStatus(
-      'Cloud đã tải',
-      'online'
+      v272HasPendingBusinessRows()
+        ?'Cloud • còn dữ liệu chờ'
+        :'Cloud đã tải',
+      v272HasPendingBusinessRows()
+        ?'offline'
+        :'online'
     );
 
     renderAll();
 
     return {
       ok:true,
-      cloudOnly:true
+      cloudOnly:true,
+      pendingProtected:
+        v272HasPendingBusinessRows()
     };
 
   }catch(e){
     console.error(
-      'V271 Cloud-only load failed',
+      'V272 Cloud load failed',
       e
     );
 
-    v271CloudOnlyError(
-      'Không tải được dữ liệu Supabase. Phần mềm không sử dụng dữ liệu local cũ.'
+    /*
+      If Cloud is temporarily unavailable during a live session,
+      keep current RAM rows so a just-created receipt does not vanish.
+      We still never load historical localStorage data.
+    */
+    cloudOnline=false;
+
+    setCloudStatus(
+      'Cloud gián đoạn • dữ liệu phiên hiện tại đang chờ',
+      'offline'
+    );
+
+    toastMsg(
+      'Cloud tạm thời không khả dụng. Phiếu vừa tạo vẫn được giữ trong phiên và sẽ tự thử đồng bộ lại.'
     );
 
     return {
       ok:false,
-      error:e
+      error:e,
+      keptSessionMemory:true
     };
 
   }finally{
@@ -44057,7 +44071,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V271',
+    app_version:'V272',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -44707,7 +44721,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V271',storage:'supabase-storage',
+      schema:185,app_version:'V272',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -48897,7 +48911,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V271',
+      app_version:'V272',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53452,7 +53466,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V271',
+      app_version:'V272',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53516,7 +53530,7 @@ function renderSettings(){
 
           <div class="muted">
             <b>Cloud là nguồn dữ liệu nghiệp vụ duy nhất.</b>
-            Dữ liệu local từ các phiên bản cũ không được đọc hoặc trộn vào phần mềm.
+            Phiếu mới trong phiên chỉ được giữ tạm trong RAM cho đến khi Cloud xác nhận; dữ liệu local từ phiên bản cũ vẫn không được đọc.
           </div>
         </div>
 
@@ -54585,7 +54599,7 @@ function v262StartSmartSync(){
 }
 
 
-/* ===== V271 CLOUD-ONLY AUTHORITATIVE BOOT ===== */
+/* ===== V272 CLOUD-ONLY WITH SESSION PENDING ===== */
 const V269_SYNC_INTERVAL_MS=10000;
 const V269_PULL_INTERVAL_MS=20000;
 const V269_ACTION_DEBOUNCE_MS=250;
@@ -54677,6 +54691,10 @@ async function v269PullOneTable(
     const rows=data||[];
 
     for(const row of rows){
+      /*
+        v207ApplyRealtimeRow already refuses to overwrite matching pending rows.
+        This preserves the live in-memory receipt until Cloud ACKs it.
+      */
       v207ApplyRealtimeRow(
         table,
         row.deleted_at
@@ -54879,6 +54897,7 @@ async function v269SyncCycle({
 
   if(manual){
     beginSyncProgress();
+
     updateSyncProgress(
       15,
       'Đang gửi dữ liệu',
@@ -54887,29 +54906,51 @@ async function v269SyncCycle({
   }
 
   try{
+    /*
+      V272 critical ordering:
+      PUSH FIRST, always.
+      A newly created receipt must reach Cloud before any fallback pull
+      is allowed to reconcile the live db.
+    */
     const pushed=
       await v269PushPending();
 
+    const pendingAfterPush=
+      Number(v191PendingCount?.()||0);
+
     if(manual){
       updateSyncProgress(
-        60,
-        'Đang nhận dữ liệu',
-        'Đọc thay đổi từ Cloud'
+        65,
+        pendingAfterPush
+          ?'Đang chờ Cloud xác nhận'
+          :'Đang nhận cập nhật',
+        pendingAfterPush
+          ?`${pendingAfterPush} mục sẽ tự thử lại`
+          :'Đọc thay đổi từ Cloud'
       );
     }
 
-    const now=Date.now();
+    let pulled=null;
 
-    const needPull=
-      forcePull ||
-      !v269LastPullAt ||
-      now-v269LastPullAt>=
-        V269_PULL_INTERVAL_MS;
+    /*
+      If anything is still pending, do NOT run a broad fallback pull that
+      could visually replace live session rows before they are ACKed.
+      Realtime can still apply unrelated confirmed rows.
+    */
+    if(pendingAfterPush===0){
+      const now=Date.now();
 
-    const pulled=
-      needPull
-        ?await v269PullChanged(forcePull)
-        :null;
+      const needPull=
+        forcePull ||
+        !v269LastPullAt ||
+        now-v269LastPullAt>=
+          V269_PULL_INTERVAL_MS;
+
+      if(needPull){
+        pulled=
+          await v269PullChanged(forcePull);
+      }
+    }
 
     const pending=
       Number(v191PendingCount?.()||0);
@@ -54941,13 +54982,13 @@ async function v269SyncCycle({
         stage:
           pending===0
             ?'Đã đồng bộ'
-            :'Còn dữ liệu chờ',
+            :'Đang chờ Cloud',
         detail:
           v269LastError||
           (
             pending===0
               ?'Thiết bị và Cloud đã hội tụ'
-              :`${pending} mục đang thử lại`
+              :`${pending} mục sẽ tự thử lại; phiếu vẫn được giữ trên màn hình`
           )
       });
     }
@@ -55333,6 +55374,107 @@ async function v263ResetOrganizationData(){
 }
 
 
+
+
+/* ===== V272 SESSION PENDING PROTECTION ===== */
+function v272PendingBusinessRows(){
+  const pending=x=>(
+    x?._sync_status==='pending' ||
+    x?._local_only===true
+  );
+
+  const pendingSales=
+    (db.sales||[]).filter(pending);
+
+  const pendingSaleIds=
+    new Set(
+      pendingSales.map(x=>String(x.id))
+    );
+
+  const pendingRefs=
+    new Set(
+      (db.movements||[])
+        .filter(pending)
+        .map(x=>String(x.reference_id||''))
+        .filter(Boolean)
+    );
+
+  return {
+    warehouses:(db.warehouses||[]).filter(pending),
+    suppliers:(db.suppliers||[]).filter(pending),
+    ingredients:(db.ingredients||[]).filter(pending),
+    inventory:(db.inventory||[]).filter(pending),
+    products:(db.products||[]).filter(pending),
+    recipeItems:(db.recipeItems||[]).filter(pending),
+    preparedItems:(db.preparedItems||[]).filter(pending),
+    sales:pendingSales,
+    saleItems:(db.saleItems||[]).filter(x=>
+      pending(x) ||
+      pendingSaleIds.has(String(x.sale_id||''))
+    ),
+    movements:(db.movements||[]).filter(x=>
+      pending(x) ||
+      pendingRefs.has(String(x.reference_id||''))
+    )
+  };
+}
+
+function v272OverlayPendingRows(cloudDb,pendingDb){
+  const byId=(cloud,local,key='id')=>{
+    const out=[...(cloud||[])];
+    for(const row of local||[]){
+      const idx=out.findIndex(x=>
+        String(x?.[key]||'')===
+        String(row?.[key]||'')
+      );
+      if(idx>=0)out[idx]={...out[idx],...row};
+      else out.push(row);
+    }
+    return out;
+  };
+
+  const inventoryKey=x=>
+    `${x?.warehouse_id||''}|${x?.ingredient_id||''}`;
+
+  const recipeKey=x=>
+    `${x?.product_id||''}|${x?.ingredient_id||''}`;
+
+  const preparedKey=x=>
+    `${x?.prepared_ingredient_id||''}|${x?.source_ingredient_id||''}`;
+
+  const movementKey=x=>
+    String(x?.id||'')||
+    `${x?.reference_id||''}|${x?.ingredient_id||''}|${x?.transaction_type||''}`;
+
+  const mergeComposite=(cloud,local,keyFn)=>{
+    const out=[...(cloud||[])];
+    for(const row of local||[]){
+      const key=keyFn(row);
+      const idx=out.findIndex(x=>keyFn(x)===key);
+      if(idx>=0)out[idx]={...out[idx],...row};
+      else out.push(row);
+    }
+    return out;
+  };
+
+  return {
+    warehouses:byId(cloudDb.warehouses,pendingDb.warehouses),
+    suppliers:byId(cloudDb.suppliers,pendingDb.suppliers),
+    ingredients:byId(cloudDb.ingredients,pendingDb.ingredients),
+    inventory:mergeComposite(cloudDb.inventory,pendingDb.inventory,inventoryKey),
+    products:byId(cloudDb.products,pendingDb.products),
+    recipeItems:mergeComposite(cloudDb.recipeItems,pendingDb.recipeItems,recipeKey),
+    preparedItems:mergeComposite(cloudDb.preparedItems,pendingDb.preparedItems,preparedKey),
+    sales:byId(cloudDb.sales,pendingDb.sales),
+    saleItems:byId(cloudDb.saleItems,pendingDb.saleItems),
+    movements:mergeComposite(cloudDb.movements,pendingDb.movements,movementKey)
+  };
+}
+
+function v272HasPendingBusinessRows(){
+  const p=v272PendingBusinessRows();
+  return Object.values(p).some(arr=>arr.length>0);
+}
 
 /* ===== V271 CLOUD-ONLY AUTHORITATIVE BOOT ===== */
 const V271_CLOUD_ONLY_MARKER='lat_yen_cloud_only_v271';
