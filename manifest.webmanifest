@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V246",
+  "name": "Quản Lý Lát Yên V247",
   "short_name": "Lát Yên",
-  "description": "Schema-compatible Cloud reset probe with valid positive business quantities and full cleanup verification.",
+  "description": "Clean Sync Generation reset: rotates to a fresh pairing code, commits and verifies a new canonical state plus backup before any destructive Cloud business-table delete.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

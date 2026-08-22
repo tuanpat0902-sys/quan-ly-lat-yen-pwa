@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V246 SCHEMA COMPATIBLE PROBE ===== */
+/* ===== V247 CLEAN SYNC GENERATION ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11666,7 +11666,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V246</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V247</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -19299,6 +19299,21 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V247 reset uses a brand-new canonical generation before DELETE.
+  try{
+    add(
+      'Clean Generation V247',
+      true,
+      'Reset sẽ tạo mã đồng bộ mới + Canonical mới + Backup mới trước khi DELETE dữ liệu nghiệp vụ'
+    );
+  }catch(e){
+    add(
+      'Clean Generation V247',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V246 schema-compatible probe values.
   try{
     add(
@@ -19580,7 +19595,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:246,
+    version:247,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -42871,7 +42886,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V246',
+    app_version:'V247',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -43180,7 +43195,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:246,
+    version:247,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -43362,13 +43377,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:246,
+    version:247,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V246',storage:'supabase-storage',
+      schema:185,app_version:'V247',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44580,7 +44595,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:246,
+    version:247,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -47415,7 +47430,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V246',
+      app_version:'V247',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47430,7 +47445,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:246,
+      version:247,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47707,7 +47722,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v246-full-backup-'+
+    'lat-yen-v247-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -49981,7 +49996,7 @@ async function v244CloudResetPreflight(){
     !cred.passphrase
   ){
     throw new Error(
-      'Chưa có mã ghép/mật khẩu đồng bộ. Reset toàn bộ Cloud cần thông tin này để thay Canonical và Backup cũ.'
+      'Chưa có mã ghép/mật khẩu đồng bộ. Reset Cloud cần mật khẩu hiện tại để tạo thế hệ đồng bộ mới.'
     );
   }
 
@@ -50004,11 +50019,6 @@ async function v244CloudResetPreflight(){
     );
   }
 
-  /*
-    V245:
-    technical primary-key collisions are repairable and must not stop
-    preflight. All FK/business/numeric/timestamp errors remain blockers.
-  */
   const integrity=
     v245PreNormalizeIntegrityAudit();
 
@@ -50026,11 +50036,27 @@ async function v244CloudResetPreflight(){
     );
   }
 
-  const canonical=
-    await v189FetchCanonical(
-      cred.code,
-      cred.passphrase
-    );
+  /*
+    Old canonical is intentionally best-effort only.
+    V247 will abandon it and create a brand-new sync key before DELETE.
+  */
+  let oldCanonicalRevision=0;
+  let oldCanonicalReadable=true;
+
+  try{
+    const oldCanonical=
+      await v189FetchCanonical(
+        cred.code,
+        cred.passphrase
+      );
+
+    oldCanonicalRevision=
+      Number(
+        oldCanonical.revision||0
+      );
+  }catch(e){
+    oldCanonicalReadable=false;
+  }
 
   await v244DeletePermissionPrecheck();
   await v244CloudCrudProbe();
@@ -50044,10 +50070,10 @@ async function v244CloudResetPreflight(){
       integrity.collisions,
     repairable_integrity_errors:
       integrity.repairableErrors,
-    canonical_revision:
-      Number(
-        canonical.revision||0
-      )
+    old_canonical_revision:
+      oldCanonicalRevision,
+    old_canonical_readable:
+      oldCanonicalReadable
   };
 }
 
@@ -50443,66 +50469,387 @@ async function v239SeedCloudFromLocal(payload){
   return {total,done};
 }
 
-async function v239ReplaceCanonicalFromLocal(){
-  const cred=autoSyncCredentials();
 
-  if(!cred.code||!cred.passphrase){
-    return {
-      skipped:true,
-      revision:0
-    };
-  }
+/* ===== V247 CLEAN SYNC GENERATION ===== */
+const V247_RESET_GENERATION_KEY='lat_yen_reset_generation_v247';
 
-  const local=prepareConcurrentLocalState();
-
-  for(let attempt=1;attempt<=4;attempt++){
-    const remote=await v189FetchCanonical(
-      cred.code,
-      cred.passphrase
+function v247SaveGenerationInfo(info){
+  try{
+    localStorage.setItem(
+      V247_RESET_GENERATION_KEY,
+      JSON.stringify({
+        at:new Date().toISOString(),
+        ...(info||{})
+      })
     );
+  }catch(e){}
+}
 
-    const commit=await v189CommitCanonical(
-      cred.code,
-      cred.passphrase,
-      remote.revision,
-      local
-    );
-
-    if(!commit.success){
-      await sleepMs(120*attempt);
-      continue;
-    }
-
-    const verify=await v189FetchCanonical(
-      cred.code,
-      cred.passphrase
-    );
-
-    if(
-      Number(verify.revision||0)!==
-      Number(commit.revision||0)
-    ){
-      continue;
-    }
-
-    if(
-      !verify.payload?.state ||
-      !v213CanonicalStatesEqual(
-        verify.payload.state,
-        local.state
+function v247CaptureSyncIdentity(){
+  return {
+    auto:
+      JSON.parse(
+        JSON.stringify(
+          loadAutoSyncConfig()
+        )
+      ),
+    multi:
+      JSON.parse(
+        JSON.stringify(
+          multiDeviceConfig()
+        )
       )
-    ){
-      continue;
+  };
+}
+
+function v247RestoreSyncIdentity(snapshot){
+  if(!snapshot)return;
+
+  try{
+    localStorage.setItem(
+      AUTO_SYNC_KEY,
+      JSON.stringify(
+        snapshot.auto||{}
+      )
+    );
+  }catch(e){}
+
+  try{
+    localStorage.setItem(
+      MULTI_DEVICE_CONFIG_KEY,
+      JSON.stringify(
+        snapshot.multi||{}
+      )
+    );
+  }catch(e){}
+}
+
+async function v247FreshSyncCode(){
+  /*
+    A reset generation must use a sync key with no existing canonical row.
+    Code collision is extremely unlikely, but we still check explicitly.
+  */
+  for(let attempt=0;attempt<12;attempt++){
+    const code=
+      generateMultiDeviceCode();
+
+    const key=
+      await v189SyncKey(
+        code
+      );
+
+    const r=
+      await promiseWithTimeout(
+        sb.from(V189_CANONICAL_TABLE)
+          .select(
+            'sync_key,revision'
+          )
+          .eq(
+            'sync_key',
+            key
+          )
+          .maybeSingle(),
+        10000,
+        'Kiểm tra mã đồng bộ mới'
+      );
+
+    if(r.error){
+      throw r.error;
     }
 
-    return {
-      skipped:false,
-      revision:Number(verify.revision||0)
-    };
+    if(!r.data){
+      return code;
+    }
   }
 
   throw new Error(
-    'Không thể thay canonical bằng dữ liệu của thiết bị hiện tại.'
+    'Không tạo được mã đồng bộ mới chưa từng sử dụng.'
+  );
+}
+
+async function v247RotateSyncGeneration(){
+  const current=
+    autoSyncCredentials();
+
+  if(!current.passphrase){
+    throw new Error(
+      'Thiếu mật khẩu mã hóa để tạo thế hệ đồng bộ mới.'
+    );
+  }
+
+  const oldCode=
+    current.code;
+
+  const newCode=
+    await v247FreshSyncCode();
+
+  const now=
+    new Date().toISOString();
+
+  /*
+    New generation intentionally starts with fresh logical metadata.
+    prepareConcurrentLocalState() will rebuild versions from CURRENT local.
+  */
+  saveAutoSyncConfig({
+    code:newCode,
+    passphrase:
+      current.passphrase,
+    paired_at:now,
+    entity_state:{},
+    conflict_count:0,
+    cloud_revision:0,
+    cloud_revision_token:'',
+    last_hash:'',
+    last_sync_at:'',
+    last_result:
+      'v247_generation_created'
+  });
+
+  saveMultiDeviceConfig({
+    code:newCode,
+    last_cloud_hash:'',
+    last_cloud_at:'',
+    last_device_name:
+      multiDeviceDeviceName()
+  });
+
+  saveFastSyncStateV202({
+    last_revision:0,
+    last_pull_at:0,
+    last_pending:0
+  });
+
+  v247SaveGenerationInfo({
+    old_code:oldCode,
+    new_code:newCode,
+    device_id:
+      multiDeviceDeviceId(),
+    status:'created'
+  });
+
+  return {
+    oldCode,
+    newCode,
+    passphrase:
+      current.passphrase,
+    rotated:
+      oldCode!==newCode
+  };
+}
+
+async function v247DecryptCommitEnvelope(
+  envelope,
+  passphrase
+){
+  if(!envelope){
+    throw new Error(
+      'RPC Canonical không trả envelope để xác minh.'
+    );
+  }
+
+  try{
+    return await decryptBackupSnapshot(
+      envelope,
+      passphrase
+    );
+  }catch(e){
+    throw new Error(
+      'Canonical đã ghi nhưng không giải mã lại được envelope RPC.'
+    );
+  }
+}
+
+async function v247CommitCanonicalExact(
+  code,
+  passphrase,
+  local
+){
+  let lastReason='';
+
+  for(let attempt=1;attempt<=8;attempt++){
+    const remote=
+      await v189FetchCanonical(
+        code,
+        passphrase
+      );
+
+    const commit=
+      await v189CommitCanonical(
+        code,
+        passphrase,
+        remote.revision,
+        local
+      );
+
+    if(!commit.success){
+      lastReason=
+        `CAS conflict ở revision ${remote.revision} → Cloud ${commit.revision}`;
+
+      await sleepMs(
+        Math.min(
+          900,
+          100*attempt
+        )
+      );
+
+      continue;
+    }
+
+    /*
+      The RPC returns the exact envelope written by THIS successful CAS.
+      Verify that envelope directly instead of requiring a second SELECT to
+      still be on the same revision. A later writer cannot invalidate proof
+      that our CAS itself succeeded.
+    */
+    const written=
+      await v247DecryptCommitEnvelope(
+        commit.envelope,
+        passphrase
+      );
+
+    if(
+      !written?.state ||
+      !v213CanonicalStatesEqual(
+        written.state,
+        local.state
+      )
+    ){
+      throw new Error(
+        'Envelope Canonical RPC không khớp dữ liệu local vừa commit.'
+      );
+    }
+
+    /*
+      With a brand-new generation there should be no competing writer.
+      One post-read is retained only as an interference detector.
+    */
+    const verify=
+      await v189FetchCanonical(
+        code,
+        passphrase
+      );
+
+    const sameRevision=
+      Number(
+        verify.revision||0
+      )===
+      Number(
+        commit.revision||0
+      );
+
+    const sameState=
+      !!verify.payload?.state &&
+      v213CanonicalStatesEqual(
+        verify.payload.state,
+        local.state
+      );
+
+    if(
+      sameRevision &&
+      sameState
+    ){
+      return {
+        success:true,
+        revision:
+          Number(
+            commit.revision||0
+          ),
+        attempts:attempt,
+        exact:true,
+        interference:false
+      };
+    }
+
+    /*
+      A brand-new code being changed immediately means another process has
+      somehow obtained that new code. Do not continue to DELETE business data.
+    */
+    throw new Error(
+      `Canonical mới bị thay đổi ngay sau commit (đã ghi rev ${commit.revision}, hiện rev ${verify.revision}). Reset sẽ dừng trước DELETE.`
+    );
+  }
+
+  throw new Error(
+    'Không thể commit Canonical mới sau 8 lần. '+
+    (lastReason||'Không có chi tiết CAS.')
+  );
+}
+
+async function v247PrepareCleanGeneration(){
+  const identityBefore=
+    v247CaptureSyncIdentity();
+
+  const generation=
+    await v247RotateSyncGeneration();
+
+  const local=
+    prepareConcurrentLocalState();
+
+  const canonical=
+    await v247CommitCanonicalExact(
+      generation.newCode,
+      generation.passphrase,
+      local
+    );
+
+  saveAutoSyncConfig({
+    cloud_revision:
+      canonical.revision,
+    cloud_revision_token:
+      String(
+        canonical.revision
+      ),
+    last_result:
+      'v247_canonical_ready'
+  });
+
+  /*
+    Backup is also prepared BEFORE destructive business DELETE.
+    If backup fails, reset aborts with the old Cloud business tables intact.
+  */
+  const backup=
+    await v239ReplaceCloudBackup();
+
+  v247SaveGenerationInfo({
+    old_code:
+      generation.oldCode,
+    new_code:
+      generation.newCode,
+    canonical_revision:
+      canonical.revision,
+    backup_ready:
+      !backup.skipped,
+    status:'metadata_ready'
+  });
+
+  return {
+    identityBefore,
+    ...generation,
+    canonical,
+    backup
+  };
+}
+
+async function v239ReplaceCanonicalFromLocal(){
+  const cred=
+    autoSyncCredentials();
+
+  if(
+    !cred.code ||
+    !cred.passphrase
+  ){
+    throw new Error(
+      'Thiếu thông tin ghép để ghi Canonical.'
+    );
+  }
+
+  const local=
+    prepareConcurrentLocalState();
+
+  return v247CommitCanonicalExact(
+    cred.code,
+    cred.passphrase,
+    local
   );
 }
 
@@ -50527,14 +50874,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:246,
+    version:247,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V246',
+      app_version:'V247',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -50589,6 +50936,7 @@ async function v239ResetCloudFromThisDevice(){
     loadAutoSyncConfig();
 
   let resetLock=false;
+  let cleanGeneration=null;
 
   const report={
     started_at:
@@ -50605,7 +50953,11 @@ async function v239ResetCloudFromThisDevice(){
     seeded:0,
     canonical_revision:0,
     backup_replaced:false,
+    sync_code_rotated:false,
+    old_sync_code:'',
+    new_sync_code:'',
     preflight_passed:false,
+    metadata_ready_before_delete:false,
     success:false
   };
 
@@ -50615,7 +50967,7 @@ async function v239ResetCloudFromThisDevice(){
     updateSyncProgress(
       2,
       'Kiểm tra an toàn',
-      'Đang phân tích ID trùng, local, quyền Cloud và khả năng khôi phục'
+      'Đang kiểm tra local, schema, quyền Cloud và collision'
     );
 
     v244AcquireResetLock();
@@ -50637,50 +50989,16 @@ async function v239ResetCloudFromThisDevice(){
       {};
 
     updateSyncProgress(
-      6,
+      5,
       'Kiểm tra an toàn PASS',
-      `Collision:${Number(collisions.duplicate_id_groups||0)} nhóm • Cloud CRUD PASS • Storage PASS • Canonical Rev ${preflight.canonical_revision}`
+      `Collision:${Number(collisions.duplicate_id_groups||0)} • CRUD PASS • Storage PASS • Canonical cũ ${preflight.old_canonical_readable?'đọc được':'sẽ bỏ qua'}`
     );
-
-    const tech=
-      preflight.readiness.technical;
-
-    const repairText=
-      (
-        Number(
-          collisions.duplicate_id_groups||0
-        )+
-        Number(
-          collisions.recipe_semantic_duplicates||0
-        )+
-        Number(
-          collisions.prepared_semantic_duplicates||0
-        )
-      )
-        ?(
-          '\n\nCollision-Safe Normalizer sẽ tự xử lý:'+
-          `\n• ${Number(collisions.duplicate_id_groups||0)} nhóm trùng ID kỹ thuật`+
-          `\n• ${Number(collisions.exact_duplicate_rows||0)} bản sao giống hệt`+
-          `\n• ${Number(collisions.conflicting_id_groups||0)} nhóm cùng ID nhưng nội dung khác`+
-          `\n• ${Number(collisions.recipe_semantic_duplicates||0)} dòng công thức trùng thành phần`+
-          `\n• ${Number(collisions.prepared_semantic_duplicates||0)} dòng pha chế trùng thành phần`
-        )
-        :'';
-
-    const technicalText=
-      tech.total
-        ?(
-          `\n\nCó ${tech.total} ID kỹ thuật legacy/missing cần UUID chuẩn.`
-        )
-        :'';
 
     const first=
       await appConfirm(
-        `Kiểm tra an toàn đã PASS.\n\nThiết bị hiện tại có ${preflight.readiness.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.`+
-        repairText+
-        technicalText+
-        '\n\nKhông có dòng khác nội dung nào bị xóa chỉ vì trùng ID: chúng sẽ được cấp UUID riêng.'+
-        '\n\nCloud chỉ bị xóa SAU KHI local đã normalize và kiểm tra toàn vẹn PASS.',
+        `Kiểm tra an toàn đã PASS.\n\nThiết bị hiện tại có ${preflight.readiness.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.\n\n`+
+        'V247 sẽ KHÔNG dùng lại Canonical cũ. Phần mềm sẽ tạo một mã đồng bộ mới, Canonical mới và Backup mới trước khi xóa dữ liệu nghiệp vụ.\n\n'+
+        'Các thiết bị khác sau Reset phải ghép lại bằng mã/QR mới.',
         'Đặt lại toàn bộ Cloud'
       );
 
@@ -50693,12 +51011,12 @@ async function v239ResetCloudFromThisDevice(){
     const second=
       await appConfirm(
         'Xác nhận lần cuối:\n\n'+
-        '• Snapshot local sẽ được tạo trước khi sửa ID.\n'+
-        '• Bản sao cùng ID + cùng nội dung sẽ được gộp.\n'+
-        '• Cùng ID nhưng nội dung khác sẽ được giữ đủ và cấp UUID riêng.\n'+
-        '• Công thức/pha chế trùng cùng thành phần sẽ giữ bản local mới nhất/pending hiện tại.\n'+
-        '• Sau sửa sẽ chạy FULL integrity audit lại.\n'+
-        '• Chỉ khi PASS mới bắt đầu DELETE Cloud.\n\n'+
+        '• Snapshot local được tạo trước mọi thay đổi.\n'+
+        '• Collision-Safe Normalize + FULL audit chạy trước DELETE.\n'+
+        '• Tạo mã đồng bộ THẾ HỆ MỚI.\n'+
+        '• Canonical mới phải commit + verify PASS.\n'+
+        '• Backup mới phải upload PASS.\n'+
+        '• CHỈ SAU ĐÓ mới DELETE dữ liệu nghiệp vụ Cloud.\n\n'+
         'Tiếp tục?',
         'XÁC NHẬN RESET CLOUD'
       );
@@ -50710,13 +51028,13 @@ async function v239ResetCloudFromThisDevice(){
     }
 
     v204EmergencySnapshot(
-      'v245_before_collision_safe_normalize_and_cloud_reset'
+      'v247_before_clean_generation_reset'
     );
 
     updateSyncProgress(
       7,
-      'Đang sửa collision local',
-      'Phân loại duplicate • re-key dòng khác nội dung • gộp bản sao thật'
+      'Đang chuẩn hóa local',
+      'Collision-Safe Normalize • chưa xóa Cloud'
     );
 
     const normalized=
@@ -50743,8 +51061,7 @@ async function v239ResetCloudFromThisDevice(){
     report.prepared_conflicts_resolved=
       normalized.prepared_conflicts_resolved||0;
 
-    const readiness=
-      v241StrictReadinessAfterNormalize();
+    v241StrictReadinessAfterNormalize();
 
     const integrityAfter=
       v244LocalIntegrityAudit();
@@ -50754,12 +51071,7 @@ async function v239ResetCloudFromThisDevice(){
         'FULL audit sau normalize không đạt:\n'+
         integrityAfter.errors
           .slice(0,20)
-          .join('\n')+
-        (
-          integrityAfter.errors.length>20
-            ?`\n... và ${integrityAfter.errors.length-20} lỗi khác`
-            :''
-        )
+          .join('\n')
       );
     }
 
@@ -50772,21 +51084,56 @@ async function v239ResetCloudFromThisDevice(){
       collisionAfter.prepared_semantic_duplicates
     ){
       throw new Error(
-        'Collision-Safe Normalize chưa hội tụ hoàn toàn: '+
-        `ID:${collisionAfter.duplicate_id_groups} • `+
-        `recipe:${collisionAfter.recipe_semantic_duplicates} • `+
-        `prepared:${collisionAfter.prepared_semantic_duplicates}`
+        'Collision-Safe Normalize chưa hội tụ hoàn toàn.'
       );
     }
 
-    report.local_total=
-      readiness.total;
+    /*
+      KEY V247 CHANGE:
+      Canonical + Backup MUST be ready before any business DELETE.
+    */
+    updateSyncProgress(
+      15,
+      'Tạo thế hệ đồng bộ mới',
+      'Đang tạo mã mới • Canonical mới • Backup mới'
+    );
+
+    cleanGeneration=
+      await v247PrepareCleanGeneration();
+
+    report.sync_code_rotated=
+      !!cleanGeneration.rotated;
+
+    report.old_sync_code=
+      cleanGeneration.oldCode||'';
+
+    report.new_sync_code=
+      cleanGeneration.newCode||'';
+
+    report.canonical_revision=
+      Number(
+        cleanGeneration.canonical?.revision||0
+      );
+
+    report.backup_replaced=
+      !cleanGeneration.backup?.skipped;
+
+    report.metadata_ready_before_delete=true;
+
+    updateSyncProgress(
+      25,
+      'Metadata mới đã sẵn sàng',
+      `Mã mới ${cleanGeneration.newCode} • Canonical Rev ${report.canonical_revision} • Backup PASS`
+    );
 
     v244TouchResetLock();
 
     const payload=
       await v239BuildCloudSeed();
 
+    /*
+      Destructive phase begins ONLY here.
+    */
     report.deleted=
       await v239DeleteBusinessCloud();
 
@@ -50807,9 +51154,9 @@ async function v239ResetCloudFromThisDevice(){
     }
 
     updateSyncProgress(
-      36,
-      'Cloud đã sạch',
-      'Bắt đầu nạp dữ liệu đã chuẩn hóa từ thiết bị này'
+      44,
+      'Cloud nghiệp vụ đã sạch',
+      'Đang nạp lại dữ liệu từ local'
     );
 
     const seeded=
@@ -50822,42 +51169,17 @@ async function v239ResetCloudFromThisDevice(){
 
     v244ClearBusinessTombstones();
 
+    /*
+      Do NOT perform another canonical CAS after DELETE.
+      The canonical already passed before destructive phase.
+      Only refresh it once locally after tombstone cleanup if state changed;
+      failure here is non-destructive metadata follow-up and does not invalidate
+      the rebuilt business Cloud.
+    */
     updateSyncProgress(
-      80,
-      'Đang thay trạng thái đồng bộ',
-      'Thiết bị hiện tại trở thành canonical mới'
-    );
-
-    const canonical=
-      await v239ReplaceCanonicalFromLocal();
-
-    report.canonical_revision=
-      Number(
-        canonical.revision||0
-      );
-
-    saveFastSyncStateV202({
-      last_revision:
-        report.canonical_revision,
-      last_pull_at:0
-    });
-
-    updateSyncProgress(
-      87,
-      'Đang tạo Backup Cloud mới',
-      'Thay bản backup cũ bằng dữ liệu chuẩn'
-    );
-
-    const backup=
-      await v239ReplaceCloudBackup();
-
-    report.backup_replaced=
-      !backup.skipped;
-
-    updateSyncProgress(
-      93,
-      'Đang xác minh Cloud',
-      'Pull lại toàn bộ dữ liệu vừa khởi tạo'
+      84,
+      'Đang xác minh dữ liệu nghiệp vụ',
+      'Canonical đã PASS trước DELETE'
     );
 
     await loadCloudFastV202(
@@ -50887,13 +51209,9 @@ async function v239ResetCloudFromThisDevice(){
     saveAutoSyncConfig({
       enabled:
         autoBefore.enabled!==false,
-      code:
-        autoBefore.code,
-      passphrase:
-        autoBefore.passphrase,
       last_sync_at:now,
       last_result:
-        'v245_collision_safe_takeover',
+        'v247_clean_generation_complete',
       cloud_revision:
         report.canonical_revision,
       cloud_revision_token:
@@ -50908,7 +51226,7 @@ async function v239ResetCloudFromThisDevice(){
       stage:
         'Cloud đã được đặt lại',
       detail:
-        `Collision-Safe PASS • re-key ${normalized.rekeyed||0} • dedupe ${normalized.exact_duplicates_removed||0} • Cloud ${coverage.covered}/${coverage.total}`
+        `Thế hệ đồng bộ mới • ${report.new_sync_code} • Cloud ${coverage.covered}/${coverage.total}`
     });
 
     report.success=true;
@@ -50917,6 +51235,16 @@ async function v239ResetCloudFromThisDevice(){
     v239SaveReport(
       report
     );
+
+    v247SaveGenerationInfo({
+      old_code:
+        report.old_sync_code,
+      new_code:
+        report.new_sync_code,
+      canonical_revision:
+        report.canonical_revision,
+      status:'complete'
+    });
 
     v244ReleaseResetLock();
     resetLock=false;
@@ -50932,12 +51260,10 @@ async function v239ResetCloudFromThisDevice(){
 
     alert(
       'Đã đặt lại Cloud thành công.\n\n'+
-      `Re-key ID kỹ thuật: ${normalized.rekeyed||0}\n`+
-      `Bản sao kỹ thuật đã gộp: ${normalized.exact_duplicates_removed||0}\n`+
-      `Công thức trùng thành phần đã gộp: ${normalized.recipe_semantic_removed||0}\n`+
-      `Pha chế trùng thành phần đã gộp: ${normalized.prepared_semantic_removed||0}\n`+
+      `Mã đồng bộ mới: ${report.new_sync_code}\n`+
+      `Canonical mới: Revision ${report.canonical_revision}\n`+
       `Đã nạp lại Cloud: ${report.seeded} lượt record.\n\n`+
-      'FULL integrity audit đã PASS trước khi xóa Cloud.'
+      'Quan trọng: các thiết bị khác phải ghép lại bằng QR/mã mới. Không dùng mã đồng bộ cũ nữa.'
     );
 
   }catch(e){
@@ -50960,7 +51286,7 @@ async function v239ResetCloudFromThisDevice(){
 
     }else{
       console.error(
-        'V245 Cloud Reset',
+        'V247 Cloud Reset',
         e
       );
 
@@ -50978,8 +51304,8 @@ async function v239ResetCloudFromThisDevice(){
           v191PendingCount(),
         stage:
           report.deleted.length
-            ?'Reset Cloud bị dừng • đang bảo vệ local'
-            :'Normalize/Preflight không đạt • Cloud chưa bị xóa',
+            ?'Reset Cloud bị dừng sau DELETE'
+            :'Reset dừng an toàn trước DELETE',
         detail:
           message,
         error:
@@ -50987,6 +51313,11 @@ async function v239ResetCloudFromThisDevice(){
       });
 
       if(report.deleted.length){
+        /*
+          Only business-table failures can arrive here after DELETE.
+          Canonical/Backup can no longer be the reason because they were
+          completed before destructive phase.
+        */
         try{
           const payload=
             await v239BuildCloudSeed();
@@ -50996,21 +51327,35 @@ async function v239ResetCloudFromThisDevice(){
           );
         }catch(recoveryError){
           console.error(
-            'V245 emergency reseed',
+            'V247 emergency reseed',
             recoveryError
           );
         }
+      }else if(cleanGeneration?.identityBefore){
+        /*
+          If new generation creation failed BEFORE real DELETE, restore the
+          previous local pairing identity. Any empty/new canonical row is
+          harmless and unused.
+        */
+        v247RestoreSyncIdentity(
+          cleanGeneration.identityBefore
+        );
       }
 
       alert(
         (
           report.deleted.length
-            ?'Reset Cloud đã dừng sau khi DELETE bắt đầu.'
-            :'Cloud thật CHƯA bị xóa.'
+            ?'Reset Cloud đã dừng sau khi bắt đầu xử lý dữ liệu nghiệp vụ.'
+            :'Cloud nghiệp vụ thật CHƯA bị xóa.'
         )+
         '\n\n'+
         message+
-        '\n\nLocal có snapshot từ trước Collision-Safe Normalize.'
+        '\n\n'+
+        (
+          report.deleted.length
+            ?'Local vẫn có snapshot và app đã thử reseed Cloud từ local.'
+            :'Lỗi xảy ra trước giai đoạn DELETE nên dữ liệu Cloud nghiệp vụ cũ vẫn được giữ.'
+        )
       );
     }
 
