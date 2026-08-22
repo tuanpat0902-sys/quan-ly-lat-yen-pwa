@@ -1,0 +1,34 @@
+V254 - ABSOLUTE BLANK WAREHOUSE
+
+Tạo kho mới = kho trắng 100%.
+
+V254 sửa tận gốc phần products/recipe_items vốn là bảng global:
+- Mỗi kho tạo mới được ghi Blank Warehouse Boundary.
+- Kho mới chỉ thấy product được assign rõ ràng SAU thời điểm tạo kho.
+- Mapping ownership cũ hoặc repair tự động không đủ để làm món cũ xuất hiện.
+- Cloud Pull/canonical có toàn bộ products global cũng không làm món cũ lọt vào.
+
+Khi tạo kho mới:
+- xóa defensively mọi inventory mang UUID kho mới
+- xóa movement mang UUID kho mới
+- xóa sales/sale_items mang UUID kho mới
+- xóa mọi product ownership trỏ vào kho mới
+- xóa assignment metadata trỏ vào kho mới
+- audit bắt buộc:
+  product=0
+  ingredient=0
+  inventory=0
+  movement=0
+  sales=0
+
+Nguyên liệu vốn scope theo inventory nên kho mới không có inventory => danh sách nguyên liệu trắng.
+Nhập/Xuất/Kiểm kê dùng warehouse scope => trắng.
+Bán hàng dùng warehouseProducts => không thấy món cũ.
+Công thức dùng warehouseProducts => không thấy món cũ.
+
+Khi tạo công thức mới:
+saveRecipe -> assignProductToWarehouse -> ghi explicit assignment timestamp
+=> món mới xuất hiện bình thường ở kho mới.
+
+Giữ nguyên V253 pending convergence và toàn bộ safety trước đó.
+Không cần SQL mới.

@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V253 ROOT PENDING CONVERGENCE ===== */
+/* ===== V254 ABSOLUTE BLANK WAREHOUSE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11425,7 +11425,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V253</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V254</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -16893,18 +16893,219 @@ function ensureProductWarehouseOwnership(products=db.products){
   return getProductWarehouseMap();
 }
 
-function warehouseProducts(warehouseId=currentWarehouseId){
-  const map=ensureProductWarehouseOwnership();
-  return (db.products||[]).filter(p=>
-    map[p.id]===warehouseId && !isProductDeletedHere(p.id,warehouseId)
+
+/* ===== V254 ABSOLUTE BLANK WAREHOUSE ===== */
+const V254_BLANK_WAREHOUSE_KEY='lat_yen_blank_warehouses_v254';
+const V254_PRODUCT_ASSIGN_META_KEY='lat_yen_product_assign_meta_v254';
+
+function v254BlankWarehouses(){
+  try{
+    const x=JSON.parse(
+      localStorage.getItem(V254_BLANK_WAREHOUSE_KEY)||'{}'
+    );
+    return x&&typeof x==='object'?x:{};
+  }catch(e){
+    return {};
+  }
+}
+
+function v254SaveBlankWarehouses(x){
+  localStorage.setItem(
+    V254_BLANK_WAREHOUSE_KEY,
+    JSON.stringify(x||{})
   );
 }
 
-function assignProductToWarehouse(productId,warehouseId=currentWarehouseId){
+function v254ProductAssignMeta(){
+  try{
+    const x=JSON.parse(
+      localStorage.getItem(V254_PRODUCT_ASSIGN_META_KEY)||'{}'
+    );
+    return x&&typeof x==='object'?x:{};
+  }catch(e){
+    return {};
+  }
+}
+
+function v254SaveProductAssignMeta(x){
+  localStorage.setItem(
+    V254_PRODUCT_ASSIGN_META_KEY,
+    JSON.stringify(x||{})
+  );
+}
+
+function v254MarkExplicitProductAssignment(productId,warehouseId){
   if(!productId||!warehouseId)return;
+
+  const meta=v254ProductAssignMeta();
+  meta[productId]={
+    warehouse_id:String(warehouseId),
+    assigned_at:new Date().toISOString(),
+    explicit:true
+  };
+  v254SaveProductAssignMeta(meta);
+}
+
+function v254InitializeBlankWarehouse(warehouseId){
+  if(!warehouseId)return null;
+
+  const createdAt=new Date().toISOString();
+  const blank=v254BlankWarehouses();
+
+  blank[warehouseId]={
+    created_at:createdAt,
+    initial_product_ids:(db.products||[])
+      .map(p=>String(p.id||''))
+      .filter(Boolean)
+  };
+
+  v254SaveBlankWarehouses(blank);
+
+  const saleIds=new Set(
+    (db.sales||[])
+      .filter(s=>
+        String(s.warehouse_id||'')===String(warehouseId)
+      )
+      .map(s=>String(s.id||''))
+  );
+
+  db.inventory=(db.inventory||[])
+    .filter(x=>
+      String(x.warehouse_id||'')!==String(warehouseId)
+    );
+
+  db.movements=(db.movements||[])
+    .filter(x=>
+      String(x.warehouse_id||'')!==String(warehouseId)
+    );
+
+  db.sales=(db.sales||[])
+    .filter(x=>
+      String(x.warehouse_id||'')!==String(warehouseId)
+    );
+
+  if(saleIds.size){
+    db.saleItems=(db.saleItems||[])
+      .filter(x=>
+        !saleIds.has(String(x.sale_id||''))
+      );
+  }
+
+  const map=getProductWarehouseMap();
+  for(const [productId,wid] of Object.entries(map)){
+    if(String(wid)===String(warehouseId)){
+      delete map[productId];
+    }
+  }
+  saveProductWarehouseMap(map);
+
+  const meta=v254ProductAssignMeta();
+  for(const [productId,info] of Object.entries(meta)){
+    if(String(info?.warehouse_id||'')===String(warehouseId)){
+      delete meta[productId];
+    }
+  }
+  v254SaveProductAssignMeta(meta);
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+  flushCacheSave();
+
+  return blank[warehouseId];
+}
+
+function v254IsBlankWarehouse(warehouseId){
+  return !!v254BlankWarehouses()[String(warehouseId||'')];
+}
+
+function v254ProductAllowedInWarehouse(product,warehouseId){
+  if(!product||!warehouseId)return false;
+
+  const blank=v254BlankWarehouses()[String(warehouseId)];
+  if(!blank)return true;
+
+  const meta=v254ProductAssignMeta()[String(product.id||'')];
+
+  if(
+    !meta?.explicit ||
+    String(meta.warehouse_id||'')!==String(warehouseId)
+  ){
+    return false;
+  }
+
+  const assigned=Date.parse(meta.assigned_at||'');
+  const created=Date.parse(blank.created_at||'');
+
+  if(Number.isFinite(assigned)&&Number.isFinite(created)){
+    return assigned>=created;
+  }
+
+  return false;
+}
+
+function v254NewWarehouseAudit(warehouseId){
+  const products=warehouseProducts(warehouseId);
+  const ingredients=warehouseIngredients(warehouseId);
+
+  const inventory=(db.inventory||[])
+    .filter(x=>
+      String(x.warehouse_id||'')===String(warehouseId)
+    );
+
+  const movements=(db.movements||[])
+    .filter(x=>
+      x?._stocktake_audit_only!==true &&
+      String(x.warehouse_id||'')===String(warehouseId)
+    );
+
+  const sales=(db.sales||[])
+    .filter(x=>
+      String(x.warehouse_id||'')===String(warehouseId)
+    );
+
+  return {
+    products:products.length,
+    ingredients:ingredients.length,
+    inventory:inventory.length,
+    movements:movements.length,
+    sales:sales.length,
+    clean:
+      products.length===0 &&
+      ingredients.length===0 &&
+      inventory.length===0 &&
+      movements.length===0 &&
+      sales.length===0
+  };
+}
+
+function warehouseProducts(
+  warehouseId=currentWarehouseId
+){
+  const map=ensureProductWarehouseOwnership();
+
+  return (db.products||[])
+    .filter(p=>
+      String(map[p.id]||'')===String(warehouseId||'') &&
+      !isProductDeletedHere(p.id,warehouseId) &&
+      v254ProductAllowedInWarehouse(p,warehouseId)
+    );
+}
+
+function assignProductToWarehouse(
+  productId,
+  warehouseId=currentWarehouseId
+){
+  if(!productId||!warehouseId)return;
+
   const map=getProductWarehouseMap();
   map[productId]=warehouseId;
   saveProductWarehouseMap(map);
+
+  v254MarkExplicitProductAssignment(
+    productId,
+    warehouseId
+  );
 }
 
 function removeWarehouseProductOwnership(warehouseId){
@@ -19981,6 +20182,36 @@ async function runSyncDiagnostics(){
   );
 
   return final;
+
+  // V254 absolute blank warehouse audit.
+  try{
+    if(
+      currentWarehouseId &&
+      v254IsBlankWarehouse(currentWarehouseId)
+    ){
+      const blankAudit=
+        v254NewWarehouseAudit(currentWarehouseId);
+
+      add(
+        'Blank Warehouse V254',
+        blankAudit.clean,
+        `product:${blankAudit.products} • ingredient:${blankAudit.ingredients} • inventory:${blankAudit.inventory} • movement:${blankAudit.movements} • sales:${blankAudit.sales}`
+      );
+    }else{
+      add(
+        'Blank Warehouse V254',
+        true,
+        'Kho hiện tại không phải kho trắng V254'
+      );
+    }
+  }catch(e){
+    add(
+      'Blank Warehouse V254',
+      false,
+      e?.message||String(e)
+    );
+  }
+
 }
 
 function renderSyncDiagnostics(diag=loadSyncDiagnostics()){
@@ -31684,7 +31915,15 @@ function renderRecipes(){
         <div class="recipe-list-title">
           <h3>Danh sách công thức</h3>
           <span class="muted">
-            ${products.length?`${num(products.length)} công thức • `:''}Bấm Xóa để loại bỏ hoàn toàn công thức khỏi kho hiện tại.
+            ${
+              products.length
+                ?`${num(products.length)} công thức • `
+                :(
+                  v254IsBlankWarehouse(currentWarehouseId)
+                    ?'Kho mới trắng • chưa có công thức • '
+                    :''
+                )
+            }Bấm Xóa để loại bỏ hoàn toàn công thức khỏi kho hiện tại.
           </span>
         </div>
 
@@ -42582,6 +42821,21 @@ async function saveWarehouse(id){
         warehouseId
       );
 
+      v254InitializeBlankWarehouse(
+        warehouseId
+      );
+
+      const blankAudit=
+        v254NewWarehouseAudit(
+          warehouseId
+        );
+
+      if(!blankAudit.clean){
+        throw new Error(
+          `Kho mới chưa trắng hoàn toàn: công thức ${blankAudit.products} • nguyên liệu ${blankAudit.ingredients} • tồn ${blankAudit.inventory} • biến động ${blankAudit.movements} • bán ${blankAudit.sales}`
+        );
+      }
+
       /*
         A clean warehouse intentionally starts with NO inventory rows,
         recipes, movements or sales copied from another warehouse.
@@ -42620,8 +42874,15 @@ async function saveWarehouse(id){
     );
 
     if(isNew){
+      const verify=
+        v254NewWarehouseAudit(
+          row.id
+        );
+
       toastMsg(
-        `Đã tạo ${name} • kho mới đang trống`
+        verify.clean
+          ?`Đã tạo ${name} • kho trắng 100%`
+          :`Đã tạo ${name} • cần kiểm tra dữ liệu kho`
       );
     }else{
       toastMsg(
@@ -43296,7 +43557,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V253',
+    app_version:'V254',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -43793,7 +44054,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V253',storage:'supabase-storage',
+      schema:185,app_version:'V254',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -47998,7 +48259,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V253',
+      app_version:'V254',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -48290,7 +48551,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v253-full-backup-'+
+    'lat-yen-v254-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -52327,7 +52588,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V253',
+      app_version:'V254',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
