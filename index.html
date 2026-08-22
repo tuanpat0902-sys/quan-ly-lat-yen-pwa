@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V189 DB CANONICAL ===== */
+/* ===== V190 ATOMIC SALES ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10795,7 +10795,8 @@ async function syncPendingSaleReceipts(){
   const pendingSales=
     (db.sales||[])
       .filter(s=>
-        s.warehouse_id===currentWarehouseId &&
+        s.warehouse_id===
+          currentWarehouseId &&
         (
           s._sync_status==='pending' ||
           s._local_only===true
@@ -10809,7 +10810,8 @@ async function syncPendingSaleReceipts(){
     const items=
       (db.saleItems||[])
         .filter(x=>
-          x.sale_id===sale.id
+          x.sale_id===
+            sale.id
         );
 
     const movements=
@@ -10818,15 +10820,22 @@ async function syncPendingSaleReceipts(){
           String(
             m.transaction_type||''
           ).toUpperCase()==='SALE' &&
-          String(m.reference_id||'')===
-            String(sale.id)
+          String(
+            m.reference_id||''
+          )===String(
+            sale.id
+          )
         );
 
     const movementItems=
       movements.map(row=>{
         const cloudEligible=
-          isUuidValue(row.warehouse_id) &&
-          isUuidValue(row.ingredient_id) &&
+          isUuidValue(
+            row.warehouse_id
+          ) &&
+          isUuidValue(
+            row.ingredient_id
+          ) &&
           !isExcelLocalIngredient(
             row.ingredient_id
           );
@@ -10842,9 +10851,13 @@ async function syncPendingSaleReceipts(){
               row.ingredient_id,
             transaction_type:'SALE',
             quantity:
-              Number(row.quantity||0),
+              Number(
+                row.quantity||0
+              ),
             note:
-              String(row.note||''),
+              String(
+                row.note||''
+              ),
             reference_id:
               sale.id
           }
@@ -10859,7 +10872,9 @@ async function syncPendingSaleReceipts(){
           warehouse_id:
             sale.warehouse_id,
           total_amount:
-            Number(sale.total_amount||0),
+            Number(
+              sale.total_amount||0
+            ),
           source:
             sale.source||'manual',
           sold_at:
@@ -10875,77 +10890,34 @@ async function syncPendingSaleReceipts(){
             product_id:
               x.product_id,
             quantity:
-              Number(x.quantity||0),
+              Number(
+                x.quantity||0
+              ),
             unit_price:
-              Number(x.unit_price||0)
+              Number(
+                x.unit_price||0
+              )
           })),
         saleMovements:
           movementItems
       });
 
     pending+=
-      Number(result?.pending||0);
-
-    synced+=
-      Number(result?.synced||0);
-
-    const ingredientIds=
-      new Set(
-        movements.map(
-          m=>m.ingredient_id
-        )
+      Number(
+        result?.pending||0
       );
 
-    const inventoryUpdates=[];
-
-    for(const ingredientId of ingredientIds){
-      const row=
-        (db.inventory||[])
-          .find(x=>
-            x.warehouse_id===
-              currentWarehouseId &&
-            x.ingredient_id===
-              ingredientId
-          );
-
-      if(!row)continue;
-
-      inventoryUpdates.push({
-        row,
-        payload:{
-          warehouse_id:
-            currentWarehouseId,
-          ingredient_id:
-            ingredientId,
-          quantity:
-            Number(row.quantity||0),
-          updated_at:
-            row.updated_at||
-            new Date().toISOString()
-        },
-        cloudEligible:
-          isUuidValue(
-            currentWarehouseId
-          ) &&
-          isUuidValue(
-            ingredientId
-          ) &&
-          !isExcelLocalIngredient(
-            ingredientId
-          )
-      });
-    }
-
-    const inv=
-      await syncSaleInventoryBatchCloud(
-        inventoryUpdates
-      );
-
-    pending+=
-      Number(inv?.pending||0);
-
     synced+=
-      Number(inv?.synced||0);
+      Number(
+        result?.synced||0
+      );
+  }
+
+  if(
+    synced>0 &&
+    navigator.onLine
+  ){
+    await loadCloud();
   }
 
   return {
@@ -19207,12 +19179,22 @@ async function syncSaleReceiptCloud({
   saleItemsPayload,
   saleMovements
 }){
+  const activeMovements=
+    (saleMovements||[])
+      .filter(x=>x.cloudEligible);
+
   const canSyncSale=
     isUuidValue(salePayload?.id) &&
     isUuidValue(salePayload?.warehouse_id) &&
     (saleItemsPayload||[])
       .every(x=>
         isUuidValue(x.product_id)
+      ) &&
+    activeMovements
+      .every(x=>
+        isUuidValue(
+          x.payload?.ingredient_id
+        )
       );
 
   if(!canSyncSale){
@@ -19236,71 +19218,94 @@ async function syncSaleReceiptCloud({
       pending:
         1+
         (saleItemsPayload||[]).length+
-        (saleMovements||[])
-          .filter(x=>x.cloudEligible)
-          .length,
+        activeMovements.length,
       synced:0
     };
   }
 
-  let pending=0;
-  let synced=0;
-
   try{
-    let payload={
-      ...salePayload
+    const rpcPayload={
+      p_sale:{
+        id:salePayload.id,
+        warehouse_id:
+          salePayload.warehouse_id,
+        total_amount:
+          Number(
+            salePayload.total_amount||0
+          ),
+        source:
+          salePayload.source||'manual',
+        sold_at:
+          salePayload.sold_at||
+          new Date().toISOString(),
+        note:
+          salePayload.note||''
+      },
+
+      p_sale_items:
+        (saleItemsPayload||[])
+          .map(x=>({
+            product_id:x.product_id,
+            quantity:
+              Number(x.quantity||0),
+            unit_price:
+              Number(x.unit_price||0)
+          })),
+
+      p_stock_movements:
+        activeMovements.map(x=>({
+          ingredient_id:
+            x.payload.ingredient_id,
+          quantity:
+            Number(
+              x.payload.quantity||0
+            ),
+          note:
+            String(
+              x.payload.note||''
+            )
+        })),
+
+      // Sale id chính là idempotency key.
+      p_idempotency_key:
+        `sale:${salePayload.id}`
     };
 
-    // Upsert theo ID giúp tạo mới, sửa và retry đều idempotent.
-    let r=
+    const r=
       await promiseWithTimeout(
-        sb.from('sales')
-          .upsert(
-            payload,
-            {onConflict:'id'}
-          )
-          .select()
-          .single(),
-        12000,
-        'Đồng bộ phiếu bán hàng'
+        sb.rpc(
+          'commit_sale_receipt_v190',
+          rpcPayload
+        ),
+        18000,
+        'Ghi phiếu bán atomic'
       );
 
-    // Schema cũ có thể chưa có cột note.
-    if(
-      r.error &&
-      String(
-        r.error.message||''
-      ).includes('note')
-    ){
-      const fallback={
-        ...payload
-      };
-
-      delete fallback.note;
-
-      r=
-        await promiseWithTimeout(
-          sb.from('sales')
-            .upsert(
-              fallback,
-              {onConflict:'id'}
-            )
-            .select()
-            .single(),
-          12000,
-          'Đồng bộ phiếu bán hàng'
-        );
+    if(r.error){
+      throw r.error;
     }
 
-    if(r.error)throw r.error;
+    const data=
+      Array.isArray(r.data)
+        ?r.data[0]
+        :r.data;
 
-    if(r.data){
+    if(!data){
+      throw new Error(
+        'Cloud không trả về kết quả phiếu bán.'
+      );
+    }
+
+    const cloudSale=
+      data.sale||null;
+
+    if(cloudSale){
       const editRev=
         saleLocal._edit_revision;
 
       Object.assign(
         saleLocal,
-        r.data
+        cloudSale
       );
 
       if(editRev!=null){
@@ -19313,49 +19318,10 @@ async function syncSaleReceiptCloud({
     delete saleLocal._sync_status;
     delete saleLocal._sync_error;
 
-    synced++;
-
-    // Xóa chi tiết cũ rồi insert lại:
-    // tránh duplicate khi retry và đảm bảo sửa phiếu thay thế hoàn toàn.
-    const deleteItems=
-      await promiseWithTimeout(
-        sb.from('sale_items')
-          .delete()
-          .eq(
-            'sale_id',
-            salePayload.id
-          ),
-        12000,
-        'Làm mới chi tiết phiếu bán'
-      );
-
-    if(deleteItems.error){
-      throw deleteItems.error;
-    }
-
-    let cloudItems=[];
-
-    if((saleItemsPayload||[]).length){
-      const itemsResult=
-        await promiseWithTimeout(
-          sb.from('sale_items')
-            .insert(
-              saleItemsPayload
-            )
-            .select(),
-          12000,
-          'Đồng bộ chi tiết món bán'
-        );
-
-      if(itemsResult.error){
-        throw itemsResult.error;
-      }
-
-      cloudItems=
-        Array.isArray(itemsResult.data)
-          ?itemsResult.data
-          :[];
-    }
+    const cloudItems=
+      Array.isArray(data.sale_items)
+        ?data.sale_items
+        :[];
 
     for(
       let i=0;
@@ -19390,15 +19356,85 @@ async function syncSaleReceiptCloud({
       delete local._local_only;
       delete local._sync_status;
       delete local._sync_error;
-
-      synced++;
     }
 
-  }catch(e){
-    pending+=
-      1+
-      (saleItemsPayload||[]).length;
+    const cloudMovements=
+      Array.isArray(
+        data.stock_transactions
+      )
+        ?data.stock_transactions
+        :[];
 
+    // Replace local SALE movements of this receipt with authoritative Cloud rows.
+    db.movements=
+      (db.movements||[])
+        .filter(m=>!(
+          String(
+            m.transaction_type||''
+          ).toUpperCase()==='SALE' &&
+          String(
+            m.reference_id||''
+          )===String(
+            salePayload.id
+          )
+        ));
+
+    db.movements.unshift(
+      ...cloudMovements
+    );
+
+    const inventoryRows=
+      Array.isArray(data.inventory)
+        ?data.inventory
+        :[];
+
+    for(const cloudInv of inventoryRows){
+      const idx=
+        (db.inventory||[])
+          .findIndex(x=>
+            x.warehouse_id===
+              cloudInv.warehouse_id &&
+            x.ingredient_id===
+              cloudInv.ingredient_id
+          );
+
+      if(idx>=0){
+        db.inventory[idx]={
+          ...db.inventory[idx],
+          ...cloudInv
+        };
+        delete db.inventory[idx]
+          ._local_only;
+        delete db.inventory[idx]
+          ._sync_status;
+        delete db.inventory[idx]
+          ._sync_error;
+      }else{
+        db.inventory.push(
+          cloudInv
+        );
+      }
+    }
+
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+
+    return {
+      pending:0,
+      synced:
+        1+
+        cloudItems.length+
+        cloudMovements.length+
+        inventoryRows.length,
+      atomic:true,
+      revision:
+        Number(
+          data.operation_revision||0
+        )
+    };
+
+  }catch(e){
     saleLocal._sync_status=
       'pending';
 
@@ -19407,138 +19443,46 @@ async function syncSaleReceiptCloud({
       String(e);
 
     for(const row of saleItemLocals||[]){
-      row._sync_status=
-        'pending';
-
+      row._sync_status='pending';
       row._sync_error=
         e?.message||
         String(e);
     }
 
-    console.warn(
-      'Sale receipt Cloud pending',
-      e
-    );
-  }
-
-  const activeMovements=
-    (saleMovements||[])
-      .filter(x=>x.cloudEligible);
-
-  // Movement của cùng phiếu cũng được replace toàn bộ.
-  if(isUuidValue(salePayload?.id)){
-    try{
-      const del=
-        await promiseWithTimeout(
-          sb.from('stock_transactions')
-            .delete()
-            .eq(
-              'reference_id',
-              salePayload.id
-            )
-            .eq(
-              'transaction_type',
-              'SALE'
-            ),
-          12000,
-          'Làm mới trừ kho phiếu bán'
-        );
-
-      if(del.error)throw del.error;
-
-      if(activeMovements.length){
-        const r=
-          await promiseWithTimeout(
-            sb.from('stock_transactions')
-              .insert(
-                activeMovements.map(
-                  x=>x.payload
-                )
-              )
-              .select(),
-            12000,
-            'Đồng bộ trừ kho bán hàng'
+    for(const item of activeMovements){
+      const row=
+        (db.movements||[])
+          .find(x=>
+            String(x.id)===
+            String(item.localId)
           );
 
-        if(r.error)throw r.error;
-
-        const cloudRows=
-          Array.isArray(r.data)
-            ?r.data
-            :[];
-
-        for(
-          let i=0;
-          i<activeMovements.length;
-          i++
-        ){
-          const item=
-            activeMovements[i];
-
-          const index=
-            (db.movements||[])
-              .findIndex(x=>
-                String(x.id)===
-                String(item.localId)
-              );
-
-          if(
-            index>=0 &&
-            cloudRows[i]
-          ){
-            db.movements[index]=
-              cloudRows[i];
-
-          }else if(index>=0){
-            delete db.movements[index]
-              ._sync_status;
-
-            delete db.movements[index]
-              ._sync_error;
-          }
-
-          synced++;
-        }
+      if(row){
+        row._sync_status='pending';
+        row._sync_error=
+          e?.message||
+          String(e);
       }
-
-    }catch(e){
-      pending+=
-        Math.max(
-          1,
-          activeMovements.length
-        );
-
-      for(const item of activeMovements){
-        const row=
-          (db.movements||[])
-            .find(x=>
-              String(x.id)===
-              String(item.localId)
-            );
-
-        if(row){
-          row._sync_status=
-            'pending';
-
-          row._sync_error=
-            e?.message||
-            String(e);
-        }
-      }
-
-      console.warn(
-        'Sale stock movements Cloud pending',
-        e
-      );
     }
+
+    cacheSave();
+
+    console.warn(
+      'V190 atomic sale pending',
+      e
+    );
+
+    return {
+      pending:
+        1+
+        (saleItemsPayload||[]).length+
+        activeMovements.length,
+      synced:0,
+      error:
+        e?.message||
+        String(e)
+    };
   }
-
-  cacheSave();
-
-  return {
-    pending,
-    synced
-  };
 }
 
 function finishSaleBackgroundSync(syncPromise,receiptNo){
@@ -19659,94 +19603,62 @@ function directStageSaleMovementLocal({
 
 
 async function syncSaleInventoryBatchCloud(inventoryUpdates){
-  const eligible=(inventoryUpdates||[]).filter(x=>x.cloudEligible);
+  // V190: tuyệt đối không ghi quantity tuyệt đối từ thiết bị.
+  // Tồn kho bán hàng chỉ được cập nhật bên trong commit_sale_receipt_v190().
+  // Hàm này giữ lại để tương thích code cũ nhưng không ghi Cloud.
+  const eligible=
+    (inventoryUpdates||[])
+      .filter(x=>x.cloudEligible);
 
-  if(!eligible.length){
-    return {pending:0,synced:0};
-  }
-
-  if(!navigator.onLine){
-    return {pending:eligible.length,synced:0};
-  }
-
-  try{
-    const r=await promiseWithTimeout(
-      sb.from('inventory')
-        .upsert(
-          eligible.map(x=>x.payload),
-          {onConflict:'warehouse_id,ingredient_id'}
-        )
-        .select(),
-      12000,
-      'Đồng bộ tồn bán hàng'
-    );
-
-    if(r.error)throw r.error;
-
-    const cloudRows=Array.isArray(r.data)?r.data:[];
-
-    for(const item of eligible){
-      const cloud=cloudRows.find(x=>
-        x.warehouse_id===item.payload.warehouse_id &&
-        x.ingredient_id===item.payload.ingredient_id
-      );
-
-      if(cloud)Object.assign(item.row,cloud);
-
-      delete item.row._local_only;
-      delete item.row._sync_status;
-      delete item.row._sync_error;
-    }
-
-    cacheSave();
-    return {pending:0,synced:eligible.length};
-
-  }catch(e){
-    // Nếu Cloud chưa cho tồn âm, vẫn giữ đúng số âm ở local.
-    for(const item of eligible){
-      item.row._local_only=true;
-      item.row._sync_status='pending';
-      item.row._sync_error=e?.message||String(e);
-    }
-
-    cacheSave();
-    console.warn('Sale inventory Cloud pending (có thể do tồn âm)',e);
-
-    return {pending:eligible.length,synced:0};
-  }
+  return {
+    pending:0,
+    synced:0,
+    skipped:
+      eligible.length,
+    atomic:true
+  };
 }
 
 function queueSaleCloudSyncSafely(syncData,receiptNo){
   setTimeout(()=>{
     try{
-      const salePromise=syncSaleReceiptCloud({
-        saleLocal:syncData.saleLocal,
-        salePayload:syncData.salePayload,
-        saleItemLocals:syncData.saleItemLocals,
-        saleItemsPayload:syncData.saleItemsPayload,
-        saleMovements:syncData.saleMovements
-      });
-
-      const inventoryPromise=syncSaleInventoryBatchCloud(
-        syncData.inventoryUpdates
-      );
-
       finishSaleBackgroundSync(
-        Promise.all([salePromise,inventoryPromise])
-          .then(([saleResult,inventoryResult])=>({
-            pending:
-              Number(saleResult?.pending||0)+
-              Number(inventoryResult?.pending||0),
-            synced:
-              Number(saleResult?.synced||0)+
-              Number(inventoryResult?.synced||0)
-          })),
+        syncSaleReceiptCloud({
+          saleLocal:
+            syncData.saleLocal,
+          salePayload:
+            syncData.salePayload,
+          saleItemLocals:
+            syncData.saleItemLocals,
+          saleItemsPayload:
+            syncData.saleItemsPayload,
+          saleMovements:
+            syncData.saleMovements
+        }).then(result=>{
+          // Sau transaction thành công, pull lại Cloud để bắt kịp
+          // mọi thay đổi đồng thời từ thiết bị khác.
+          if(
+            Number(result?.pending||0)===0 &&
+            navigator.onLine
+          ){
+            setTimeout(
+              ()=>loadCloud(),
+              120
+            );
+          }
+
+          return result;
+        }),
         receiptNo
       );
+
     }catch(e){
-      console.warn(`Không khởi động được Cloud sync phiếu ${receiptNo}`,e);
+      console.warn(
+        `Phiếu bán ${receiptNo}: không khởi tạo được sync atomic`,
+        e
+      );
     }
-  },600);
+  },0);
 }
 
 
@@ -28240,7 +28152,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V189',
+    app_version:'V190',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -28549,7 +28461,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:189,
+    version:190,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -28731,13 +28643,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:189,
+    version:190,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V189',storage:'supabase-storage',
+      schema:185,app_version:'V190',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -29924,7 +29836,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:189,
+    version:190,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -30564,7 +30476,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V189',
+      app_version:'V190',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -30579,7 +30491,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:189,
+      version:190,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -30856,7 +30768,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v189-full-backup-'+
+    'lat-yen-v190-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -30944,7 +30856,7 @@ function renderSettings(){
           <div>
             <h2>Đồng bộ dữ liệu</h2>
             <div class="muted">
-              Cloud là nguồn dữ liệu chính. V189 chỉ báo Đã đồng bộ khi đã push pending, pull lại toàn bộ database và xác nhận revision transaction.
+              Cloud là nguồn dữ liệu chính. V190 ghi phiếu bán + chi tiết + biến động kho + tồn kho trong một transaction PostgreSQL duy nhất.
             </div>
           </div>
         </div>
@@ -30979,7 +30891,7 @@ function renderSettings(){
 
         <div class="sync-v186-pill ok">
           <span class="dot"></span>
-          DB Transaction Safe
+          Atomic Sales Safe
         </div>
 
         ${

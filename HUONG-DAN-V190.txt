@@ -1,0 +1,31 @@
+V190 - ATOMIC SALES
+
+Mục tiêu:
+- Nhiều thiết bị cùng bán một nguyên liệu nhưng tồn kho vẫn đúng.
+- Retry mạng không trừ kho hai lần.
+- Sửa phiếu chỉ tác động phần chênh lệch so với phiếu cũ.
+
+Cơ chế:
+1. App gọi 1 RPC commit_sale_receipt_v190.
+2. PostgreSQL thực hiện trong một transaction:
+   - upsert sales
+   - replace sale_items
+   - đọc movement SALE cũ
+   - replace stock_transactions SALE mới
+   - tính NEW movement - OLD movement
+   - cộng delta trực tiếp vào inventory
+3. inventory không còn nhận quantity tuyệt đối từ thiết bị.
+4. Sale ID là idempotency key.
+5. Cùng một request gửi lại -> trả kết quả cũ, không trừ lần hai.
+6. Hai máy bán đồng thời -> PostgreSQL khóa row inventory và cộng delta tuần tự.
+7. Sau commit app pull Cloud lại.
+
+CÀI ĐẶT:
+1. Supabase -> SQL Editor -> New query.
+2. Chạy SUPABASE-V190-ATOMIC-SALES.sql.
+3. Deploy V190 lên tất cả thiết bị.
+4. Reload app/PWA.
+5. Test cùng lúc từ 2 thiết bị.
+
+Giai đoạn V190 này cố ý tập trung Bán hàng + Tồn kho trước.
+Sau khi stress-test thực tế pass mới nên chuyển Nhập/Xuất/Kiểm kê sang RPC atomic tương tự.

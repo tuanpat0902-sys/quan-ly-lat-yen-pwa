@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V189",
+  "name": "Quản Lý Lát Yên V190",
   "short_name": "Lát Yên",
-  "description": "Đồng bộ đa thiết bị với Supabase Database canonical state và transaction CAS.",
+  "description": "Bán hàng và tồn kho atomic transaction, an toàn khi nhiều thiết bị bán đồng thời.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
