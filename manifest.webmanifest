@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V233",
+  "name": "Quản Lý Lát Yên V234",
   "short_name": "Lát Yên",
-  "description": "Interaction Freeze: realtime/auto-sync/follower UI refreshes are deferred while the user is typing, clicking, scrolling, using searchable dropdowns or modals.",
+  "description": "Smart searchable dropdown auto-close: dismisses on outside interaction, focus change, external scroll, app blur, visibility change or inactivity.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V233 INTERACTION FREEZE ===== */
+/* ===== V234 SMART DROPDOWN AUTO CLOSE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11766,6 +11766,228 @@ function v220PositionCombo(select){
     )+'px';
 }
 
+
+/* ===== V234 SMART DROPDOWN AUTO CLOSE ===== */
+const V234_COMBO_IDLE_MS=8000;
+
+let v234ComboIdleTimer=null;
+let v234ClosingCombo=false;
+
+function v234ComboIsOpen(){
+  return !!(
+    v220Combo?.classList.contains(
+      'open'
+    )
+  );
+}
+
+function v234ResetComboIdle(){
+  clearTimeout(
+    v234ComboIdleTimer
+  );
+
+  if(!v234ComboIsOpen()){
+    return;
+  }
+
+  v234ComboIdleTimer=
+    setTimeout(
+      ()=>{
+        if(!v234ComboIsOpen()){
+          return;
+        }
+
+        v220CloseCombo({
+          restoreFocus:false,
+          reason:'idle'
+        });
+      },
+      V234_COMBO_IDLE_MS
+    );
+}
+
+function v234ComboContains(target){
+  return !!(
+    target &&
+    v220Combo?.contains(
+      target
+    )
+  );
+}
+
+function v234IsCurrentSelect(target){
+  return !!(
+    target &&
+    v220ComboSelect &&
+    (
+      target===v220ComboSelect ||
+      target.closest?.('select')===
+        v220ComboSelect
+    )
+  );
+}
+
+function v234CloseComboIfOutside(
+  target
+){
+  if(
+    !v234ComboIsOpen() ||
+    v234ClosingCombo
+  ){
+    return;
+  }
+
+  if(
+    v234ComboContains(target) ||
+    v234IsCurrentSelect(target)
+  ){
+    v234ResetComboIdle();
+    return;
+  }
+
+  v220CloseCombo({
+    restoreFocus:false,
+    reason:'outside'
+  });
+}
+
+function v234InstallComboAutoClose(){
+  /*
+    pointerdown runs before most controls change focus,
+    so the old dropdown disappears before the next UI action.
+  */
+  document.addEventListener(
+    'pointerdown',
+    event=>{
+      v234CloseComboIfOutside(
+        event.target
+      );
+    },
+    true
+  );
+
+  document.addEventListener(
+    'focusin',
+    event=>{
+      if(
+        !v234ComboIsOpen()
+      ){
+        return;
+      }
+
+      if(
+        v234ComboContains(
+          event.target
+        ) ||
+        v234IsCurrentSelect(
+          event.target
+        )
+      ){
+        v234ResetComboIdle();
+        return;
+      }
+
+      v220CloseCombo({
+        restoreFocus:false,
+        reason:'focus_elsewhere'
+      });
+    },
+    true
+  );
+
+  document.addEventListener(
+    'keydown',
+    event=>{
+      if(!v234ComboIsOpen()){
+        return;
+      }
+
+      if(
+        v234ComboContains(
+          event.target
+        ) ||
+        v234IsCurrentSelect(
+          event.target
+        )
+      ){
+        v234ResetComboIdle();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'input',
+    event=>{
+      if(
+        v234ComboIsOpen() &&
+        v234ComboContains(
+          event.target
+        )
+      ){
+        v234ResetComboIdle();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    'wheel',
+    event=>{
+      if(
+        !v234ComboIsOpen()
+      ){
+        return;
+      }
+
+      if(
+        v234ComboContains(
+          event.target
+        )
+      ){
+        v234ResetComboIdle();
+        return;
+      }
+
+      v220CloseCombo({
+        restoreFocus:false,
+        reason:'outside_scroll'
+      });
+    },
+    {
+      passive:true,
+      capture:true
+    }
+  );
+
+  window.addEventListener(
+    'blur',
+    ()=>{
+      if(v234ComboIsOpen()){
+        v220CloseCombo({
+          restoreFocus:false,
+          reason:'window_blur'
+        });
+      }
+    }
+  );
+
+  document.addEventListener(
+    'visibilitychange',
+    ()=>{
+      if(
+        document.hidden &&
+        v234ComboIsOpen()
+      ){
+        v220CloseCombo({
+          restoreFocus:false,
+          reason:'hidden'
+        });
+      }
+    }
+  );
+}
+
 function v220OpenCombo(
   select,
   initialText=''
@@ -11781,6 +12003,10 @@ function v220OpenCombo(
 
   v220CreateCombo();
 
+  /*
+    Opening another select simply retargets the existing searchable
+    dropdown instead of forcing the previous value to be selected.
+  */
   v220ComboSelect=
     select;
 
@@ -11793,14 +12019,25 @@ function v220OpenCombo(
   );
 
   v220ComboInput.value=
-    String(initialText||'');
+    String(
+      initialText||''
+    );
 
   v220RenderComboItems(
     v220ComboInput.value
   );
 
+  v234ResetComboIdle();
+
   setTimeout(
     ()=>{
+      if(
+        v220ComboSelect!==select ||
+        !v234ComboIsOpen()
+      ){
+        return;
+      }
+
       v220ComboInput.focus();
       v220ComboInput.select();
     },
@@ -11808,23 +12045,62 @@ function v220OpenCombo(
   );
 }
 
-function v220CloseCombo(){
+function v220CloseCombo(
+  options={}
+){
   if(!v220Combo)return;
+
+  const {
+    restoreFocus=true
+  }=options||{};
+
+  const wasOpen=
+    v220Combo.classList.contains(
+      'open'
+    );
+
+  const select=
+    v220ComboSelect;
+
+  v234ClosingCombo=true;
+
+  clearTimeout(
+    v234ComboIdleTimer
+  );
 
   v220Combo.classList.remove(
     'open'
   );
 
-  const select=
-    v220ComboSelect;
-
   v220ComboSelect=null;
   v220ComboItems=[];
   v220ComboIndex=0;
 
-  if(select){
+  v234ClosingCombo=false;
+
+  if(
+    wasOpen &&
+    restoreFocus &&
+    select &&
+    document.contains(select)
+  ){
     setTimeout(
       ()=>{
+        /*
+          Do not steal focus back if the user already moved to a
+          different control.
+        */
+        const active=
+          document.activeElement;
+
+        if(
+          active &&
+          active!==document.body &&
+          active!==v220ComboInput
+        ){
+          return;
+        }
+
         try{
           select.focus({
             preventScroll:true
@@ -11832,6 +12108,15 @@ function v220CloseCombo(){
         }catch(e){}
       },
       0
+    );
+  }
+
+  if(
+    wasOpen &&
+    v219DeferredRender
+  ){
+    v233ScheduleDeferredFlush(
+      250
     );
   }
 }
@@ -11972,15 +12257,25 @@ function v220ChooseOption(option){
   select.value=
     option.value;
 
-  v221RememberSelect(select,option.value);
+  v221RememberSelect(
+    select,
+    option.value
+  );
 
-  v220CloseCombo();
+  v220CloseCombo({
+    restoreFocus:true,
+    reason:'selected'
+  });
 
-  if(previous!==select.value){
+  if(
+    previous!==select.value
+  ){
     select.dispatchEvent(
       new Event(
         'change',
-        {bubbles:true}
+        {
+          bubbles:true
+        }
       )
     );
   }
@@ -12004,13 +12299,23 @@ function v220InstallSelectTyping(){
       return;
     }
 
-    /*
-      V232:
-      Prevent the browser native select popup entirely.
-      A normal click now opens the searchable combobox and focuses
-      the search input immediately.
-    */
     event.preventDefault();
+
+    /*
+      Same select toggles closed; another select retargets immediately.
+      This makes the control feel like a normal dropdown.
+    */
+    if(
+      v234ComboIsOpen() &&
+      v220ComboSelect===select
+    ){
+      v220CloseCombo({
+        restoreFocus:false,
+        reason:'toggle'
+      });
+
+      return;
+    }
 
     v220OpenCombo(
       select,
@@ -12018,14 +12323,12 @@ function v220InstallSelectTyping(){
     );
   };
 
-  // pointerdown fires before Chrome opens its native dropdown.
   document.addEventListener(
     'pointerdown',
     openFromPointer,
     true
   );
 
-  // Fallback for browsers/environments without PointerEvent behavior.
   document.addEventListener(
     'mousedown',
     event=>{
@@ -12042,7 +12345,6 @@ function v220InstallSelectTyping(){
     true
   );
 
-  // Block the synthetic click that can otherwise reopen native select.
   document.addEventListener(
     'click',
     event=>{
@@ -12053,9 +12355,7 @@ function v220InstallSelectTyping(){
 
       if(
         eligible(select) &&
-        v220Combo?.classList.contains(
-          'open'
-        )
+        v234ComboIsOpen()
       ){
         event.preventDefault();
       }
@@ -12117,9 +12417,7 @@ function v220InstallSelectTyping(){
     'resize',
     ()=>{
       if(
-        v220Combo?.classList.contains(
-          'open'
-        ) &&
+        v234ComboIsOpen() &&
         v220ComboSelect
       ){
         v220PositionCombo(
@@ -12131,20 +12429,34 @@ function v220InstallSelectTyping(){
 
   window.addEventListener(
     'scroll',
-    ()=>{
+    event=>{
       if(
-        v220Combo?.classList.contains(
-          'open'
-        ) &&
-        v220ComboSelect
+        !v234ComboIsOpen()
       ){
-        v220PositionCombo(
-          v220ComboSelect
-        );
+        return;
       }
+
+      if(
+        event.target &&
+        v234ComboContains(
+          event.target
+        )
+      ){
+        return;
+      }
+
+      /*
+        Page/table moved away from the select: close instead of keeping
+        a floating dropdown detached from its original field.
+      */
+      v220CloseCombo({
+        restoreFocus:false,
+        reason:'page_scroll'
+      });
     },
     {
-      passive:true
+      passive:true,
+      capture:true
     }
   );
 }
@@ -17074,7 +17386,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:233,
+    version:234,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -39754,7 +40066,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V233',
+    app_version:'V234',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -40063,7 +40375,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:233,
+    version:234,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -40245,13 +40557,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:233,
+    version:234,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V233',storage:'supabase-storage',
+      schema:185,app_version:'V234',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -41457,7 +41769,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:233,
+    version:234,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -44213,7 +44525,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V233',
+      app_version:'V234',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -44228,7 +44540,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:233,
+      version:234,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -44505,7 +44817,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v233-full-backup-'+
+    'lat-yen-v234-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -45803,6 +46115,7 @@ function renderAll(){
 installV208StorageSyncHook();
 v219InstallInteractionGuard();
 v220InstallSelectTyping();
+v234InstallComboAutoClose();
 v221InstallSmartActivity();
 v222InstallUxShortcuts();
 v224InstallZoomLock();
