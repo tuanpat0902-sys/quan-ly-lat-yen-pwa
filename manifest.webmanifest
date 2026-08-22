@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V251",
+  "name": "Quản Lý Lát Yên V253",
   "short_name": "Lát Yên",
-  "description": "Verified recipe reconciliation after Cloud reset: validates recipe seed, repairs only missing or quantity-mismatched recipe rows, and requires quantity-aware Cloud proof.",
+  "description": "Root pending convergence with automatic Cloud ACK, orphaned ingredient queue rebuild, authoritative resync, and warehouse-safe recipe ownership.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

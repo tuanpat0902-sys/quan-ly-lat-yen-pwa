@@ -1,0 +1,24 @@
+V253 - ROOT PENDING CONVERGENCE
+
+Xử lý tận gốc 38 pending Nguyên liệu/Dụng cụ khi Cloud đã xác nhận 100%.
+
+Sau MỖI Cloud Pull:
+1. Cloud == local -> exact ACK, xóa pending/error/local_only.
+2. Cloud != local -> tự dựng lại save_ingredient queue từ local hiện tại.
+3. Nguyên liệu pha chế -> dựng lại prepared_lines.
+4. Tự gửi lại Cloud.
+5. Chỉ sau khi Cloud thật khớp mới xóa pending.
+6. Sync ingredient thành công xóa cả _sync_status/_sync_error/_local_only.
+7. preparedItems được tính vào true pending accounting.
+
+Giữ V252 ROOT FIX kho mới:
+- Không auto-map công thức cũ vào currentWarehouseId.
+- Freeze owner trước khi tạo kho mới.
+- Repair owner theo lịch sử sale / kho gốc ổn định.
+- Kho mới bắt đầu không có công thức cũ.
+
+Kỳ vọng:
+Cloud 492/492 + dữ liệu giống nhau => pending tự về 0.
+Nếu còn pending >0 => đó là lỗi ghi thật và queue sẽ có last_error cụ thể.
+
+Không cần SQL mới.
