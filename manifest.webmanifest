@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V254",
+  "name": "Quản Lý Lát Yên V255",
   "short_name": "Lát Yên",
-  "description": "Absolute blank warehouse boundary: newly created warehouses start with zero visible products/recipes, ingredients, inventory, movements and sales; old global recipes cannot leak through ownership repair.",
+  "description": "Warehouse self-heal: missing local warehouse master rows are upserted and read-back verified independently, Cloud proof is refreshed, and a single missing warehouse no longer forces a full reset failure.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

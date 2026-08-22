@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V254 ABSOLUTE BLANK WAREHOUSE ===== */
+/* ===== V255 WAREHOUSE SELF HEAL ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11425,7 +11425,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V254</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V255</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -18117,6 +18117,22 @@ async function loadCloud(){
   v228ClearProvenStaleFlags(db);
 
   /*
+    V255: local-first warehouse master rows missing from Cloud are self-healed.
+  */
+  try{
+    const warehouseCoverage=v228Coverage();
+
+    if(
+      warehouseCoverage.proofAvailable &&
+      Number(warehouseCoverage.missingByTable?.warehouses||0)>0
+    ){
+      await v255RepairMissingWarehouses();
+    }
+  }catch(e){
+    console.warn('V255 warehouse self-heal after Cloud pull',e);
+  }
+
+  /*
     V253: 100% Cloud coverage must converge local pending metadata too.
     Matching rows are ACKed; real ingredient differences get a rebuilt queue
     and are pushed again instead of remaining permanently pending.
@@ -20182,6 +20198,29 @@ async function runSyncDiagnostics(){
   );
 
   return final;
+
+  // V255 warehouse self-heal.
+  try{
+    const r=JSON.parse(
+      localStorage.getItem(
+        V255_WAREHOUSE_HEAL_REPORT_KEY
+      )||'null'
+    );
+
+    add(
+      'Warehouse Self-Heal V255',
+      !r?.remaining,
+      r
+        ?`local:${Number(r.local||0)} • Cloud trước:${Number(r.cloud_before||0)} • thiếu:${Number(r.missing_before||0)} • repair:${Number(r.repaired||0)} • còn:${Number(r.remaining||0)}`
+        :'Tự chạy khi Cloud thiếu kho local'
+    );
+  }catch(e){
+    add(
+      'Warehouse Self-Heal V255',
+      false,
+      e?.message||String(e)
+    );
+  }
 
   // V254 absolute blank warehouse audit.
   try{
@@ -25094,6 +25133,17 @@ async function syncNow(){
     await loadCloudFastV202(
       true
     );
+
+    /*
+      V255: repair warehouse master rows first; this can turn kho:1 into
+      fully-covered state without rerunning Reset.
+    */
+    if(
+      v228Coverage().proofAvailable &&
+      Number(v228Coverage().missingByTable?.warehouses||0)>0
+    ){
+      await v255HealWarehouseCoverageIfNeeded();
+    }
 
     let exactAck=null;
     const ackCoverage=v228Coverage();
@@ -43557,7 +43607,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V254',
+    app_version:'V255',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -44054,7 +44104,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V254',storage:'supabase-storage',
+      schema:185,app_version:'V255',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -48259,7 +48309,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V254',
+      app_version:'V255',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -48551,7 +48601,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v254-full-backup-'+
+    'lat-yen-v255-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -51847,6 +51897,242 @@ async function v251RepairRecipeCoverageIfNeeded(
   };
 }
 
+
+/* ===== V255 WAREHOUSE SELF-HEAL ===== */
+const V255_WAREHOUSE_HEAL_REPORT_KEY='lat_yen_warehouse_heal_v255';
+let v255WarehouseHealBusy=false;
+
+function v255WarehouseSame(local,cloud){
+  if(!local||!cloud)return false;
+  return (
+    String(local.id||'')===String(cloud.id||'') &&
+    String(local.name||'').trim()===String(cloud.name||'').trim() &&
+    String(local.address||'').trim()===String(cloud.address||'').trim() &&
+    (local.active!==false)===(cloud.active!==false)
+  );
+}
+
+async function v255FetchCloudWarehouses(){
+  return fetchAllCloudRows(
+    'warehouses',
+    {orderColumn:'created_at',ascending:true}
+  );
+}
+
+async function v255UpsertAndVerifyWarehouse(row){
+  if(!row)throw new Error('Không tìm thấy kho local cần khôi phục.');
+  if(!isUuidValue(row.id)){
+    throw new Error(`Kho "${row.name||''}" chưa có UUID Cloud hợp lệ.`);
+  }
+  if(getDeletedWarehouseIds().has(row.id)){
+    throw new Error(`Kho "${row.name||''}" đang có tombstone xóa local.`);
+  }
+
+  const payload=v242WarehouseCloudPayload(row);
+
+  const upsert=await promiseWithTimeout(
+    sb.from('warehouses')
+      .upsert(payload,{onConflict:'id'})
+      .select('id,name,address,active')
+      .single(),
+    15000,
+    'Khôi phục kho lên Cloud'
+  );
+
+  if(upsert.error)throw upsert.error;
+
+  if(!v255WarehouseSame(payload,upsert.data)){
+    throw new Error(`Cloud trả về kho "${row.name||row.id}" nhưng nội dung chưa khớp local.`);
+  }
+
+  let confirmed=null;
+
+  for(let attempt=0;attempt<6;attempt++){
+    if(attempt)await sleepMs(150*attempt);
+
+    const read=await promiseWithTimeout(
+      sb.from('warehouses')
+        .select('id,name,address,active')
+        .eq('id',row.id)
+        .maybeSingle(),
+      10000,
+      'Xác minh kho Cloud'
+    );
+
+    if(read.error)throw read.error;
+
+    if(read.data&&v255WarehouseSame(payload,read.data)){
+      confirmed=read.data;
+      break;
+    }
+  }
+
+  if(!confirmed){
+    throw new Error(`Đã upsert kho "${row.name||row.id}" nhưng chưa đọc xác nhận được.`);
+  }
+
+  Object.assign(row,confirmed);
+  delete row._sync_status;
+  delete row._sync_error;
+  delete row._local_only;
+  unmarkWarehouseDeleted(row.id);
+
+  return confirmed;
+}
+
+async function v255RefreshCloudProof(){
+  const [
+    warehouses,suppliers,ingredients,inventory,products,
+    recipeItems,preparedItems,sales,saleItems,movementsRaw
+  ]=await Promise.all([
+    v255FetchCloudWarehouses(),
+    fetchAllCloudRows('suppliers'),
+    fetchAllCloudRows('ingredients'),
+    fetchAllCloudRows('inventory'),
+    fetchAllCloudRows('products'),
+    fetchAllCloudRows('recipe_items'),
+    fetchAllCloudRows('prepared_ingredient_items'),
+    fetchAllCloudRows('sales'),
+    fetchAllCloudRows('sale_items'),
+    fetchAllCloudRows('stock_transactions')
+  ]);
+
+  v228CaptureCloudProof({
+    warehouses,
+    suppliers,
+    ingredients,
+    inventory,
+    products,
+    recipe_items:recipeItems,
+    prepared_ingredient_items:preparedItems,
+    sales,
+    sale_items:saleItems,
+    stock_transactions:movementsRaw
+  });
+
+  v252LastCloudSnapshot={
+    at:Date.now(),
+    warehouses,suppliers,ingredients,inventory,products,
+    recipeItems,preparedItems,sales,saleItems,
+    movements:movementsRaw
+  };
+}
+
+async function v255RepairMissingWarehouses(){
+  if(v255WarehouseHealBusy)return {skipped:true,reason:'busy'};
+
+  v255WarehouseHealBusy=true;
+
+  const report={
+    at:new Date().toISOString(),
+    local:(db.warehouses||[]).length,
+    cloud_before:0,
+    missing_before:0,
+    repaired:0,
+    cloud_after:0,
+    remaining:0,
+    errors:[]
+  };
+
+  try{
+    const cloudBefore=await v255FetchCloudWarehouses();
+    report.cloud_before=cloudBefore.length;
+
+    const byId=new Map(
+      cloudBefore.filter(x=>x?.id).map(x=>[String(x.id),x])
+    );
+
+    const missing=[];
+
+    for(const row of db.warehouses||[]){
+      if(!row?.id||getDeletedWarehouseIds().has(row.id))continue;
+
+      const cloud=byId.get(String(row.id));
+
+      if(
+        !cloud ||
+        !v255WarehouseSame(v242WarehouseCloudPayload(row),cloud)
+      ){
+        missing.push(row);
+      }else{
+        delete row._sync_status;
+        delete row._sync_error;
+        delete row._local_only;
+      }
+    }
+
+    report.missing_before=missing.length;
+
+    for(const row of missing){
+      try{
+        await v255UpsertAndVerifyWarehouse(row);
+        report.repaired++;
+      }catch(e){
+        row._sync_status='pending';
+        row._local_only=true;
+        row._sync_error=e?.message||String(e);
+
+        report.errors.push({
+          id:row.id,
+          name:row.name||'',
+          message:row._sync_error
+        });
+      }
+    }
+
+    const cloudAfter=await v255FetchCloudWarehouses();
+    report.cloud_after=cloudAfter.length;
+
+    const afterById=new Map(
+      cloudAfter.filter(x=>x?.id).map(x=>[String(x.id),x])
+    );
+
+    report.remaining=(db.warehouses||[]).filter(row=>{
+      if(!row?.id||getDeletedWarehouseIds().has(row.id))return false;
+      return !v255WarehouseSame(
+        v242WarehouseCloudPayload(row),
+        afterById.get(String(row.id))
+      );
+    }).length;
+
+    cacheSave();
+    flushCacheSave();
+    updatePendingSyncBadge();
+
+    if(report.remaining===0){
+      await v255RefreshCloudProof();
+    }
+
+    try{
+      localStorage.setItem(
+        V255_WAREHOUSE_HEAL_REPORT_KEY,
+        JSON.stringify(report)
+      );
+    }catch(e){}
+
+    return report;
+  }finally{
+    v255WarehouseHealBusy=false;
+  }
+}
+
+async function v255HealWarehouseCoverageIfNeeded(){
+  const coverage=v228Coverage();
+  const count=Number(coverage.missingByTable?.warehouses||0);
+
+  if(!count){
+    return {attempted:false,coverage};
+  }
+
+  const repair=await v255RepairMissingWarehouses();
+
+  return {
+    attempted:true,
+    repair,
+    coverage:v228Coverage()
+  };
+}
+
 async function v239BuildCloudSeed(){
   const now=new Date().toISOString();
 
@@ -52588,7 +52874,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V254',
+      app_version:'V255',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -52928,6 +53214,33 @@ async function v239ResetCloudFromThisDevice(){
       v228Coverage();
 
     /*
+      V255: repair missing warehouse master rows before final Reset failure.
+    */
+    if(
+      coverage.proofAvailable &&
+      Number(coverage.missingByTable?.warehouses||0)>0
+    ){
+      updateSyncProgress(
+        89,
+        'Đang chốt kho Cloud',
+        `${Number(coverage.missingByTable?.warehouses||0)} kho cần xác nhận`
+      );
+
+      const warehouseHeal=
+        await v255HealWarehouseCoverageIfNeeded();
+
+      report.warehouse_repaired=
+        Number(warehouseHeal.repair?.repaired||0);
+
+      report.warehouse_remaining=
+        Number(warehouseHeal.repair?.remaining||0);
+
+      coverage=
+        warehouseHeal.coverage||
+        v228Coverage();
+    }
+
+    /*
       One last targeted self-heal: if the ONLY remaining records are recipes,
       repair those recipes and pull proof again. Never auto-hide missing rows
       from other business tables.
@@ -52999,7 +53312,7 @@ async function v239ResetCloudFromThisDevice(){
         autoBefore.enabled!==false,
       last_sync_at:now,
       last_result:
-        'v252_exact_ack_complete',
+        'v255_warehouse_self_heal_complete',
       cloud_revision:
         report.canonical_revision,
       cloud_revision_token:

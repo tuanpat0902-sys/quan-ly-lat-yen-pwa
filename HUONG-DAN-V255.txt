@@ -1,0 +1,26 @@
+V255 - WAREHOUSE SELF-HEAL
+
+Lỗi V254:
+Reset đã xử lý dữ liệu nghiệp vụ nhưng final coverage còn kho:1.
+
+V255:
+- Không Reset toàn bộ lại vì một warehouse master row.
+- Tự tìm kho local thiếu trên Cloud bằng UUID.
+- Không phục hồi kho có tombstone xóa.
+- Upsert riêng warehouses.
+- Cloud phải trả đúng id/name/address/active.
+- SELECT read-back theo id phải xác nhận đúng.
+- Chỉ sau xác minh mới xóa _sync_status/_sync_error/_local_only.
+- Refresh lại toàn bộ Cloud proof sau repair.
+
+Tự chạy ở:
+1. Cloud Pull.
+2. Đồng bộ ngay.
+3. Final verification của Reset.
+
+Không thay đổi inventory, movement, sales, product hay recipe.
+Không tạo UUID mới.
+Không xóa dữ liệu.
+
+Giữ nguyên V254 Absolute Blank Warehouse và V253/V252/V251/V250.
+Không cần SQL mới.
