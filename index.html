@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V249 CANONICAL READ AFTER WRITE ===== */
+/* ===== V250 CANONICAL RPC READ FALLBACK ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11666,7 +11666,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V249</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V250</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -19299,6 +19299,38 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V250 canonical RPC read fallback.
+  try{
+    const cred=autoSyncCredentials();
+
+    if(!cred.code||!cred.passphrase){
+      throw new Error('Chưa có mã ghép');
+    }
+
+    const health=await v250CanonicalReadHealth(
+      cred.code,
+      cred.passphrase
+    );
+
+    add(
+      'Canonical Read V250',
+      true,
+      health.using_fallback
+        ?`SELECT không thấy row • RPC đọc được Revision ${health.rpc_revision} • Auto Sync đang dùng fallback`
+        :(
+          health.direct_visible
+            ?`SELECT + RPC hoạt động • Revision ${health.rpc_revision}`
+            :`Canonical chưa có payload • Revision ${health.rpc_revision}`
+        )
+    );
+  }catch(e){
+    add(
+      'Canonical Read V250',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V249 canonical read-after-write safety.
   try{
     add(
@@ -19629,7 +19661,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:249,
+    version:250,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -42920,7 +42952,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V249',
+    app_version:'V250',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -43229,7 +43261,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:249,
+    version:250,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -43411,13 +43443,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:249,
+    version:250,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V249',storage:'supabase-storage',
+      schema:185,app_version:'V250',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44555,35 +44587,104 @@ async function v189SyncKey(code){
   return await backupLookupKey(code);
 }
 
-async function v189FetchCanonical(
-  code,
-  passphrase
-){
-  const key=
-    await v189SyncKey(code);
 
-  const r=
-    await promiseWithTimeout(
-      sb.from(V189_CANONICAL_TABLE)
-        .select(
-          'sync_key,revision,envelope,updated_at'
-        )
-        .eq('sync_key',key)
-        .maybeSingle(),
-      12000,
-      'Đọc trạng thái đồng bộ'
-    );
+/* ===== V250 CANONICAL RPC READ FALLBACK ===== */
+const V250_CANONICAL_READ_EXPECTED_REVISION=-1;
+
+async function v250CanonicalRawRpcReadByKey(syncKey){
+  const r=await promiseWithTimeout(
+    sb.rpc(
+      V189_COMMIT_RPC,
+      {
+        p_sync_key:syncKey,
+        p_expected_revision:V250_CANONICAL_READ_EXPECTED_REVISION,
+        p_envelope:null
+      }
+    ),
+    15000,
+    'Đọc Canonical qua RPC'
+  );
 
   if(r.error){
     throw r.error;
   }
 
+  const row=Array.isArray(r.data)
+    ?r.data[0]
+    :r.data;
+
+  if(!row){
+    throw new Error(
+      'RPC đọc Canonical không trả dữ liệu.'
+    );
+  }
+
+  if(row.success){
+    throw new Error(
+      'Canonical có revision âm bất thường; dừng để bảo vệ dữ liệu.'
+    );
+  }
+
+  return {
+    revision:Number(row.revision||0),
+    envelope:row.envelope||null,
+    updated_at:row.updated_at||''
+  };
+}
+
+async function v250CanonicalRpcRead(code,passphrase){
+  const key=await v189SyncKey(code);
+  const raw=await v250CanonicalRawRpcReadByKey(key);
+
+  let payload=null;
+
+  if(raw.envelope){
+    try{
+      payload=await decryptBackupSnapshot(
+        raw.envelope,
+        passphrase
+      );
+    }catch(e){
+      throw new Error(
+        'RPC đọc được Canonical nhưng không giải mã được. Kiểm tra mật khẩu ghép.'
+      );
+    }
+  }
+
+  return {
+    key,
+    revision:raw.revision,
+    payload,
+    updated_at:raw.updated_at,
+    source:'rpc_fallback'
+  };
+}
+
+async function v250DirectCanonicalSelect(code,passphrase){
+  const key=await v189SyncKey(code);
+
+  const r=await promiseWithTimeout(
+    sb.from(V189_CANONICAL_TABLE)
+      .select('sync_key,revision,envelope,updated_at')
+      .eq('sync_key',key)
+      .maybeSingle(),
+    12000,
+    'Đọc Canonical trực tiếp'
+  );
+
+  if(r.error){
+    return {
+      key,
+      error:r.error,
+      data:null
+    };
+  }
+
   if(!r.data){
     return {
       key,
-      revision:0,
-      payload:null,
-      updated_at:''
+      error:null,
+      data:null
     };
   }
 
@@ -44591,26 +44692,105 @@ async function v189FetchCanonical(
 
   if(r.data.envelope){
     try{
-      payload=
-        await decryptBackupSnapshot(
-          r.data.envelope,
-          passphrase
-        );
-    }catch(e){
-      throw new Error(
-        'Không giải mã được trạng thái Cloud. Hãy ghép lại thiết bị bằng QR.'
+      payload=await decryptBackupSnapshot(
+        r.data.envelope,
+        passphrase
       );
+    }catch(e){
+      return {
+        key,
+        error:new Error(
+          'SELECT thấy Canonical nhưng không giải mã được.'
+        ),
+        data:null
+      };
     }
   }
 
   return {
     key,
-    revision:
-      Number(r.data.revision||0),
-    payload,
-    updated_at:
-      r.data.updated_at||''
+    error:null,
+    data:{
+      key,
+      revision:Number(r.data.revision||0),
+      payload,
+      updated_at:r.data.updated_at||'',
+      source:'direct_select'
+    }
   };
+}
+
+async function v250CanonicalReadHealth(code,passphrase){
+  const direct=await v250DirectCanonicalSelect(
+    code,
+    passphrase
+  );
+
+  const rpc=await v250CanonicalRpcRead(
+    code,
+    passphrase
+  );
+
+  return {
+    direct_visible:!!direct.data,
+    direct_revision:Number(direct.data?.revision||0),
+    direct_error:direct.error?.message||'',
+    rpc_revision:Number(rpc.revision||0),
+    rpc_has_payload:!!rpc.payload,
+    using_fallback:
+      !direct.data &&
+      (
+        Number(rpc.revision||0)>0 ||
+        !!rpc.payload
+      )
+  };
+}
+
+async function v189FetchCanonical(
+  code,
+  passphrase
+){
+  const direct=await v250DirectCanonicalSelect(
+    code,
+    passphrase
+  );
+
+  if(direct.data){
+    return direct.data;
+  }
+
+  try{
+    const rpc=await v250CanonicalRpcRead(
+      code,
+      passphrase
+    );
+
+    if(
+      rpc.revision>0 ||
+      rpc.payload
+    ){
+      return rpc;
+    }
+
+    return {
+      key:rpc.key,
+      revision:0,
+      payload:null,
+      updated_at:rpc.updated_at||'',
+      source:direct.error
+        ?'rpc_empty_after_select_error'
+        :'rpc_empty'
+    };
+
+  }catch(rpcError){
+    if(direct.error){
+      throw new Error(
+        `Không đọc được Canonical. SELECT: ${direct.error.message||direct.error} • RPC: ${rpcError.message||rpcError}`
+      );
+    }
+
+    throw rpcError;
+  }
 }
 
 async function v189CommitCanonical(
@@ -44629,7 +44809,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:249,
+    version:250,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -47464,7 +47644,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V249',
+      app_version:'V250',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47479,7 +47659,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:249,
+      version:250,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47756,7 +47936,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v249-full-backup-'+
+    'lat-yen-v250-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -48952,7 +49132,7 @@ function v248WriteResetHeartbeat(stage='reset'){
     JSON.stringify({
       owner:V244_RESET_OWNER,
       at:Date.now(),
-      version:249,
+      version:250,
       stage
     })
   );
@@ -50788,45 +50968,24 @@ function v247RestoreSyncIdentity(snapshot){
 }
 
 async function v247FreshSyncCode(){
-  /*
-    A reset generation must use a sync key with no existing canonical row.
-    Code collision is extremely unlikely, but we still check explicitly.
-  */
   for(let attempt=0;attempt<12;attempt++){
-    const code=
-      generateMultiDeviceCode();
+    const code=generateMultiDeviceCode();
+    const key=await v189SyncKey(code);
 
-    const key=
-      await v189SyncKey(
-        code
-      );
+    const raw=await v250CanonicalRawRpcReadByKey(
+      key
+    );
 
-    const r=
-      await promiseWithTimeout(
-        sb.from(V189_CANONICAL_TABLE)
-          .select(
-            'sync_key,revision'
-          )
-          .eq(
-            'sync_key',
-            key
-          )
-          .maybeSingle(),
-        10000,
-        'Kiểm tra mã đồng bộ mới'
-      );
-
-    if(r.error){
-      throw r.error;
-    }
-
-    if(!r.data){
+    if(
+      Number(raw.revision||0)===0 &&
+      !raw.envelope
+    ){
       return code;
     }
   }
 
   throw new Error(
-    'Không tạo được mã đồng bộ mới chưa từng sử dụng.'
+    'Không tạo được mã đồng bộ mới sạch sau 12 lần.'
   );
 }
 
@@ -50972,101 +51131,96 @@ async function v249WaitCanonicalVisible(code,passphrase,expectedRevision,local){
   };
 }
 
-async function v249CommitAndConfirmCanonical(code,passphrase,local){
-  const initialRemote=await v189FetchCanonical(code,passphrase);
+async function v249CommitAndConfirmCanonical(
+  code,
+  passphrase,
+  local
+){
+  const before=await v250CanonicalRpcRead(
+    code,
+    passphrase
+  );
 
   if(
-    Number(initialRemote.revision||0)!==0 ||
-    initialRemote.payload
+    Number(before.revision||0)!==0 ||
+    before.payload
   ){
     throw new Error(
-      `Mã đồng bộ mới không còn trống trước commit (revision ${initialRemote.revision||0}).`
+      `Mã đồng bộ mới không còn sạch trước commit (revision ${before.revision||0}).`
     );
   }
 
-  const first=await v189CommitCanonical(
+  const commit=await v189CommitCanonical(
     code,
     passphrase,
     0,
     local
   );
 
-  if(!first.success){
+  if(!commit.success){
     throw new Error(
-      `Không tạo được Canonical mới • Cloud revision ${first.revision||0}.`
+      `Không tạo được Canonical mới • Cloud revision ${commit.revision||0}.`
     );
   }
 
-  const firstWritten=await v247DecryptCommitEnvelope(
-    first.envelope,
+  const written=await v247DecryptCommitEnvelope(
+    commit.envelope,
     passphrase
   );
 
   if(
-    !firstWritten?.state ||
-    !v213CanonicalStatesEqual(firstWritten.state,local.state)
+    !written?.state ||
+    !v213CanonicalStatesEqual(
+      written.state,
+      local.state
+    )
   ){
     throw new Error(
-      'RPC Canonical lần 1 trả envelope không khớp local.'
+      'Envelope RPC commit Canonical không khớp local.'
     );
   }
 
-  const second=await v189CommitCanonical(
+  const rpcRead=await v250CanonicalRpcRead(
     code,
-    passphrase,
-    Number(first.revision||0),
-    local
-  );
-
-  if(!second.success){
-    throw new Error(
-      `Canonical lần 1 chưa được server xác nhận ổn định (expected ${first.revision}, Cloud ${second.revision}).`
-    );
-  }
-
-  const secondWritten=await v247DecryptCommitEnvelope(
-    second.envelope,
     passphrase
   );
 
   if(
-    !secondWritten?.state ||
-    !v213CanonicalStatesEqual(secondWritten.state,local.state)
+    Number(rpcRead.revision||0)!==
+    Number(commit.revision||0)
   ){
     throw new Error(
-      'RPC Canonical xác nhận lần 2 trả envelope không khớp local.'
+      `RPC read-back Canonical không khớp revision commit (${commit.revision} → ${rpcRead.revision}).`
     );
   }
 
-  const expectedRevision=Number(second.revision||0);
-
-  if(expectedRevision<=Number(first.revision||0)){
+  if(
+    !rpcRead.payload?.state ||
+    !v213CanonicalStatesEqual(
+      rpcRead.payload.state,
+      local.state
+    )
+  ){
     throw new Error(
-      `Revision Canonical không tăng đúng sau CAS xác nhận (${first.revision} → ${second.revision}).`
+      'RPC read-back Canonical thấy revision đúng nhưng state không khớp local.'
     );
   }
 
-  const visible=await v249WaitCanonicalVisible(
+  const direct=await v250DirectCanonicalSelect(
     code,
-    passphrase,
-    expectedRevision,
-    local
+    passphrase
   );
-
-  if(!visible.visible){
-    throw new Error(
-      `Canonical đã được RPC xác nhận đến revision ${expectedRevision} nhưng SELECT vẫn chưa nhìn thấy row mới (hiện revision ${visible.revision}). Reset dừng trước DELETE để bảo đảm Auto Sync sau này đọc được Canonical.`
-    );
-  }
 
   return {
     success:true,
-    revision:Number(visible.revision||expectedRevision),
-    rpc_revision:expectedRevision,
-    first_revision:Number(first.revision||0),
-    visibility_attempts:visible.attempts,
+    revision:Number(commit.revision||0),
+    rpc_revision:Number(rpcRead.revision||0),
     server_confirmed:true,
-    select_visible:true
+    read_source:direct.data
+      ?'direct_select'
+      :'rpc_fallback',
+    direct_select_visible:!!direct.data,
+    direct_select_error:direct.error?.message||''
   };
 }
 
@@ -51100,7 +51254,9 @@ async function v247PrepareCleanGeneration(){
     saveAutoSyncConfig({
       cloud_revision:canonical.revision,
       cloud_revision_token:String(canonical.revision),
-      last_result:'v249_canonical_visible'
+      last_result:canonical.direct_select_visible
+        ?'v250_canonical_direct'
+        :'v250_canonical_rpc_fallback'
     });
 
     const backup=await v239ReplaceCloudBackup();
@@ -51109,10 +51265,10 @@ async function v247PrepareCleanGeneration(){
       old_code:generation.oldCode,
       new_code:generation.newCode,
       canonical_revision:canonical.revision,
-      rpc_revision:canonical.rpc_revision,
-      visibility_attempts:canonical.visibility_attempts,
+      canonical_read_source:canonical.read_source,
+      direct_select_visible:canonical.direct_select_visible,
       backup_ready:!backup.skipped,
-      status:'v249_metadata_ready'
+      status:'v250_metadata_ready'
     });
 
     return {
@@ -51133,7 +51289,7 @@ async function v247PrepareCleanGeneration(){
     v247SaveGenerationInfo({
       old_code:identityBefore?.auto?.code||'',
       failed_new_code:generation?.newCode||'',
-      status:'v249_rolled_back',
+      status:'v250_rolled_back',
       error:e?.message||String(e)
     });
 
@@ -51185,14 +51341,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:249,
+    version:250,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V249',
+      app_version:'V250',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -51308,7 +51464,7 @@ async function v239ResetCloudFromThisDevice(){
     const first=
       await appConfirm(
         `Kiểm tra an toàn đã PASS.\n\nThiết bị hiện tại có ${preflight.readiness.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.\n\n`+
-        'V249 sẽ tạo mã đồng bộ mới, xác nhận Canonical bằng 2 CAS RPC và chờ SELECT nhìn thấy row mới trước khi xóa dữ liệu nghiệp vụ.\n\n'+
+        'V250 sẽ tạo mã đồng bộ mới, commit Canonical rồi đọc lại bằng RPC SECURITY DEFINER. SELECT trực tiếp chỉ còn là đường nhanh và không còn chặn Reset nếu RLS ẩn row.\n\n'+
         'Các thiết bị khác sau Reset phải ghép lại bằng mã/QR mới.',
         'Đặt lại toàn bộ Cloud'
       );
@@ -51325,7 +51481,7 @@ async function v239ResetCloudFromThisDevice(){
         '• Snapshot local được tạo trước mọi thay đổi.\n'+
         '• Collision-Safe Normalize + FULL audit chạy trước DELETE.\n'+
         '• Tạo mã đồng bộ THẾ HỆ MỚI.\n'+
-        '• Canonical mới phải PASS 2 CAS RPC + SELECT visibility.\n'+
+        '• Canonical mới phải PASS commit RPC + RPC read-back.\n'+
         '• Backup mới phải upload PASS.\n'+
         '• CHỈ SAU ĐÓ mới DELETE dữ liệu nghiệp vụ Cloud.\n\n'+
         'Tiếp tục?',
@@ -51434,7 +51590,7 @@ async function v239ResetCloudFromThisDevice(){
     updateSyncProgress(
       25,
       'Metadata mới đã sẵn sàng',
-      `Mã mới ${cleanGeneration.newCode} • Canonical Rev ${report.canonical_revision} • Backup PASS`
+      `Mã mới ${cleanGeneration.newCode} • Canonical Rev ${report.canonical_revision} • đọc ${cleanGeneration.canonical?.read_source==='rpc_fallback'?'RPC fallback':'SELECT'} • Backup PASS`
     );
 
     v244TouchResetLock();
@@ -51522,7 +51678,7 @@ async function v239ResetCloudFromThisDevice(){
         autoBefore.enabled!==false,
       last_sync_at:now,
       last_result:
-        'v249_read_after_write_complete',
+        'v250_rpc_read_fallback_complete',
       cloud_revision:
         report.canonical_revision,
       cloud_revision_token:

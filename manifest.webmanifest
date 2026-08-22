@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V249",
+  "name": "Quản Lý Lát Yên V250",
   "short_name": "Lát Yên",
-  "description": "Canonical read-after-write hardening with two CAS confirmations, bounded SELECT visibility polling, and helper-level pairing rollback before destructive Cloud reset.",
+  "description": "Canonical RPC read fallback: direct SELECT is optional; SECURITY DEFINER commit RPC is reused in non-mutating revision -1 mode for canonical reads and reset verification.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
