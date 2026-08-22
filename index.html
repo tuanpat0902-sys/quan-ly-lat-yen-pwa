@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V187 CONCURRENT SAFE ===== */
+/* ===== V188 CLOUD REVISION ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9277,6 +9277,13 @@ button{
 
 /* ===== V187 CONCURRENT SAFE ===== */
 .sync-v187-merged{border-left-color:#f59e0b;background:#fffbeb;color:#92400e}
+
+/* ===== V188 CLOUD REVISION ===== */
+.sync-v188-revision{
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.02em;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -27883,7 +27890,7 @@ function manualOptimizeStorage(){
 /* ===== V183 MULTI-DEVICE ENCRYPTED BACKUP ===== */
 const MULTI_DEVICE_CONFIG_KEY='lat_yen_multidevice_config_v1';
 const MULTI_DEVICE_TABLE='__storage_v184_unused';
-const MULTI_DEVICE_SCHEMA=187;
+const MULTI_DEVICE_SCHEMA=188;
 
 const MULTI_DEVICE_BUCKET='lat-yen-backups';
 const MULTI_DEVICE_STORAGE_DIR='v184';
@@ -28151,7 +28158,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V187',
+    app_version:'V188',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -28354,7 +28361,9 @@ function loadAutoSyncConfig(){
         x.entity_state&&typeof x.entity_state==='object'
           ?x.entity_state
           :{},
-      conflict_count:Number(x.conflict_count||0)
+      conflict_count:Number(x.conflict_count||0),
+      cloud_revision:Number(x.cloud_revision||0),
+      cloud_revision_token:String(x.cloud_revision_token||'')
     };
   }catch(e){
     return {
@@ -28367,7 +28376,9 @@ function loadAutoSyncConfig(){
       paired_at:'',
       last_merge_at:0,
       entity_state:{},
-      conflict_count:0
+      conflict_count:0,
+      cloud_revision:0,
+      cloud_revision_token:''
     };
   }
 }
@@ -28456,7 +28467,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:187,
+    version:188,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -28638,13 +28649,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:187,
+    version:188,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V187',storage:'supabase-storage',
+      schema:185,app_version:'V188',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -28682,8 +28693,8 @@ async function autoSyncRestore(envelope,code,passphrase){
 }
 
 /* ===== V187 CONCURRENT MULTI-DEVICE MERGE ===== */
-const CONCURRENT_SYNC_VERSION=187;
-const CONCURRENT_SYNC_DIR='v187';
+const CONCURRENT_SYNC_VERSION=188;
+const CONCURRENT_SYNC_DIR='v188';
 const CONFLICT_ARCHIVE_KEY='lat_yen_conflict_archive_v187';
 
 function concurrentSyncKeys(){
@@ -28797,28 +28808,38 @@ function concurrentCurrentEntries(key,raw){
 
 function prepareConcurrentLocalState(){
   const cfg=loadAutoSyncConfig();
+
   const previous=
     cfg.entity_state&&typeof cfg.entity_state==='object'
       ?cfg.entity_state
       :{};
 
-  const deviceId=multiDeviceDeviceId();
-  const now=Date.now();
+  const deviceId=
+    multiDeviceDeviceId();
+
   const state={};
   const nextMeta={};
 
   for(const key of concurrentSyncKeys()){
-    const raw=localStorage.getItem(key);
-    const current=concurrentCurrentEntries(key,raw);
+    const raw=
+      localStorage.getItem(key);
+
+    const current=
+      concurrentCurrentEntries(
+        key,
+        raw
+      );
+
     const old=
       previous[key]&&typeof previous[key]==='object'
         ?previous[key]
         :{};
 
-    const ids=new Set([
-      ...Object.keys(current.entries),
-      ...Object.keys(old)
-    ]);
+    const ids=
+      new Set([
+        ...Object.keys(current.entries),
+        ...Object.keys(old)
+      ]);
 
     state[key]={
       mode:current.mode,
@@ -28834,7 +28855,9 @@ function prepareConcurrentLocalState(){
           id
         );
 
-      const oldMeta=old[id]||{};
+      const oldMeta=
+        old[id]||{};
+
       const value=
         hasCurrent
           ?current.entries[id]
@@ -28846,20 +28869,16 @@ function prepareConcurrentLocalState(){
           :'__deleted__';
 
       const changed=
-        hash!==String(oldMeta.hash||'');
+        hash!==String(
+          oldMeta.hash||''
+        );
 
+      // V188: logical version, không dùng đồng hồ thiết bị.
+      // Mỗi thay đổi local tăng revision record lên đúng 1.
       const version=
         changed
-          ?Math.max(
-              now,
-              concurrentRecordVersion(
-                value,
-                now
-              )
-            )
-          :Number(
-              oldMeta.version||now
-            );
+          ?Number(oldMeta.version||0)+1
+          :Number(oldMeta.version||0);
 
       const author=
         changed
@@ -28878,6 +28897,7 @@ function prepareConcurrentLocalState(){
       };
 
       state[key].entries[id]=entry;
+
       nextMeta[key][id]={
         hash,
         version,
@@ -28892,11 +28912,10 @@ function prepareConcurrentLocalState(){
   });
 
   return {
-    schema:CONCURRENT_SYNC_VERSION,
+    schema:188,
     device_id:deviceId,
     device_name:multiDeviceDeviceName(),
-    updated_at:new Date(now).toISOString(),
-    updated_ms:now,
+    updated_at:new Date().toISOString(),
     state
   };
 }
@@ -29058,13 +29077,18 @@ async function readConcurrentDeviceStates(code,passphrase){
 }
 
 function compareConcurrentEntry(a,b){
-  const av=Number(a?.version||0);
-  const bv=Number(b?.version||0);
+  const av=
+    Number(a?.version||0);
+
+  const bv=
+    Number(b?.version||0);
 
   if(av!==bv){
     return av-bv;
   }
 
+  // Cùng logical revision = hai thiết bị sửa đồng thời.
+  // Tie-break bằng device id để mọi thiết bị luôn chọn cùng một kết quả.
   return String(a?.author||'')
     .localeCompare(
       String(b?.author||'')
@@ -29106,10 +29130,6 @@ function addConflictArchive(item){
 function mergeConcurrentStates(states){
   const merged={};
   const conflicts=[];
-  const cfg=loadAutoSyncConfig();
-  const since=Number(
-    cfg.last_merge_at||0
-  );
 
   for(const snapshot of states){
     for(
@@ -29143,12 +29163,15 @@ function mergeConcurrentStates(states){
           String(current.hash||'')===
           String(incoming.hash||'');
 
+        const sameVersion=
+          Number(current.version||0)===
+          Number(incoming.version||0);
+
         if(
           !sameHash &&
+          sameVersion &&
           String(current.author||'')!==
-            String(incoming.author||'') &&
-          Number(current.version||0)>since &&
-          Number(incoming.version||0)>since
+            String(incoming.author||'')
         ){
           const winner=
             compareConcurrentEntry(
@@ -29425,6 +29448,316 @@ function conflictArchiveCount(){
     return 0;
   }
 }
+
+/* ===== V188 CLOUD REVISION JOURNAL ===== */
+const CLOUD_REVISION_DIR='v188';
+const CLOUD_REVISION_SETTLE_MS=900;
+const CLOUD_REVISION_MAX_ROUNDS=4;
+
+function randomRevisionId(){
+  if(crypto.randomUUID){
+    return crypto.randomUUID();
+  }
+
+  return Array.from(
+    crypto.getRandomValues(
+      new Uint8Array(16)
+    ),
+    b=>
+      b.toString(16)
+        .padStart(2,'0')
+  ).join('');
+}
+
+async function cloudRevisionFolder(code){
+  const lookup=
+    await backupLookupKey(code);
+
+  return `${CLOUD_REVISION_DIR}/${lookup}/revisions`;
+}
+
+async function appendCloudRevision(
+  code,
+  payload
+){
+  const folder=
+    await cloudRevisionFolder(code);
+
+  const id=
+    randomRevisionId();
+
+  const path=
+    `${folder}/${id}.json`;
+
+  const body={
+    schema:188,
+    id,
+    device_id:
+      multiDeviceDeviceId(),
+    device_name:
+      multiDeviceDeviceName(),
+    state_hash:
+      await sha256Text(
+        JSON.stringify(
+          payload?.state||{}
+        )
+      )
+  };
+
+  const r=await promiseWithTimeout(
+    sb.storage
+      .from(MULTI_DEVICE_BUCKET)
+      .upload(
+        path,
+        new Blob(
+          [JSON.stringify(body)],
+          {type:'application/json'}
+        ),
+        {
+          contentType:'application/json',
+          upsert:false,
+          cacheControl:'0'
+        }
+      ),
+    12000,
+    'Tạo Cloud Revision'
+  );
+
+  if(r.error){
+    throw r.error;
+  }
+
+  return {
+    id,
+    path
+  };
+}
+
+async function listCloudRevisions(
+  code
+){
+  const folder=
+    await cloudRevisionFolder(code);
+
+  const r=await promiseWithTimeout(
+    sb.storage
+      .from(MULTI_DEVICE_BUCKET)
+      .list(
+        folder,
+        {
+          limit:1000,
+          sortBy:{
+            column:'updated_at',
+            order:'asc'
+          }
+        }
+      ),
+    12000,
+    'Đọc Cloud Revision'
+  );
+
+  if(r.error){
+    const msg=
+      String(
+        r.error?.message||
+        r.error
+      ).toLowerCase();
+
+    if(
+      msg.includes('not found')||
+      msg.includes('object not found')
+    ){
+      return [];
+    }
+
+    throw r.error;
+  }
+
+  return (r.data||[])
+    .filter(
+      x=>
+        x&&
+        typeof x.name==='string'&&
+        x.name.endsWith('.json')
+    )
+    .map(x=>({
+      name:x.name,
+      updated_at:
+        x.updated_at||
+        x.created_at||
+        '',
+      id:
+        x.name.replace(
+          /\.json$/,''
+        )
+    }))
+    .sort((a,b)=>{
+      const ta=
+        String(a.updated_at||'');
+
+      const tb=
+        String(b.updated_at||'');
+
+      if(ta!==tb){
+        return ta.localeCompare(tb);
+      }
+
+      return String(a.id)
+        .localeCompare(
+          String(b.id)
+        );
+    });
+}
+
+function cloudRevisionInfo(rows){
+  const list=
+    Array.isArray(rows)
+      ?rows
+      :[];
+
+  const latest=
+    list[list.length-1]||
+    null;
+
+  return {
+    revision:list.length,
+    token:
+      latest
+        ?`${latest.updated_at}|${latest.id}`
+        :''
+  };
+}
+
+function sleepMs(ms){
+  return new Promise(
+    resolve=>
+      setTimeout(
+        resolve,
+        ms
+      )
+  );
+}
+
+async function convergeCloudRevision(
+  code,
+  passphrase
+){
+  let lastToken='';
+  let finalInfo={
+    revision:0,
+    token:''
+  };
+  let finalMerge={
+    devices:0,
+    changedKeys:0,
+    conflicts:0
+  };
+
+  for(
+    let round=0;
+    round<CLOUD_REVISION_MAX_ROUNDS;
+    round++
+  ){
+    const merged=
+      await concurrentMergeSync(
+        code,
+        passphrase
+      );
+
+    finalMerge=merged;
+
+    const localState=
+      prepareConcurrentLocalState();
+
+    await appendCloudRevision(
+      code,
+      localState
+    );
+
+    await sleepMs(
+      CLOUD_REVISION_SETTLE_MS
+    );
+
+    const first=
+      cloudRevisionInfo(
+        await listCloudRevisions(
+          code
+        )
+      );
+
+    // Pull/merge lại sau khi marker đã xuất hiện.
+    const secondMerge=
+      await concurrentMergeSync(
+        code,
+        passphrase
+      );
+
+    finalMerge={
+      devices:
+        Math.max(
+          merged.devices||0,
+          secondMerge.devices||0
+        ),
+      changedKeys:
+        (merged.changedKeys||0)+
+        (secondMerge.changedKeys||0),
+      conflicts:
+        (merged.conflicts||0)+
+        (secondMerge.conflicts||0)
+    };
+
+    await sleepMs(
+      CLOUD_REVISION_SETTLE_MS
+    );
+
+    const second=
+      cloudRevisionInfo(
+        await listCloudRevisions(
+          code
+        )
+      );
+
+    finalInfo=second;
+
+    // Hai lần đọc liên tiếp thấy cùng latest revision => đã hội tụ ở thời điểm này.
+    if(
+      first.token&&
+      first.token===second.token
+    ){
+      return {
+        converged:true,
+        rounds:round+1,
+        ...finalInfo,
+        ...finalMerge
+      };
+    }
+
+    // Nếu vòng sau vẫn là cùng một token, cũng coi là ổn.
+    if(
+      lastToken&&
+      lastToken===second.token
+    ){
+      return {
+        converged:true,
+        rounds:round+1,
+        ...finalInfo,
+        ...finalMerge
+      };
+    }
+
+    lastToken=
+      second.token;
+  }
+
+  return {
+    converged:false,
+    rounds:
+      CLOUD_REVISION_MAX_ROUNDS,
+    ...finalInfo,
+    ...finalMerge
+  };
+}
+
 async function autoSyncNow(options={}){
   const {
     force=false,
@@ -29432,7 +29765,8 @@ async function autoSyncNow(options={}){
     silent=true
   }=options;
 
-  const cfg=loadAutoSyncConfig();
+  const cfg=
+    loadAutoSyncConfig();
 
   if(
     autoSyncBusy||
@@ -29463,8 +29797,7 @@ async function autoSyncNow(options={}){
   }
 
   try{
-    // 1) Dữ liệu nghiệp vụ vẫn ưu tiên Supabase tables / local-first queue.
-    // Chỉ ép sync nghiệp vụ khi người dùng thao tác hoặc khi app vừa online lại.
+    // Đồng bộ hàng đợi nghiệp vụ lên Supabase trước.
     if(
       force&&
       typeof syncPendingOperations==='function'
@@ -29493,9 +29826,9 @@ async function autoSyncNow(options={}){
       }
     }
 
-    // 2) Local-only data: mỗi thiết bị có snapshot riêng, merge theo record/key.
-    const merged=
-      await concurrentMergeSync(
+    // V188: merge local-only + tạo revision marker + đọc lại đến khi hội tụ.
+    const result=
+      await convergeCloudRevision(
         cred.code,
         cred.passphrase
       );
@@ -29508,9 +29841,17 @@ async function autoSyncNow(options={}){
       passphrase:cred.passphrase,
       last_sync_at:now,
       last_result:
-        merged.conflicts
-          ?'merged_conflicts'
-          :'synced'
+        result.converged
+          ?(
+            result.conflicts
+              ?'merged_conflicts'
+              :'synced'
+          )
+          :'catching_up',
+      cloud_revision:
+        result.revision||0,
+      cloud_revision_token:
+        result.token||''
     });
 
     saveMultiDeviceConfig({
@@ -29519,29 +29860,29 @@ async function autoSyncNow(options={}){
     });
 
     if(!silent){
-      if(merged.conflicts){
+      if(!result.converged){
         toastMsg(
-          `Đã hợp nhất ${merged.devices} thiết bị • lưu ${merged.conflicts} bản xung đột`
+          `Cloud đang có thay đổi mới • đang chờ vòng tiếp theo • Rev ${result.revision||0}`
         );
-      }else if(merged.changedKeys){
+      }else if(result.conflicts){
         toastMsg(
-          `Đã hợp nhất dữ liệu từ ${merged.devices} thiết bị`
+          `Đã hội tụ Rev ${result.revision} • lưu ${result.conflicts} xung đột`
         );
       }else{
         toastMsg(
-          'Dữ liệu đã đồng bộ'
+          `Đã đồng bộ • Rev ${result.revision}`
         );
       }
     }
 
     return {
-      direction:'merge',
-      ...merged
+      direction:'revision-merge',
+      ...result
     };
 
   }catch(e){
     console.warn(
-      'V187 concurrent sync',
+      'V188 revision sync',
       reason,
       e
     );
@@ -29552,7 +29893,7 @@ async function autoSyncNow(options={}){
 
     if(!silent&&reason!=='timer'){
       alert(
-        'Đồng bộ đa thiết bị chưa hoàn tất.\n\n'+
+        'Đồng bộ V188 chưa hoàn tất.\n\n'+
         String(e?.message||e)
       );
     }
@@ -29571,16 +29912,21 @@ async function autoSyncNow(options={}){
     if(statusEl){
       const label={
         synced:'Đã đồng bộ',
-        merged_conflicts:'Đã hợp nhất • có lịch sử xung đột',
+        merged_conflicts:'Đã đồng bộ • có lịch sử xung đột',
+        catching_up:'Đang chờ hội tụ',
         error:'Lỗi đồng bộ',
         paired:'Đã ghép'
       }[current.last_result]||
         'Sẵn sàng';
 
       statusEl.textContent=
-        current.last_sync_at
-          ?`${label} • ${dt(current.last_sync_at)}`
-          :label;
+        current.cloud_revision
+          ?`${label} • Rev ${current.cloud_revision}`
+          :(
+            current.last_sync_at
+              ?`${label} • ${dt(current.last_sync_at)}`
+              :label
+          );
     }
   }
 }
@@ -29852,7 +30198,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V187',
+      app_version:'V188',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -29867,7 +30213,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:187,
+      version:188,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -30144,7 +30490,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v187-full-backup-'+
+    'lat-yen-v188-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -30206,7 +30552,8 @@ function renderSettings(){
     synced:'Đã đồng bộ',
     uploaded:'Đã sao lưu',
     downloaded:'Đã cập nhật',
-    merged_conflicts:'Đã hợp nhất',
+    merged_conflicts:'Đã đồng bộ',
+    catching_up:'Đang hội tụ',
     conflict:'Có xung đột',
     error:'Lỗi đồng bộ',
     paired:'Đã ghép'
@@ -30231,7 +30578,7 @@ function renderSettings(){
           <div>
             <h2>Đồng bộ dữ liệu</h2>
             <div class="muted">
-              Nhiều thiết bị có thể dùng cùng lúc; dữ liệu local được hợp nhất theo từng bản ghi.
+              Nhiều thiết bị có thể dùng cùng lúc; chỉ báo Đã đồng bộ khi local đã bắt kịp Cloud Revision mới nhất.
             </div>
           </div>
         </div>
@@ -30268,6 +30615,12 @@ function renderSettings(){
           <span class="dot"></span>
           Multi-device Safe
         </div>
+
+        ${
+          auto.cloud_revision
+            ?`<div class="sync-v186-pill ok"><span class="dot"></span>Revision ${auto.cloud_revision}</div>`
+            :''
+        }
 
         ${
           conflictArchiveCount()
@@ -30326,7 +30679,7 @@ function renderSettings(){
             <div class="sync-v186-alert sync-v187-merged">
               <b>Đã xử lý xung đột tự động.</b>
               Các bản ghi khác nhau đã được hợp nhất; khi cùng một bản ghi bị sửa trên nhiều thiết bị,
-              V187 giữ bản mới hơn và lưu bản còn lại trong lịch sử xung đột để tránh mất dữ liệu âm thầm.
+              V188 dùng logical revision để mọi thiết bị chọn cùng một kết quả, không phụ thuộc giờ hệ thống; bản còn lại vẫn được lưu trong lịch sử xung đột.
             </div>
           `
           :''
@@ -30431,7 +30784,7 @@ function renderSettings(){
 
           <div id="multiDeviceStatus" class="sync-v186-cloud-detail">
             <span class="muted">
-              Bucket: lat-yen-backups • AES-GCM 256-bit • snapshot riêng từng thiết bị
+              Bucket: lat-yen-backups • AES-GCM 256-bit • snapshot từng thiết bị • Cloud Revision
             </span>
           </div>
         </div>

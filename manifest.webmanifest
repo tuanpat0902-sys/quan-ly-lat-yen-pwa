@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V187",
+  "name": "Quản Lý Lát Yên V188",
   "short_name": "Lát Yên",
-  "description": "Quản lý Lát Yên với đồng bộ an toàn khi nhiều thiết bị sử dụng cùng lúc.",
+  "description": "Đồng bộ đa thiết bị với Cloud Revision và kiểm tra hội tụ.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
