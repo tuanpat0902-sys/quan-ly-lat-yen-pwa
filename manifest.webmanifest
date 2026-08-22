@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V234",
+  "name": "Quản Lý Lát Yên V235",
   "short_name": "Lát Yên",
-  "description": "Smart searchable dropdown auto-close: dismisses on outside interaction, focus change, external scroll, app blur, visibility change or inactivity.",
+  "description": "Non-blocking sync engine: push-first user actions, queued realtime, in-memory canonical CAS and idle-only remote application.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

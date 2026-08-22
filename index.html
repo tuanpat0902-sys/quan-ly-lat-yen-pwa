@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V234 SMART DROPDOWN AUTO CLOSE ===== */
+/* ===== V235 NON-BLOCKING SYNC ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11331,7 +11331,8 @@ function v233BackgroundAutoSyncReason(
     'timer',
     'startup',
     'focus',
-    'online'
+    'online',
+    'idle_reconcile'
   ].includes(
     String(reason||'')
   );
@@ -11381,6 +11382,17 @@ function v219FlushDeferredRender(){
     return;
   }
 
+  /*
+    V235 first applies queued DATA while idle, then performs only one UI
+    render. Realtime/canonical no longer rebuild the panel independently.
+  */
+  v235FlushDeferredData();
+
+  if(v219InteractionActive()){
+    v233ScheduleDeferredFlush();
+    return;
+  }
+
   v219DeferredRender=false;
 
   try{
@@ -11394,7 +11406,7 @@ function v219FlushDeferredRender(){
 
   }catch(e){
     console.warn(
-      'V233 deferred render',
+      'V235 deferred render',
       e
     );
   }
@@ -13797,6 +13809,525 @@ function v210NotifyFollowers(){
   }catch(e){}
 }
 
+
+/* ===== V235 NON-BLOCKING SYNC ENGINE ===== */
+const V235_IDLE_RECONCILE_DELAY_MS=900;
+const V235_REALTIME_QUEUE_MAX=500;
+
+let v235PushOnlyMode=false;
+let v235NeedFullReconcile=false;
+let v235IdleReconcileTimer=null;
+
+let v235BatchRemoteApply=false;
+let v235DeferCloudApply=false;
+let v235CloudApplyDeferred=false;
+
+let v235DeferredCanonicalMerge=null;
+let v235BatchApplyDepth=0;
+
+const v235RealtimeQueue=new Map();
+
+function v235InputPending(){
+  try{
+    return !!(
+      navigator.scheduling?.isInputPending?.({
+        includeContinuous:true
+      })
+    );
+  }catch(e){
+    return false;
+  }
+}
+
+function v235CanApplyRemote(){
+  return !(
+    v219InteractionActive() ||
+    v235InputPending()
+  );
+}
+
+function v235RealtimeKey(
+  table,
+  payload
+){
+  const row=
+    payload?.new||
+    payload?.old||
+    payload?.record||
+    {};
+
+  const id=
+    row.id||
+    (
+      table==='inventory'
+        ?`${row.warehouse_id||''}:${row.ingredient_id||''}`
+        :''
+    );
+
+  return (
+    id
+      ?`${table}|${id}`
+      :`${table}|${Date.now()}|${Math.random()}`
+  );
+}
+
+function v235QueueRealtime(
+  table,
+  payload
+){
+  const key=
+    v235RealtimeKey(
+      table,
+      payload
+    );
+
+  // Last event for the same row wins.
+  if(v235RealtimeQueue.has(key)){
+    v235RealtimeQueue.delete(key);
+  }
+
+  v235RealtimeQueue.set(
+    key,
+    {
+      table,
+      payload,
+      at:Date.now()
+    }
+  );
+
+  while(
+    v235RealtimeQueue.size>
+    V235_REALTIME_QUEUE_MAX
+  ){
+    const oldest=
+      v235RealtimeQueue
+        .keys()
+        .next()
+        .value;
+
+    v235RealtimeQueue.delete(
+      oldest
+    );
+
+    // Queue overflow should be healed by a full pull later.
+    v235NeedFullReconcile=true;
+  }
+
+  v219DeferredRender=true;
+  v233ScheduleDeferredFlush();
+}
+
+function v235ApplyOrStageCanonical(
+  result
+){
+  if(!result?.merged){
+    return {
+      changedKeys:0,
+      conflicts:0,
+      deferred:false
+    };
+  }
+
+  if(
+    v235BatchRemoteApply ||
+    !v235CanApplyRemote()
+  ){
+    if(v235DeferredCanonicalMerge){
+      const prior={
+        schema:189,
+        state:
+          v235DeferredCanonicalMerge
+            .merged
+      };
+
+      const next={
+        schema:189,
+        state:
+          result.merged
+      };
+
+      const merged=
+        mergeConcurrentStates([
+          prior,
+          next
+        ]);
+
+      merged.conflicts=[
+        ...(
+          v235DeferredCanonicalMerge
+            .conflicts||[]
+        ),
+        ...(result.conflicts||[]),
+        ...(merged.conflicts||[])
+      ];
+
+      v235DeferredCanonicalMerge=
+        merged;
+    }else{
+      v235DeferredCanonicalMerge=
+        result;
+    }
+
+    v219DeferredRender=true;
+    v233ScheduleDeferredFlush();
+
+    return {
+      changedKeys:0,
+      conflicts:
+        result?.conflicts?.length||0,
+      deferred:true
+    };
+  }
+
+  return {
+    ...applyConcurrentMergedState(
+      result
+    ),
+    deferred:false
+  };
+}
+
+function v235FlushCanonical(){
+  if(
+    !v235DeferredCanonicalMerge ||
+    !v235CanApplyRemote()
+  ){
+    return 0;
+  }
+
+  /*
+    Re-merge with CURRENT local state.
+    This is critical: the user may have edited data after the canonical
+    snapshot was received but before it became safe to apply.
+  */
+  const current=
+    prepareConcurrentLocalState();
+
+  const staged={
+    schema:189,
+    device_id:'cloud',
+    device_name:'Cloud',
+    updated_at:
+      new Date().toISOString(),
+    state:
+      v235DeferredCanonicalMerge
+        .merged
+  };
+
+  const merged=
+    mergeConcurrentStates([
+      staged,
+      current
+    ]);
+
+  merged.conflicts=[
+    ...(
+      v235DeferredCanonicalMerge
+        .conflicts||[]
+    ),
+    ...(merged.conflicts||[])
+  ];
+
+  v235DeferredCanonicalMerge=null;
+
+  v235BatchApplyDepth++;
+
+  try{
+    const applied=
+      applyConcurrentMergedState(
+        merged
+      );
+
+    return Number(
+      applied?.changedKeys||0
+    );
+  }finally{
+    v235BatchApplyDepth=
+      Math.max(
+        0,
+        v235BatchApplyDepth-1
+      );
+  }
+}
+
+function v235FlushRealtime(){
+  if(
+    !v235RealtimeQueue.size ||
+    !v235CanApplyRemote()
+  ){
+    return {
+      applied:0,
+      critical:false
+    };
+  }
+
+  const rows=[
+    ...v235RealtimeQueue.values()
+  ];
+
+  v235RealtimeQueue.clear();
+
+  let applied=0;
+  let critical=false;
+
+  v235BatchApplyDepth++;
+
+  try{
+    for(const item of rows){
+      const ok=
+        v207ApplyRealtimeRow(
+          item.table,
+          item.payload
+        );
+
+      if(ok){
+        applied++;
+      }else{
+        v235NeedFullReconcile=true;
+      }
+
+      if(
+        item.table==='sales' ||
+        item.table==='sale_items' ||
+        item.table==='stock_transactions' ||
+        item.table==='inventory'
+      ){
+        critical=true;
+      }
+    }
+  }finally{
+    v235BatchApplyDepth=
+      Math.max(
+        0,
+        v235BatchApplyDepth-1
+      );
+  }
+
+  if(applied){
+    cloudOnline=true;
+
+    setCloudStatus(
+      'Realtime • đã áp dụng thay đổi nền',
+      'online'
+    );
+
+    v210NotifyFollowers();
+  }
+
+  return {
+    applied,
+    critical
+  };
+}
+
+function v235FlushDeferredData(){
+  if(!v235CanApplyRemote()){
+    return {
+      changed:false,
+      deferred:true
+    };
+  }
+
+  const canonicalChanged=
+    v235FlushCanonical();
+
+  const realtime=
+    v235FlushRealtime();
+
+  const changed=
+    canonicalChanged>0 ||
+    realtime.applied>0;
+
+  if(realtime.critical){
+    v207ScheduleVerify();
+  }
+
+  if(
+    v235NeedFullReconcile &&
+    !v219InteractionActive()
+  ){
+    v235ScheduleIdleReconcile(
+      700
+    );
+  }
+
+  return {
+    changed,
+    deferred:false,
+    canonicalChanged,
+    realtimeApplied:
+      realtime.applied
+  };
+}
+
+function v235RequestBackgroundRender(){
+  if(
+    v235BatchRemoteApply ||
+    !v235CanApplyRemote()
+  ){
+    v219DeferredRender=true;
+    v233ScheduleDeferredFlush();
+    return false;
+  }
+
+  return v219SafeBackgroundRender();
+}
+
+function v235ScheduleIdleReconcile(
+  delay=V235_IDLE_RECONCILE_DELAY_MS
+){
+  v235NeedFullReconcile=true;
+
+  clearTimeout(
+    v235IdleReconcileTimer
+  );
+
+  v235IdleReconcileTimer=
+    setTimeout(
+      ()=>{
+        const run=()=>{
+          if(
+            !v235NeedFullReconcile ||
+            document.hidden ||
+            !navigator.onLine ||
+            autoSyncBusy ||
+            syncing ||
+            !v235CanApplyRemote()
+          ){
+            if(v235NeedFullReconcile){
+              v235ScheduleIdleReconcile(
+                900
+              );
+            }
+            return;
+          }
+
+          if(!v210CanOwnSync()){
+            return;
+          }
+
+          autoSyncNow({
+            force:false,
+            reason:'idle_reconcile',
+            silent:true
+          }).finally(
+            ()=>{
+              scheduleNextAutoSyncV203();
+            }
+          );
+        };
+
+        if(
+          'requestIdleCallback' in window
+        ){
+          requestIdleCallback(
+            run,
+            {
+              timeout:1200
+            }
+          );
+        }else{
+          run();
+        }
+      },
+      Number(delay||0)
+    );
+}
+
+async function v235PushOnlySync(
+  reason='action'
+){
+  if(
+    !navigator.onLine ||
+    autoSyncBusy ||
+    syncing
+  ){
+    v235ScheduleIdleReconcile();
+    return {
+      pushed:false,
+      deferred:true
+    };
+  }
+
+  autoSyncBusy=true;
+  v235PushOnlyMode=true;
+
+  try{
+    repairFalsePendingLocalRowsV197();
+
+    const result=
+      await runPendingRetriesV202();
+
+    v235NeedFullReconcile=true;
+    v235ScheduleIdleReconcile();
+
+    setCloudStatus(
+      result.after===0
+        ?'Đã gửi thay đổi • chờ nhận nền'
+        :`Còn ${result.after} mục chờ Cloud`,
+      result.after===0
+        ?'online'
+        :'offline'
+    );
+
+    return {
+      pushed:true,
+      before:
+        result.before||0,
+      after:
+        result.after||0,
+      deferred:true
+    };
+
+  }catch(e){
+    v235NeedFullReconcile=true;
+    v235ScheduleIdleReconcile();
+
+    console.warn(
+      'V235 push-only sync',
+      reason,
+      e
+    );
+
+    return {
+      pushed:false,
+      deferred:true,
+      error:
+        e?.message||
+        String(e)
+    };
+
+  }finally{
+    v235PushOnlyMode=false;
+    autoSyncBusy=false;
+  }
+}
+
+function v235FinishDeferredAutoSync(
+  reason='interaction'
+){
+  v235NeedFullReconcile=true;
+  v235ScheduleIdleReconcile();
+
+  finishSyncProgress({
+    success:false,
+    pending:
+      v191PendingCount(),
+    stage:
+      'Đã gửi thay đổi • chờ rảnh',
+    detail:
+      'Dữ liệu đã được gửi. Phần nhận/đối chiếu Cloud sẽ tiếp tục khi bạn ngừng thao tác.'
+  });
+
+  return {
+    direction:
+      'deferred_user_interaction',
+    reason,
+    pending:
+      v191PendingCount()
+  };
+}
+
 function v208ScheduleActionSync(
   reason='data_change',
   delay=V208_ACTION_SYNC_DEBOUNCE_MS
@@ -13854,7 +14385,6 @@ async function v208FlushActionSync(){
   }
 
   if(!v210CanOwnSync()){
-    // Another tab/PWA instance owns sync.
     v208ActionSyncQueued=false;
     return;
   }
@@ -13898,19 +14428,33 @@ async function v208FlushActionSync(){
   v208InternalWriteDepth++;
 
   try{
-    await autoSyncNow({
-      force:false,
-      reason:
+    /*
+      Immediately after Save/Delete the user is normally still operating.
+      Push the pending transaction now, but do NOT pull/merge/rebuild.
+    */
+    if(
+      v219InteractionActive() ||
+      v235InputPending()
+    ){
+      await v235PushOnlySync(
         'action:'+
-        v208LastActionReason,
-      silent:true
-    });
+        v208LastActionReason
+      );
+    }else{
+      await autoSyncNow({
+        force:false,
+        reason:
+          'action:'+
+          v208LastActionReason,
+        silent:true
+      });
+    }
 
     v210NotifyFollowers();
 
   }catch(e){
     console.warn(
-      'V210 action sync',
+      'V235 action sync',
       e
     );
 
@@ -15620,6 +16164,32 @@ async function loadCloud(){
     sale_items:saleItems,
     stock_transactions:movementsRaw
   });
+
+  /*
+    V235 mid-flight yield:
+    a background pull may have started while idle, then the user begins
+    typing before the network response arrives. Keep the fetched proof,
+    but do not mutate the live db.
+  */
+  if(
+    v235DeferCloudApply &&
+    !v235CanApplyRemote()
+  ){
+    v235CloudApplyDeferred=true;
+    v235NeedFullReconcile=true;
+    cloudOnline=true;
+
+    setCloudStatus(
+      'Cloud đã nhận • chờ áp dụng khi rảnh',
+      'online'
+    );
+
+    cloudReloadRequested=true;
+
+    return {
+      deferred:true
+    };
+  }
   // Không cho các kho đã xóa local xuất hiện trở lại nếu Cloud chưa xóa được.
   const deletedWarehouseIds=getDeletedWarehouseIds();
   for(let i=warehouses.length-1;i>=0;i--){
@@ -15810,8 +16380,8 @@ async function loadCloud(){
 
   ensureProductWarehouseOwnership(db.products);
   if(!currentWarehouseId||!db.warehouses.some(w=>w.id===currentWarehouseId))currentWarehouseId=db.warehouses[0]?.id||'';
-  localStorage.setItem('kho_v3_warehouse',currentWarehouseId);cleanupInvalidExcelSyncQueue();cacheSave();cloudOnline=true;setCloudStatus('Cloud đã đồng bộ','online');v219SafeBackgroundRender();
- }catch(e){console.error(e);cloudOnline=false;setCloudStatus('Offline • dùng cache','offline');cacheLoad();v219SafeBackgroundRender();toastMsg('Không kết nối được Supabase. Đang dùng dữ liệu cache.');v226NotifySyncError(e?.message||'Không kết nối được Supabase.');}
+  localStorage.setItem('kho_v3_warehouse',currentWarehouseId);cleanupInvalidExcelSyncQueue();cacheSave();cloudOnline=true;setCloudStatus('Cloud đã đồng bộ','online');v235RequestBackgroundRender();
+ }catch(e){console.error(e);cloudOnline=false;setCloudStatus('Offline • dùng cache','offline');if(v235CanApplyRemote()){cacheLoad();v235RequestBackgroundRender();}else{v235NeedFullReconcile=true;v235ScheduleIdleReconcile();}toastMsg('Không kết nối được Supabase. Đang dùng dữ liệu cache.');v226NotifySyncError(e?.message||'Không kết nối được Supabase.');}
  finally{
   syncing=false;
 
@@ -16059,7 +16629,12 @@ async function syncPendingSaleReceipts(){
     synced>0 &&
     navigator.onLine
   ){
-    await loadCloud();
+    if(v235PushOnlyMode){
+      v235NeedFullReconcile=true;
+      v235ScheduleIdleReconcile();
+    }else{
+      await loadCloud();
+    }
   }
 
   return {
@@ -17386,7 +17961,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:234,
+    version:235,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -19992,6 +20567,27 @@ async function v230RepairOneSalePair(
         `Cloud còn thiếu ${missingIds.length} chi tiết bán sau repair.`
       );
     }
+  }
+
+  /*
+    V235 mid-repair yield:
+    Cloud history may already be verified, but if the user started operating
+    during those network requests, do not rewrite local IDs underneath them.
+    The next idle reconcile will finish the local normalization safely.
+  */
+  if(
+    v235BatchRemoteApply &&
+    !v235CanApplyRemote()
+  ){
+    v235NeedFullReconcile=true;
+    v235ScheduleIdleReconcile();
+
+    return {
+      oldSaleId,
+      targetSaleId,
+      items:normalizedItems.length,
+      deferred:true
+    };
   }
 
   /*
@@ -22624,7 +23220,6 @@ function v207RealtimeHandler(table){
     if(document.hidden){
       cloudReloadRequested=true;
 
-      // V226: native notification can still be shown while the app is in background.
       v226RealtimeNotification(
         table,
         payload
@@ -22635,6 +23230,24 @@ function v207RealtimeHandler(table){
 
     if(!v210CanOwnSync()){
       return;
+    }
+
+    /*
+      V235: never mutate the live db underneath an active user.
+      Realtime rows are coalesced and applied once the interaction is quiet.
+    */
+    if(!v235CanApplyRemote()){
+      v235QueueRealtime(
+        table,
+        payload
+      );
+
+      return;
+    }
+
+    // Apply any older queued rows first so event order remains sensible.
+    if(v235RealtimeQueue.size){
+      v235FlushRealtime();
     }
 
     const applied=
@@ -40066,7 +40679,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V234',
+    app_version:'V235',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -40375,7 +40988,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:234,
+    version:235,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -40557,13 +41170,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:234,
+    version:235,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V234',storage:'supabase-storage',
+      schema:185,app_version:'V235',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -41291,8 +41904,14 @@ function applyConcurrentMergedState(result){
     invalidateDerivedCaches();
     applyAppBrand();
 
-    if(activePanelId!=='settings'){
-      v219SafeBackgroundRender();
+    if(
+      activePanelId!=='settings'
+    ){
+      if(v235BatchApplyDepth>0){
+        v219DeferredRender=true;
+      }else{
+        v235RequestBackgroundRender();
+      }
     }
   }
 
@@ -41769,7 +42388,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:234,
+    version:235,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -41895,9 +42514,7 @@ async function v189CanonicalSync(
 
     const states=[];
 
-    if(
-      remote.payload?.state
-    ){
+    if(remote.payload?.state){
       states.push(
         remote.payload
       );
@@ -41910,19 +42527,23 @@ async function v189CanonicalSync(
         states
       );
 
-    const applied=
-      applyConcurrentMergedState(
-        merged
-      );
+    /*
+      V235:
+      Build the canonical payload IN MEMORY.
+      Do not modify localStorage before CAS succeeds.
+    */
+    const finalLocal={
+      schema:189,
+      device_id:
+        multiDeviceDeviceId(),
+      device_name:
+        multiDeviceDeviceName(),
+      updated_at:
+        new Date().toISOString(),
+      state:
+        merged.merged
+    };
 
-    const finalLocal=
-      prepareConcurrentLocalState();
-
-    finalLocal.schema=189;
-
-    // V213:
-    // If semantic canonical state already equals Cloud,
-    // do NOT create a new revision just because updated_at/device metadata changed.
     if(
       remote.payload?.state &&
       v213CanonicalStatesEqual(
@@ -41930,6 +42551,14 @@ async function v189CanonicalSync(
         finalLocal.state
       )
     ){
+      const applied=
+        v235ApplyOrStageCanonical(
+          mergeConcurrentStates([
+            remote.payload,
+            local
+          ])
+        );
+
       return {
         converged:true,
         revision:
@@ -41937,9 +42566,11 @@ async function v189CanonicalSync(
             remote.revision||0
           ),
         conflicts:
-          applied.conflicts||0,
+          merged.conflicts?.length||0,
         attempts:attempt,
-        noop:true
+        noop:true,
+        deferred:
+          !!applied.deferred
       };
     }
 
@@ -41974,17 +42605,21 @@ async function v189CanonicalSync(
       continue;
     }
 
-    if(
-      verify.payload?.state
-    ){
+    let deferred=false;
+
+    if(verify.payload?.state){
       const verified=
         mergeConcurrentStates([
           verify.payload
         ]);
 
-      applyConcurrentMergedState(
-        verified
-      );
+      const applied=
+        v235ApplyOrStageCanonical(
+          verified
+        );
+
+      deferred=
+        !!applied.deferred;
     }
 
     return {
@@ -41992,9 +42627,10 @@ async function v189CanonicalSync(
       revision:
         verify.revision,
       conflicts:
-        applied.conflicts||0,
+        merged.conflicts?.length||0,
       attempts:attempt,
-      noop:false
+      noop:false,
+      deferred
     };
   }
 
@@ -42004,12 +42640,18 @@ async function v189CanonicalSync(
       passphrase
     );
 
+  let deferred=false;
+
   if(latest.payload?.state){
-    applyConcurrentMergedState(
-      mergeConcurrentStates([
-        latest.payload
-      ])
-    );
+    const applied=
+      v235ApplyOrStageCanonical(
+        mergeConcurrentStates([
+          latest.payload
+        ])
+      );
+
+    deferred=
+      !!applied.deferred;
   }
 
   return {
@@ -42018,7 +42660,8 @@ async function v189CanonicalSync(
       latest.revision||0,
     conflicts:0,
     attempts:
-      V189_MAX_RETRIES
+      V189_MAX_RETRIES,
+    deferred
   };
 }
 
@@ -42061,28 +42704,37 @@ function saveFastSyncStateV202(patch){
 }
 
 async function loadCloudFastV202(force=false){
-  const state=loadFastSyncStateV202();
-  const now=Date.now();
+  const state=
+    loadFastSyncStateV202();
+
+  const now=
+    Date.now();
 
   if(
     !force &&
-    now-Number(state.last_pull_at||0)<
-      V202_MIN_PULL_GAP_MS
+    now-Number(
+      state.last_pull_at||0
+    )<
+    V202_MIN_PULL_GAP_MS
   ){
     return {
       skipped:true,
-      reason:'recent_pull'
+      reason:'recent_pull',
+      deferred:false
     };
   }
 
-  await loadCloud();
+  const result=
+    await loadCloud();
 
   saveFastSyncStateV202({
     last_pull_at:Date.now()
   });
 
   return {
-    skipped:false
+    skipped:false,
+    deferred:
+      !!result?.deferred
   };
 }
 
@@ -43792,6 +44444,18 @@ async function autoSyncNow(options={}){
         :'Không có pending mới'
     );
 
+    if(
+      !v235CanApplyRemote()
+    ){
+      return v235FinishDeferredAutoSync(
+        'interaction_after_push'
+      );
+    }
+
+    v235BatchRemoteApply=true;
+    v235DeferCloudApply=true;
+    v235CloudApplyDeferred=false;
+
     // V231: Auto Sync now handles the final sales + sale_items case.
     if(
       v191PendingCount()===0 &&
@@ -43843,6 +44507,12 @@ async function autoSyncNow(options={}){
 
     if(allowPull){
       await loadCloudFastV202(true);
+
+      if(v235CloudApplyDeferred){
+        return v235FinishDeferredAutoSync(
+          'interaction_during_cloud_pull'
+        );
+      }
     }
 
     // Pull may reveal the exact final pair. Repair immediately.
@@ -43874,6 +44544,12 @@ async function autoSyncNow(options={}){
       'Đồng bộ thiết bị',
       'Đang kiểm tra canonical state'
     );
+
+    if(!v235CanApplyRemote()){
+      return v235FinishDeferredAutoSync(
+        'interaction_before_canonical'
+      );
+    }
 
     const canonical=
       await v189CanonicalSync(
@@ -43924,6 +44600,15 @@ async function autoSyncNow(options={}){
       coverage.proofAvailable&&
       coverage.localOnly===0&&
       cloudOnline;
+
+    if(v235CanApplyRemote()){
+      v235BatchRemoteApply=false;
+      v235FlushDeferredData();
+    }
+
+    if(fullySynced){
+      v235NeedFullReconcile=false;
+    }
 
     saveAutoSyncConfig({
       code:cred.code,
@@ -44043,6 +44728,9 @@ async function autoSyncNow(options={}){
     };
 
   }finally{
+    v235BatchRemoteApply=false;
+    v235DeferCloudApply=false;
+    v235CloudApplyDeferred=false;
     autoSyncBusy=false;
 
     const progress=
@@ -44525,7 +45213,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V234',
+      app_version:'V235',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -44540,7 +45228,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:234,
+      version:235,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -44817,7 +45505,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v234-full-backup-'+
+    'lat-yen-v235-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
