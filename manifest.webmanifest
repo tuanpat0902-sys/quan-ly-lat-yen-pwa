@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V214",
+  "name": "Quản Lý Lát Yên V215",
   "short_name": "Lát Yên",
-  "description": "Acknowledges pending sale movements directly from existing Cloud stock transactions.",
+  "description": "Atomic repair of genuinely missing pending sale movements using idempotent sale RPC.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

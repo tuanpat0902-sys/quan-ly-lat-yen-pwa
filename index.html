@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V214 MOVEMENT CLOUD ACK ===== */
+/* ===== V215 ATOMIC SALE REPAIR ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -13922,35 +13922,29 @@ async function runSyncDiagnostics(){
 
   // 6. Pending retries - actual sync.
   try{
-    const saleReconcileBefore=
-      await reconcilePendingSaleMovementsV211();
+    const retryResult=
+      await runPendingRetriesV202();
 
-    await syncDeletedImportMovementTombstones();
-    await syncDeletionTombstonesV192();
-    await syncPendingSuppliersV191();
-    await syncPendingOperations();
-    await syncPendingImportReceiptsV191();
-    await syncPendingExportReceiptsV192();
-    await syncPendingStocktakeReceiptsV192();
-    await syncPendingSaleReceipts();
-
-    const saleReconcileAfter=
-      await reconcilePendingSaleMovementsV211();
-
-    const reconciledSales=
+    const repaired=
       Number(
-        saleReconcileBefore?.reconciled||0
-      )+
+        retryResult?.saleRepair?.repaired||0
+      );
+
+    const failed=
       Number(
-        saleReconcileAfter?.reconciled||0
+        retryResult?.saleRepair?.failed||0
       );
 
     add(
       'Pending Retry',
-      true,
-      reconciledSales
-        ?`Đã retry nghiệp vụ • dọn ${reconciledSales} movement bán stale`
-        :'Đã chạy retry cho toàn bộ nhóm nghiệp vụ'
+      failed===0,
+      repaired
+        ?`Đã phục hồi atomic ${repaired} phiếu bán pending`
+        :(
+          failed
+            ?`Còn ${failed} phiếu bán cần kiểm tra chi tiết`
+            :'Đã chạy retry cho toàn bộ nhóm nghiệp vụ'
+        )
     );
 
   }catch(e){
@@ -14059,7 +14053,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:214,
+    version:215,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -34539,7 +34533,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V214',
+    app_version:'V215',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34848,7 +34842,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:214,
+    version:215,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -35030,13 +35024,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:214,
+    version:215,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V214',storage:'supabase-storage',
+      schema:185,app_version:'V215',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -36249,7 +36243,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:214,
+    version:215,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -36953,6 +36947,432 @@ async function reconcilePendingSaleMovementsV211(){
   };
 }
 
+
+/* ===== V215 ATOMIC SALE REPAIR ===== */
+function v215PendingSaleRefs(){
+  return [
+    ...new Set(
+      v211PendingSaleMovements()
+        .map(x=>
+          String(
+            x.reference_id||''
+          )
+        )
+        .filter(Boolean)
+    )
+  ];
+}
+
+function v215SaleRowsForRef(ref){
+  const rows=
+    (db.movements||[])
+      .filter(row=>
+        String(
+          row.transaction_type||''
+        ).toUpperCase()==='SALE' &&
+        String(
+          row.reference_id||''
+        )===String(ref)
+      );
+
+  const byIngredient=
+    new Map();
+
+  for(const row of rows){
+    const iid=
+      String(
+        row.ingredient_id||''
+      );
+
+    if(!iid)continue;
+
+    const current=
+      byIngredient.get(iid);
+
+    // Prefer the pending/local row because it is the user's unsynced truth.
+    const priority=
+      row._sync_status==='pending'
+        ?3
+        :(
+          row._local_only===true
+            ?2
+            :1
+        );
+
+    const currentPriority=
+      current?._sync_status==='pending'
+        ?3
+        :(
+          current?._local_only===true
+            ?2
+            :1
+        );
+
+    if(
+      !current ||
+      priority>=currentPriority
+    ){
+      byIngredient.set(
+        iid,
+        row
+      );
+    }
+  }
+
+  return [
+    ...byIngredient.values()
+  ];
+}
+
+async function v215CloudSaleFallback(ref){
+  const [
+    saleResult,
+    itemsResult
+  ]=
+    await Promise.all([
+      promiseWithTimeout(
+        sb.from('sales')
+          .select('*')
+          .eq('id',ref)
+          .maybeSingle(),
+        10000,
+        'Đọc phiếu bán Cloud'
+      ),
+
+      promiseWithTimeout(
+        sb.from('sale_items')
+          .select('*')
+          .eq('sale_id',ref),
+        10000,
+        'Đọc chi tiết phiếu bán Cloud'
+      )
+    ]);
+
+  if(saleResult.error){
+    throw saleResult.error;
+  }
+
+  if(itemsResult.error){
+    throw itemsResult.error;
+  }
+
+  return {
+    sale:
+      saleResult.data||null,
+    items:
+      itemsResult.data||[]
+  };
+}
+
+function v215SetSaleMovementError(
+  ref,
+  message
+){
+  for(const row of db.movements||[]){
+    if(
+      row?._sync_status==='pending' &&
+      String(
+        row.transaction_type||''
+      ).toUpperCase()==='SALE' &&
+      String(
+        row.reference_id||''
+      )===String(ref)
+    ){
+      row._sync_error=
+        String(message||'');
+    }
+  }
+
+  cacheSave();
+}
+
+async function v215RepairOneSale(ref){
+  const localSale=
+    (db.sales||[])
+      .find(x=>
+        String(x.id||'')===
+        String(ref)
+      )||null;
+
+  let sale=
+    localSale;
+
+  let items=
+    (db.saleItems||[])
+      .filter(x=>
+        String(
+          x.sale_id||''
+        )===String(ref)
+      );
+
+  if(
+    !sale ||
+    !items.length
+  ){
+    const fallback=
+      await v215CloudSaleFallback(
+        ref
+      );
+
+    sale=
+      sale||
+      fallback.sale;
+
+    if(!items.length){
+      items=
+        fallback.items||[];
+    }
+  }
+
+  if(!sale){
+    throw new Error(
+      'Không tìm thấy phiếu bán tương ứng ở local hoặc Cloud.'
+    );
+  }
+
+  if(
+    !isUuidValue(sale.id) ||
+    !isUuidValue(sale.warehouse_id)
+  ){
+    throw new Error(
+      'Phiếu bán chưa có UUID Cloud hợp lệ.'
+    );
+  }
+
+  if(!items.length){
+    throw new Error(
+      'Phiếu bán không có chi tiết món để phục hồi atomic.'
+    );
+  }
+
+  const invalidProduct=
+    items.find(
+      x=>!isUuidValue(
+        x.product_id
+      )
+    );
+
+  if(invalidProduct){
+    throw new Error(
+      'Chi tiết phiếu bán còn product ID local, chưa thể phục hồi an toàn.'
+    );
+  }
+
+  const movementRows=
+    v215SaleRowsForRef(ref);
+
+  if(!movementRows.length){
+    throw new Error(
+      'Không còn movement local để phục hồi.'
+    );
+  }
+
+  const invalidMovement=
+    movementRows.find(row=>
+      !isUuidValue(
+        row.ingredient_id
+      ) ||
+      !isUuidValue(
+        row.warehouse_id
+      )
+    );
+
+  if(invalidMovement){
+    throw new Error(
+      'Movement bán còn warehouse/ingredient ID local, chưa thể phục hồi an toàn.'
+    );
+  }
+
+  // Use an object that can safely receive the Cloud return row.
+  const saleLocal=
+    localSale||
+    {...sale};
+
+  const saleItemLocals=
+    items.map(x=>x);
+
+  const saleMovements=
+    movementRows.map(row=>({
+      localId:
+        row.id,
+      row,
+      cloudEligible:true,
+      payload:{
+        warehouse_id:
+          row.warehouse_id,
+        ingredient_id:
+          row.ingredient_id,
+        transaction_type:'SALE',
+        quantity:
+          Number(
+            row.quantity||0
+          ),
+        note:
+          String(
+            row.note||''
+          ),
+        reference_id:
+          sale.id
+      }
+    }));
+
+  const result=
+    await syncSaleReceiptCloud({
+      saleLocal,
+      salePayload:{
+        id:sale.id,
+        warehouse_id:
+          sale.warehouse_id,
+        total_amount:
+          Number(
+            sale.total_amount||0
+          ),
+        source:
+          sale.source||'manual',
+        sold_at:
+          sale.sold_at||
+          sale.created_at||
+          new Date().toISOString(),
+        note:
+          sale.note||''
+      },
+      saleItemLocals,
+      saleItemsPayload:
+        items.map(x=>({
+          sale_id:
+            sale.id,
+          product_id:
+            x.product_id,
+          quantity:
+            Number(
+              x.quantity||0
+            ),
+          unit_price:
+            Number(
+              x.unit_price||0
+            )
+        })),
+      saleMovements
+    });
+
+  if(result?.error){
+    throw new Error(
+      result.error
+    );
+  }
+
+  if(result?.pending){
+    throw new Error(
+      `Cloud vẫn trả ${result.pending} mục pending.`
+    );
+  }
+
+  return {
+    ref,
+    synced:
+      Number(
+        result?.synced||0
+      ),
+    revision:
+      Number(
+        result?.revision||0
+      )
+  };
+}
+
+async function repairPendingSaleReceiptsV215(){
+  const refs=
+    v215PendingSaleRefs();
+
+  const report={
+    before:
+      v211PendingSaleMovements()
+        .length,
+    repaired:0,
+    failed:0,
+    receipts:[],
+    errors:[]
+  };
+
+  if(
+    !refs.length ||
+    !navigator.onLine
+  ){
+    report.after=
+      report.before;
+
+    return report;
+  }
+
+  // First acknowledge rows that are already on Cloud.
+  try{
+    await reconcilePendingSaleMovementsV211();
+  }catch(e){
+    console.warn(
+      'V215 pre-reconcile',
+      e
+    );
+  }
+
+  const remainingRefs=
+    v215PendingSaleRefs();
+
+  for(const ref of remainingRefs){
+    try{
+      const result=
+        await v215RepairOneSale(
+          ref
+        );
+
+      report.repaired++;
+      report.receipts.push(
+        result
+      );
+
+    }catch(e){
+      report.failed++;
+
+      const message=
+        e?.message||
+        String(e);
+
+      report.errors.push({
+        ref,
+        message
+      });
+
+      v215SetSaleMovementError(
+        ref,
+        message
+      );
+
+      console.warn(
+        'V215 sale repair failed',
+        ref,
+        e
+      );
+    }
+  }
+
+  // Final ACK from Cloud after atomic repair.
+  try{
+    await reconcilePendingSaleMovementsV211();
+  }catch(e){
+    console.warn(
+      'V215 final reconcile',
+      e
+    );
+  }
+
+  report.after=
+    v211PendingSaleMovements()
+      .length;
+
+  updatePendingSyncBadge();
+
+  return report;
+}
+
 async function runPendingRetriesV202(){
   const before=v191PendingCount();
 
@@ -36964,12 +37384,14 @@ async function runPendingRetriesV202(){
     };
   }
 
-  // V211: first clear SALE movements that are already committed on Cloud.
+  let saleRepair=null;
+
   try{
-    await reconcilePendingSaleMovementsV211();
+    saleRepair=
+      await repairPendingSaleReceiptsV215();
   }catch(e){
     console.warn(
-      'sale reconcile',
+      'sale atomic repair',
       e
     );
   }
@@ -36981,15 +37403,16 @@ async function runPendingRetriesV202(){
   try{await syncPendingImportReceiptsV191()}catch(e){console.warn('import',e)}
   try{await syncPendingExportReceiptsV192()}catch(e){console.warn('export',e)}
   try{await syncPendingStocktakeReceiptsV192()}catch(e){console.warn('stocktake',e)}
+
+  // Normal sale retry remains as fallback for sale/sale_item pending rows.
   try{await syncPendingSaleReceipts()}catch(e){console.warn('sale',e)}
 
-  // One more reconcile catches a successful idempotent RPC whose local movement
-  // flags remained stale.
+  // One final sale repair/ACK.
   try{
-    await reconcilePendingSaleMovementsV211();
+    await repairPendingSaleReceiptsV215();
   }catch(e){
     console.warn(
-      'sale reconcile final',
+      'sale final repair',
       e
     );
   }
@@ -37003,7 +37426,9 @@ async function runPendingRetriesV202(){
   return {
     before,
     after,
-    changed:before!==after
+    changed:
+      before!==after,
+    saleRepair
   };
 }
 
@@ -37731,7 +38156,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V214',
+      app_version:'V215',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -37746,7 +38171,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:214,
+      version:215,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -38023,7 +38448,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v214-full-backup-'+
+    'lat-yen-v215-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
