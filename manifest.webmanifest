@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V264",
+  "name": "Quản Lý Lát Yên V265",
   "short_name": "Lát Yên",
-  "description": "One-shot clean Auth Cloud V2 cutover: persistent login, organization RLS, incremental row sync, no QR pairing, transactional Cloud reset.",
+  "description": "Single-admin Auth mode using admin@latyen.vn with persistent Supabase session and Cloud Data V2.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

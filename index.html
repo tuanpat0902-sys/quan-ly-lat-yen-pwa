@@ -11571,7 +11571,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V264</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V265</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -44542,7 +44542,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V264',
+    app_version:'V265',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -45194,7 +45194,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V264',storage:'supabase-storage',
+      schema:185,app_version:'V265',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -49524,7 +49524,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V264',
+      app_version:'V265',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -54089,7 +54089,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V264',
+      app_version:'V265',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -54163,7 +54163,7 @@ function renderSettings(){
 
     <div class="v260-account-bar">
       <div>
-        <b>Tài khoản</b>
+        <b>Tài khoản quản trị</b>
         <div class="muted">${esc(v260AccountEmail()||'Đã đăng nhập')}</div>
       </div>
       <button class="secondary sm" onclick="v260LogoutAndWipe()">Đăng xuất</button>
@@ -55357,27 +55357,54 @@ let v260Session=null;
 let v260AuthReady=false;
 
 function v260AuthGateHtml(){
+  const adminEmail='admin@latyen.vn';
+
   return `
     <div class="v260-auth-card">
       <div class="v260-auth-logo">☁</div>
+
       <h1>Đăng nhập Quản Lý Lát Yên</h1>
+
       <p>
-        Đăng nhập để tự động tải dữ liệu Cloud. Phiên đăng nhập được lưu an toàn,
-        vì vậy refresh hoặc mở lại PWA không cần đăng nhập lại cho tới khi đăng xuất.
+        Hệ thống chỉ sử dụng một tài khoản quản trị viên.
+        Các thiết bị đăng nhập cùng tài khoản này sẽ tự đồng bộ dữ liệu Cloud.
       </p>
 
-      <label>Email</label>
-      <input id="v260Email" type="email" autocomplete="username" placeholder="email@example.com">
+      <label>Tài khoản</label>
+
+      <input
+        id="v260Email"
+        type="email"
+        value="${adminEmail}"
+        readonly
+        autocomplete="username"
+      >
 
       <label>Mật khẩu</label>
-      <input id="v260Password" type="password" autocomplete="current-password" placeholder="Mật khẩu">
+
+      <input
+        id="v260Password"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Nhập mật khẩu admin"
+        onkeydown="if(event.key==='Enter')v260Login()"
+      >
 
       <div class="v260-auth-actions">
-        <button class="primary" onclick="v260Login()">Đăng nhập</button>
-        <button class="secondary" onclick="v260SignUp()">Tạo tài khoản</button>
+        <button
+          class="primary"
+          onclick="v260Login()"
+        >Đăng nhập</button>
       </div>
 
-      <div id="v260AuthStatus" class="v260-auth-status muted"></div>
+      <div class="muted" style="margin-top:10px;font-size:11px">
+        Admin: ${adminEmail}
+      </div>
+
+      <div
+        id="v260AuthStatus"
+        class="v260-auth-status muted"
+      ></div>
     </div>
   `;
 }
@@ -55405,47 +55432,57 @@ function v260AuthStatus(msg,bad=false){
 }
 
 async function v260Login(){
-  const email=String(document.getElementById('v260Email')?.value||'').trim();
-  const password=String(document.getElementById('v260Password')?.value||'');
-  if(!email||!password){
-    v260AuthStatus('Nhập email và mật khẩu.',true);
+  const email='admin@latyen.vn';
+
+  const password=
+    String(
+      document.getElementById(
+        'v260Password'
+      )?.value||''
+    );
+
+  if(!password){
+    v260AuthStatus(
+      'Nhập mật khẩu admin.',
+      true
+    );
     return;
   }
 
-  v260AuthStatus('Đang đăng nhập…');
-  const {data,error}=await sb.auth.signInWithPassword({email,password});
+  v260AuthStatus(
+    'Đang đăng nhập…'
+  );
+
+  const {
+    data,
+    error
+  }=
+    await sb.auth
+      .signInWithPassword({
+        email,
+        password
+      });
+
   if(error){
-    v260AuthStatus(error.message||String(error),true);
+    v260AuthStatus(
+      'Sai mật khẩu hoặc tài khoản admin chưa được tạo.',
+      true
+    );
     return;
   }
 
-  v260Session=data.session||null;
+  v260Session=
+    data.session||null;
+
   v257ClearDisconnectedState?.();
+
   location.reload();
 }
 
 async function v260SignUp(){
-  const email=String(document.getElementById('v260Email')?.value||'').trim();
-  const password=String(document.getElementById('v260Password')?.value||'');
-  if(!email||password.length<6){
-    v260AuthStatus('Email hợp lệ và mật khẩu ít nhất 6 ký tự.',true);
-    return;
-  }
-
-  v260AuthStatus('Đang tạo tài khoản…');
-  const {data,error}=await sb.auth.signUp({email,password});
-  if(error){
-    v260AuthStatus(error.message||String(error),true);
-    return;
-  }
-
-  if(data.session){
-    v260Session=data.session;
-    location.reload();
-    return;
-  }
-
-  v260AuthStatus('Đã tạo tài khoản. Nếu Supabase yêu cầu xác minh email, hãy xác minh rồi đăng nhập.');
+  alert(
+    'V265 không cho phép tự tạo tài khoản. Chỉ sử dụng tài khoản admin@latyen.vn được tạo trong Supabase.'
+  );
 }
 
 async function v260EnsureAuth(){
@@ -55658,7 +55695,7 @@ async function v263ResetOrganizationData(){
 }
 
 
-/* ===== V264 CLEAN AUTH CLOUD CUTOVER ===== */
+/* ===== V265 SINGLE ADMIN AUTH ===== */
 const V264_CLEAN_MODE_KEY='lat_yen_v264_clean_auth_mode';
 
 function v264CleanMode(){
