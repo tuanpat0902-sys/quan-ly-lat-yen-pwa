@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V230 SALE PAIR NORMALIZER ===== */
+/* ===== V231 AUTO FINAL RECONCILE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -16906,6 +16906,23 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V231 verifies Auto Sync uses the same final-repair path.
+  try{
+    add(
+      'Auto Final Reconcile V231',
+      true,
+      v231IsFinalSalePairCase()
+        ?'Auto Sync sẽ tự chuẩn hóa cặp sales + sale_items còn lại'
+        :'Không còn case sale-pair cần Auto Repair'
+    );
+  }catch(e){
+    add(
+      'Auto Final Reconcile V231',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V230 normalize a missing sale + sale_item pair first.
   try{
     const beforeCoverage=
@@ -17045,7 +17062,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:230,
+    version:231,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -39734,7 +39751,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V230',
+    app_version:'V231',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -40043,7 +40060,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:230,
+    version:231,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -40225,13 +40242,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:230,
+    version:231,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V230',storage:'supabase-storage',
+      schema:185,app_version:'V231',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -41437,7 +41454,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:230,
+    version:231,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -43274,6 +43291,116 @@ async function runPendingRetriesV202(){
   };
 }
 
+
+/* ===== V231 AUTO FINAL RECONCILE ===== */
+const V231_REPAIR_REPORT_KEY='lat_yen_auto_final_reconcile_v231';
+
+function v231SaveReport(report){
+  try{
+    localStorage.setItem(
+      V231_REPAIR_REPORT_KEY,
+      JSON.stringify({
+        at:new Date().toISOString(),
+        ...(report||{})
+      })
+    );
+  }catch(e){}
+}
+
+function v231MissingTables(){
+  const missing=v229MissingRows();
+
+  return Object.entries(missing)
+    .filter(([,rows])=>
+      Array.isArray(rows)&&
+      rows.length
+    )
+    .map(([table,rows])=>({
+      table,
+      count:rows.length
+    }));
+}
+
+function v231IsFinalSalePairCase(){
+  const coverage=v228Coverage();
+
+  if(
+    !coverage.proofAvailable ||
+    Number(coverage.localOnly||0)<=0 ||
+    v191PendingCount()!==0
+  ){
+    return false;
+  }
+
+  const rows=v231MissingTables();
+
+  if(!rows.length){
+    return false;
+  }
+
+  return rows.every(x=>
+    x.table==='sales' ||
+    x.table==='sale_items'
+  );
+}
+
+async function v231AutoRepairFinalSalePair(){
+  const before=v228Coverage();
+
+  if(!v231IsFinalSalePairCase()){
+    const result={
+      attempted:false,
+      repaired:0,
+      before:Number(before.localOnly||0),
+      after:Number(before.localOnly||0),
+      reason:'not_final_sale_pair',
+      missing:v231MissingTables()
+    };
+
+    v231SaveReport(result);
+    return result;
+  }
+
+  try{
+    const repair=
+      await v230RepairMissingSalePairs();
+
+    const after=v228Coverage();
+
+    const result={
+      attempted:true,
+      repaired:Number(repair?.repaired||0),
+      before:Number(before.localOnly||0),
+      after:Number(after.localOnly||0),
+      skipped:!!repair?.skipped,
+      reason:repair?.reason||'',
+      missing:v231MissingTables()
+    };
+
+    v231SaveReport(result);
+    return result;
+
+  }catch(e){
+    const result={
+      attempted:true,
+      repaired:0,
+      before:Number(before.localOnly||0),
+      after:Number(v228Coverage().localOnly||0),
+      error:e?.message||String(e),
+      missing:v231MissingTables()
+    };
+
+    v231SaveReport(result);
+
+    console.warn(
+      'V231 final sale-pair reconcile',
+      e
+    );
+
+    return result;
+  }
+}
+
 async function autoSyncNow(options={}){
   const {
     force=false,
@@ -43310,15 +43437,17 @@ async function autoSyncNow(options={}){
     statusEl.textContent='Đang đồng bộ…';
   }
 
+  let finalRepair=null;
+
   try{
-    const localOnlyBefore=
+    let localOnlyBefore=
       v204LocalOnlyCount();
 
     updateSyncProgress(
       10,
       'Kiểm tra dữ liệu',
       localOnlyBefore
-        ?`Đang bảo vệ ${localOnlyBefore} record local`
+        ?`Cloud chưa xác nhận ${localOnlyBefore} record`
         :`${v191PendingCount()} mục pending`
     );
 
@@ -43326,15 +43455,35 @@ async function autoSyncNow(options={}){
       await runPendingRetriesV202();
 
     updateSyncProgress(
-      36,
+      32,
       'Gửi thay đổi',
       retry.before
         ?`Pending ${retry.before} → ${retry.after}`
         :'Không có pending mới'
     );
 
-    // When unresolved local records exist, background sync must not trigger
-    // aggressive authoritative pulls. Safe merge still protects manual pull.
+    // V231: Auto Sync now handles the final sales + sale_items case.
+    if(
+      v191PendingCount()===0 &&
+      v228Coverage().proofAvailable &&
+      Number(v228Coverage().localOnly||0)>0 &&
+      v231IsFinalSalePairCase()
+    ){
+      updateSyncProgress(
+        45,
+        'Chuẩn hóa phiếu bán cuối',
+        v228CoverageBreakdownText(
+          v228Coverage()
+        )
+      );
+
+      finalRepair=
+        await v231AutoRepairFinalSalePair();
+
+      localOnlyBefore=
+        v204LocalOnlyCount();
+    }
+
     const proofFresh=
       v228CloudProofFresh();
 
@@ -43342,22 +43491,52 @@ async function autoSyncNow(options={}){
       force ||
       !proofFresh ||
       localOnlyBefore===0 ||
-      retry.changed;
+      retry.changed ||
+      (
+        finalRepair?.attempted &&
+        Number(finalRepair.after||0)===0
+      );
 
     updateSyncProgress(
       58,
       allowPull
         ?'Tải dữ liệu Cloud'
-        :'Giữ dữ liệu local',
+        :'Giữ dữ liệu an toàn',
       allowPull
-        ?'Đang merge Cloud an toàn'
-        :`Bỏ qua pull nền vì Cloud đã xác nhận còn ${localOnlyBefore} record cần bảo vệ`
+        ?'Đang merge Cloud và xác minh lại'
+        :(
+          finalRepair?.error
+            ?`Không thể chuẩn hóa phiếu cuối: ${finalRepair.error}`
+            :`Cloud còn ${localOnlyBefore} record cần bảo vệ`
+        )
     );
 
     if(allowPull){
-      await loadCloudFastV202(
-        force||retry.changed
+      await loadCloudFastV202(true);
+    }
+
+    // Pull may reveal the exact final pair. Repair immediately.
+    if(
+      v191PendingCount()===0 &&
+      v231IsFinalSalePairCase()
+    ){
+      updateSyncProgress(
+        66,
+        'Hoàn thiện phiếu bán cuối',
+        v228CoverageBreakdownText(
+          v228Coverage()
+        )
       );
+
+      finalRepair=
+        await v231AutoRepairFinalSalePair();
+
+      if(
+        finalRepair.attempted &&
+        Number(finalRepair.after||0)===0
+      ){
+        await loadCloudFastV202(true);
+      }
     }
 
     updateSyncProgress(
@@ -43380,32 +43559,14 @@ async function autoSyncNow(options={}){
       Number(canonical.revision||0);
 
     saveFastSyncStateV202({
-      last_revision:
-        Number(canonical.revision||0)
+      last_revision:Number(canonical.revision||0)
     });
 
-    const localOnlyAfter=
-      v204LocalOnlyCount();
-
-    updateSyncProgress(
-      92,
-      'Xác minh',
-      localOnlyAfter
-        ?`Còn ${localOnlyAfter} record local • không xóa dữ liệu`
-        :(
-          revisionChanged
-            ?'Có revision mới'
-            :'Dữ liệu ổn định'
-        )
-    );
-
     if(
-      localOnlyAfter===0 &&
-      (
-        revisionChanged||
-        force||
-        retry.changed
-      )
+      finalRepair?.attempted ||
+      revisionChanged ||
+      force ||
+      retry.changed
     ){
       await loadCloudFastV202(true);
     }
@@ -43416,12 +43577,21 @@ async function autoSyncNow(options={}){
     const coverage=
       v228Coverage();
 
+    updateSyncProgress(
+      92,
+      'Xác minh',
+      coverage.localOnly
+        ?`Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
+        :'Dữ liệu Cloud đã được xác minh'
+    );
+
     const now=
       new Date().toISOString();
 
     const fullySynced=
       canonical.converged&&
       pending===0&&
+      coverage.proofAvailable&&
       coverage.localOnly===0&&
       cloudOnline;
 
@@ -43461,11 +43631,22 @@ async function autoSyncNow(options={}){
           ),
       detail:
         fullySynced
-          ?`Rev ${canonical.revision}`
+          ?(
+            `Rev ${canonical.revision}`+
+            (
+              finalRepair?.repaired
+                ?` • chuẩn hóa ${finalRepair.repaired} phiếu bán`
+                :''
+            )
+          )
           :(
-            coverage.localOnly
-              ?`Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
-              :`Còn ${pending} pending`
+            finalRepair?.error
+              ?`Sale Pair V231: ${finalRepair.error}`
+              :(
+                coverage.localOnly
+                  ?`Cloud chưa xác nhận ${coverage.localOnly} record • ${v228CoverageBreakdownText(coverage)}`
+                  :`Còn ${pending} pending`
+              )
           )
     });
 
@@ -43474,24 +43655,33 @@ async function autoSyncNow(options={}){
         fullySynced
           ?`Đã đồng bộ • 100% • Rev ${canonical.revision}`
           :(
-            coverage.localOnly
-              ?`Cloud chưa xác nhận ${coverage.localOnly} record`
-              :`Đồng bộ ${loadSyncProgress().percent}%`
+            finalRepair?.error
+              ?'Không thể chuẩn hóa phiếu bán cuối'
+              :(
+                coverage.localOnly
+                  ?`Cloud chưa xác nhận ${coverage.localOnly} record`
+                  :`Đồng bộ ${loadSyncProgress().percent}%`
+              )
           )
       );
     }
 
     return {
-      direction:'v204-safe-sync',
+      direction:'v231-auto-final-reconcile',
       converged:fullySynced,
       revision:canonical.revision,
       pending,
       local_only:coverage.localOnly,
-      protected:coverage.localOnly>0
+      protected:coverage.localOnly>0,
+      finalRepair
     };
 
   }catch(e){
-    console.warn('V204 sync',reason,e);
+    console.warn(
+      'V231 sync',
+      reason,
+      e
+    );
 
     const pending=v191PendingCount();
 
@@ -43507,7 +43697,10 @@ async function autoSyncNow(options={}){
       error:e?.message||String(e)
     });
 
-    if(!silent&&reason!=='timer'){
+    if(
+      !silent &&
+      reason!=='timer'
+    ){
       alert(
         'Đồng bộ đã dừng để bảo vệ dữ liệu local:\n\n'+
         String(e?.message||e)
@@ -44002,7 +44195,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V230',
+      app_version:'V231',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -44017,7 +44210,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:230,
+      version:231,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -44294,7 +44487,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v230-full-backup-'+
+    'lat-yen-v231-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();

@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V230",
+  "name": "Quản Lý Lát Yên V231",
   "short_name": "Lát Yên",
-  "description": "Targeted sale-pair normalizer that physically remaps the final legacy sale and sale_item to verified Cloud UUIDs without touching inventory.",
+  "description": "Auto Final Reconcile: Auto Sync repairs the final sale/sale_item pair instead of protecting the same two records forever at 92%.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
