@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V213",
+  "name": "Quản Lý Lát Yên V214",
   "short_name": "Lát Yên",
-  "description": "Stable canonical no-op sync plus diagnostics sale-movement reconciliation.",
+  "description": "Acknowledges pending sale movements directly from existing Cloud stock transactions.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

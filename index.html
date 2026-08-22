@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V213 STABLE SYNC ===== */
+/* ===== V214 MOVEMENT CLOUD ACK ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -14059,7 +14059,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:213,
+    version:214,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -34539,7 +34539,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V213',
+    app_version:'V214',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34848,7 +34848,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:213,
+    version:214,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -35030,13 +35030,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:213,
+    version:214,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V213',storage:'supabase-storage',
+      schema:185,app_version:'V214',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -36249,7 +36249,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:213,
+    version:214,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -36599,7 +36599,8 @@ async function reconcilePendingSaleMovementsV211(){
     return {
       pending:pending.length,
       reconciled:0,
-      references:0
+      references:0,
+      unmatched:pending.length
     };
   }
 
@@ -36618,13 +36619,12 @@ async function reconcilePendingSaleMovementsV211(){
     return {
       pending:pending.length,
       reconciled:0,
-      references:0
+      references:0,
+      unmatched:pending.length
     };
   }
 
-  let cloudSales=[];
   let cloudMovements=[];
-
   const CHUNK=50;
 
   for(
@@ -36638,57 +36638,39 @@ async function reconcilePendingSaleMovementsV211(){
         i+CHUNK
       );
 
-    const [
-      salesResult,
-      movementResult
-    ]=
-      await Promise.all([
-        promiseWithTimeout(
-          sb.from('sales')
-            .select('id')
-            .in('id',part),
-          10000,
-          'Đối chiếu phiếu bán Cloud'
-        ),
-
-        promiseWithTimeout(
-          sb.from('stock_transactions')
-            .select('*')
-            .eq(
-              'transaction_type',
-              'SALE'
-            )
-            .in(
-              'reference_id',
-              part
-            ),
-          10000,
-          'Đối chiếu movement bán Cloud'
-        )
-      ]);
-
-    if(salesResult.error){
-      throw salesResult.error;
-    }
+    const movementResult=
+      await promiseWithTimeout(
+        sb.from('stock_transactions')
+          .select('*')
+          .eq(
+            'transaction_type',
+            'SALE'
+          )
+          .in(
+            'reference_id',
+            part
+          ),
+        10000,
+        'Đối chiếu movement bán Cloud'
+      );
 
     if(movementResult.error){
       throw movementResult.error;
     }
-
-    cloudSales.push(
-      ...(salesResult.data||[])
-    );
 
     cloudMovements.push(
       ...(movementResult.data||[])
     );
   }
 
-  const cloudSaleIds=
-    new Set(
-      cloudSales.map(
-        x=>String(x.id)
-      )
+  const cloudById=
+    new Map(
+      cloudMovements
+        .filter(x=>x.id)
+        .map(x=>[
+          String(x.id),
+          x
+        ])
     );
 
   const cloudByKey=
@@ -36730,7 +36712,11 @@ async function reconcilePendingSaleMovementsV211(){
   }
 
   let reconciled=0;
+
   const confirmedRefs=
+    new Set();
+
+  const reconciledLocalIds=
     new Set();
 
   for(
@@ -36739,79 +36725,142 @@ async function reconcilePendingSaleMovementsV211(){
       localRows
     ] of pendingByRef
   ){
-    if(
-      !cloudSaleIds.has(ref)
-    ){
-      continue;
-    }
-
-    const usedCloudIds=
+    const usedCloud=
       new Set();
 
-    const matchedCloud=[];
-    let complete=true;
+    const matchedPairs=[];
 
-    // Safety rule:
-    // every pending local movement must have one distinct Cloud match.
     for(const local of localRows){
-      const key=
-        v211MovementMatchKey(
-          local
-        );
+      let cloud=null;
 
-      const candidates=
-        cloudByKey.get(key)||[];
-
-      const cloud=
-        candidates.find(row=>{
-          const identity=
-            String(
-              row.id||
-              v211MovementMatchKey(row)
-            );
-
-          return !usedCloudIds.has(
-            identity
+      // Best match: same UUID movement id.
+      if(
+        local.id &&
+        cloudById.has(
+          String(local.id)
+        )
+      ){
+        const candidate=
+          cloudById.get(
+            String(local.id)
           );
-        });
 
-      if(!cloud){
-        complete=false;
-        break;
+        if(
+          String(
+            candidate.reference_id||''
+          )===ref &&
+          String(
+            candidate.transaction_type||''
+          ).toUpperCase()==='SALE'
+        ){
+          cloud=candidate;
+        }
       }
 
-      matchedCloud.push(cloud);
+      // Fallback for migrated/legacy rows whose Cloud id changed.
+      if(!cloud){
+        const key=
+          v211MovementMatchKey(
+            local
+          );
 
-      usedCloudIds.add(
+        const candidates=
+          cloudByKey.get(key)||[];
+
+        cloud=
+          candidates.find(row=>{
+            const identity=
+              String(
+                row.id||
+                v211MovementMatchKey(row)
+              );
+
+            return !usedCloud.has(
+              identity
+            );
+          })||null;
+      }
+
+      if(!cloud){
+        continue;
+      }
+
+      const identity=
         String(
           cloud.id||
           v211MovementMatchKey(cloud)
-        )
-      );
+        );
+
+      if(usedCloud.has(identity)){
+        continue;
+      }
+
+      usedCloud.add(identity);
+
+      matchedPairs.push({
+        local,
+        cloud
+      });
     }
 
-    if(!complete){
+    if(!matchedPairs.length){
       continue;
     }
 
     confirmedRefs.add(ref);
 
-    // Remove ONLY stale pending SALE movements.
-    // Do not modify sale or saleItems status.
+    for(const pair of matchedPairs){
+      if(pair.local.id){
+        reconciledLocalIds.add(
+          String(pair.local.id)
+        );
+      }else{
+        reconciledLocalIds.add(
+          'key:'+
+          v211MovementMatchKey(
+            pair.local
+          )
+        );
+      }
+    }
+
+    reconciled+=
+      matchedPairs.length;
+  }
+
+  if(reconciled>0){
+    // Remove ONLY local pending rows proven to already exist on Cloud.
     db.movements=
       (db.movements||[])
-        .filter(row=>!(
-          row?._sync_status===
-            'pending' &&
-          String(
-            row.transaction_type||''
-          ).toUpperCase()==='SALE' &&
-          String(
-            row.reference_id||''
-          )===ref
-        ));
+        .filter(row=>{
+          if(
+            row?._sync_status!=='pending' ||
+            String(
+              row.transaction_type||''
+            ).toUpperCase()!=='SALE'
+          ){
+            return true;
+          }
 
-    // Avoid duplicate Cloud movements by both id and semantic movement key.
+          const id=
+            row.id
+              ?String(row.id)
+              :'';
+
+          if(
+            id &&
+            reconciledLocalIds.has(id)
+          ){
+            return false;
+          }
+
+          return !reconciledLocalIds.has(
+            'key:'+
+            v211MovementMatchKey(row)
+          );
+        });
+
+    // Add authoritative Cloud movement rows if missing locally.
     const existingIds=
       new Set(
         (db.movements||[])
@@ -36836,15 +36885,7 @@ async function reconcilePendingSaleMovementsV211(){
           )
       );
 
-    const authoritative=
-      cloudMovements
-        .filter(row=>
-          String(
-            row.reference_id||''
-          )===ref
-        );
-
-    for(const cloud of authoritative){
+    for(const cloud of cloudMovements){
       const id=
         String(
           cloud.id||''
@@ -36865,6 +36906,17 @@ async function reconcilePendingSaleMovementsV211(){
         continue;
       }
 
+      // Only bring Cloud rows for references that actually reconciled.
+      if(
+        !confirmedRefs.has(
+          String(
+            cloud.reference_id||''
+          )
+        )
+      ){
+        continue;
+      }
+
       db.movements.unshift(
         cloud
       );
@@ -36876,11 +36928,6 @@ async function reconcilePendingSaleMovementsV211(){
       existingKeys.add(key);
     }
 
-    reconciled+=
-      localRows.length;
-  }
-
-  if(reconciled>0){
     invalidateDataIndexes();
     invalidateDerivedCaches();
     cacheSave();
@@ -36888,17 +36935,21 @@ async function reconcilePendingSaleMovementsV211(){
     updatePendingSyncBadge();
 
     console.info(
-      `V212 reconciled ${reconciled} stale SALE movements across ${confirmedRefs.size} receipts`
+      `V214 reconciled ${reconciled} SALE movements already present in Cloud`
     );
   }
 
+  const remaining=
+    v211PendingSaleMovements();
+
   return {
     pending:
-      v211PendingSaleMovements()
-        .length,
+      remaining.length,
     reconciled,
     references:
-      confirmedRefs.size
+      confirmedRefs.size,
+    unmatched:
+      remaining.length
   };
 }
 
@@ -37680,7 +37731,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V213',
+      app_version:'V214',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -37695,7 +37746,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:213,
+      version:214,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -37972,7 +38023,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v213-full-backup-'+
+    'lat-yen-v214-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
