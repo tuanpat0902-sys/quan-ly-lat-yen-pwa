@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V203 LOW RESOURCE ===== */
+/* ===== V204 SAFE MERGE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9968,6 +9968,40 @@ button{
   }
 }
 
+
+/* ===== V204 DATA SAFETY ===== */
+.sync-v204-safety{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-top:7px;
+  padding:8px;
+  border:1px solid #bbf7d0;
+  border-radius:8px;
+  background:#f0fdf4;
+}
+
+.sync-v204-safety b{
+  display:block;
+  font-size:9px;
+  color:#166534;
+}
+
+.sync-v204-safety span{
+  display:block;
+  margin-top:2px;
+  font-size:8px;
+  color:#475569;
+}
+
+@media(max-width:700px){
+  .sync-v204-safety{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -11178,12 +11212,325 @@ async function fetchAllCloudRows(
   return rows;
 }
 
+
+/* ===== V204 NO-DATA-LOSS SAFE MERGE ===== */
+const V204_SNAPSHOT_KEY='lat_yen_emergency_snapshot_v204';
+const V204_SNAPSHOT_META_KEY='lat_yen_emergency_snapshot_meta_v204';
+const V204_MAX_SAFE_DROP_RATIO=0.03;
+
+function v204DbCounts(data=db){
+  return {
+    warehouses:(data?.warehouses||[]).length,
+    suppliers:(data?.suppliers||[]).length,
+    ingredients:(data?.ingredients||[]).length,
+    inventory:(data?.inventory||[]).length,
+    products:(data?.products||[]).length,
+    recipeItems:(data?.recipeItems||[]).length,
+    preparedItems:(data?.preparedItems||[]).length,
+    sales:(data?.sales||[]).length,
+    saleItems:(data?.saleItems||[]).length,
+    movements:(data?.movements||[]).length
+  };
+}
+
+function v204TotalCoreRecords(data=db){
+  const c=v204DbCounts(data);
+  return Object.values(c).reduce((a,b)=>a+Number(b||0),0);
+}
+
+function v204EmergencySnapshot(reason='before_cloud_pull'){
+  try{
+    const payload={
+      at:new Date().toISOString(),
+      reason,
+      currentWarehouseId,
+      db
+    };
+
+    localStorage.setItem(
+      V204_SNAPSHOT_KEY,
+      JSON.stringify(payload)
+    );
+
+    localStorage.setItem(
+      V204_SNAPSHOT_META_KEY,
+      JSON.stringify({
+        at:payload.at,
+        reason,
+        counts:v204DbCounts(db),
+        total:v204TotalCoreRecords(db)
+      })
+    );
+
+    return true;
+  }catch(e){
+    console.warn('V204 emergency snapshot failed',e);
+    return false;
+  }
+}
+
+function v204RestoreEmergencySnapshot(){
+  try{
+    const raw=localStorage.getItem(V204_SNAPSHOT_KEY);
+    if(!raw)return false;
+
+    const snap=JSON.parse(raw);
+
+    if(!snap?.db)return false;
+
+    db=snap.db;
+
+    if(
+      snap.currentWarehouseId &&
+      (db.warehouses||[]).some(
+        w=>w.id===snap.currentWarehouseId
+      )
+    ){
+      currentWarehouseId=snap.currentWarehouseId;
+    }
+
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+    flushCacheSave();
+    renderAll();
+
+    return true;
+  }catch(e){
+    console.error('V204 restore snapshot',e);
+    return false;
+  }
+}
+
+function v204MapByKey(rows,keyFn){
+  const map=new Map();
+
+  for(const row of rows||[]){
+    const key=keyFn(row);
+    if(key==null||key==='')continue;
+    map.set(String(key),row);
+  }
+
+  return map;
+}
+
+function v204MergeRows({
+  localRows=[],
+  cloudRows=[],
+  keyFn,
+  deletedFn=null
+}){
+  const cloudMap=v204MapByKey(cloudRows,keyFn);
+  const out=[...cloudRows];
+
+  for(const local of localRows||[]){
+    const key=String(keyFn(local)??'');
+
+    if(!key)continue;
+
+    if(
+      typeof deletedFn==='function' &&
+      deletedFn(local)
+    ){
+      continue;
+    }
+
+    const cloud=cloudMap.get(key);
+
+    if(!cloud){
+      // Critical V204 rule:
+      // absence from Cloud does NOT mean local row is deleted.
+      out.push(local);
+      continue;
+    }
+
+    // Preserve local unsynced metadata/fields only when necessary.
+    if(
+      local._sync_status==='pending' ||
+      local._local_only===true ||
+      local._stocktake_audit_only===true
+    ){
+      const idx=out.indexOf(cloud);
+      out[idx]={...cloud,...local};
+    }
+  }
+
+  return out;
+}
+
+function v204SafeMergeDb(localBefore,cloudDb){
+  const deletedWarehouseIds=getDeletedWarehouseIds();
+
+  const warehouses=v204MergeRows({
+    localRows:localBefore.warehouses,
+    cloudRows:cloudDb.warehouses,
+    keyFn:x=>x.id,
+    deletedFn:x=>deletedWarehouseIds.has(x.id)
+  });
+
+  const suppliers=v204MergeRows({
+    localRows:localBefore.suppliers,
+    cloudRows:cloudDb.suppliers,
+    keyFn:x=>x.id||`name:${String(x.name||'').trim().toLowerCase()}`
+  });
+
+  const ingredients=v204MergeRows({
+    localRows:localBefore.ingredients,
+    cloudRows:cloudDb.ingredients,
+    keyFn:x=>x.id,
+    deletedFn:x=>deletedScopeSet(DELETED_INGREDIENT_SCOPE_KEY)
+      .has(`${currentWarehouseId}|${x.id}`)
+  });
+
+  const inventory=v204MergeRows({
+    localRows:localBefore.inventory,
+    cloudRows:cloudDb.inventory,
+    keyFn:x=>`${x.warehouse_id}|${x.ingredient_id}`,
+    deletedFn:x=>
+      deletedWarehouseIds.has(x.warehouse_id) ||
+      deletedScopeSet(DELETED_INGREDIENT_SCOPE_KEY)
+        .has(`${x.warehouse_id}|${x.ingredient_id}`)
+  });
+
+  const products=v204MergeRows({
+    localRows:localBefore.products,
+    cloudRows:cloudDb.products,
+    keyFn:x=>x.id
+  });
+
+  const recipeItems=v204MergeRows({
+    localRows:localBefore.recipeItems,
+    cloudRows:cloudDb.recipeItems,
+    keyFn:x=>x.id||`${x.product_id}|${x.ingredient_id}`
+  });
+
+  const preparedItems=v204MergeRows({
+    localRows:localBefore.preparedItems,
+    cloudRows:cloudDb.preparedItems,
+    keyFn:x=>x.id||`${x.prepared_ingredient_id}|${x.source_ingredient_id}`
+  });
+
+  const sales=v204MergeRows({
+    localRows:localBefore.sales,
+    cloudRows:cloudDb.sales,
+    keyFn:x=>x.id
+  });
+
+  const saleItems=v204MergeRows({
+    localRows:localBefore.saleItems,
+    cloudRows:cloudDb.saleItems,
+    keyFn:x=>x.id||`${x.sale_id}|${x.product_id}`
+  });
+
+  const movements=v204MergeRows({
+    localRows:localBefore.movements,
+    cloudRows:cloudDb.movements,
+    keyFn:x=>x.id||`${x.transaction_type}|${x.reference_id}|${x.ingredient_id}|${x.created_at}`,
+    deletedFn:x=>{
+      const type=String(x.transaction_type||'').toUpperCase();
+
+      if(
+        type==='EXPORT' &&
+        isExportReceiptDeleted(x.reference_id)
+      )return true;
+
+      if(
+        type==='ADJUSTMENT' &&
+        String(x.note||'').includes('Phiếu kiểm kê:') &&
+        isStocktakeReceiptDeleted(stocktakeReceiptGroupKey(x))
+      )return true;
+
+      if(
+        type==='IMPORT' &&
+        typeof isImportMovementDeleted==='function' &&
+        isImportMovementDeleted(x.id)
+      )return true;
+
+      return deletedWarehouseIds.has(x.warehouse_id);
+    }
+  });
+
+  return {
+    warehouses,
+    suppliers,
+    ingredients,
+    inventory,
+    products,
+    recipeItems,
+    preparedItems,
+    sales,
+    saleItems,
+    movements
+  };
+}
+
+function v204DetectUnsafeDrop(before,after){
+  const b=v204DbCounts(before);
+  const a=v204DbCounts(after);
+  const issues=[];
+
+  for(const key of Object.keys(b)){
+    const oldCount=Number(b[key]||0);
+    const newCount=Number(a[key]||0);
+
+    if(oldCount<10)continue;
+
+    const drop=oldCount-newCount;
+    const ratio=drop/oldCount;
+
+    if(
+      drop>0 &&
+      ratio>V204_MAX_SAFE_DROP_RATIO
+    ){
+      issues.push({
+        key,
+        before:oldCount,
+        after:newCount,
+        drop,
+        ratio
+      });
+    }
+  }
+
+  return issues;
+}
+
+function v204LocalOnlyCount(){
+  return Number(
+    v198CloudCoverage()?.localOnly||0
+  );
+}
+
+function v204CanUseDestructiveCloudReplace(){
+  return v204LocalOnlyCount()===0;
+}
+
+
+async function restoreLocalSnapshotV204(){
+  const ok=await appConfirm(
+    'Khôi phục snapshot local gần nhất trước lần Cloud pull?',
+    'Khôi phục dữ liệu'
+  );
+
+  if(!ok)return;
+
+  if(v204RestoreEmergencySnapshot()){
+    toastMsg('Đã khôi phục snapshot local gần nhất');
+  }else{
+    alert('Không tìm thấy snapshot local để khôi phục.');
+  }
+}
+
 async function loadCloud(){
  if(syncing){
   cloudReloadRequested=true;
   return;
  }
  const localBefore=db;
+
+ // V204: create local recovery point before any Cloud pull.
+ v204EmergencySnapshot('before_loadCloud');
+
  const pendingQueue=getPendingSync();
  const pendingIds=new Set(pendingQueue.filter(x=>x.kind==='save_ingredient').map(x=>x.ingredient_id));
  const pendingRecipeIds=new Set(pendingQueue.filter(x=>x.kind==='save_recipe').map(x=>x.product_id));
@@ -11324,7 +11671,24 @@ async function loadCloud(){
   }
   cloudPrepared.push(...localPrepared);
 
-  db={warehouses,suppliers,ingredients,inventory,products,recipeItems,preparedItems:cloudPrepared,sales,saleItems,movements};
+  const cloudCandidate={
+   warehouses,
+   suppliers,
+   ingredients,
+   inventory,
+   products,
+   recipeItems,
+   preparedItems:cloudPrepared,
+   sales,
+   saleItems,
+   movements
+  };
+
+  // V204: Cloud pull is a MERGE, never a blind replacement.
+  db=v204SafeMergeDb(
+   localBefore,
+   cloudCandidate
+  );
 
   // Giữ mọi biến động kho local/pending chưa có trên Cloud.
   // Điều này đặc biệt quan trọng với phiếu nhập vừa tạo.
@@ -11352,7 +11716,31 @@ async function loadCloud(){
   }
 
   preserveExcelImportedLocal(localBefore,db);
-  ensureProductWarehouseOwnership(products);
+
+  const unsafeDrops=
+   v204DetectUnsafeDrop(
+    localBefore,
+    db
+   );
+
+  if(unsafeDrops.length){
+   console.error(
+    'V204 blocked unsafe Cloud pull',
+    unsafeDrops
+   );
+
+   db=localBefore;
+
+   invalidateDataIndexes();
+   invalidateDerivedCaches();
+   cacheSave();
+
+   throw new Error(
+    'Đã chặn Cloud pull vì phát hiện dữ liệu local giảm bất thường. Dữ liệu local đã được giữ nguyên.'
+   );
+  }
+
+  ensureProductWarehouseOwnership(db.products);
   if(!currentWarehouseId||!db.warehouses.some(w=>w.id===currentWarehouseId))currentWarehouseId=db.warehouses[0]?.id||'';
   localStorage.setItem('kho_v3_warehouse',currentWarehouseId);cleanupInvalidExcelSyncQueue();cacheSave();cloudOnline=true;setCloudStatus('Cloud đã đồng bộ','online');renderAll();
  }catch(e){console.error(e);cloudOnline=false;setCloudStatus('Offline • dùng cache','offline');cacheLoad();renderAll();toastMsg('Không kết nối được Supabase. Đang dùng dữ liệu cache.');}
@@ -12686,7 +13074,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:203,
+    version:204,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -32663,7 +33051,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V203',
+    app_version:'V204',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -32972,7 +33360,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:203,
+    version:204,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -33154,13 +33542,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:203,
+    version:204,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V203',storage:'supabase-storage',
+      schema:185,app_version:'V204',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -34373,7 +34761,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:203,
+    version:204,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -34691,39 +35079,54 @@ async function autoSyncNow(options={}){
   }
 
   try{
+    const localOnlyBefore=
+      v204LocalOnlyCount();
+
     updateSyncProgress(
-      12,
-      'Kiểm tra thay đổi',
-      `${v191PendingCount()} mục pending`
+      10,
+      'Kiểm tra dữ liệu',
+      localOnlyBefore
+        ?`Đang bảo vệ ${localOnlyBefore} record local`
+        :`${v191PendingCount()} mục pending`
     );
 
     const retry=
       await runPendingRetriesV202();
 
     updateSyncProgress(
-      38,
-      'Đồng bộ thay đổi local',
+      36,
+      'Gửi thay đổi',
       retry.before
         ?`Pending ${retry.before} → ${retry.after}`
         :'Không có pending mới'
     );
 
-    // Only pull aggressively if user forced sync or we actually changed Cloud/local.
-    updateSyncProgress(
-      60,
-      'Tải dữ liệu Cloud',
-      force||retry.changed
-        ?'Đang tải dữ liệu mới nhất'
-        :'Đang kiểm tra nhanh trạng thái Cloud'
-    );
-
-    await loadCloudFastV202(
-      force||retry.changed
-    );
+    // When unresolved local records exist, background sync must not trigger
+    // aggressive authoritative pulls. Safe merge still protects manual pull.
+    const allowPull=
+      force ||
+      localOnlyBefore===0 ||
+      retry.changed;
 
     updateSyncProgress(
-      78,
-      'Đồng bộ dữ liệu local',
+      58,
+      allowPull
+        ?'Tải dữ liệu Cloud'
+        :'Giữ dữ liệu local',
+      allowPull
+        ?'Đang merge Cloud an toàn'
+        :`Bỏ qua pull nền vì còn ${localOnlyBefore} record local`
+    );
+
+    if(allowPull){
+      await loadCloudFastV202(
+        force||retry.changed
+      );
+    }
+
+    updateSyncProgress(
+      76,
+      'Đồng bộ thiết bị',
       'Đang kiểm tra canonical state'
     );
 
@@ -34745,18 +35148,28 @@ async function autoSyncNow(options={}){
         Number(canonical.revision||0)
     });
 
+    const localOnlyAfter=
+      v204LocalOnlyCount();
+
     updateSyncProgress(
       92,
       'Xác minh',
-      revisionChanged||force
-        ?'Có revision mới, đang pull xác minh'
-        :'Không có revision mới'
+      localOnlyAfter
+        ?`Còn ${localOnlyAfter} record local • không xóa dữ liệu`
+        :(
+          revisionChanged
+            ?'Có revision mới'
+            :'Dữ liệu ổn định'
+        )
     );
 
     if(
-      revisionChanged||
-      force||
-      retry.changed
+      localOnlyAfter===0 &&
+      (
+        revisionChanged||
+        force||
+        retry.changed
+      )
     ){
       await loadCloudFastV202(true);
     }
@@ -34787,7 +35200,7 @@ async function autoSyncNow(options={}){
               ?'merged_conflicts'
               :'synced'
           )
-          :'catching_up',
+          :'protected_local',
       cloud_revision:
         canonical.revision||0,
       cloud_revision_token:
@@ -34805,13 +35218,17 @@ async function autoSyncNow(options={}){
       stage:
         fullySynced
           ?'Đã đồng bộ'
-          :'Chưa đồng bộ hết',
-      detail:
-        fullySynced
-          ?`Rev ${canonical.revision} • đồng bộ nhanh`
           :(
             coverage.localOnly
-              ?`Còn ${coverage.localOnly} record local`
+              ?'Đang bảo vệ dữ liệu local'
+              :'Chưa đồng bộ hết'
+          ),
+      detail:
+        fullySynced
+          ?`Rev ${canonical.revision}`
+          :(
+            coverage.localOnly
+              ?`Còn ${coverage.localOnly} record chưa có trên Cloud. Auto Sync không được phép xóa chúng.`
               :`Còn ${pending} pending`
           )
     });
@@ -34820,21 +35237,25 @@ async function autoSyncNow(options={}){
       toastMsg(
         fullySynced
           ?`Đã đồng bộ • 100% • Rev ${canonical.revision}`
-          :`Đồng bộ ${loadSyncProgress().percent}%`
+          :(
+            coverage.localOnly
+              ?`Đã bảo vệ ${coverage.localOnly} record local`
+              :`Đồng bộ ${loadSyncProgress().percent}%`
+          )
       );
     }
 
     return {
-      direction:'v202-fast-sync',
+      direction:'v204-safe-sync',
       converged:fullySynced,
       revision:canonical.revision,
       pending,
-      local_only:
-        coverage.localOnly
+      local_only:coverage.localOnly,
+      protected:coverage.localOnly>0
     };
 
   }catch(e){
-    console.warn('V202 sync',reason,e);
+    console.warn('V204 sync',reason,e);
 
     const pending=v191PendingCount();
 
@@ -34845,14 +35266,14 @@ async function autoSyncNow(options={}){
     finishSyncProgress({
       success:false,
       pending,
-      stage:'Lỗi đồng bộ',
+      stage:'Đồng bộ bị chặn để bảo vệ dữ liệu',
       detail:e?.message||String(e),
       error:e?.message||String(e)
     });
 
     if(!silent&&reason!=='timer'){
       alert(
-        'Đồng bộ chưa hoàn tất:\n\n'+
+        'Đồng bộ đã dừng để bảo vệ dữ liệu local:\n\n'+
         String(e?.message||e)
       );
     }
@@ -35348,7 +35769,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V203',
+      app_version:'V204',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -35363,7 +35784,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:203,
+      version:204,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -35640,7 +36061,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v203-full-backup-'+
+    'lat-yen-v204-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -35770,7 +36191,7 @@ function renderSettings(){
             <b id="syncProgressPending">${Number(loadSyncProgress().pending||0)}</b>
           </span>
           <span>
-            100% chỉ khi pending = 0
+            100% khi pending = 0 và không còn dữ liệu chỉ nằm local
           </span>
         </div>
       </div>
@@ -35871,6 +36292,21 @@ function renderSettings(){
       <details class="sync-v202-tools" ontoggle="if(this.open)renderAdvancedSyncToolsV203()">
         <summary>Công cụ đồng bộ nâng cao</summary>
         <div class="sync-v202-tools-body">
+
+          <div class="sync-v204-safety">
+            <div>
+              <b>Bảo vệ dữ liệu local</b>
+              <span>
+                Cloud chỉ được merge vào dữ liệu hiện có. Có snapshot khôi phục trước mỗi pull.
+              </span>
+            </div>
+            <button
+              class="secondary sm"
+              onclick="restoreLocalSnapshotV204()"
+            >Khôi phục local</button>
+          </div>
+
+
       <div class="sync-v198-migration-card">
         <div>
           <b>Đưa dữ liệu local/Excel lên Cloud</b>

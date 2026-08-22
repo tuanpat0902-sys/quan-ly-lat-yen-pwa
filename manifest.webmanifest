@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V203",
+  "name": "Quản Lý Lát Yên V204",
   "short_name": "Lát Yên",
-  "description": "Low-resource adaptive sync, lazy diagnostics and reduced background work.",
+  "description": "Safe non-destructive cloud merge with automatic local snapshots and rollback guard.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
