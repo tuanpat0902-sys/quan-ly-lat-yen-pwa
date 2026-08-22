@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V209",
+  "name": "Quản Lý Lát Yên V210",
   "short_name": "Lát Yên",
-  "description": "Loop-safe immediate action sync with explicit business mutation triggers.",
+  "description": "Single-tab sync ownership, circuit breaker, and forced PWA cache refresh.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

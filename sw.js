@@ -1,21 +1,52 @@
-const CACHE='lat-yen-pwa-v209';
-const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg'];
+const CACHE='lat-yen-pwa-v210';
+const ASSETS=['./','./index.html','./manifest.webmanifest'];
+
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE).then(cache=>cache.addAll(ASSETS))
+  );
 });
+
 self.addEventListener('activate',event=>{
-  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
-  self.clients.claim();
+  event.waitUntil((async()=>{
+    const keys=await caches.keys();
+    await Promise.all(
+      keys
+        .filter(key=>key!==CACHE)
+        .map(key=>caches.delete(key))
+    );
+    await self.clients.claim();
+  })());
 });
+
 self.addEventListener('fetch',event=>{
   const req=event.request;
   if(req.method!=='GET')return;
-  const url=new URL(req.url);
-  if(url.origin!==location.origin)return;
-  event.respondWith(fetch(req).then(resp=>{
-    const copy=resp.clone();
-    caches.open(CACHE).then(cache=>cache.put(req,copy)).catch(()=>{});
-    return resp;
-  }).catch(()=>caches.match(req).then(r=>r||caches.match('./index.html'))));
+
+  // HTML: network-first so old app versions do not linger.
+  if(req.mode==='navigate'){
+    event.respondWith((async()=>{
+      try{
+        const fresh=await fetch(req,{cache:'no-store'});
+        const cache=await caches.open(CACHE);
+        cache.put('./index.html',fresh.clone());
+        return fresh;
+      }catch(e){
+        return (
+          await caches.match('./index.html')
+        )||Response.error();
+      }
+    })());
+    return;
+  }
+
+  event.respondWith((async()=>{
+    const cached=await caches.match(req);
+    if(cached)return cached;
+    const fresh=await fetch(req);
+    const cache=await caches.open(CACHE);
+    cache.put(req,fresh.clone());
+    return fresh;
+  })());
 });

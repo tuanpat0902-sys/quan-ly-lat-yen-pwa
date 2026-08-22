@@ -1,0 +1,24 @@
+V210 - DEVICE LOOP BREAKER
+
+Vòng lặp còn trên một số thiết bị thường do:
+1. Thiết bị/PWA còn cache bản V208/V209 cũ.
+2. Có 2 tab hoặc 2 instance PWA cùng chạy và cùng Auto Sync.
+3. Realtime + timer cùng kích full pull dồn dập.
+
+V210:
+- Leader election: chỉ 1 tab/PWA trên cùng thiết bị được quyền sync.
+- Tab khác không Auto Sync/Realtime pull.
+- Leader heartbeat 2.5 giây, TTL 7 giây.
+- Circuit breaker: >5 lượt sync trong 12 giây -> dừng sync 30 giây.
+- Realtime pull/action sync/timer đều đi qua circuit breaker.
+- BroadcastChannel báo tab phụ refresh cache local.
+- Service Worker skipWaiting + clients.claim.
+- Khi activate, xóa tất cả cache PWA cũ.
+- Navigation HTML dùng network-first/no-store để tránh kẹt bản cũ.
+
+KHÔNG cần SQL mới.
+
+Sau khi deploy:
+- Đóng tất cả tab/PWA cũ.
+- Mở lại 1 lần.
+- Nếu cài PWA, có thể cần đóng hẳn app rồi mở lại để service worker V210 takeover.

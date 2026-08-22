@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V209 LOOP GUARD ===== */
+/* ===== V210 DEVICE LOOP BREAKER ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10585,6 +10585,240 @@ async function v208RunInternal(fn){
   }
 }
 
+
+/* ===== V210 DEVICE LOOP CIRCUIT BREAKER ===== */
+const V210_TAB_ID=
+  (
+    crypto?.randomUUID?.() ||
+    `${Date.now()}-${Math.random()}`
+  );
+
+const V210_LEADER_KEY='lat_yen_sync_leader_v210';
+const V210_LEADER_TTL_MS=7000;
+const V210_LEADER_HEARTBEAT_MS=2500;
+
+const V210_LOOP_WINDOW_MS=12000;
+const V210_LOOP_MAX_RUNS=5;
+const V210_LOOP_COOLDOWN_MS=30000;
+
+let v210LeaderTimer=null;
+let v210IsLeader=false;
+let v210SyncRuns=[];
+let v210CircuitOpenUntil=0;
+let v210Channel=null;
+
+function v210Now(){
+  return Date.now();
+}
+
+function v210ReadLeader(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(V210_LEADER_KEY)||'null'
+    );
+  }catch(e){
+    return null;
+  }
+}
+
+function v210LeaderExpired(info){
+  return (
+    !info ||
+    !Number(info.at) ||
+    v210Now()-Number(info.at)>V210_LEADER_TTL_MS
+  );
+}
+
+function v210ClaimLeadership(){
+  const current=v210ReadLeader();
+
+  if(
+    v210LeaderExpired(current) ||
+    current?.id===V210_TAB_ID
+  ){
+    localStorage.setItem(
+      V210_LEADER_KEY,
+      JSON.stringify({
+        id:V210_TAB_ID,
+        at:v210Now()
+      })
+    );
+
+    v210IsLeader=true;
+    return true;
+  }
+
+  v210IsLeader=false;
+  return false;
+}
+
+function v210Heartbeat(){
+  if(document.hidden){
+    if(v210IsLeader){
+      const current=v210ReadLeader();
+
+      if(current?.id===V210_TAB_ID){
+        localStorage.removeItem(
+          V210_LEADER_KEY
+        );
+      }
+    }
+
+    v210IsLeader=false;
+    return;
+  }
+
+  v210ClaimLeadership();
+}
+
+function v210InitLeaderElection(){
+  if('BroadcastChannel' in window){
+    try{
+      v210Channel=
+        new BroadcastChannel(
+          'lat-yen-sync-v210'
+        );
+
+      v210Channel.onmessage=
+        event=>{
+          if(
+            event?.data?.type===
+              'remote-data-updated'
+          ){
+            // Followers only refresh active UI from local cache.
+            if(!v210IsLeader){
+              try{
+                cacheLoad();
+                renderAll();
+              }catch(e){}
+            }
+          }
+        };
+    }catch(e){}
+  }
+
+  v210Heartbeat();
+
+  clearInterval(v210LeaderTimer);
+
+  v210LeaderTimer=
+    setInterval(
+      v210Heartbeat,
+      V210_LEADER_HEARTBEAT_MS
+    );
+
+  window.addEventListener(
+    'storage',
+    event=>{
+      if(event.key===V210_LEADER_KEY){
+        v210Heartbeat();
+      }
+    }
+  );
+
+  document.addEventListener(
+    'visibilitychange',
+    ()=>{
+      v210Heartbeat();
+
+      if(
+        !document.hidden &&
+        v210IsLeader
+      ){
+        scheduleNextAutoSyncV203(1000);
+      }
+    }
+  );
+
+  window.addEventListener(
+    'beforeunload',
+    ()=>{
+      const current=v210ReadLeader();
+
+      if(current?.id===V210_TAB_ID){
+        localStorage.removeItem(
+          V210_LEADER_KEY
+        );
+      }
+
+      try{
+        v210Channel?.close();
+      }catch(e){}
+    }
+  );
+}
+
+function v210CanOwnSync(){
+  if(document.hidden){
+    return false;
+  }
+
+  if(!v210IsLeader){
+    v210ClaimLeadership();
+  }
+
+  return v210IsLeader;
+}
+
+function v210CircuitAllowsSync(reason='sync'){
+  const now=v210Now();
+
+  if(now<v210CircuitOpenUntil){
+    return false;
+  }
+
+  v210SyncRuns=
+    v210SyncRuns.filter(
+      ts=>
+        now-ts<=V210_LOOP_WINDOW_MS
+    );
+
+  v210SyncRuns.push(now);
+
+  if(
+    v210SyncRuns.length>
+      V210_LOOP_MAX_RUNS
+  ){
+    v210CircuitOpenUntil=
+      now+V210_LOOP_COOLDOWN_MS;
+
+    v210SyncRuns=[];
+
+    console.warn(
+      'V210 circuit breaker opened',
+      reason
+    );
+
+    setCloudStatus(
+      'Tạm dừng sync chống vòng lặp',
+      'offline'
+    );
+
+    return false;
+  }
+
+  return true;
+}
+
+function v210ResetCircuitAfterUserAction(){
+  if(
+    v210CircuitOpenUntil &&
+    v210Now()>=v210CircuitOpenUntil
+  ){
+    v210CircuitOpenUntil=0;
+    v210SyncRuns=[];
+  }
+}
+
+function v210NotifyFollowers(){
+  try{
+    v210Channel?.postMessage({
+      type:'remote-data-updated',
+      at:v210Now()
+    });
+  }catch(e){}
+}
+
 function v208ScheduleActionSync(
   reason='data_change',
   delay=V208_ACTION_SYNC_DEBOUNCE_MS
@@ -10641,13 +10875,32 @@ async function v208FlushActionSync(){
     return;
   }
 
+  if(!v210CanOwnSync()){
+    // Another tab/PWA instance owns sync.
+    v208ActionSyncQueued=false;
+    return;
+  }
+
+  if(
+    !v210CircuitAllowsSync(
+      'action:'+
+      v208LastActionReason
+    )
+  ){
+    v208ActionSyncQueued=false;
+    return;
+  }
+
   if(
     autoSyncBusy ||
     syncing ||
     v206RealtimePullBusy ||
     v208IsRemoteOrInternal()
   ){
-    if(v209FollowupCount<V209_MAX_FOLLOWUP){
+    if(
+      v209FollowupCount<
+      V209_MAX_FOLLOWUP
+    ){
       v209FollowupCount++;
 
       v208ActionSyncTimer=
@@ -10664,36 +10917,24 @@ async function v208FlushActionSync(){
   v209FollowupCount=0;
   v209LastActionSyncAt=Date.now();
 
-  // Hard internal guard around the whole action-triggered sync.
   v208InternalWriteDepth++;
 
   try{
     await autoSyncNow({
       force:false,
-      reason:'action:'+v208LastActionReason,
+      reason:
+        'action:'+
+        v208LastActionReason,
       silent:true
     });
 
+    v210NotifyFollowers();
+
   }catch(e){
     console.warn(
-      'V209 action sync',
+      'V210 action sync',
       e
     );
-
-    // Keep at most one retry, never a self-sustaining loop.
-    if(
-      navigator.onLine &&
-      v209FollowupCount<V209_MAX_FOLLOWUP
-    ){
-      v208ActionSyncQueued=true;
-      v209FollowupCount++;
-
-      v208ActionSyncTimer=
-        setTimeout(
-          ()=>v208FlushActionSync(),
-          V208_ACTION_SYNC_RETRY_MS
-        );
-    }
 
   }finally{
     v208InternalWriteDepth=
@@ -13731,7 +13972,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:209,
+    version:210,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -16533,6 +16774,14 @@ async function v206RealtimePull(){
     return;
   }
 
+  if(!v210CanOwnSync()){
+    return;
+  }
+
+  if(!v210CircuitAllowsSync('realtime-pull')){
+    return;
+  }
+
   const now=Date.now();
 
   if(
@@ -16557,8 +16806,14 @@ async function v206RealtimePull(){
 
   try{
     await loadCloudFastV202(true);
+    v210NotifyFollowers();
+
   }catch(e){
-    console.warn('V206 realtime pull',e);
+    console.warn(
+      'V210 realtime pull',
+      e
+    );
+
   }finally{
     v206RealtimePullBusy=false;
 
@@ -16794,6 +17049,11 @@ function v207RealtimeHandler(table){
       return;
     }
 
+    // Only one instance on this device applies Realtime.
+    if(!v210CanOwnSync()){
+      return;
+    }
+
     const applied=
       v207ApplyRealtimeRow(
         table,
@@ -16802,16 +17062,16 @@ function v207RealtimeHandler(table){
 
     if(applied){
       cloudOnline=true;
+
       setCloudStatus(
         'Realtime • đã nhận thay đổi',
         'online'
       );
 
       v207ScheduleActiveRender();
+      v210NotifyFollowers();
     }
 
-    // Correlated business writes can span several tables.
-    // Verify later, but do not block immediate UI update.
     if(
       table==='sales'||
       table==='sale_items'||
@@ -34192,7 +34452,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V209',
+    app_version:'V210',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34501,7 +34761,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:209,
+    version:210,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -34683,13 +34943,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:209,
+    version:210,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V209',storage:'supabase-storage',
+      schema:185,app_version:'V210',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -35902,7 +36162,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:209,
+    version:210,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -36491,18 +36751,32 @@ function scheduleNextAutoSyncV203(delay=null){
     return;
   }
 
+  if(!v210CanOwnSync()){
+    return;
+  }
+
   autoSyncTimer=setTimeout(
     async()=>{
       try{
-        await autoSyncNow({
-          reason:'timer',
-          silent:true
-        });
+        if(
+          v210CanOwnSync() &&
+          v210CircuitAllowsSync('timer')
+        ){
+          await autoSyncNow({
+            reason:'timer',
+            silent:true
+          });
+
+          v210NotifyFollowers();
+        }
       }finally{
         scheduleNextAutoSyncV203();
       }
     },
-    Number(delay||v203NextSyncDelay())
+    Number(
+      delay||
+      v203NextSyncDelay()
+    )
   );
 }
 
@@ -36893,7 +37167,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V209',
+      app_version:'V210',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -36908,7 +37182,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:209,
+      version:210,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -37185,7 +37459,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v209-full-backup-'+
+    'lat-yen-v210-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -38431,6 +38705,7 @@ function renderAll(){
 }
 
 installV208StorageSyncHook();
+v210InitLeaderElection();
 
 async function init(){
   normalizeAllTableHeaders(document);
