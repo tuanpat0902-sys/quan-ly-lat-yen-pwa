@@ -11419,7 +11419,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V269</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V270</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -18905,10 +18905,7 @@ async function syncPendingOperations(){
 
 async function syncPendingSaleReceipts(){
   if(!navigator.onLine){
-    return {
-      pending:0,
-      synced:0
-    };
+    return {pending:0,synced:0};
   }
 
   const pendingSales=
@@ -18927,126 +18924,72 @@ async function syncPendingSaleReceipts(){
   for(const sale of pendingSales){
     const items=
       (db.saleItems||[])
-        .filter(x=>
-          x.sale_id===
-            sale.id
-        );
+        .filter(x=>x.sale_id===sale.id);
 
     const movements=
       (db.movements||[])
         .filter(m=>
-          String(
-            m.transaction_type||''
-          ).toUpperCase()==='SALE' &&
-          String(
-            m.reference_id||''
-          )===String(
-            sale.id
-          )
+          String(m.transaction_type||'').toUpperCase()==='SALE' &&
+          String(m.reference_id||'')===String(sale.id)
         );
 
     const movementItems=
-      movements.map(row=>{
-        const cloudEligible=
-          isUuidValue(
-            row.warehouse_id
-          ) &&
-          isUuidValue(
-            row.ingredient_id
-          ) &&
-          !isExcelLocalIngredient(
-            row.ingredient_id
-          );
-
-        return {
-          localId:row.id,
-          row,
-          cloudEligible,
-          payload:{
-            warehouse_id:
-              row.warehouse_id,
-            ingredient_id:
-              row.ingredient_id,
-            transaction_type:'SALE',
-            quantity:
-              Number(
-                row.quantity||0
-              ),
-            note:
-              String(
-                row.note||''
-              ),
-            reference_id:
-              sale.id
-          }
-        };
-      });
+      movements.map(row=>({
+        localId:row.id,
+        row,
+        cloudEligible:
+          isUuidValue(row.warehouse_id) &&
+          isUuidValue(row.ingredient_id) &&
+          !isExcelLocalIngredient(row.ingredient_id),
+        payload:{
+          warehouse_id:row.warehouse_id,
+          ingredient_id:row.ingredient_id,
+          transaction_type:'SALE',
+          quantity:Number(row.quantity||0),
+          note:String(row.note||''),
+          reference_id:sale.id
+        }
+      }));
 
     const result=
       await syncSaleReceiptCloud({
         saleLocal:sale,
         salePayload:{
           id:sale.id,
-          warehouse_id:
-            sale.warehouse_id,
-          total_amount:
-            Number(
-              sale.total_amount||0
-            ),
-          source:
-            sale.source||'manual',
-          sold_at:
-            sale.sold_at||
-            sale.created_at,
-          note:
-            sale.note||''
+          warehouse_id:sale.warehouse_id,
+          total_amount:Number(sale.total_amount||0),
+          source:sale.source||'manual',
+          sold_at:sale.sold_at||sale.created_at,
+          note:sale.note||''
         },
         saleItemLocals:items,
         saleItemsPayload:
           items.map(x=>({
             sale_id:sale.id,
-            product_id:
-              x.product_id,
-            quantity:
-              Number(
-                x.quantity||0
-              ),
-            unit_price:
-              Number(
-                x.unit_price||0
-              )
+            product_id:x.product_id,
+            quantity:Number(x.quantity||0),
+            unit_price:Number(x.unit_price||0)
           })),
-        saleMovements:
-          movementItems
+        saleMovements:movementItems
       });
 
-    pending+=
-      Number(
-        result?.pending||0
-      );
-
-    synced+=
-      Number(
-        result?.synced||0
-      );
+    pending+=Number(result?.pending||0);
+    synced+=Number(result?.synced||0);
   }
 
-  if(
-    synced>0 &&
-    navigator.onLine
-  ){
-    if(v235PushOnlyMode){
-      v235NeedFullReconcile=true;
-      v235ScheduleIdleReconcile();
-    }else{
-      await loadCloud();
-    }
+  /*
+    V270: DO NOT call loadCloud() here.
+    The atomic RPC already returns authoritative sale/items/movements/inventory.
+    Realtime distributes those rows to other devices.
+  */
+  if(synced>0){
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+    v207ScheduleActiveRender?.();
   }
 
-  return {
-    pending,
-    synced
-  };
+  return {pending,synced};
 }
 
 /* ===== V191 TRUE PENDING ACCOUNTING ===== */
@@ -44379,7 +44322,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V269',
+    app_version:'V270',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -45029,7 +44972,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V269',storage:'supabase-storage',
+      schema:185,app_version:'V270',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -49219,7 +49162,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V269',
+      app_version:'V270',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53774,7 +53717,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V269',
+      app_version:'V270',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53814,8 +53757,7 @@ async function v239ResetCloudFromThisDevice(){
 
 function renderSettings(){
   const brand=loadAppBrand();
-  const pending=
-    Number(v191PendingCount?.()||0);
+  const pending=Number(v191PendingCount?.()||0);
 
   E.settings.innerHTML=`
     <div class="v260-account-bar">
@@ -53826,10 +53768,9 @@ function renderSettings(){
         </div>
       </div>
 
-      <button
-        class="secondary sm"
-        onclick="v260LogoutAndWipe()"
-      >Đăng xuất</button>
+      <button class="secondary sm" onclick="v260LogoutAndWipe()">
+        Đăng xuất
+      </button>
     </div>
 
     <div class="card">
@@ -53837,8 +53778,8 @@ function renderSettings(){
         <div>
           <h2 style="margin:0 0 6px">Đồng bộ Cloud</h2>
           <div class="muted">
-            Tự động hoạt động trong suốt phiên đăng nhập.
-            Realtime là đường chính; Smart Sync 8 giây là dự phòng.
+            Cloud là nguồn dữ liệu chính. Realtime nhận thay đổi giữa các thiết bị;
+            Smart Sync chỉ dùng để bắt lại khi WebSocket/mạng bị gián đoạn.
           </div>
         </div>
 
@@ -53862,16 +53803,11 @@ function renderSettings(){
           class="secondary"
           onclick="v269ReconnectRealtime()"
         >Kết nối lại Cloud</button>
-
-        <button
-          class="secondary"
-          onclick="v269ReloadDeviceFromCloud()"
-        >Tải lại thiết bị từ Cloud</button>
       </div>
 
       ${
         pending
-          ?`<div style="margin-top:10px;color:#b45309;font-size:12px">${pending} mục đang chờ gửi Cloud. Hệ thống sẽ tự thử lại.</div>`
+          ?`<div style="margin-top:10px;color:#b45309;font-size:12px">${esc(v270PendingText())}</div>`
           :''
       }
     </div>
@@ -53883,21 +53819,19 @@ function renderSettings(){
 
       <div class="grid2">
         <div>
-          <h3>Sao lưu bằng tệp</h3>
+          <h3>Backup ngoài Cloud</h3>
           <p class="muted">
-            Dùng khi cần lưu một bản dự phòng ngoài Cloud.
+            File backup chỉ là bản dự phòng thủ công.
           </p>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button
-              class="secondary sm"
-              onclick="exportBackup()"
-            >Xuất file backup</button>
+            <button class="secondary sm" onclick="exportBackup()">
+              Xuất file backup
+            </button>
 
-            <button
-              class="secondary sm"
-              onclick="selectBackupImport()"
-            >Khôi phục từ file</button>
+            <button class="secondary sm" onclick="selectBackupImport()">
+              Khôi phục từ file
+            </button>
           </div>
 
           <input
@@ -53910,17 +53844,41 @@ function renderSettings(){
         </div>
 
         <div>
-          <h3>Làm mới dữ liệu Cloud</h3>
+          <h3>Làm mới Cloud</h3>
           <p class="muted">
-            Xóa toàn bộ dữ liệu nghiệp vụ của tài khoản.
-            Tài khoản admin vẫn được giữ.
+            Xóa toàn bộ dữ liệu nghiệp vụ Cloud; tài khoản admin vẫn giữ.
           </p>
 
-          <button
-            class="danger sm"
-            onclick="v264ResetCloudClean()"
-          >Xóa sạch dữ liệu Cloud</button>
+          <button class="danger sm" onclick="v264ResetCloudClean()">
+            Xóa sạch dữ liệu Cloud
+          </button>
         </div>
+      </div>
+    </div>
+
+    <div class="section-gap"></div>
+
+    <div class="card">
+      <h2>Cache thiết bị</h2>
+
+      <p class="muted">
+        Đây không phải database chính. App giữ một bản cache nhỏ trên thiết bị
+        để mở nhanh, giữ phiên đăng nhập và không mất thao tác khi mạng chập chờn.
+        Dữ liệu nghiệp vụ chính nằm trên Supabase Cloud.
+      </p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge">
+          Cache hiện tại: ${storageHuman(storageBytes())}
+        </span>
+
+        <button class="secondary sm" onclick="manualOptimizeStorage()">
+          Tối ưu cache
+        </button>
+
+        <button class="secondary sm" onclick="v270ClearDeviceCache()">
+          Xóa cache & tải lại Cloud
+        </button>
       </div>
     </div>
 
@@ -53930,39 +53888,23 @@ function renderSettings(){
       <div class="brand-settings-head">
         <div>
           <h2>Nhận diện phần mềm</h2>
-          <div class="muted">
-            Tên và logo hiển thị của ứng dụng.
-          </div>
+          <div class="muted">Tên và logo hiển thị của ứng dụng.</div>
         </div>
 
-        ${
-          brand.logo
-            ?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`
-            :''
-        }
+        ${brand.logo?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`:''}
       </div>
 
       <div class="brand-settings-grid">
         <div>
           <label>Tên phần mềm</label>
-
           <div class="brand-name-actions">
-            <input
-              id="brandNameInput"
-              maxlength="80"
-              value="${esc(brand.name)}"
-            >
-
-            <button
-              class="primary"
-              onclick="saveAppName()"
-            >Lưu tên</button>
+            <input id="brandNameInput" maxlength="80" value="${esc(brand.name)}">
+            <button class="primary" onclick="saveAppName()">Lưu tên</button>
           </div>
         </div>
 
         <div>
           <label>Logo phần mềm</label>
-
           <input
             id="brandLogoInput"
             type="file"
@@ -53972,18 +53914,11 @@ function renderSettings(){
           >
 
           <div class="brand-logo-actions">
-            <button
-              class="secondary"
-              onclick="selectAppLogo()"
-            >
+            <button class="secondary" onclick="selectAppLogo()">
               ${brand.logo?'Thay logo':'Thêm logo'}
             </button>
 
-            ${
-              brand.logo
-                ?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`
-                :''
-            }
+            ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`:''}
           </div>
         </div>
       </div>
@@ -53992,36 +53927,15 @@ function renderSettings(){
     <div class="section-gap"></div>
 
     <div class="card">
-      <h2>Thiết bị</h2>
-
-      <div class="grid2">
-        <div>
-          <h3>Dung lượng local</h3>
-          <p class="muted">
-            ${storageHuman(storageBytes())}
-          </p>
-
-          <button
-            class="secondary sm"
-            onclick="manualOptimizeStorage()"
-          >Tối ưu cache</button>
-        </div>
-
-        <div>
-          <h3>Thiết bị khác</h3>
-          <p class="muted">
-            Không dùng QR hoặc mã ghép.
-            Chỉ cần đăng nhập cùng tài khoản admin.
-          </p>
-        </div>
-      </div>
+      <h2>Thiết bị khác</h2>
+      <p class="muted">
+        Không dùng QR/mã ghép. Chỉ cần đăng nhập cùng tài khoản
+        <b>admin@latyen.vn</b>; dữ liệu sẽ tải từ Cloud.
+      </p>
     </div>
   `;
 
-  setTimeout(
-    v269RenderSyncStatus,
-    0
-  );
+  setTimeout(v269RenderSyncStatus,0);
 }
 
 async function migrateV2ToCloud(){let old;try{old=JSON.parse(localStorage.getItem(V2_KEY)||'null')}catch(e){}if(!old)return alert('Không tìm thấy dữ liệu V2 trên thiết bị này.');if(!confirm('Import dữ liệu V2 hiện tại lên Supabase? Nên dùng khi Cloud đang trống.'))return;try{
@@ -54916,9 +54830,9 @@ function v262StartSmartSync(){
 }
 
 
-/* ===== V269 CLEAN SYNC CORE ===== */
-const V269_SYNC_INTERVAL_MS=8000;
-const V269_PULL_INTERVAL_MS=8000;
+/* ===== V270 CLOUD TRANSACTION CORE ===== */
+const V269_SYNC_INTERVAL_MS=10000;
+const V269_PULL_INTERVAL_MS=20000;
 const V269_ACTION_DEBOUNCE_MS=250;
 const V269_CURSOR_OVERLAP_MS=3000;
 
@@ -55371,11 +55285,7 @@ function v269StopSyncEngine(){
 }
 
 function v269RenderSyncStatus(){
-  const el=
-    document.getElementById(
-      'v269SyncState'
-    );
-
+  const el=document.getElementById('v269SyncState');
   if(!el)return;
 
   const pending=
@@ -55384,31 +55294,33 @@ function v269RenderSyncStatus(){
   const realtime=
     v269RealtimeState==='online'
       ?'Realtime'
-      :'Smart Sync';
+      :'Smart Sync dự phòng';
 
   const state=
     !navigator.onLine
       ?'Offline'
       :(
         pending
-          ?`${pending} mục đang chờ`
+          ?`${pending} mục đang chờ Cloud`
           :'Đã đồng bộ'
       );
 
   el.innerHTML=`
-    <div style="display:grid;gap:6px">
+    <div style="display:grid;gap:7px">
       <div>
         <b>${esc(state)}</b>
-        <span class="muted">
-          • ${esc(realtime)}
-        </span>
+        <span class="muted"> • ${esc(realtime)}</span>
+      </div>
+
+      <div class="muted">
+        ${esc(v270PendingText())}
       </div>
 
       <div class="muted">
         ${
           v269LastSyncAt
-            ?`Lần cuối: ${esc(dt(new Date(v269LastSyncAt).toISOString()))}`
-            :'Đang khởi tạo đồng bộ…'
+            ?`Lần đồng bộ gần nhất: ${esc(dt(new Date(v269LastSyncAt).toISOString()))}`
+            :'Đang khởi tạo Cloud…'
         }
       </div>
 
@@ -55662,6 +55574,71 @@ async function v263ResetOrganizationData(){
   }catch(e){}
 
   alert('Đã xóa dữ liệu Cloud bằng transaction server.');
+  location.reload();
+}
+
+
+/* ===== V270 CLOUD TRANSACTION CORE ===== */
+function v270PendingBreakdown(){
+  const pending=x=>(
+    x?._sync_status==='pending' ||
+    x?._local_only===true
+  );
+
+  const movements=
+    (db.movements||[])
+      .filter(pending);
+
+  const typeCount=type=>
+    movements.filter(x=>
+      String(x.transaction_type||'').toUpperCase()===type
+    ).length;
+
+  return {
+    warehouses:(db.warehouses||[]).filter(pending).length,
+    suppliers:(db.suppliers||[]).filter(pending).length,
+    ingredients:(db.ingredients||[]).filter(pending).length,
+    recipes:
+      (db.products||[]).filter(pending).length+
+      (db.recipeItems||[]).filter(pending).length,
+    imports:typeCount('IMPORT'),
+    exports:typeCount('EXPORT'),
+    stocktake:typeCount('ADJUSTMENT'),
+    sales:
+      (db.sales||[]).filter(pending).length+
+      (db.saleItems||[]).filter(pending).length+
+      typeCount('SALE')
+  };
+}
+
+function v270PendingText(){
+  const b=v270PendingBreakdown();
+
+  const rows=[
+    ['Kho',b.warehouses],
+    ['NCC',b.suppliers],
+    ['Nguyên liệu',b.ingredients],
+    ['Công thức',b.recipes],
+    ['Nhập kho',b.imports],
+    ['Xuất kho',b.exports],
+    ['Kiểm kê',b.stocktake],
+    ['Bán hàng',b.sales]
+  ].filter(x=>x[1]>0);
+
+  return rows.length
+    ?rows.map(x=>`${x[0]}: ${x[1]}`).join(' • ')
+    :'Không có dữ liệu chờ';
+}
+
+async function v270ClearDeviceCache(){
+  const ok=await appConfirm(
+    'Xóa cache nghiệp vụ trên thiết bị này và tải lại từ Cloud?\n\nDữ liệu Cloud và tài khoản admin không bị xóa.',
+    'Làm sạch cache thiết bị'
+  );
+
+  if(!ok)return;
+
+  await v264ClearLocalBusinessCache();
   location.reload();
 }
 
