@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V201 DEDUP MIGRATION ===== */
+/* ===== V203 LOW RESOURCE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9861,6 +9861,113 @@ button{
   font-size:8.3px;
 }
 
+
+/* ===== V202 COMPACT SETTINGS ===== */
+.sync-v202-tools{
+  margin-top:10px;
+  border:1px solid #dbe5ea;
+  border-radius:9px;
+  background:#fff;
+}
+
+.sync-v202-tools>summary{
+  cursor:pointer;
+  padding:8px 10px;
+  font-size:9px;
+  font-weight:700;
+  color:#334155;
+  list-style:none;
+}
+
+.sync-v202-tools>summary::-webkit-details-marker{
+  display:none;
+}
+
+.sync-v202-tools>summary:after{
+  content:'▾';
+  float:right;
+  color:#64748b;
+}
+
+.sync-v202-tools[open]>summary:after{
+  content:'▴';
+}
+
+.sync-v202-tools-body{
+  padding:0 8px 8px;
+}
+
+.sync-v202-tools .sync-v198-migration-card,
+.sync-v202-tools .sync-v199-progress,
+.sync-v202-tools .sync-v195-pending-card,
+.sync-v202-tools .sync-v194-diagnostics{
+  margin-top:7px;
+}
+
+.sync-v186-summary{
+  margin-top:8px!important;
+}
+
+.sync-v186-actions{
+  margin-top:8px!important;
+}
+
+.sync-v186-card{
+  padding:11px!important;
+}
+
+.sync-v186-title{
+  font-size:13px!important;
+}
+
+.sync-v186-subtitle{
+  font-size:8.5px!important;
+  line-height:1.3!important;
+}
+
+.sync-v193-progress{
+  margin-top:8px!important;
+  padding:8px 9px!important;
+}
+
+.sync-v193-track{
+  height:8px!important;
+}
+
+@media(max-width:700px){
+  .sync-v202-tools-body{
+    padding:0 5px 6px;
+  }
+}
+
+
+/* ===== V203 LOW RESOURCE UI ===== */
+.sync-v202-tools:not([open]) .sync-v202-tools-body{
+  display:none!important;
+}
+
+.panel:not(.active){
+  content-visibility:hidden;
+  contain-intrinsic-size:1px 600px;
+}
+
+.sync-v195-list,
+.sync-diag-list{
+  contain:content;
+}
+
+.sync-v195-row,
+.sync-diag-row{
+  content-visibility:auto;
+  contain-intrinsic-size:40px;
+}
+
+@media(max-width:700px){
+  .sync-v186-summary{
+    gap:4px!important;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -12579,7 +12686,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:201,
+    version:203,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -15192,7 +15299,7 @@ async function migrateAndSyncV199(){
 async function syncNow(){
   if(syncing||autoSyncBusy){
     cloudReloadRequested=true;
-    toastMsg('Đang đồng bộ, yêu cầu mới đã được xếp hàng');
+    toastMsg('Đang đồng bộ');
     return;
   }
 
@@ -15201,183 +15308,110 @@ async function syncNow(){
 
   try{
     updateSyncProgress(
-      8,
-      'Kiểm tra dữ liệu chờ',
-      `${v191PendingCount()} mục đang chờ trước khi đồng bộ`
+      15,
+      'Đang gửi thay đổi',
+      `${v191PendingCount()} mục pending`
     );
 
-    try{
-      await syncDeletedImportMovementTombstones();
-    }catch(e){
-      console.warn(e);
-    }
-
-    try{
-      await syncDeletionTombstonesV192();
-    }catch(e){
-      console.warn(e);
-    }
+    const retry=
+      await runPendingRetriesV202();
 
     updateSyncProgress(
-      18,
-      'Đồng bộ danh mục',
-      'Đang xử lý nhà cung cấp và dữ liệu danh mục…'
+      45,
+      'Đang tải Cloud',
+      'Tải dữ liệu mới nhất'
     );
 
-    try{
-      await syncPendingSuppliersV191();
-    }catch(e){
-      console.warn('Supplier retry',e);
-    }
-
-    try{
-      await syncPendingOperations();
-    }catch(e){
-      console.warn('Pending operation',e);
-    }
-
-    updateSyncProgress(
-      34,
-      'Đồng bộ nhập/xuất kho',
-      'Đang xử lý phiếu nhập và phiếu xuất đang chờ…'
-    );
-
-    try{
-      await syncPendingImportReceiptsV191();
-    }catch(e){
-      console.warn('Import retry',e);
-    }
-
-    try{
-      await syncPendingExportReceiptsV192();
-    }catch(e){
-      console.warn('Export retry',e);
-    }
-
-    updateSyncProgress(
-      48,
-      'Đồng bộ kiểm kê',
-      'Đang xử lý các phiếu kiểm kê pending…'
-    );
-
-    try{
-      await syncPendingStocktakeReceiptsV192();
-    }catch(e){
-      console.warn('Stocktake retry',e);
-    }
-
-    updateSyncProgress(
-      60,
-      'Đồng bộ bán hàng',
-      'Đang xử lý phiếu bán hàng và tồn kho…'
-    );
-
-    try{
-      await syncPendingSaleReceipts();
-    }catch(e){
-      console.warn('Pending sale',e);
-    }
+    await loadCloudFastV202(true);
 
     updateSyncProgress(
       72,
-      'Tải dữ liệu Cloud',
-      'Đang tải toàn bộ dữ liệu nghiệp vụ mới nhất…'
+      'Đồng bộ thiết bị',
+      'Đang hợp nhất dữ liệu local'
     );
 
-    await loadCloud();
+    const cred=
+      autoSyncCredentials();
 
-    updateSyncProgress(
-      82,
-      'Đồng bộ dữ liệu local',
-      'Đang hợp nhất Nhân viên, Thu/Chi, Chấm công, Lịch sử và Cài đặt…'
-    );
+    let canonical=null;
 
-    const cred=autoSyncCredentials();
-
-    if(cred.code&&cred.passphrase){
-      try{
+    if(
+      cred.code&&
+      cred.passphrase
+    ){
+      canonical=
         await v189CanonicalSync(
           cred.code,
           cred.passphrase
         );
-      }catch(e){
-        console.warn(
-          'Canonical local sync',
-          e
-        );
-      }
+
+      saveFastSyncStateV202({
+        last_revision:
+          Number(
+            canonical?.revision||0
+          )
+      });
     }
 
     updateSyncProgress(
-      92,
-      'Xác minh Cloud',
-      'Đang tải lại lần cuối để kiểm tra kết quả…'
+      90,
+      'Xác minh',
+      'Kiểm tra pending và Cloud coverage'
     );
-
-    await loadCloud();
 
     const pending=
       v191PendingCount();
+
+    const coverage=
+      v198CloudCoverage();
+
+    const success=
+      cloudOnline&&
+      pending===0&&
+      coverage.localOnly===0&&
+      (
+        !canonical||
+        canonical.converged
+      );
+
+    finishSyncProgress({
+      success,
+      pending,
+      stage:
+        success
+          ?'Đã đồng bộ'
+          :'Chưa đồng bộ hết',
+      detail:
+        success
+          ?'Cloud và thiết bị đã đồng bộ.'
+          :(
+            coverage.localOnly
+              ?`Còn ${coverage.localOnly} record local`
+              :`Còn ${pending} pending`
+          )
+    });
 
     updatePendingSyncBadge();
 
-    if(
-      cloudOnline &&
-      pending===0
-    ){
-      finishSyncProgress({
-        success:true,
-        pending:0,
-        stage:'Đã đồng bộ hoàn toàn',
-        detail:'Cloud đã xác nhận và không còn mục nào chờ đồng bộ.'
-      });
-
-      toastMsg(
-        'Đã đồng bộ toàn bộ dữ liệu • 100%'
-      );
-
-    }else{
-      finishSyncProgress({
-        success:false,
-        pending,
-        stage:
-          cloudOnline
-            ?'Còn dữ liệu chưa đồng bộ'
-            :'Cloud đang offline',
-        detail:
-          cloudOnline
-            ?`Còn ${pending} mục chờ Cloud.`
-            :'Thiết bị chưa kết nối được Cloud.'
-      });
-
-      toastMsg(
-        `Đồng bộ ${loadSyncProgress().percent}% • còn ${pending} mục chờ`
-      );
-    }
-
-  }catch(e){
-    console.error(
-      'syncNow',
-      e
+    toastMsg(
+      success
+        ?'Đã đồng bộ • 100%'
+        :`Đồng bộ ${loadSyncProgress().percent}%`
     );
 
-    const pending=
-      v191PendingCount();
+  }catch(e){
+    console.error('syncNow',e);
 
     finishSyncProgress({
       success:false,
-      pending,
+      pending:v191PendingCount(),
       stage:'Lỗi đồng bộ',
-      detail:
-        e?.message||
-        String(e),
-      error:
-        e?.message||
-        String(e)
+      detail:e?.message||String(e),
+      error:e?.message||String(e)
     });
 
     toastMsg(
-      `Đồng bộ dừng ở ${loadSyncProgress().percent}% • còn ${pending} mục chờ`
+      `Đồng bộ dừng ở ${loadSyncProgress().percent}%`
     );
   }
 }
@@ -32629,7 +32663,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V201',
+    app_version:'V203',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -32938,7 +32972,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:201,
+    version:203,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -33120,13 +33154,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:201,
+    version:203,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V201',storage:'supabase-storage',
+      schema:185,app_version:'V203',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -34339,7 +34373,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:201,
+    version:203,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -34523,6 +34557,103 @@ async function v189CanonicalSync(
   };
 }
 
+
+/* ===== V202 FAST SYNC ===== */
+const V202_FAST_SYNC_KEY='lat_yen_fast_sync_v202';
+const V202_MIN_PULL_GAP_MS=8000;
+
+function loadFastSyncStateV202(){
+  try{
+    return {
+      last_pull_at:0,
+      last_pending:0,
+      last_revision:0,
+      ...JSON.parse(
+        localStorage.getItem(V202_FAST_SYNC_KEY)||'{}'
+      )
+    };
+  }catch(e){
+    return {
+      last_pull_at:0,
+      last_pending:0,
+      last_revision:0
+    };
+  }
+}
+
+function saveFastSyncStateV202(patch){
+  const next={
+    ...loadFastSyncStateV202(),
+    ...(patch||{})
+  };
+
+  localStorage.setItem(
+    V202_FAST_SYNC_KEY,
+    JSON.stringify(next)
+  );
+
+  return next;
+}
+
+async function loadCloudFastV202(force=false){
+  const state=loadFastSyncStateV202();
+  const now=Date.now();
+
+  if(
+    !force &&
+    now-Number(state.last_pull_at||0)<
+      V202_MIN_PULL_GAP_MS
+  ){
+    return {
+      skipped:true,
+      reason:'recent_pull'
+    };
+  }
+
+  await loadCloud();
+
+  saveFastSyncStateV202({
+    last_pull_at:Date.now()
+  });
+
+  return {
+    skipped:false
+  };
+}
+
+async function runPendingRetriesV202(){
+  const before=v191PendingCount();
+
+  if(before<=0){
+    return {
+      before:0,
+      after:0,
+      changed:false
+    };
+  }
+
+  try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
+  try{await syncDeletionTombstonesV192()}catch(e){console.warn(e)}
+  try{await syncPendingSuppliersV191()}catch(e){console.warn('supplier',e)}
+  try{await syncPendingOperations()}catch(e){console.warn('operation',e)}
+  try{await syncPendingImportReceiptsV191()}catch(e){console.warn('import',e)}
+  try{await syncPendingExportReceiptsV192()}catch(e){console.warn('export',e)}
+  try{await syncPendingStocktakeReceiptsV192()}catch(e){console.warn('stocktake',e)}
+  try{await syncPendingSaleReceipts()}catch(e){console.warn('sale',e)}
+
+  const after=v191PendingCount();
+
+  saveFastSyncStateV202({
+    last_pending:after
+  });
+
+  return {
+    before,
+    after,
+    changed:before!==after
+  };
+}
+
 async function autoSyncNow(options={}){
   const {
     force=false,
@@ -34530,8 +34661,7 @@ async function autoSyncNow(options={}){
     silent=true
   }=options;
 
-  const cfg=
-    loadAutoSyncConfig();
+  const cfg=loadAutoSyncConfig();
 
   if(
     autoSyncBusy||
@@ -34541,8 +34671,7 @@ async function autoSyncNow(options={}){
     return null;
   }
 
-  const cred=
-    autoSyncCredentials();
+  const cred=autoSyncCredentials();
 
   if(
     !cred.code||
@@ -34555,123 +34684,47 @@ async function autoSyncNow(options={}){
   repairFalsePendingLocalRowsV197();
   beginSyncProgress();
 
-  const statusEl=
-    $('autoSyncLiveStatus');
+  const statusEl=$('autoSyncLiveStatus');
 
   if(statusEl){
-    statusEl.textContent=
-      'Đang đồng bộ…';
+    statusEl.textContent='Đang đồng bộ…';
   }
 
   try{
     updateSyncProgress(
-      8,
-      'Kiểm tra dữ liệu chờ',
+      12,
+      'Kiểm tra thay đổi',
       `${v191PendingCount()} mục pending`
     );
 
-    try{
-      await syncDeletedImportMovementTombstones();
-    }catch(e){
-      console.warn(e);
-    }
-
-    try{
-      await syncDeletionTombstonesV192();
-    }catch(e){
-      console.warn(e);
-    }
+    const retry=
+      await runPendingRetriesV202();
 
     updateSyncProgress(
-      18,
-      'Đồng bộ danh mục',
-      'Nhà cung cấp, nguyên liệu và thực đơn'
+      38,
+      'Đồng bộ thay đổi local',
+      retry.before
+        ?`Pending ${retry.before} → ${retry.after}`
+        :'Không có pending mới'
     );
 
-    try{
-      await syncPendingSuppliersV191();
-    }catch(e){
-      console.warn(
-        'Supplier retry',
-        e
-      );
-    }
-
-    try{
-      await syncPendingOperations();
-    }catch(e){
-      console.warn(
-        'Pending business',
-        e
-      );
-    }
-
-    updateSyncProgress(
-      34,
-      'Đồng bộ nhập/xuất kho',
-      'Phiếu nhập và xuất pending'
-    );
-
-    try{
-      await syncPendingImportReceiptsV191();
-    }catch(e){
-      console.warn(
-        'Import retry',
-        e
-      );
-    }
-
-    try{
-      await syncPendingExportReceiptsV192();
-    }catch(e){
-      console.warn(
-        'Export retry',
-        e
-      );
-    }
-
-    updateSyncProgress(
-      48,
-      'Đồng bộ kiểm kê',
-      'Phiếu kiểm kê pending'
-    );
-
-    try{
-      await syncPendingStocktakeReceiptsV192();
-    }catch(e){
-      console.warn(
-        'Stocktake retry',
-        e
-      );
-    }
-
+    // Only pull aggressively if user forced sync or we actually changed Cloud/local.
     updateSyncProgress(
       60,
-      'Đồng bộ bán hàng',
-      'Phiếu bán và tồn kho'
-    );
-
-    try{
-      await syncPendingSaleReceipts();
-    }catch(e){
-      console.warn(
-        'Pending sale',
-        e
-      );
-    }
-
-    updateSyncProgress(
-      72,
       'Tải dữ liệu Cloud',
-      'Đang tải snapshot nghiệp vụ mới nhất'
+      force||retry.changed
+        ?'Đang tải dữ liệu mới nhất'
+        :'Đang kiểm tra nhanh trạng thái Cloud'
     );
 
-    await loadCloud();
+    await loadCloudFastV202(
+      force||retry.changed
+    );
 
     updateSyncProgress(
-      82,
+      78,
       'Đồng bộ dữ liệu local',
-      'Nhân viên, Thu/Chi, Chấm công, Lịch sử, Cài đặt'
+      'Đang kiểm tra canonical state'
     );
 
     const canonical=
@@ -34680,23 +34733,47 @@ async function autoSyncNow(options={}){
         cred.passphrase
       );
 
+    const state=
+      loadFastSyncStateV202();
+
+    const revisionChanged=
+      Number(state.last_revision||0)!==
+      Number(canonical.revision||0);
+
+    saveFastSyncStateV202({
+      last_revision:
+        Number(canonical.revision||0)
+    });
+
     updateSyncProgress(
       92,
-      'Xác minh Cloud',
-      'Pull lần cuối và kiểm tra pending'
+      'Xác minh',
+      revisionChanged||force
+        ?'Có revision mới, đang pull xác minh'
+        :'Không có revision mới'
     );
 
-    await loadCloud();
-
-    const now=
-      new Date().toISOString();
+    if(
+      revisionChanged||
+      force||
+      retry.changed
+    ){
+      await loadCloudFastV202(true);
+    }
 
     const pending=
       v191PendingCount();
 
+    const coverage=
+      v198CloudCoverage();
+
+    const now=
+      new Date().toISOString();
+
     const fullySynced=
       canonical.converged&&
       pending===0&&
+      coverage.localOnly===0&&
       cloudOnline;
 
     saveAutoSyncConfig({
@@ -34714,9 +34791,7 @@ async function autoSyncNow(options={}){
       cloud_revision:
         canonical.revision||0,
       cloud_revision_token:
-        String(
-          canonical.revision||0
-        )
+        String(canonical.revision||0)
     });
 
     saveMultiDeviceConfig({
@@ -34729,43 +34804,39 @@ async function autoSyncNow(options={}){
       pending,
       stage:
         fullySynced
-          ?'Đã đồng bộ hoàn toàn'
+          ?'Đã đồng bộ'
           :'Chưa đồng bộ hết',
       detail:
         fullySynced
-          ?`Cloud Revision ${canonical.revision} đã xác nhận.`
-          :`Revision ${canonical.revision} • còn ${pending} mục pending.`
+          ?`Rev ${canonical.revision} • đồng bộ nhanh`
+          :(
+            coverage.localOnly
+              ?`Còn ${coverage.localOnly} record local`
+              :`Còn ${pending} pending`
+          )
     });
 
     if(!silent){
       toastMsg(
         fullySynced
-          ?`Đã đồng bộ hoàn toàn • 100% • Rev ${canonical.revision}`
-          :`Đồng bộ ${loadSyncProgress().percent}% • Rev ${canonical.revision} • ${pending} mục chờ`
+          ?`Đã đồng bộ • 100% • Rev ${canonical.revision}`
+          :`Đồng bộ ${loadSyncProgress().percent}%`
       );
     }
 
     return {
-      direction:'v193-progress-sync',
+      direction:'v202-fast-sync',
       converged:fullySynced,
-      revision:
-        canonical.revision,
-      conflicts:
-        canonical.conflicts,
+      revision:canonical.revision,
       pending,
-      progress:
-        loadSyncProgress().percent
+      local_only:
+        coverage.localOnly
     };
 
   }catch(e){
-    console.warn(
-      'V193 sync',
-      reason,
-      e
-    );
+    console.warn('V202 sync',reason,e);
 
-    const pending=
-      v191PendingCount();
+    const pending=v191PendingCount();
 
     saveAutoSyncConfig({
       last_result:'error'
@@ -34775,66 +34846,34 @@ async function autoSyncNow(options={}){
       success:false,
       pending,
       stage:'Lỗi đồng bộ',
-      detail:
-        e?.message||
-        String(e),
-      error:
-        e?.message||
-        String(e)
+      detail:e?.message||String(e),
+      error:e?.message||String(e)
     });
 
-    if(
-      !silent&&
-      reason!=='timer'
-    ){
+    if(!silent&&reason!=='timer'){
       alert(
-        'Đồng bộ V193 chưa hoàn tất.\n\n'+
-        String(
-          e?.message||
-          e
-        )+
-        `\n\nTiến độ: ${loadSyncProgress().percent}% • còn ${pending} mục chờ.`
+        'Đồng bộ chưa hoàn tất:\n\n'+
+        String(e?.message||e)
       );
     }
 
     return {
       direction:'error',
-      error:e,
-      progress:
-        loadSyncProgress().percent
+      error:e
     };
 
   }finally{
     autoSyncBusy=false;
 
-    const current=
-      loadAutoSyncConfig();
-
     const progress=
       loadSyncProgress();
 
     if(statusEl){
-      const label=
-        progress.running
-          ?'Đang đồng bộ'
-          :(
-            progress.percent===100 &&
-            progress.pending===0
-              ?'Đã đồng bộ hoàn toàn'
-              :(
-                current.last_result==='error'
-                  ?'Lỗi đồng bộ'
-                  :`Còn ${progress.pending} mục chờ`
-              )
-          );
-
       statusEl.textContent=
-        `${label} • ${Math.round(progress.percent)}%`+
-        (
-          current.cloud_revision
-            ?` • Rev ${current.cloud_revision}`
-            :''
-        );
+        progress.percent===100&&
+        progress.pending===0
+          ?'Đã đồng bộ • 100%'
+          :`${progress.stage} • ${Math.round(progress.percent)}%`;
     }
   }
 }
@@ -34848,38 +34887,241 @@ function setAutoSyncEnabled(enabled){
   renderSettings();
 }
 
+
+
+
+
+
+
+
+/* ===== V203 LOW RESOURCE MODE ===== */
+const V203_IDLE_SYNC_MS=90000;
+const V203_PENDING_SYNC_MS=20000;
+const V203_FOCUS_SYNC_MIN_GAP_MS=15000;
+const V203_STATUS_CACHE_MS=15000;
+
+let v203StatusCache={
+  at:0,
+  html:''
+};
+
+function v203NextSyncDelay(){
+  return v191PendingCount()>0
+    ?V203_PENDING_SYNC_MS
+    :V203_IDLE_SYNC_MS;
+}
+
 function stopAutoSyncLoop(){
-  if(autoSyncTimer){clearInterval(autoSyncTimer);autoSyncTimer=null;}
+  if(autoSyncTimer){
+    clearTimeout(autoSyncTimer);
+    clearInterval(autoSyncTimer);
+    autoSyncTimer=null;
+  }
+}
+
+function scheduleNextAutoSyncV203(delay=null){
+  stopAutoSyncLoop();
+
+  const cfg=loadAutoSyncConfig();
+
+  if(
+    !cfg.enabled||
+    !cfg.code||
+    !cfg.passphrase||
+    document.visibilityState==='hidden'
+  ){
+    return;
+  }
+
+  autoSyncTimer=setTimeout(
+    async()=>{
+      try{
+        await autoSyncNow({
+          reason:'timer',
+          silent:true
+        });
+      }finally{
+        scheduleNextAutoSyncV203();
+      }
+    },
+    Number(delay||v203NextSyncDelay())
+  );
 }
 
 function startAutoSyncLoop(){
-  stopAutoSyncLoop();
-  const cfg=loadAutoSyncConfig();
-  if(!cfg.enabled||!cfg.code||!cfg.passphrase)return;
-  autoSyncTimer=setInterval(
-    ()=>autoSyncNow({reason:'timer',silent:true}),
-    AUTO_SYNC_INTERVAL_MS
+  scheduleNextAutoSyncV203();
+}
+
+function v203ShouldFocusSync(){
+  const last=
+    Date.parse(
+      loadAutoSyncConfig().last_sync_at||''
+    );
+
+  if(!Number.isFinite(last)){
+    return true;
+  }
+
+  return (
+    Date.now()-last
+    >=V203_FOCUS_SYNC_MIN_GAP_MS
   );
 }
 
 function initV185AutoSync(){
   const cfg=loadAutoSyncConfig();
-  if(cfg.code)saveMultiDeviceConfig({code:cfg.code});
+
+  if(cfg.code){
+    saveMultiDeviceConfig({
+      code:cfg.code
+    });
+  }
+
   startAutoSyncLoop();
 
-  const first=()=>autoSyncNow({force:true,reason:'startup',silent:true});
-  if(document.readyState==='complete')setTimeout(first,1200);
-  else window.addEventListener('load',()=>setTimeout(first,1200),{once:true});
-
-  window.addEventListener('online',()=>autoSyncNow({force:true,reason:'online',silent:true}));
-  document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible'){
-      autoSyncNow({force:true,reason:'focus',silent:true});
+  const first=()=>{
+    if(document.visibilityState==='hidden'){
+      return;
     }
-  });
-}
-initV185AutoSync();
 
+    autoSyncNow({
+      force:true,
+      reason:'startup',
+      silent:true
+    }).finally(
+      ()=>scheduleNextAutoSyncV203()
+    );
+  };
+
+  if(document.readyState==='complete'){
+    setTimeout(first,1200);
+  }else{
+    window.addEventListener(
+      'load',
+      ()=>setTimeout(first,1200),
+      {once:true}
+    );
+  }
+
+  window.addEventListener(
+    'online',
+    ()=>{
+      if(document.visibilityState==='hidden'){
+        return;
+      }
+
+      autoSyncNow({
+        force:true,
+        reason:'online',
+        silent:true
+      }).finally(
+        ()=>scheduleNextAutoSyncV203()
+      );
+    }
+  );
+
+  document.addEventListener(
+    'visibilitychange',
+    ()=>{
+      if(document.visibilityState==='hidden'){
+        stopAutoSyncLoop();
+        return;
+      }
+
+      if(v203ShouldFocusSync()){
+        autoSyncNow({
+          force:false,
+          reason:'focus',
+          silent:true
+        }).finally(
+          ()=>scheduleNextAutoSyncV203()
+        );
+      }else{
+        scheduleNextAutoSyncV203();
+      }
+    }
+  );
+}
+
+function runWhenIdleV203(fn,timeout=800){
+  if('requestIdleCallback' in window){
+    requestIdleCallback(
+      ()=>fn(),
+      {timeout}
+    );
+  }else{
+    setTimeout(fn,80);
+  }
+}
+
+function renderAdvancedSyncToolsV203(){
+  runWhenIdleV203(()=>{
+    try{renderMigrationProgressV199()}catch(e){}
+    try{renderMigrationDedupV201()}catch(e){}
+    try{renderPendingInspector()}catch(e){}
+    try{renderPendingBlockersV196()}catch(e){}
+    try{renderSyncDiagnostics()}catch(e){}
+  },500);
+}
+
+async function refreshMultiDeviceStatusV203(){
+  const box=$('multiDeviceStatus');
+  if(!box)return;
+
+  const now=Date.now();
+
+  if(
+    v203StatusCache.html &&
+    now-v203StatusCache.at<
+      V203_STATUS_CACHE_MS
+  ){
+    box.innerHTML=
+      v203StatusCache.html;
+    return;
+  }
+
+  box.innerHTML=
+    '<span class="muted">Đang kiểm tra…</span>';
+
+  try{
+    const status=
+      await cloudBackupStatus();
+
+    const cls={
+      synced:'ok',
+      conflict:'danger',
+      'cloud-newer':'warn',
+      'local-newer':'warn',
+      empty:'neutral',
+      'no-code':'neutral',
+      error:'danger'
+    }[status.state]||'neutral';
+
+    const cloudAt=
+      status.cloud?.updated_at
+        ?dt(status.cloud.updated_at)
+        :'—';
+
+    const html=`
+      <div class="multi-sync-status ${cls}">
+        <b>${esc(status.text)}</b>
+        <span>Cloud cập nhật: ${esc(cloudAt)}</span>
+      </div>
+    `;
+
+    v203StatusCache={
+      at:Date.now(),
+      html
+    };
+
+    box.innerHTML=html;
+  }catch(e){
+    box.innerHTML=
+      '<span class="muted">Không kiểm tra được trạng thái.</span>';
+  }
+}
+
+initV185AutoSync();
 function multiDeviceFormValues(){
   const auto=loadAutoSyncConfig();
   const ui=$('multiDevicePassphrase')?.value||'';
@@ -35106,7 +35348,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V201',
+      app_version:'V203',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -35121,7 +35363,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:201,
+      version:203,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -35398,7 +35640,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v201-full-backup-'+
+    'lat-yen-v203-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -35486,7 +35728,7 @@ function renderSettings(){
           <div>
             <h2>Đồng bộ dữ liệu</h2>
             <div class="muted">
-              Cloud là nguồn dữ liệu chính. V192 kiểm tra và đồng bộ toàn bộ menu: Bán/Nhập/Xuất/Kiểm kê dùng transaction; Nhân viên/Thu-Chi/Lịch sử/Cài đặt dùng canonical sync.
+              Cloud là nguồn dữ liệu chính. Auto Sync chỉ tải lại khi có thay đổi để tăng tốc.
             </div>
           </div>
         </div>
@@ -35626,6 +35868,9 @@ function renderSettings(){
 
 
 
+      <details class="sync-v202-tools" ontoggle="if(this.open)renderAdvancedSyncToolsV203()">
+        <summary>Công cụ đồng bộ nâng cao</summary>
+        <div class="sync-v202-tools-body">
       <div class="sync-v198-migration-card">
         <div>
           <b>Đưa dữ liệu local/Excel lên Cloud</b>
@@ -35636,11 +35881,7 @@ function renderSettings(){
 
         <div class="sync-v198-migration-actions">
           <span id="cloudMigrationStatusV198" class="muted">
-            ${
-              countLocalCloudMigrationRowsV198()>0
-                ?`${countLocalCloudMigrationRowsV198()} record cần migrate`
-                :'Không còn record local cần migrate'
-            }
+            Mở Công cụ nâng cao để kiểm tra
           </span>
 
           <button
@@ -35744,6 +35985,9 @@ function renderSettings(){
 
         <div id="syncDiagResults"></div>
       </div>
+
+        </div>
+      </details>
 
       <details class="sync-v186-advanced">
         <summary>
@@ -35916,7 +36160,7 @@ function renderSettings(){
     <div class="section-gap"></div>
 
     <details class="settings-v186-more">
-      <summary>Cài đặt hệ thống</summary>
+      <summary>Cài đặt hệ thống nâng cao</summary>
 
       <div class="section-gap"></div>
 
@@ -35970,14 +36214,12 @@ function renderSettings(){
 
   setTimeout(()=>{
     renderSyncProgressLive();
-    renderSyncDiagnostics();
-    renderPendingInspector();
-    renderPendingBlockersV196();
-    renderMigrationProgressV199();
-    renderMigrationDedupV201();
 
     if(auto.code||cfg.code){
-      refreshMultiDeviceStatus();
+      runWhenIdleV203(
+        ()=>refreshMultiDeviceStatusV203(),
+        600
+      );
     }
   },120);
 }

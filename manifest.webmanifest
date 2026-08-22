@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V201",
+  "name": "Quản Lý Lát Yên V203",
   "short_name": "Lát Yên",
-  "description": "Deduplicated batch migration prevents duplicate ON CONFLICT keys.",
+  "description": "Low-resource adaptive sync, lazy diagnostics and reduced background work.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -1,0 +1,22 @@
+V202 - FAST SYNC + COMPACT SETTINGS
+
+Tốc độ:
+- Auto Sync không pull Cloud liên tục nếu vừa pull trong 8 giây.
+- Không chạy retry nghiệp vụ khi pending = 0.
+- Pull xác minh lần hai chỉ khi revision thay đổi / có pending thay đổi / người dùng bấm Đồng bộ ngay.
+- Manual sync chỉ 1 pull Cloud chính + canonical merge.
+- Giữ full pagination khi thật sự cần tải Cloud.
+
+Cài đặt:
+- Màn hình Đồng bộ chính chỉ giữ:
+  + trạng thái %
+  + badge Cloud/Auto Sync/Revision
+  + Đồng bộ ngay
+  + Ghép thiết bị
+  + Auto Sync
+- Migration, Pending Inspector, Diagnostics được gộp trong:
+  "Công cụ đồng bộ nâng cao"
+- Cài đặt hệ thống nằm trong:
+  "Cài đặt hệ thống nâng cao"
+
+Không cần SQL mới nếu V200/V201 đang hoạt động.
