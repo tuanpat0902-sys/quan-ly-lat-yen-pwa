@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V186 COMPACT SYNC ===== */
+/* ===== V187 CONCURRENT SAFE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9274,6 +9274,9 @@ button{
   }
 }
 
+
+/* ===== V187 CONCURRENT SAFE ===== */
+.sync-v187-merged{border-left-color:#f59e0b;background:#fffbeb;color:#92400e}
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -27880,7 +27883,7 @@ function manualOptimizeStorage(){
 /* ===== V183 MULTI-DEVICE ENCRYPTED BACKUP ===== */
 const MULTI_DEVICE_CONFIG_KEY='lat_yen_multidevice_config_v1';
 const MULTI_DEVICE_TABLE='__storage_v184_unused';
-const MULTI_DEVICE_SCHEMA=185;
+const MULTI_DEVICE_SCHEMA=187;
 
 const MULTI_DEVICE_BUCKET='lat-yen-backups';
 const MULTI_DEVICE_STORAGE_DIR='v184';
@@ -28148,7 +28151,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V186',
+    app_version:'V187',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -28335,7 +28338,9 @@ let pairingScanTimer=null;
 
 function loadAutoSyncConfig(){
   try{
-    const x=JSON.parse(localStorage.getItem(AUTO_SYNC_KEY)||'{}');
+    const x=JSON.parse(
+      localStorage.getItem(AUTO_SYNC_KEY)||'{}'
+    );
     return {
       enabled:x.enabled!==false,
       code:String(x.code||''),
@@ -28343,10 +28348,27 @@ function loadAutoSyncConfig(){
       last_hash:String(x.last_hash||''),
       last_sync_at:String(x.last_sync_at||''),
       last_result:String(x.last_result||''),
-      paired_at:String(x.paired_at||'')
+      paired_at:String(x.paired_at||''),
+      last_merge_at:Number(x.last_merge_at||0),
+      entity_state:
+        x.entity_state&&typeof x.entity_state==='object'
+          ?x.entity_state
+          :{},
+      conflict_count:Number(x.conflict_count||0)
     };
   }catch(e){
-    return {enabled:true,code:'',passphrase:'',last_hash:'',last_sync_at:'',last_result:'',paired_at:''};
+    return {
+      enabled:true,
+      code:'',
+      passphrase:'',
+      last_hash:'',
+      last_sync_at:'',
+      last_result:'',
+      paired_at:'',
+      last_merge_at:0,
+      entity_state:{},
+      conflict_count:0
+    };
   }
 }
 
@@ -28434,7 +28456,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:186,
+    version:187,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -28616,13 +28638,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:186,
+    version:187,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V186',storage:'supabase-storage',
+      schema:185,app_version:'V187',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -28659,88 +28681,906 @@ async function autoSyncRestore(envelope,code,passphrase){
   return {direction:'down',hash,updated_at:updatedAt};
 }
 
-async function autoSyncNow(options={}){
-  const {force=false,reason='timer',silent=true}=options;
+/* ===== V187 CONCURRENT MULTI-DEVICE MERGE ===== */
+const CONCURRENT_SYNC_VERSION=187;
+const CONCURRENT_SYNC_DIR='v187';
+const CONFLICT_ARCHIVE_KEY='lat_yen_conflict_archive_v187';
+
+function concurrentSyncKeys(){
+  return [
+    typeof EMPLOYEE_KEY!=='undefined'?EMPLOYEE_KEY:'lat_yen_employees_v1',
+    typeof DELETED_EMPLOYEE_KEY!=='undefined'?DELETED_EMPLOYEE_KEY:'lat_yen_deleted_employees_v1',
+    typeof CASHFLOW_KEY!=='undefined'?CASHFLOW_KEY:'lat_yen_cashflow_v1',
+    typeof EMP_PAYROLL_KEY!=='undefined'?EMP_PAYROLL_KEY:'lat_yen_employee_payroll_v1',
+    typeof EMP_ATTENDANCE_KEY!=='undefined'?EMP_ATTENDANCE_KEY:'lat_yen_employee_attendance_v1',
+    typeof EMP_SALARY_REPORT_KEY!=='undefined'?EMP_SALARY_REPORT_KEY:'lat_yen_employee_salary_report_v1',
+    typeof APP_BRAND_KEY!=='undefined'?APP_BRAND_KEY:'lat_yen_app_brand_v1',
+    '__latyen_product_units',
+    '__latyen_sale_sources'
+  ].filter(Boolean);
+}
+
+function concurrentKeyMode(key,value){
+  if(
+    key===CASHFLOW_KEY ||
+    key===EMPLOYEE_KEY
+  ){
+    return 'array';
+  }
+
+  if(
+    key===EMP_ATTENDANCE_KEY ||
+    key===EMP_PAYROLL_KEY ||
+    key===EMP_SALARY_REPORT_KEY
+  ){
+    return 'map';
+  }
+
+  if(
+    key===DELETED_EMPLOYEE_KEY
+  ){
+    return 'set';
+  }
+
+  return 'scalar';
+}
+
+function safeJsonParse(value,fallback){
+  try{
+    return JSON.parse(value);
+  }catch(e){
+    return fallback;
+  }
+}
+
+function concurrentEntryHash(value){
+  return JSON.stringify(value);
+}
+
+function concurrentRecordVersion(value, fallback){
+  if(value&&typeof value==='object'){
+    const candidates=[
+      value.updated_at,
+      value.created_at,
+      value.date
+    ];
+    for(const x of candidates){
+      const t=Date.parse(x||'');
+      if(Number.isFinite(t))return t;
+    }
+  }
+  return fallback;
+}
+
+function concurrentCurrentEntries(key,raw){
+  const mode=concurrentKeyMode(key,raw);
+  const entries={};
+
+  if(mode==='array'){
+    const arr=safeJsonParse(raw||'[]',[]);
+    if(Array.isArray(arr)){
+      for(let i=0;i<arr.length;i++){
+        const row=arr[i];
+        const id=
+          row&&typeof row==='object'&&row.id!=null
+            ?String(row.id)
+            :`idx:${i}`;
+        entries[id]=row;
+      }
+    }
+    return {mode,entries};
+  }
+
+  if(mode==='map'){
+    const obj=safeJsonParse(raw||'{}',{});
+    if(obj&&typeof obj==='object'&&!Array.isArray(obj)){
+      for(const [id,value] of Object.entries(obj)){
+        entries[String(id)]=value;
+      }
+    }
+    return {mode,entries};
+  }
+
+  if(mode==='set'){
+    const arr=safeJsonParse(raw||'[]',[]);
+    if(Array.isArray(arr)){
+      for(const id of arr){
+        entries[String(id)]=true;
+      }
+    }
+    return {mode,entries};
+  }
+
+  entries.__value=raw==null?null:String(raw);
+  return {mode:'scalar',entries};
+}
+
+function prepareConcurrentLocalState(){
   const cfg=loadAutoSyncConfig();
-  if(autoSyncBusy||!cfg.enabled||!navigator.onLine)return null;
-  const cred=autoSyncCredentials();
-  if(!cred.code||!cred.passphrase)return null;
+  const previous=
+    cfg.entity_state&&typeof cfg.entity_state==='object'
+      ?cfg.entity_state
+      :{};
+
+  const deviceId=multiDeviceDeviceId();
+  const now=Date.now();
+  const state={};
+  const nextMeta={};
+
+  for(const key of concurrentSyncKeys()){
+    const raw=localStorage.getItem(key);
+    const current=concurrentCurrentEntries(key,raw);
+    const old=
+      previous[key]&&typeof previous[key]==='object'
+        ?previous[key]
+        :{};
+
+    const ids=new Set([
+      ...Object.keys(current.entries),
+      ...Object.keys(old)
+    ]);
+
+    state[key]={
+      mode:current.mode,
+      entries:{}
+    };
+
+    nextMeta[key]={};
+
+    for(const id of ids){
+      const hasCurrent=
+        Object.prototype.hasOwnProperty.call(
+          current.entries,
+          id
+        );
+
+      const oldMeta=old[id]||{};
+      const value=
+        hasCurrent
+          ?current.entries[id]
+          :null;
+
+      const hash=
+        hasCurrent
+          ?concurrentEntryHash(value)
+          :'__deleted__';
+
+      const changed=
+        hash!==String(oldMeta.hash||'');
+
+      const version=
+        changed
+          ?Math.max(
+              now,
+              concurrentRecordVersion(
+                value,
+                now
+              )
+            )
+          :Number(
+              oldMeta.version||now
+            );
+
+      const author=
+        changed
+          ?deviceId
+          :String(
+              oldMeta.author||
+              deviceId
+            );
+
+      const entry={
+        deleted:!hasCurrent,
+        value:hasCurrent?value:null,
+        hash,
+        version,
+        author
+      };
+
+      state[key].entries[id]=entry;
+      nextMeta[key][id]={
+        hash,
+        version,
+        author,
+        deleted:!hasCurrent
+      };
+    }
+  }
+
+  saveAutoSyncConfig({
+    entity_state:nextMeta
+  });
+
+  return {
+    schema:CONCURRENT_SYNC_VERSION,
+    device_id:deviceId,
+    device_name:multiDeviceDeviceName(),
+    updated_at:new Date(now).toISOString(),
+    updated_ms:now,
+    state
+  };
+}
+
+async function concurrentFolder(code){
+  const lookup=await backupLookupKey(code);
+  return `${CONCURRENT_SYNC_DIR}/${lookup}/devices`;
+}
+
+async function concurrentDevicePath(code,deviceId){
+  return `${await concurrentFolder(code)}/${deviceId}.json`;
+}
+
+async function uploadConcurrentDeviceState(code,passphrase,payload){
+  const encrypted=
+    await encryptBackupSnapshot(
+      payload,
+      passphrase
+    );
+
+  const envelope={
+    version:CONCURRENT_SYNC_VERSION,
+    device_id:payload.device_id,
+    device_name:payload.device_name,
+    updated_at:payload.updated_at,
+    ciphertext:encrypted.ciphertext,
+    iv:encrypted.iv,
+    salt:encrypted.salt,
+    meta:{
+      schema:CONCURRENT_SYNC_VERSION,
+      compression:encrypted.compression,
+      device_id:payload.device_id,
+      device_name:payload.device_name,
+      updated_at:payload.updated_at
+    }
+  };
+
+  const path=
+    await concurrentDevicePath(
+      code,
+      payload.device_id
+    );
+
+  const r=await promiseWithTimeout(
+    sb.storage
+      .from(MULTI_DEVICE_BUCKET)
+      .upload(
+        path,
+        new Blob(
+          [JSON.stringify(envelope)],
+          {type:'application/json'}
+        ),
+        {
+          contentType:'application/json',
+          upsert:true,
+          cacheControl:'0'
+        }
+      ),
+    15000,
+    'Đồng bộ đa thiết bị'
+  );
+
+  if(r.error)throw r.error;
+  return envelope;
+}
+
+async function listConcurrentDeviceFiles(code){
+  const folder=await concurrentFolder(code);
+
+  const r=await promiseWithTimeout(
+    sb.storage
+      .from(MULTI_DEVICE_BUCKET)
+      .list(
+        folder,
+        {
+          limit:100,
+          sortBy:{
+            column:'updated_at',
+            order:'desc'
+          }
+        }
+      ),
+    12000,
+    'Danh sách thiết bị'
+  );
+
+  if(r.error)throw r.error;
+
+  return (r.data||[])
+    .filter(x=>
+      x&&
+      typeof x.name==='string'&&
+      x.name.endsWith('.json')
+    )
+    .map(x=>({
+      ...x,
+      path:`${folder}/${x.name}`
+    }));
+}
+
+async function downloadConcurrentEnvelope(path){
+  const r=await promiseWithTimeout(
+    sb.storage
+      .from(MULTI_DEVICE_BUCKET)
+      .download(path),
+    12000,
+    'Tải trạng thái thiết bị'
+  );
+
+  if(r.error)throw r.error;
+
+  const text=
+    typeof r.data?.text==='function'
+      ?await r.data.text()
+      :await new Response(r.data).text();
+
+  return JSON.parse(text);
+}
+
+async function readConcurrentDeviceStates(code,passphrase){
+  const files=
+    await listConcurrentDeviceFiles(
+      code
+    );
+
+  const states=[];
+
+  for(const file of files){
+    try{
+      const envelope=
+        await downloadConcurrentEnvelope(
+          file.path
+        );
+
+      const payload=
+        await decryptBackupSnapshot(
+          envelope,
+          passphrase
+        );
+
+      if(
+        Number(payload?.schema)===
+          CONCURRENT_SYNC_VERSION &&
+        payload?.state
+      ){
+        states.push(payload);
+      }
+
+    }catch(e){
+      console.warn(
+        'Bỏ qua snapshot thiết bị lỗi',
+        file?.name,
+        e
+      );
+    }
+  }
+
+  return states;
+}
+
+function compareConcurrentEntry(a,b){
+  const av=Number(a?.version||0);
+  const bv=Number(b?.version||0);
+
+  if(av!==bv){
+    return av-bv;
+  }
+
+  return String(a?.author||'')
+    .localeCompare(
+      String(b?.author||'')
+    );
+}
+
+function addConflictArchive(item){
+  try{
+    const rows=
+      safeJsonParse(
+        localStorage.getItem(
+          CONFLICT_ARCHIVE_KEY
+        )||'[]',
+        []
+      );
+
+    rows.unshift({
+      id:
+        'conf_'+
+        Date.now()+
+        '_'+
+        Math.random()
+          .toString(36)
+          .slice(2,7),
+      ...item,
+      detected_at:
+        new Date().toISOString()
+    });
+
+    localStorage.setItem(
+      CONFLICT_ARCHIVE_KEY,
+      JSON.stringify(
+        rows.slice(0,100)
+      )
+    );
+  }catch(e){}
+}
+
+function mergeConcurrentStates(states){
+  const merged={};
+  const conflicts=[];
+  const cfg=loadAutoSyncConfig();
+  const since=Number(
+    cfg.last_merge_at||0
+  );
+
+  for(const snapshot of states){
+    for(
+      const [key,keyState]
+      of Object.entries(
+        snapshot?.state||{}
+      )
+    ){
+      if(!merged[key]){
+        merged[key]={
+          mode:keyState.mode||'scalar',
+          entries:{}
+        };
+      }
+
+      for(
+        const [id,incoming]
+        of Object.entries(
+          keyState.entries||{}
+        )
+      ){
+        const current=
+          merged[key].entries[id];
+
+        if(!current){
+          merged[key].entries[id]=incoming;
+          continue;
+        }
+
+        const sameHash=
+          String(current.hash||'')===
+          String(incoming.hash||'');
+
+        if(
+          !sameHash &&
+          String(current.author||'')!==
+            String(incoming.author||'') &&
+          Number(current.version||0)>since &&
+          Number(incoming.version||0)>since
+        ){
+          const winner=
+            compareConcurrentEntry(
+              current,
+              incoming
+            )>=0
+              ?current
+              :incoming;
+
+          const loser=
+            winner===current
+              ?incoming
+              :current;
+
+          conflicts.push({
+            key,
+            id,
+            winner,
+            loser
+          });
+        }
+
+        if(
+          compareConcurrentEntry(
+            incoming,
+            current
+          )>0
+        ){
+          merged[key].entries[id]=incoming;
+        }
+      }
+    }
+  }
+
+  return {
+    merged,
+    conflicts
+  };
+}
+
+function serializeConcurrentKey(key,keyState){
+  const mode=
+    keyState?.mode||
+    'scalar';
+
+  const active=
+    Object.entries(
+      keyState?.entries||{}
+    )
+    .filter(
+      ([,entry])=>!entry?.deleted
+    );
+
+  if(mode==='array'){
+    const arr=
+      active.map(
+        ([,entry])=>entry.value
+      );
+
+    if(key===CASHFLOW_KEY){
+      arr.sort(
+        (a,b)=>
+          String(
+            b?.created_at||
+            b?.date||
+            ''
+          ).localeCompare(
+            String(
+              a?.created_at||
+              a?.date||
+              ''
+            )
+          )
+      );
+    }
+
+    return JSON.stringify(arr);
+  }
+
+  if(mode==='map'){
+    const obj={};
+    for(const [id,entry] of active){
+      obj[id]=entry.value;
+    }
+    return JSON.stringify(obj);
+  }
+
+  if(mode==='set'){
+    return JSON.stringify(
+      active.map(([id])=>id)
+    );
+  }
+
+  const entry=
+    keyState?.entries?.__value;
+
+  if(!entry||entry.deleted){
+    return null;
+  }
+
+  return entry.value==null
+    ?null
+    :String(entry.value);
+}
+
+function applyConcurrentMergedState(result){
+  const merged=result?.merged||{};
+  let changedKeys=0;
+  const meta={};
+
+  for(
+    const [key,keyState]
+    of Object.entries(merged)
+  ){
+    const next=
+      serializeConcurrentKey(
+        key,
+        keyState
+      );
+
+    const before=
+      localStorage.getItem(key);
+
+    if(next===null){
+      if(before!==null){
+        localStorage.removeItem(key);
+        changedKeys++;
+      }
+    }else if(before!==next){
+      localStorage.setItem(key,next);
+      changedKeys++;
+    }
+
+    meta[key]={};
+
+    for(
+      const [id,entry]
+      of Object.entries(
+        keyState.entries||{}
+      )
+    ){
+      meta[key][id]={
+        hash:String(
+          entry.hash||''
+        ),
+        version:Number(
+          entry.version||0
+        ),
+        author:String(
+          entry.author||''
+        ),
+        deleted:!!entry.deleted
+      };
+    }
+  }
+
+  if(result?.conflicts?.length){
+    for(const conflict of result.conflicts){
+      addConflictArchive({
+        key:conflict.key,
+        record_id:conflict.id,
+        winner:conflict.winner,
+        loser:conflict.loser
+      });
+    }
+  }
+
+  saveAutoSyncConfig({
+    entity_state:meta,
+    last_merge_at:Date.now(),
+    conflict_count:
+      Number(
+        loadAutoSyncConfig()
+          .conflict_count||0
+      )+
+      Number(
+        result?.conflicts?.length||0
+      )
+  });
+
+  if(changedKeys){
+    resetEmployeeStorageCaches();
+    invalidateDerivedCaches();
+    applyAppBrand();
+
+    if(
+      activePanelId==='settings'
+    ){
+      // tránh render lặp trong lúc auto sync
+    }else{
+      renderPanel(
+        activePanelId||
+        'finance'
+      );
+    }
+  }
+
+  return {
+    changedKeys,
+    conflicts:
+      result?.conflicts?.length||0
+  };
+}
+
+async function concurrentMergeSync(
+  code,
+  passphrase
+){
+  const local=
+    prepareConcurrentLocalState();
+
+  await uploadConcurrentDeviceState(
+    code,
+    passphrase,
+    local
+  );
+
+  const states=
+    await readConcurrentDeviceStates(
+      code,
+      passphrase
+    );
+
+  const hasSelf=
+    states.some(
+      x=>
+        x.device_id===
+          local.device_id
+    );
+
+  if(!hasSelf){
+    states.push(local);
+  }
+
+  const result=
+    mergeConcurrentStates(
+      states
+    );
+
+  const applied=
+    applyConcurrentMergedState(
+      result
+    );
+
+  // Sau khi merge, ghi snapshot đã hợp nhất của thiết bị hiện tại.
+  const mergedLocal=
+    prepareConcurrentLocalState();
+
+  await uploadConcurrentDeviceState(
+    code,
+    passphrase,
+    mergedLocal
+  );
+
+  return {
+    devices:states.length,
+    ...applied
+  };
+}
+
+function conflictArchiveCount(){
+  try{
+    const rows=
+      safeJsonParse(
+        localStorage.getItem(
+          CONFLICT_ARCHIVE_KEY
+        )||'[]',
+        []
+      );
+    return Array.isArray(rows)
+      ?rows.length
+      :0;
+  }catch(e){
+    return 0;
+  }
+}
+async function autoSyncNow(options={}){
+  const {
+    force=false,
+    reason='timer',
+    silent=true
+  }=options;
+
+  const cfg=loadAutoSyncConfig();
+
+  if(
+    autoSyncBusy||
+    !cfg.enabled||
+    !navigator.onLine
+  ){
+    return null;
+  }
+
+  const cred=
+    autoSyncCredentials();
+
+  if(
+    !cred.code||
+    !cred.passphrase
+  ){
+    return null;
+  }
 
   autoSyncBusy=true;
-  const statusEl=$('autoSyncLiveStatus');
-  if(statusEl)statusEl.textContent='Đang đồng bộ…';
+
+  const statusEl=
+    $('autoSyncLiveStatus');
+
+  if(statusEl){
+    statusEl.textContent=
+      'Đang đồng bộ…';
+  }
 
   try{
-    const local=await currentLocalSnapshotAndHash();
-    const cloud=await fetchCloudBackupEnvelope(cred.code);
-    const lastHash=cfg.last_hash||multiDeviceConfig().last_cloud_hash||'';
-
-    if(!cloud){
-      const r=await autoSyncUpload(cred.code,cred.passphrase,local);
-      if(!silent)toastMsg('Đã tạo Cloud Backup tự động');
-      return r;
-    }
-
-    const cloudHash=String(cloud?.meta?.content_hash||'');
-    if(cloudHash&&cloudHash===local.hash){
-      const updatedAt=cloud.updated_at||new Date().toISOString();
-      saveAutoSyncConfig({
-        code:cred.code,passphrase:cred.passphrase,last_hash:local.hash,
-        last_sync_at:updatedAt,last_result:'synced'
-      });
-      saveMultiDeviceConfig({
-        code:cred.code,last_cloud_hash:local.hash,last_cloud_at:updatedAt
-      });
-      return {direction:'none',hash:local.hash,updated_at:updatedAt};
-    }
-
-    const localChanged=lastHash?local.hash!==lastHash:false;
-    const cloudChanged=lastHash?cloudHash!==lastHash:true;
-
-    if(!lastHash&&force&&reason==='pairing'){
-      const r=await autoSyncRestore(cloud,cred.code,cred.passphrase);
-      toastMsg('Ghép thành công • đã tải dữ liệu Cloud');
-      return r;
-    }
-
-    if(localChanged&&cloudChanged){
-      saveAutoSyncConfig({last_result:'conflict'});
-      if(statusEl)statusEl.textContent='Xung đột • cần kiểm tra';
-      if(!silent){
-        alert('Cả thiết bị và Cloud đều đã thay đổi. Auto Sync đã dừng để tránh ghi đè. Vào Cài đặt để chọn Sao lưu lên Cloud hoặc Khôi phục từ Cloud.');
+    // 1) Dữ liệu nghiệp vụ vẫn ưu tiên Supabase tables / local-first queue.
+    // Chỉ ép sync nghiệp vụ khi người dùng thao tác hoặc khi app vừa online lại.
+    if(
+      force&&
+      typeof syncPendingOperations==='function'
+    ){
+      try{
+        await syncPendingOperations();
+      }catch(e){
+        console.warn(
+          'Pending business sync',
+          e
+        );
       }
-      return {direction:'conflict'};
     }
 
-    if(cloudChanged&&!localChanged){
-      const r=await autoSyncRestore(cloud,cred.code,cred.passphrase);
-      if(!silent)toastMsg('Đã tự tải dữ liệu mới từ Cloud');
-      return r;
+    if(
+      force&&
+      typeof syncPendingSaleReceipts==='function'
+    ){
+      try{
+        await syncPendingSaleReceipts();
+      }catch(e){
+        console.warn(
+          'Pending sale sync',
+          e
+        );
+      }
     }
 
-    if(localChanged&&!cloudChanged){
-      const r=await autoSyncUpload(cred.code,cred.passphrase,local);
-      if(!silent)toastMsg('Đã tự sao lưu thay đổi lên Cloud');
-      return r;
+    // 2) Local-only data: mỗi thiết bị có snapshot riêng, merge theo record/key.
+    const merged=
+      await concurrentMergeSync(
+        cred.code,
+        cred.passphrase
+      );
+
+    const now=
+      new Date().toISOString();
+
+    saveAutoSyncConfig({
+      code:cred.code,
+      passphrase:cred.passphrase,
+      last_sync_at:now,
+      last_result:
+        merged.conflicts
+          ?'merged_conflicts'
+          :'synced'
+    });
+
+    saveMultiDeviceConfig({
+      code:cred.code,
+      last_cloud_at:now
+    });
+
+    if(!silent){
+      if(merged.conflicts){
+        toastMsg(
+          `Đã hợp nhất ${merged.devices} thiết bị • lưu ${merged.conflicts} bản xung đột`
+        );
+      }else if(merged.changedKeys){
+        toastMsg(
+          `Đã hợp nhất dữ liệu từ ${merged.devices} thiết bị`
+        );
+      }else{
+        toastMsg(
+          'Dữ liệu đã đồng bộ'
+        );
+      }
     }
 
-    return null;
+    return {
+      direction:'merge',
+      ...merged
+    };
+
   }catch(e){
-    console.warn('V185 auto sync',reason,e);
-    saveAutoSyncConfig({last_result:'error'});
+    console.warn(
+      'V187 concurrent sync',
+      reason,
+      e
+    );
+
+    saveAutoSyncConfig({
+      last_result:'error'
+    });
+
     if(!silent&&reason!=='timer'){
-      alert('Auto Sync chưa hoàn tất.\n\n'+String(e?.message||e));
+      alert(
+        'Đồng bộ đa thiết bị chưa hoàn tất.\n\n'+
+        String(e?.message||e)
+      );
     }
-    return {direction:'error',error:e};
+
+    return {
+      direction:'error',
+      error:e
+    };
+
   }finally{
     autoSyncBusy=false;
-    const c=loadAutoSyncConfig();
+
+    const current=
+      loadAutoSyncConfig();
+
     if(statusEl){
       const label={
-        synced:'Đã đồng bộ',uploaded:'Đã đẩy lên Cloud',downloaded:'Đã tải từ Cloud',
-        conflict:'Xung đột',error:'Lỗi đồng bộ',paired:'Đã ghép'
-      }[c.last_result]||'Sẵn sàng';
-      statusEl.textContent=c.last_sync_at?`${label} • ${dt(c.last_sync_at)}`:label;
+        synced:'Đã đồng bộ',
+        merged_conflicts:'Đã hợp nhất • có lịch sử xung đột',
+        error:'Lỗi đồng bộ',
+        paired:'Đã ghép'
+      }[current.last_result]||
+        'Sẵn sàng';
+
+      statusEl.textContent=
+        current.last_sync_at
+          ?`${label} • ${dt(current.last_sync_at)}`
+          :label;
     }
   }
 }
@@ -29012,7 +29852,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V186',
+      app_version:'V187',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -29027,7 +29867,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:186,
+      version:187,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -29304,7 +30144,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v186-full-backup-'+
+    'lat-yen-v187-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -29366,6 +30206,7 @@ function renderSettings(){
     synced:'Đã đồng bộ',
     uploaded:'Đã sao lưu',
     downloaded:'Đã cập nhật',
+    merged_conflicts:'Đã hợp nhất',
     conflict:'Có xung đột',
     error:'Lỗi đồng bộ',
     paired:'Đã ghép'
@@ -29390,7 +30231,7 @@ function renderSettings(){
           <div>
             <h2>Đồng bộ dữ liệu</h2>
             <div class="muted">
-              Tự đồng bộ giữa các thiết bị đã ghép.
+              Nhiều thiết bị có thể dùng cùng lúc; dữ liệu local được hợp nhất theo từng bản ghi.
             </div>
           </div>
         </div>
@@ -29422,6 +30263,17 @@ function renderSettings(){
           <span class="dot"></span>
           Cloud ${cloudOnline?'Online':'Offline'}
         </div>
+
+        <div class="sync-v186-pill ok">
+          <span class="dot"></span>
+          Multi-device Safe
+        </div>
+
+        ${
+          conflictArchiveCount()
+            ?`<div class="sync-v186-pill warn"><span class="dot"></span>${conflictArchiveCount()} xung đột đã lưu</div>`
+            :''
+        }
 
         ${
           getPendingSync().length
@@ -29469,12 +30321,12 @@ function renderSettings(){
       </div>
 
       ${
-        auto.last_result==='conflict'
+        auto.last_result==='merged_conflicts'
           ?`
-            <div class="sync-v186-alert">
-              <b>Phát hiện xung đột dữ liệu.</b>
-              Cloud và thiết bị đều có thay đổi. Hệ thống đã dừng tự ghi đè.
-              Mở Nâng cao để chọn bản cần giữ.
+            <div class="sync-v186-alert sync-v187-merged">
+              <b>Đã xử lý xung đột tự động.</b>
+              Các bản ghi khác nhau đã được hợp nhất; khi cùng một bản ghi bị sửa trên nhiều thiết bị,
+              V187 giữ bản mới hơn và lưu bản còn lại trong lịch sử xung đột để tránh mất dữ liệu âm thầm.
             </div>
           `
           :''
@@ -29579,7 +30431,7 @@ function renderSettings(){
 
           <div id="multiDeviceStatus" class="sync-v186-cloud-detail">
             <span class="muted">
-              Bucket: lat-yen-backups • AES-GCM 256-bit
+              Bucket: lat-yen-backups • AES-GCM 256-bit • snapshot riêng từng thiết bị
             </span>
           </div>
         </div>

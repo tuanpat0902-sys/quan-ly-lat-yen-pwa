@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V186",
+  "name": "Quản Lý Lát Yên V187",
   "short_name": "Lát Yên",
-  "description": "Quản lý Lát Yên với giao diện đồng bộ dữ liệu tối giản.",
+  "description": "Quản lý Lát Yên với đồng bộ an toàn khi nhiều thiết bị sử dụng cùng lúc.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

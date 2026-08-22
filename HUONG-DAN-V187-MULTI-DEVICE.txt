@@ -1,0 +1,12 @@
+V187 - XỬ LÝ XUNG ĐỘT NHIỀU THIẾT BỊ
+
+- Mỗi thiết bị có snapshot riêng trên Supabase Storage.
+- Dữ liệu local-only được merge theo bản ghi, không ghi đè cả file.
+- Nhân viên và Thu/Chi: merge theo ID.
+- Chấm công, payroll, báo cáo lương: merge theo từng record key.
+- Hai thiết bị sửa hai bản ghi khác nhau: giữ cả hai.
+- Hai thiết bị sửa cùng một bản ghi: bản có phiên bản/thời gian mới hơn thắng.
+- Bản còn lại được lưu vào lịch sử xung đột local tối đa 100 bản.
+- Xóa record được truyền dưới dạng tombstone.
+- Dữ liệu nghiệp vụ Supabase vẫn dùng cơ chế local-first/realtime hiện có.
+- Không cần thay bucket hoặc Storage Policy.
