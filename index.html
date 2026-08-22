@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V217 LEGACY SALE UUID FINALIZER ===== */
+/* ===== V218 PRODUCTION LITE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10065,6 +10065,32 @@ button{
   overflow-wrap:anywhere;
 }
 
+
+/* ===== V218 PRODUCTION LITE UI ===== */
+.sync-v202-tools:not([open]){
+  background:#fafafa;
+}
+
+.sync-v202-tools:not([open]) + *{
+  contain:layout paint;
+}
+
+.sync-v195-list{
+  max-height:320px!important;
+}
+
+.sync-v195-row{
+  contain:layout paint style;
+}
+
+.panel{
+  contain:layout style;
+}
+
+.panel.active{
+  contain:none;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -10712,10 +10738,7 @@ function v210InitLeaderElection(){
           ){
             // Followers only refresh active UI from local cache.
             if(!v210IsLeader){
-              try{
-                cacheLoad();
-                renderAll();
-              }catch(e){}
+              v218FollowerRefresh();
             }
           }
         };
@@ -11123,6 +11146,150 @@ function v209ResetQueuedSync(){
   v209FollowupCount=0;
 }
 
+
+/* ===== V218 PRODUCTION LITE ===== */
+const V218_IDLE_SYNC_MS=60000;
+const V218_PENDING_SYNC_MS=3000;
+const V218_VERIFY_MIN_GAP_MS=20000;
+const V218_SNAPSHOT_MIN_GAP_MS=30000;
+const V218_FOLLOWER_RENDER_MS=250;
+const V218_CACHE_SAVE_MS=250;
+
+let v218LastEmergencySnapshotAt=0;
+let v218FollowerRenderTimer=null;
+
+function v218SystemIsClean(){
+  try{
+    return (
+      v191PendingCount()===0 &&
+      Number(
+        v198CloudCoverage()?.localOnly||0
+      )===0
+    );
+  }catch(e){
+    return false;
+  }
+}
+
+function v218EmergencySnapshotMaybe(
+  reason='before_cloud_pull'
+){
+  const now=Date.now();
+
+  // When local data is still unresolved, always keep full safety snapshots.
+  if(!v218SystemIsClean()){
+    const ok=
+      v204EmergencySnapshot(reason);
+
+    if(ok){
+      v218LastEmergencySnapshotAt=now;
+    }
+
+    return ok;
+  }
+
+  // Clean/fully-cloud state: avoid serializing the whole DB on every realtime pull.
+  if(
+    now-v218LastEmergencySnapshotAt<
+    V218_SNAPSHOT_MIN_GAP_MS
+  ){
+    return true;
+  }
+
+  const ok=
+    v204EmergencySnapshot(reason);
+
+  if(ok){
+    v218LastEmergencySnapshotAt=now;
+  }
+
+  return ok;
+}
+
+function v218FollowerRefresh(){
+  clearTimeout(
+    v218FollowerRenderTimer
+  );
+
+  v218FollowerRenderTimer=
+    setTimeout(
+      ()=>{
+        try{
+          // Only load cache once per burst and render the currently visible panel.
+          cacheLoad();
+
+          const active=
+            activePanelId||
+            document.querySelector('.panel.active')?.id||
+            'finance';
+
+          renderWarehouseSelect();
+          renderPanel(active);
+        }catch(e){
+          console.warn(
+            'V218 follower refresh',
+            e
+          );
+        }
+      },
+      V218_FOLLOWER_RENDER_MS
+    );
+}
+
+function v218TrimRuntimeCaches(){
+  // Release transient caches; all can be rebuilt lazily.
+  dataIndexCache=null;
+
+  try{
+    if(typeof derivedCache!=='undefined'){
+      derivedCache=null;
+    }
+  }catch(e){}
+
+  // Diagnostics are derived UI state; don't keep large DOM lists while closed.
+  const tools=
+    document.querySelector(
+      '.sync-v202-tools'
+    );
+
+  if(
+    tools &&
+    !tools.open
+  ){
+    const pendingList=
+      document.getElementById(
+        'pendingInspectorList'
+      );
+
+    const diagList=
+      document.getElementById(
+        'syncDiagnosticsList'
+      );
+
+    if(pendingList){
+      pendingList.innerHTML='';
+    }
+
+    if(diagList){
+      diagList.innerHTML='';
+    }
+  }
+}
+
+function v218ScheduleMemoryTrim(){
+  if('requestIdleCallback' in window){
+    requestIdleCallback(
+      ()=>v218TrimRuntimeCaches(),
+      {timeout:1500}
+    );
+  }else{
+    setTimeout(
+      ()=>v218TrimRuntimeCaches(),
+      500
+    );
+  }
+}
+
 function cacheSave(){
   invalidateDataIndexes();
   cacheSaveDirty=true;
@@ -11134,8 +11301,9 @@ function cacheSave(){
 
     if(cacheSaveDirty){
       cacheSaveNow();
+      v218ScheduleMemoryTrim();
     }
-  },90);
+  },V218_CACHE_SAVE_MS);
 }
 
 function flushCacheSave(){
@@ -12476,7 +12644,7 @@ async function loadCloud(){
  const localBefore=v205FilterSupersededLegacyRows(db);
 
  // V204: create local recovery point before any Cloud pull.
- v204EmergencySnapshot('before_loadCloud');
+ v218EmergencySnapshotMaybe('before_loadCloud');
 
  const pendingQueue=getPendingSync();
  const pendingIds=new Set(pendingQueue.filter(x=>x.kind==='save_ingredient').map(x=>x.ingredient_id));
@@ -14145,7 +14313,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:217,
+    version:218,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -17007,7 +17175,7 @@ async function v206RealtimePull(){
 /* ===== V207 INCREMENTAL REALTIME SYNC ===== */
 const V207_UI_DEBOUNCE_MS=80;
 const V207_VERIFY_QUIET_MS=2200;
-const V207_FULL_VERIFY_MIN_GAP_MS=12000;
+const V207_FULL_VERIFY_MIN_GAP_MS=20000;
 const V207_CANONICAL_IDLE_MS=15000;
 
 let v207RenderTimer=null;
@@ -34625,7 +34793,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V217',
+    app_version:'V218',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34934,7 +35102,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:217,
+    version:218,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -35116,13 +35284,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:217,
+    version:218,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V217',storage:'supabase-storage',
+      schema:185,app_version:'V218',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -36335,7 +36503,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:217,
+    version:218,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -36591,7 +36759,7 @@ async function v189CanonicalSync(
 
 /* ===== V202 FAST SYNC ===== */
 const V202_FAST_SYNC_KEY='lat_yen_fast_sync_v202';
-const V202_MIN_PULL_GAP_MS=1000;
+const V202_MIN_PULL_GAP_MS=1500;
 
 function loadFastSyncStateV202(){
   try{
@@ -38446,7 +38614,7 @@ function setAutoSyncEnabled(enabled){
 
 
 /* ===== V203 LOW RESOURCE MODE ===== */
-const V203_IDLE_SYNC_MS=15000;
+const V203_IDLE_SYNC_MS=60000;
 const V203_PENDING_SYNC_MS=3000;
 const V203_FOCUS_SYNC_MIN_GAP_MS=3000;
 const V203_STATUS_CACHE_MS=15000;
@@ -38896,7 +39064,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V217',
+      app_version:'V218',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -38911,7 +39079,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:217,
+      version:218,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -39188,7 +39356,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v217-full-backup-'+
+    'lat-yen-v218-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -39461,7 +39629,7 @@ function renderSettings(){
 
         <div class="sync-v198-migration-actions">
           <span id="cloudMigrationStatusV198" class="muted">
-            Mở Công cụ nâng cao để kiểm tra
+            Hệ thống đã ổn định • chỉ dùng khi có dữ liệu legacy mới
           </span>
 
           <button
@@ -40465,6 +40633,7 @@ async function init(){
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){
       flushCacheSave();
+      v218ScheduleMemoryTrim();
     }else{
       flushDeferredRenders();
 

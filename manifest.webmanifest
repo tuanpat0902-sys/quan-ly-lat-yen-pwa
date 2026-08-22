@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V217",
+  "name": "Quản Lý Lát Yên V218",
   "short_name": "Lát Yên",
-  "description": "Finalizes legacy sale IDs to deterministic Cloud UUIDs without changing inventory.",
+  "description": "Production-lite build with realtime-first sync, throttled snapshots, lazy diagnostics, and reduced rendering.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

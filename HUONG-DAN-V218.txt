@@ -1,0 +1,27 @@
+V218 - PRODUCTION LITE
+
+Mục tiêu:
+Giữ Realtime nhanh nhưng giảm CPU/RAM/network khi phần mềm chạy cả ngày.
+
+Tối ưu:
+- Khi sạch pending/local-only: Auto Sync nền 60 giây thay vì 15 giây.
+- Realtime vẫn cập nhật gần tức thời.
+- Full verification tối đa khoảng 1 lần/20 giây khi có nhiều event.
+- Full Cloud pull throttle 1.5 giây.
+- Snapshot toàn DB tối đa 1 lần/30 giây khi hệ thống sạch.
+- Nếu còn pending/local-only: snapshot vẫn luôn chạy để ưu tiên an toàn dữ liệu.
+- cacheSave debounce tăng 90ms -> 250ms để gom nhiều thay đổi liên tiếp.
+- Tab phụ không còn cacheLoad + renderAll mỗi event; chỉ refresh panel đang mở sau 250ms debounce.
+- Diagnostics/Pending DOM được giải phóng khi Công cụ nâng cao đóng.
+- Runtime caches được trim khi browser idle/tab ẩn.
+- Migration vẫn giữ nhưng coi là công cụ bảo trì, không phải luồng sử dụng thường ngày.
+
+Giữ nguyên:
+- V204 Safe Merge
+- V205/V217 legacy ID mapping
+- V210 single-tab leader + circuit breaker
+- V213 canonical no-op commit
+- V207 incremental realtime
+- V217 migration-safe legacy sale finalizer
+
+Không cần SQL mới.
