@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V247 CLEAN SYNC GENERATION ===== */
+/* ===== V248 CRASH SAFE RESET LOCK ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11666,7 +11666,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V247</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V248</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -19299,6 +19299,25 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V248 crash-safe reset mutex.
+  try{
+    const lock=v248ResetLockStatus();
+
+    add(
+      'Reset Lock V248',
+      true,
+      lock.active
+        ?`Có khóa: ${lock.text}${lock.mine?' • tab hiện tại':''}`
+        :'Web Lock + heartbeat sẵn sàng • không có khóa kẹt'
+    );
+  }catch(e){
+    add(
+      'Reset Lock V248',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V247 reset uses a brand-new canonical generation before DELETE.
   try{
     add(
@@ -19595,7 +19614,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:247,
+    version:248,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -42886,7 +42905,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V247',
+    app_version:'V248',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -43195,7 +43214,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:247,
+    version:248,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -43377,13 +43396,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:247,
+    version:248,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V247',storage:'supabase-storage',
+      schema:185,app_version:'V248',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44595,7 +44614,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:247,
+    version:248,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -47430,7 +47449,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V247',
+      app_version:'V248',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47445,7 +47464,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:247,
+      version:248,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47722,7 +47741,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v247-full-backup-'+
+    'lat-yen-v248-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -48881,30 +48900,286 @@ function v241StrictReadinessAfterNormalize(){
 /* ===== V244 CLOUD RESET SAFETY AUDIT ===== */
 const V244_RESET_LOCK_KEY='lat_yen_cloud_reset_lock_v244';
 const V244_RESET_LOCK_TTL_MS=10*60*1000;
-const V244_RESET_OWNER=uid();
+const V244_RESET_OWNER=(()=>{
+  const key='lat_yen_reset_owner_session_v248';
+  try{
+    let owner=sessionStorage.getItem(key);
+    if(!owner){
+      owner=uid();
+      sessionStorage.setItem(key,owner);
+    }
+    return owner;
+  }catch(e){
+    return uid();
+  }
+})();
+
+/* ===== V248 CRASH-SAFE RESET LOCK ===== */
+const V248_WEB_LOCK_NAME='lat-yen-cloud-reset-v248';
+const V248_HEARTBEAT_MS=2000;
+const V248_LIVE_LOCK_MAX_AGE_MS=9000;
+const V248_LEGACY_LOCK_MAX_AGE_MS=30000;
+
+let v248ResetRuntimeActive=false;
+let v248ResetHeartbeatTimer=null;
+let v248WebLockReleaseResolver=null;
+let v248WebLockTask=null;
+let v248WebLockHeld=false;
+
+function v248LockAge(lock){
+  return Math.max(0,Date.now()-Number(lock?.at||0));
+}
+
+function v248WriteResetHeartbeat(stage='reset'){
+  if(!v248ResetRuntimeActive)return;
+  localStorage.setItem(
+    V244_RESET_LOCK_KEY,
+    JSON.stringify({
+      owner:V244_RESET_OWNER,
+      at:Date.now(),
+      version:248,
+      stage
+    })
+  );
+}
+
+function v248StartResetHeartbeat(){
+  v248ResetRuntimeActive=true;
+  clearInterval(v248ResetHeartbeatTimer);
+  v248WriteResetHeartbeat('active');
+  v248ResetHeartbeatTimer=setInterval(
+    ()=>v248WriteResetHeartbeat('active'),
+    V248_HEARTBEAT_MS
+  );
+}
+
+function v248StopResetHeartbeat(){
+  v248ResetRuntimeActive=false;
+  clearInterval(v248ResetHeartbeatTimer);
+  v248ResetHeartbeatTimer=null;
+}
+
+async function v248AcquireWebLock(){
+  if(!navigator.locks?.request){
+    return {supported:false,acquired:true};
+  }
+
+  let resolved=false;
+  let resolveAcquired=null;
+
+  const acquired=new Promise(resolve=>{
+    resolveAcquired=resolve;
+  });
+
+  v248WebLockTask=navigator.locks.request(
+    V248_WEB_LOCK_NAME,
+    {mode:'exclusive',ifAvailable:true},
+    async lock=>{
+      if(!lock){
+        if(!resolved){
+          resolved=true;
+          resolveAcquired(false);
+        }
+        return;
+      }
+
+      v248WebLockHeld=true;
+
+      if(!resolved){
+        resolved=true;
+        resolveAcquired(true);
+      }
+
+      await new Promise(resolve=>{
+        v248WebLockReleaseResolver=resolve;
+      });
+
+      v248WebLockHeld=false;
+      v248WebLockReleaseResolver=null;
+    }
+  );
+
+  let ok=false;
+  try{
+    ok=await promiseWithTimeout(
+      acquired,
+      5000,
+      'Khóa Reset Cloud'
+    );
+  }catch(e){
+    ok=false;
+  }
+
+  if(!ok){
+    throw new Error(
+      'Một tab Chrome/PWA khác đang thực sự giữ khóa Reset Cloud.'
+    );
+  }
+
+  return {supported:true,acquired:true};
+}
+
+async function v248ReleaseWebLock(){
+  try{
+    if(v248WebLockReleaseResolver){
+      v248WebLockReleaseResolver();
+    }
+
+    if(v248WebLockTask){
+      await Promise.race([
+        v248WebLockTask.catch(()=>{}),
+        sleepMs(800)
+      ]);
+    }
+  }catch(e){}
+
+  v248WebLockReleaseResolver=null;
+  v248WebLockTask=null;
+  v248WebLockHeld=false;
+}
+
+async function v248ResolveLegacyLock(existing){
+  if(!existing)return;
+
+  if(existing.owner===V244_RESET_OWNER){
+    localStorage.removeItem(V244_RESET_LOCK_KEY);
+    return;
+  }
+
+  const age=v248LockAge(existing);
+  const version=Number(existing.version||0);
+
+  if(version>=248){
+    if(age>V248_LIVE_LOCK_MAX_AGE_MS){
+      localStorage.removeItem(V244_RESET_LOCK_KEY);
+      return;
+    }
+
+    throw new Error(
+      `Một tab V248 khác đang Reset Cloud (heartbeat ${Math.ceil(age/1000)} giây trước).`
+    );
+  }
+
+  if(age>V248_LEGACY_LOCK_MAX_AGE_MS){
+    localStorage.removeItem(V244_RESET_LOCK_KEY);
+    return;
+  }
+
+  const reclaim=await appConfirm(
+    `Phát hiện khóa Reset cũ từ V247 hoặc bản trước (${Math.max(1,Math.ceil(age/1000))} giây trước).\n\n`+
+    'Nếu hiện tại KHÔNG có tab nào khác đang chạy Reset Cloud, có thể thu hồi khóa cũ an toàn.\n\n'+
+    'Thu hồi khóa Reset cũ và tiếp tục?',
+    'Khóa Reset cũ'
+  );
+
+  if(!reclaim){
+    throw new Error('__USER_CANCEL__');
+  }
+
+  localStorage.removeItem(V244_RESET_LOCK_KEY);
+}
+
+async function v248AcquireResetMutex(){
+  let webAcquired=false;
+
+  try{
+    await v248AcquireWebLock();
+    webAcquired=true;
+
+    const existing=v244ResetLockInfo();
+    await v248ResolveLegacyLock(existing);
+
+    v248StartResetHeartbeat();
+
+    return {
+      owner:V244_RESET_OWNER,
+      web_lock:!!navigator.locks?.request,
+      at:Date.now()
+    };
+
+  }catch(e){
+    v248StopResetHeartbeat();
+    if(webAcquired){
+      await v248ReleaseWebLock();
+    }
+    throw e;
+  }
+}
+
+async function v248ReleaseResetMutex(){
+  v248StopResetHeartbeat();
+
+  const lock=v244ResetLockInfo();
+
+  if(!lock||lock.owner===V244_RESET_OWNER){
+    localStorage.removeItem(V244_RESET_LOCK_KEY);
+  }
+
+  await v248ReleaseWebLock();
+}
+
+function v248ResetLockStatus(){
+  const lock=v244ResetLockInfo();
+
+  if(!lock){
+    return {
+      active:false,
+      text:'Không có khóa Reset'
+    };
+  }
+
+  const age=v248LockAge(lock);
+
+  return {
+    active:true,
+    owner:lock.owner||'',
+    version:Number(lock.version||0),
+    age,
+    mine:lock.owner===V244_RESET_OWNER,
+    text:`${Number(lock.version||0)>=248?'V248 heartbeat':'Legacy'} • ${Math.ceil(age/1000)}s`
+  };
+}
+
+window.addEventListener(
+  'pagehide',
+  ()=>{
+    if(v248ResetRuntimeActive){
+      try{
+        v248StopResetHeartbeat();
+
+        const lock=JSON.parse(
+          localStorage.getItem(V244_RESET_LOCK_KEY)||'null'
+        );
+
+        if(!lock||lock.owner===V244_RESET_OWNER){
+          localStorage.removeItem(V244_RESET_LOCK_KEY);
+        }
+      }catch(e){}
+    }
+  }
+);
+
+
 
 function v244ResetLockInfo(){
   try{
-    const raw=
-      JSON.parse(
-        localStorage.getItem(
-          V244_RESET_LOCK_KEY
-        )||'null'
-      );
+    const raw=JSON.parse(
+      localStorage.getItem(V244_RESET_LOCK_KEY)||'null'
+    );
 
     if(!raw?.at){
       return null;
     }
 
-    if(
-      Date.now()-
-      Number(raw.at||0)>
-      V244_RESET_LOCK_TTL_MS
-    ){
-      localStorage.removeItem(
-        V244_RESET_LOCK_KEY
-      );
+    const age=Date.now()-Number(raw.at||0);
 
+    const maxAge=
+      Number(raw.version||0)>=248
+        ?V248_LIVE_LOCK_MAX_AGE_MS
+        :V248_LEGACY_LOCK_MAX_AGE_MS;
+
+    if(age>maxAge){
+      localStorage.removeItem(V244_RESET_LOCK_KEY);
       return null;
     }
 
@@ -48915,63 +49190,36 @@ function v244ResetLockInfo(){
 }
 
 function v244ResetLockActive(){
-  return !!v244ResetLockInfo();
-}
+  const lock=v244ResetLockInfo();
 
-function v244AcquireResetLock(){
-  const existing=
-    v244ResetLockInfo();
-
-  if(
-    existing &&
-    existing.owner!==
-      V244_RESET_OWNER
-  ){
-    throw new Error(
-      'Một tab khác trên máy này đang thực hiện Reset Cloud.'
-    );
+  if(!lock){
+    return false;
   }
 
-  const lock={
-    owner:V244_RESET_OWNER,
-    at:Date.now()
-  };
+  if(
+    lock.owner===V244_RESET_OWNER &&
+    !v248ResetRuntimeActive
+  ){
+    return false;
+  }
 
-  localStorage.setItem(
-    V244_RESET_LOCK_KEY,
-    JSON.stringify(lock)
-  );
+  return true;
+}
 
-  return lock;
+async function v244AcquireResetLock(){
+  return v248AcquireResetMutex();
 }
 
 function v244TouchResetLock(){
-  if(!v244ResetLockActive()){
+  if(!v248ResetRuntimeActive){
     return;
   }
 
-  localStorage.setItem(
-    V244_RESET_LOCK_KEY,
-    JSON.stringify({
-      owner:V244_RESET_OWNER,
-      at:Date.now()
-    })
-  );
+  v248WriteResetHeartbeat('working');
 }
 
-function v244ReleaseResetLock(){
-  const lock=
-    v244ResetLockInfo();
-
-  if(
-    !lock ||
-    lock.owner===
-      V244_RESET_OWNER
-  ){
-    localStorage.removeItem(
-      V244_RESET_LOCK_KEY
-    );
-  }
+async function v244ReleaseResetLock(){
+  return v248ReleaseResetMutex();
 }
 
 async function v244WaitForSyncIdle(
@@ -50874,14 +51122,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:247,
+    version:248,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V247',
+      app_version:'V248',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -50970,7 +51218,7 @@ async function v239ResetCloudFromThisDevice(){
       'Đang kiểm tra local, schema, quyền Cloud và collision'
     );
 
-    v244AcquireResetLock();
+    await v244AcquireResetLock();
     resetLock=true;
 
     await v244WaitForSyncIdle();
@@ -51246,7 +51494,7 @@ async function v239ResetCloudFromThisDevice(){
       status:'complete'
     });
 
-    v244ReleaseResetLock();
+    await v244ReleaseResetLock();
     resetLock=false;
 
     if(
@@ -51360,7 +51608,7 @@ async function v239ResetCloudFromThisDevice(){
     }
 
     if(resetLock){
-      v244ReleaseResetLock();
+      await v244ReleaseResetLock();
       resetLock=false;
     }
 
@@ -51376,7 +51624,7 @@ async function v239ResetCloudFromThisDevice(){
 
   }finally{
     if(resetLock){
-      v244ReleaseResetLock();
+      await v244ReleaseResetLock();
     }
 
     v239ResetBusy=false;

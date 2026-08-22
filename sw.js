@@ -1,4 +1,4 @@
-const CACHE='lat-yen-pwa-v247';
+const CACHE='lat-yen-pwa-v248';
 const ASSETS=['./','./index.html','./manifest.webmanifest'];
 
 self.addEventListener('install',event=>{
