@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V216 SALE REPAIR DIAGNOSTICS ===== */
+/* ===== V217 LEGACY SALE UUID FINALIZER ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -12228,6 +12228,16 @@ function v205FilterSupersededLegacyRows(data){
   data.suppliers=(data.suppliers||[])
     .filter(x=>!v205IsSupersededLegacyId('suppliers',x.id));
 
+  data.sales=(data.sales||[])
+    .filter(x=>
+      !v205IsSupersededLegacyId('references',x.id)
+    );
+
+  data.saleItems=(data.saleItems||[])
+    .filter(x=>
+      !v205IsSupersededLegacyId('references',x.sale_id)
+    );
+
   data.inventory=(data.inventory||[])
     .filter(x=>
       !v205IsSupersededLegacyId('warehouses',x.warehouse_id) &&
@@ -12288,6 +12298,16 @@ function v205RemapLegacyRowsInPlace(data=db){
     row.ingredient_id=remap('ingredients',row.ingredient_id);
   }
 
+  for(const row of data.sales||[]){
+    row.id=remap('references',row.id);
+    row.warehouse_id=remap('warehouses',row.warehouse_id);
+  }
+
+  for(const row of data.saleItems||[]){
+    row.sale_id=remap('references',row.sale_id);
+    row.product_id=remap('products',row.product_id);
+  }
+
   for(const row of data.movements||[]){
     row.warehouse_id=remap('warehouses',row.warehouse_id);
     row.ingredient_id=remap('ingredients',row.ingredient_id);
@@ -12325,6 +12345,16 @@ function v205RemapLegacyRowsInPlace(data=db){
   data.ingredients=uniq(data.ingredients,x=>x.id);
   data.products=uniq(data.products,x=>x.id);
   data.suppliers=uniq(data.suppliers,x=>x.id);
+  data.sales=uniq(
+    data.sales,
+    x=>x.id
+  );
+
+  data.saleItems=uniq(
+    data.saleItems,
+    x=>x.id||`${x.sale_id}|${x.product_id}`
+  );
+
   data.inventory=uniq(
     data.inventory,
     x=>`${x.warehouse_id}|${x.ingredient_id}`
@@ -13950,6 +13980,16 @@ async function runSyncDiagnostics(){
     const retryResult=
       await runPendingRetriesV202();
 
+    const legacyFinalized=
+      Number(
+        retryResult?.legacyFinalize?.finalized||0
+      );
+
+    const legacyFailed=
+      Number(
+        retryResult?.legacyFinalize?.failed||0
+      );
+
     const repaired=
       Number(
         retryResult?.saleRepair?.repaired||0
@@ -13965,19 +14005,37 @@ async function runSyncDiagnostics(){
         retryResult?.saleRepair
       );
 
+    const retryOk=
+      failed===0 &&
+      legacyFailed===0;
+
+    const legacyText=
+      legacyFinalized
+        ?`UUID hóa ${legacyFinalized} phiếu legacy`
+        :'';
+
+    const repairText=
+      repaired
+        ?`atomic repair ${repaired} phiếu`
+        :'';
+
+    const successText=
+      [legacyText,repairText]
+        .filter(Boolean)
+        .join(' • ');
+
     add(
       'Pending Retry',
-      failed===0,
-      repaired
+      retryOk,
+      retryOk
         ?(
-          failed
-            ?`Đã sửa ${repaired} phiếu • còn ${failed} phiếu: ${repairSummary}`
-            :`Đã phục hồi atomic ${repaired} phiếu bán pending`
+          successText||
+          'Đã chạy retry cho toàn bộ nhóm nghiệp vụ'
         )
         :(
-          failed
-            ?`Còn ${failed} phiếu: ${repairSummary}`
-            :'Đã chạy retry cho toàn bộ nhóm nghiệp vụ'
+          legacyFailed
+            ?`Còn ${legacyFailed} phiếu legacy lỗi UUID`
+            :`Còn ${failed} phiếu: ${repairSummary}`
         )
     );
 
@@ -14087,7 +14145,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:216,
+    version:217,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -34567,7 +34625,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V216',
+    app_version:'V217',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34876,7 +34934,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:216,
+    version:217,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -35058,13 +35116,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:216,
+    version:217,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V216',storage:'supabase-storage',
+      schema:185,app_version:'V217',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -36277,7 +36335,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:216,
+    version:217,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -37535,6 +37593,505 @@ async function repairPendingSaleReceiptsV215(){
   return report;
 }
 
+
+/* ===== V217 LEGACY SALE UUID FINALIZER ===== */
+const V217_FINALIZE_REPORT_KEY='lat_yen_legacy_sale_finalize_v217';
+
+function v217SaveFinalizeReport(report){
+  try{
+    localStorage.setItem(
+      V217_FINALIZE_REPORT_KEY,
+      JSON.stringify({
+        at:new Date().toISOString(),
+        ...(report||{})
+      })
+    );
+  }catch(e){}
+}
+
+function v217LegacyPendingSaleRefs(){
+  return [
+    ...new Set(
+      v211PendingSaleMovements()
+        .map(x=>String(x.reference_id||''))
+        .filter(ref=>
+          ref &&
+          !isUuidValue(ref)
+        )
+    )
+  ];
+}
+
+async function v217SaleUuidForLegacy(oldId){
+  const mapped=
+    v205LegacyReplacement(
+      'references',
+      oldId
+    );
+
+  if(
+    mapped &&
+    isUuidValue(mapped)
+  ){
+    return mapped;
+  }
+
+  return await deterministicUuidV198(
+    'reference',
+    oldId
+  );
+}
+
+async function v217SaleItemCloudId(
+  item,
+  oldSaleId,
+  index
+){
+  if(isUuidValue(item?.id)){
+    return item.id;
+  }
+
+  return await deterministicUuidV198(
+    'sale_item',
+    item?.id||
+    `${oldSaleId}|${item?.product_id||''}|${index}`
+  );
+}
+
+async function v217MovementCloudId(
+  row
+){
+  if(isUuidValue(row?.id)){
+    return row.id;
+  }
+
+  return await deterministicUuidV198(
+    'movement',
+    row?.id||
+    `${row?.transaction_type||'SALE'}|${row?.reference_id||''}|${row?.ingredient_id||''}|${row?.created_at||''}`
+  );
+}
+
+async function v217FinalizeOneLegacySale(
+  oldSaleId
+){
+  const sale=
+    (db.sales||[])
+      .find(x=>
+        String(x.id||'')===
+        String(oldSaleId)
+      );
+
+  if(!sale){
+    throw new Error(
+      'Không tìm thấy phiếu bán local legacy.'
+    );
+  }
+
+  const newSaleId=
+    await v217SaleUuidForLegacy(
+      oldSaleId
+    );
+
+  const warehouseId=
+    v205LegacyReplacement(
+      'warehouses',
+      sale.warehouse_id
+    );
+
+  if(
+    !isUuidValue(newSaleId) ||
+    !isUuidValue(warehouseId)
+  ){
+    throw new Error(
+      'Không tạo được UUID Cloud hợp lệ cho phiếu/kho.'
+    );
+  }
+
+  const items=
+    (db.saleItems||[])
+      .filter(x=>
+        String(x.sale_id||'')===
+        String(oldSaleId)
+      );
+
+  if(!items.length){
+    throw new Error(
+      'Phiếu legacy không có sale_items local.'
+    );
+  }
+
+  const movements=
+    (db.movements||[])
+      .filter(row=>
+        String(
+          row.transaction_type||''
+        ).toUpperCase()==='SALE' &&
+        String(
+          row.reference_id||''
+        )===String(oldSaleId)
+      );
+
+  if(!movements.length){
+    throw new Error(
+      'Phiếu legacy không có SALE movement local.'
+    );
+  }
+
+  const salePayload={
+    id:newSaleId,
+    warehouse_id:
+      warehouseId,
+    total_amount:
+      Number(
+        sale.total_amount||0
+      ),
+    source:
+      sale.source||'manual',
+    sold_at:
+      sale.sold_at||
+      sale.created_at||
+      new Date().toISOString(),
+    note:
+      sale.note||''
+  };
+
+  const itemPayload=[];
+
+  for(
+    let i=0;
+    i<items.length;
+    i++
+  ){
+    const item=items[i];
+
+    const productId=
+      v205LegacyReplacement(
+        'products',
+        item.product_id
+      );
+
+    if(!isUuidValue(productId)){
+      throw new Error(
+        `sale_item ${i+1} còn product ID local.`
+      );
+    }
+
+    itemPayload.push({
+      id:
+        await v217SaleItemCloudId(
+          item,
+          oldSaleId,
+          i
+        ),
+      sale_id:
+        newSaleId,
+      product_id:
+        productId,
+      quantity:
+        Number(
+          item.quantity||0
+        ),
+      unit_price:
+        Number(
+          item.unit_price||0
+        )
+    });
+  }
+
+  const movementPayload=[];
+
+  for(const row of movements){
+    const warehouse=
+      v205LegacyReplacement(
+        'warehouses',
+        row.warehouse_id
+      );
+
+    const ingredient=
+      v205LegacyReplacement(
+        'ingredients',
+        row.ingredient_id
+      );
+
+    if(
+      !isUuidValue(warehouse) ||
+      !isUuidValue(ingredient)
+    ){
+      throw new Error(
+        'SALE movement còn warehouse/ingredient ID local.'
+      );
+    }
+
+    const payload={
+      id:
+        await v217MovementCloudId(
+          row
+        ),
+      warehouse_id:
+        warehouse,
+      ingredient_id:
+        ingredient,
+      transaction_type:'SALE',
+      quantity:
+        Number(
+          row.quantity||0
+        ),
+      note:
+        String(
+          row.note||''
+        ),
+      reference_id:
+        newSaleId
+    };
+
+    if(row.created_at){
+      payload.created_at=
+        row.created_at;
+    }
+
+    movementPayload.push(
+      payload
+    );
+  }
+
+  // 1) Header.
+  let r=
+    await promiseWithTimeout(
+      sb.from('sales')
+        .upsert(
+          salePayload,
+          {onConflict:'id'}
+        ),
+      12000,
+      'Tạo UUID Cloud cho phiếu bán legacy'
+    );
+
+  if(r.error){
+    throw r.error;
+  }
+
+  // 2) Sale items.
+  r=
+    await promiseWithTimeout(
+      sb.from('sale_items')
+        .upsert(
+          itemPayload,
+          {onConflict:'id'}
+        ),
+      12000,
+      'Đưa sale_items legacy lên Cloud'
+    );
+
+  if(r.error){
+    throw r.error;
+  }
+
+  // 3) SALE stock transactions.
+  // IMPORTANT: direct upsert only. Do NOT change inventory.
+  r=
+    await promiseWithTimeout(
+      sb.from('stock_transactions')
+        .upsert(
+          movementPayload,
+          {onConflict:'id'}
+        ),
+      12000,
+      'Đưa SALE movement legacy lên Cloud'
+    );
+
+  if(r.error){
+    throw r.error;
+  }
+
+  // Verify all movement ids are now present.
+  const movementIds=
+    movementPayload.map(x=>x.id);
+
+  const verify=
+    await promiseWithTimeout(
+      sb.from('stock_transactions')
+        .select(
+          'id,reference_id,warehouse_id,ingredient_id,transaction_type,quantity'
+        )
+        .in(
+          'id',
+          movementIds
+        ),
+      10000,
+      'Xác minh SALE movement legacy'
+    );
+
+  if(verify.error){
+    throw verify.error;
+  }
+
+  const cloudIds=
+    new Set(
+      (verify.data||[])
+        .map(x=>
+          String(x.id)
+        )
+    );
+
+  const missingIds=
+    movementIds.filter(
+      id=>
+        !cloudIds.has(
+          String(id)
+        )
+    );
+
+  if(missingIds.length){
+    throw new Error(
+      `Cloud thiếu ${missingIds.length}/${movementIds.length} movement sau upsert.`
+    );
+  }
+
+  // Persist permanent legacy reference mapping BEFORE local remap.
+  saveLegacyCloudMapV205({
+    references:{
+      [oldSaleId]:
+        newSaleId
+    }
+  });
+
+  // Local remap only after all Cloud writes verified.
+  sale.id=
+    newSaleId;
+
+  sale.warehouse_id=
+    warehouseId;
+
+  delete sale._sync_status;
+  delete sale._sync_error;
+  delete sale._local_only;
+
+  for(
+    let i=0;
+    i<items.length;
+    i++
+  ){
+    const item=items[i];
+
+    item.id=
+      itemPayload[i].id;
+
+    item.sale_id=
+      newSaleId;
+
+    item.product_id=
+      itemPayload[i].product_id;
+
+    delete item._sync_status;
+    delete item._sync_error;
+    delete item._local_only;
+  }
+
+  const movementByOldId=
+    new Map(
+      movements.map(
+        (row,index)=>[
+          row,
+          movementPayload[index]
+        ]
+      )
+    );
+
+  for(const row of movements){
+    const cloud=
+      movementByOldId.get(row);
+
+    row.id=
+      cloud.id;
+
+    row.warehouse_id=
+      cloud.warehouse_id;
+
+    row.ingredient_id=
+      cloud.ingredient_id;
+
+    row.reference_id=
+      newSaleId;
+
+    delete row._sync_status;
+    delete row._sync_error;
+    delete row._local_only;
+  }
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+  flushCacheSave();
+
+  return {
+    oldSaleId,
+    newSaleId,
+    items:
+      itemPayload.length,
+    movements:
+      movementPayload.length
+  };
+}
+
+async function finalizeLegacyPendingSalesV217(){
+  const refs=
+    v217LegacyPendingSaleRefs();
+
+  const report={
+    before:
+      v211PendingSaleMovements()
+        .length,
+    legacy_receipts:
+      refs.length,
+    finalized:0,
+    failed:0,
+    results:[],
+    errors:[]
+  };
+
+  for(const ref of refs){
+    try{
+      const result=
+        await v217FinalizeOneLegacySale(
+          ref
+        );
+
+      report.finalized++;
+      report.results.push(
+        result
+      );
+
+    }catch(e){
+      report.failed++;
+
+      const message=
+        e?.message||
+        String(e);
+
+      report.errors.push({
+        ref,
+        message
+      });
+
+      v215SetSaleMovementError(
+        ref,
+        `[legacy_sale_uuid] ${message}`
+      );
+    }
+  }
+
+  report.after=
+    v211PendingSaleMovements()
+      .length;
+
+  v217SaveFinalizeReport(
+    report
+  );
+
+  return report;
+}
+
 async function runPendingRetriesV202(){
   const before=v191PendingCount();
 
@@ -37546,8 +38103,31 @@ async function runPendingRetriesV202(){
     };
   }
 
+  let legacyFinalize=null;
   let saleRepair=null;
 
+  // V217 first: legacy sale IDs must become Cloud UUIDs without touching inventory.
+  try{
+    legacyFinalize=
+      await finalizeLegacyPendingSalesV217();
+  }catch(e){
+    console.warn(
+      'legacy sale finalize',
+      e
+    );
+  }
+
+  // ACK any SALE movements already present after V217.
+  try{
+    await reconcilePendingSaleMovementsV211();
+  }catch(e){
+    console.warn(
+      'sale reconcile',
+      e
+    );
+  }
+
+  // Only UUID sale receipts can enter atomic repair.
   try{
     saleRepair=
       await repairPendingSaleReceiptsV215();
@@ -37565,16 +38145,13 @@ async function runPendingRetriesV202(){
   try{await syncPendingImportReceiptsV191()}catch(e){console.warn('import',e)}
   try{await syncPendingExportReceiptsV192()}catch(e){console.warn('export',e)}
   try{await syncPendingStocktakeReceiptsV192()}catch(e){console.warn('stocktake',e)}
-
-  // Normal sale retry remains as fallback for sale/sale_item pending rows.
   try{await syncPendingSaleReceipts()}catch(e){console.warn('sale',e)}
 
-  // One final sale repair/ACK.
   try{
-    await repairPendingSaleReceiptsV215();
+    await reconcilePendingSaleMovementsV211();
   }catch(e){
     console.warn(
-      'sale final repair',
+      'sale final reconcile',
       e
     );
   }
@@ -37590,6 +38167,7 @@ async function runPendingRetriesV202(){
     after,
     changed:
       before!==after,
+    legacyFinalize,
     saleRepair
   };
 }
@@ -38318,7 +38896,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V216',
+      app_version:'V217',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -38333,7 +38911,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:216,
+      version:217,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -38610,7 +39188,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v216-full-backup-'+
+    'lat-yen-v217-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();

@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V216",
+  "name": "Quản Lý Lát Yên V217",
   "short_name": "Lát Yên",
-  "description": "Exact per-receipt diagnostics for unresolved sale movement repair.",
+  "description": "Finalizes legacy sale IDs to deterministic Cloud UUIDs without changing inventory.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
