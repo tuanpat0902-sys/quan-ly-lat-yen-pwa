@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V228",
+  "name": "Quản Lý Lát Yên V229",
   "short_name": "Lát Yên",
-  "description": "True Cloud Proof reconciliation: verifies actual Supabase row presence instead of inferring Cloud coverage from UUID format.",
+  "description": "Safe history backfill: semantically reconciles and restores truly missing sales/history rows without replaying inventory effects.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

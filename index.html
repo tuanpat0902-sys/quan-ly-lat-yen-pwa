@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V228 TRUE CLOUD PROOF ===== */
+/* ===== V229 SAFE HISTORY BACKFILL ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -16906,6 +16906,45 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V229 safe history-only repair.
+  try{
+    const beforeCoverage=
+      v228Coverage();
+
+    if(
+      beforeCoverage.proofAvailable &&
+      Number(beforeCoverage.localOnly||0)>0 &&
+      v191PendingCount()===0
+    ){
+      const repaired=
+        await v229RepairMissingHistory();
+
+      add(
+        'History Backfill V229',
+        Number(repaired.after||0)===0,
+        repaired.skipped
+          ?(
+            repaired.reason==='unsafe_missing_tables'
+              ?`Không tự sửa bảng nghiệp vụ: ${(repaired.unsafeTables||[]).join(', ')}`
+              :'Không cần backfill'
+          )
+          :`Đã ghi ${Number(repaired.repaired||0)} record lịch sử • còn ${Number(repaired.after||0)}`
+      );
+    }else{
+      add(
+        'History Backfill V229',
+        true,
+        'Không cần backfill lịch sử'
+      );
+    }
+  }catch(e){
+    add(
+      'History Backfill V229',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   const pendingAfter=
     syncDiagPendingBreakdown();
 
@@ -16952,7 +16991,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:228,
+    version:229,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -18647,6 +18686,7 @@ function v228Remap(group,value){
 
 function v228KeyCandidates(table,row){
   if(!row)return [];
+
   const out=[];
   const add=value=>{
     const key=String(value||'').trim();
@@ -18655,40 +18695,68 @@ function v228KeyCandidates(table,row){
 
   if(table==='warehouses'){
     add('id:'+v228Remap('warehouses',row.id));
-  }else if(table==='suppliers'){
+  }
+
+  else if(table==='suppliers'){
     add('id:'+v228Remap('suppliers',row.id));
     add(
       'semantic:'+
       v228NormText(row.name)+'|'+
       v228NormText(row.phone)
     );
-  }else if(table==='ingredients'){
+  }
+
+  else if(table==='ingredients'){
     add('id:'+v228Remap('ingredients',row.id));
-  }else if(table==='products'){
+  }
+
+  else if(table==='products'){
     add('id:'+v228Remap('products',row.id));
-  }else if(table==='inventory'){
+  }
+
+  else if(table==='inventory'){
     add(
       'pair:'+
       v228Remap('warehouses',row.warehouse_id)+'|'+
       v228Remap('ingredients',row.ingredient_id)
     );
-  }else if(table==='recipe_items'){
+  }
+
+  else if(table==='recipe_items'){
     add('id:'+row.id);
     add(
       'pair:'+
       v228Remap('products',row.product_id)+'|'+
       v228Remap('ingredients',row.ingredient_id)
     );
-  }else if(table==='prepared_ingredient_items'){
+  }
+
+  else if(table==='prepared_ingredient_items'){
     add('id:'+row.id);
     add(
       'pair:'+
       v228Remap('ingredients',row.prepared_ingredient_id)+'|'+
       v228Remap('ingredients',row.source_ingredient_id)
     );
-  }else if(table==='sales'){
-    add('id:'+v228Remap('references',row.id));
-  }else if(table==='sale_items'){
+  }
+
+  else if(table==='sales'){
+    add(
+      'id:'+
+      v228Remap('references',row.id)
+    );
+
+    // V229: legacy migration may change sale UUID while preserving receipt data.
+    add(
+      'semantic:'+
+      v228Remap('warehouses',row.warehouse_id)+'|'+
+      v228NormNumber(row.total_amount)+'|'+
+      v228NormTime(row.sold_at||row.created_at)+'|'+
+      v228NormText(row.source)
+    );
+  }
+
+  else if(table==='sale_items'){
     add('id:'+row.id);
     add(
       'semantic:'+
@@ -18697,8 +18765,28 @@ function v228KeyCandidates(table,row){
       v228NormNumber(row.quantity)+'|'+
       v228NormNumber(row.unit_price)
     );
-  }else if(table==='stock_transactions'){
+  }
+
+  else if(table==='stock_transactions'){
     add('id:'+row.id);
+
+    /*
+      V229 relaxed receipt-semantic key:
+      created_at is intentionally NOT part of this key.
+      Historical migrations often let Cloud assign a new created_at,
+      although it is the same business movement.
+      Within one receipt/reference an ingredient is expected once.
+    */
+    add(
+      'receipt:'+
+      String(row.transaction_type||'').toUpperCase()+'|'+
+      v228Remap('references',row.reference_id)+'|'+
+      v228Remap('warehouses',row.warehouse_id)+'|'+
+      v228Remap('ingredients',row.ingredient_id)+'|'+
+      v228NormNumber(row.quantity)
+    );
+
+    // Keep the stricter timestamp key as an extra discriminator.
     add(
       'semantic:'+
       String(row.transaction_type||'').toUpperCase()+'|'+
@@ -18714,6 +18802,586 @@ function v228KeyCandidates(table,row){
     !x.endsWith(':') &&
     !x.includes('undefined')
   );
+}
+
+
+/* ===== V229 SAFE HISTORY BACKFILL ===== */
+const V229_HISTORY_TABLES=new Set([
+  'sales',
+  'sale_items',
+  'stock_transactions'
+]);
+
+function v229MissingRows(){
+  if(!v228CloudProof?.at){
+    return {};
+  }
+
+  const result={};
+
+  for(
+    const [table,rows]
+    of Object.entries(
+      v228LocalTableRows(db)
+    )
+  ){
+    const proofSet=
+      v228CloudProof.tables?.[table]||
+      new Set();
+
+    for(const row of rows){
+      const exists=
+        v228KeyCandidates(
+          table,
+          row
+        ).some(key=>
+          proofSet.has(key)
+        );
+
+      if(exists)continue;
+
+      if(!result[table]){
+        result[table]=[];
+      }
+
+      result[table].push(row);
+    }
+  }
+
+  return result;
+}
+
+function v229MissingSummary(
+  missing=v229MissingRows()
+){
+  return Object.entries(missing)
+    .filter(([,rows])=>
+      Array.isArray(rows)&&
+      rows.length
+    )
+    .map(([table,rows])=>
+      `${table}:${rows.length}`
+    )
+    .join(' • ');
+}
+
+async function v229ReferenceUuid(
+  value,
+  referenceMap
+){
+  if(!value)return null;
+
+  const mapped=
+    v205LegacyReplacement(
+      'references',
+      value
+    );
+
+  if(isUuidValue(mapped)){
+    return mapped;
+  }
+
+  const oldMigration=
+    loadCloudIdMigrationV198?.();
+
+  const oldMapped=
+    oldMigration?.map?.references?.[value];
+
+  if(isUuidValue(oldMapped)){
+    referenceMap[value]=
+      oldMapped;
+
+    return oldMapped;
+  }
+
+  const deterministic=
+    await deterministicUuidV198(
+      'reference',
+      value
+    );
+
+  referenceMap[value]=
+    deterministic;
+
+  return deterministic;
+}
+
+async function v229SalePayload(
+  row,
+  referenceMap
+){
+  const id=
+    isUuidValue(
+      v205LegacyReplacement(
+        'references',
+        row.id
+      )
+    )
+      ?v205LegacyReplacement(
+          'references',
+          row.id
+        )
+      :await v229ReferenceUuid(
+          row.id,
+          referenceMap
+        );
+
+  const warehouseId=
+    v205LegacyReplacement(
+      'warehouses',
+      row.warehouse_id
+    );
+
+  if(
+    !isUuidValue(id) ||
+    !isUuidValue(warehouseId)
+  ){
+    throw new Error(
+      'Phiếu bán còn ID phiếu/kho không hợp lệ.'
+    );
+  }
+
+  return {
+    id,
+    warehouse_id:
+      warehouseId,
+    total_amount:
+      Number(
+        row.total_amount||0
+      ),
+    source:
+      row.source||'manual',
+    sold_at:
+      row.sold_at||
+      row.created_at||
+      new Date().toISOString(),
+    note:
+      row.note||''
+  };
+}
+
+async function v229SaleItemPayload(
+  row,
+  index,
+  referenceMap
+){
+  const saleId=
+    await v229ReferenceUuid(
+      row.sale_id,
+      referenceMap
+    );
+
+  const productId=
+    v205LegacyReplacement(
+      'products',
+      row.product_id
+    );
+
+  if(
+    !isUuidValue(saleId) ||
+    !isUuidValue(productId)
+  ){
+    throw new Error(
+      'Chi tiết bán còn sale/product ID không hợp lệ.'
+    );
+  }
+
+  const id=
+    isUuidValue(row.id)
+      ?row.id
+      :await deterministicUuidV198(
+          'sale_item',
+          row.id||
+          `${row.sale_id}|${row.product_id}|${row.quantity}|${row.unit_price}|${index}`
+        );
+
+  return {
+    id,
+    sale_id:
+      saleId,
+    product_id:
+      productId,
+    quantity:
+      Number(
+        row.quantity||0
+      ),
+    unit_price:
+      Number(
+        row.unit_price||0
+      )
+  };
+}
+
+async function v229MovementPayload(
+  row,
+  referenceMap
+){
+  const warehouseId=
+    v205LegacyReplacement(
+      'warehouses',
+      row.warehouse_id
+    );
+
+  const ingredientId=
+    v205LegacyReplacement(
+      'ingredients',
+      row.ingredient_id
+    );
+
+  if(
+    !isUuidValue(warehouseId) ||
+    !isUuidValue(ingredientId)
+  ){
+    throw new Error(
+      'Biến động kho còn warehouse/ingredient ID không hợp lệ.'
+    );
+  }
+
+  const transactionType=
+    normalizeTransactionTypeV200(
+      row.transaction_type
+    );
+
+  if(!transactionType){
+    throw new Error(
+      `Loại giao dịch không hợp lệ: ${row.transaction_type||''}`
+    );
+  }
+
+  const referenceId=
+    row.reference_id
+      ?await v229ReferenceUuid(
+          row.reference_id,
+          referenceMap
+        )
+      :null;
+
+  if(
+    referenceId &&
+    !isUuidValue(referenceId)
+  ){
+    throw new Error(
+      'Biến động kho còn reference_id không hợp lệ.'
+    );
+  }
+
+  const id=
+    isUuidValue(row.id)
+      ?row.id
+      :await deterministicUuidV198(
+          'movement',
+          row.id||
+          `${transactionType}|${row.reference_id||''}|${row.ingredient_id||''}|${row.created_at||''}`
+        );
+
+  const payload={
+    id,
+    warehouse_id:
+      warehouseId,
+    ingredient_id:
+      ingredientId,
+    transaction_type:
+      transactionType,
+    quantity:
+      Number(
+        row.quantity||0
+      ),
+    note:
+      row.note||'',
+    reference_id:
+      referenceId
+  };
+
+  if(
+    Number.isFinite(
+      Number(row.unit_cost)
+    )
+  ){
+    payload.unit_cost=
+      Number(
+        row.unit_cost||0
+      );
+  }
+
+  if(
+    Number.isFinite(
+      Number(row.total_cost)
+    )
+  ){
+    payload.total_cost=
+      Number(
+        row.total_cost||0
+      );
+  }
+
+  const supplierId=
+    v205LegacyReplacement(
+      'suppliers',
+      row.supplier_id
+    );
+
+  if(
+    supplierId &&
+    isUuidValue(supplierId)
+  ){
+    payload.supplier_id=
+      supplierId;
+  }
+
+  return payload;
+}
+
+async function v229UpsertChunks(
+  table,
+  rows,
+  size=50
+){
+  let done=0;
+
+  for(
+    let i=0;
+    i<rows.length;
+    i+=size
+  ){
+    const batch=
+      rows.slice(
+        i,
+        i+size
+      );
+
+    const r=
+      await promiseWithTimeout(
+        sb.from(table)
+          .upsert(
+            batch,
+            {
+              onConflict:'id'
+            }
+          ),
+        20000,
+        `Phục hồi lịch sử ${table}`
+      );
+
+    if(r.error){
+      throw r.error;
+    }
+
+    done+=batch.length;
+  }
+
+  return done;
+}
+
+async function v229RepairMissingHistory(){
+  if(!navigator.onLine){
+    throw new Error(
+      'Thiết bị đang offline.'
+    );
+  }
+
+  if(!v228CloudProof?.at){
+    await loadCloudFastV202(
+      true
+    );
+  }
+
+  let missing=
+    v229MissingRows();
+
+  const activeMissing=
+    Object.entries(missing)
+      .filter(([,rows])=>
+        Array.isArray(rows)&&
+        rows.length
+      );
+
+  if(!activeMissing.length){
+    return {
+      repaired:0,
+      before:0,
+      after:0,
+      skipped:true,
+      reason:'already_clean'
+    };
+  }
+
+  const unsafeTables=
+    activeMissing
+      .map(([table])=>table)
+      .filter(table=>
+        !V229_HISTORY_TABLES.has(
+          table
+        )
+      );
+
+  if(unsafeTables.length){
+    return {
+      repaired:0,
+      before:
+        activeMissing.reduce(
+          (sum,[,rows])=>
+            sum+rows.length,
+          0
+        ),
+      after:
+        activeMissing.reduce(
+          (sum,[,rows])=>
+            sum+rows.length,
+          0
+        ),
+      skipped:true,
+      reason:
+        'unsafe_missing_tables',
+      unsafeTables
+    };
+  }
+
+  /*
+    Critical V229 safety rule:
+    Do not replay business RPCs.
+    Do not write inventory.
+    These are history records only, because current inventory is already
+    authoritative on Cloud.
+  */
+  const referenceMap={};
+
+  const sales=
+    missing.sales||[];
+
+  const saleItems=
+    missing.sale_items||[];
+
+  const movements=
+    missing.stock_transactions||[];
+
+  const salePayload=[];
+
+  for(const row of sales){
+    salePayload.push(
+      await v229SalePayload(
+        row,
+        referenceMap
+      )
+    );
+  }
+
+  const itemPayload=[];
+
+  for(
+    let i=0;
+    i<saleItems.length;
+    i++
+  ){
+    itemPayload.push(
+      await v229SaleItemPayload(
+        saleItems[i],
+        i,
+        referenceMap
+      )
+    );
+  }
+
+  const movementPayload=[];
+
+  for(const row of movements){
+    movementPayload.push(
+      await v229MovementPayload(
+        row,
+        referenceMap
+      )
+    );
+  }
+
+  const before=
+    sales.length+
+    saleItems.length+
+    movements.length;
+
+  let repaired=0;
+
+  // Respect FK order.
+  if(salePayload.length){
+    repaired+=
+      await v229UpsertChunks(
+        'sales',
+        salePayload
+      );
+  }
+
+  if(itemPayload.length){
+    repaired+=
+      await v229UpsertChunks(
+        'sale_items',
+        itemPayload
+      );
+  }
+
+  if(movementPayload.length){
+    repaired+=
+      await v229UpsertChunks(
+        'stock_transactions',
+        movementPayload
+      );
+  }
+
+  /*
+    Save deterministic legacy reference mappings only AFTER all Cloud writes
+    completed. No local row is deleted here.
+  */
+  if(
+    Object.keys(
+      referenceMap
+    ).length
+  ){
+    saveLegacyCloudMapV205({
+      references:
+        referenceMap
+    });
+  }
+
+  // Fresh authoritative verification.
+  await loadCloudFastV202(
+    true
+  );
+
+  missing=
+    v229MissingRows();
+
+  const after=
+    Object.values(missing)
+      .reduce(
+        (sum,rows)=>
+          sum+
+          (
+            Array.isArray(rows)
+              ?rows.length
+              :0
+          ),
+        0
+      );
+
+  if(after===0){
+    v228ClearProvenStaleFlags();
+    cacheSave();
+    flushCacheSave();
+  }
+
+  return {
+    repaired,
+    before,
+    after,
+    skipped:false,
+    sales:
+      salePayload.length,
+    sale_items:
+      itemPayload.length,
+    movements:
+      movementPayload.length,
+    remaining:
+      v229MissingSummary(
+        missing
+      )
+  };
 }
 
 function v228CaptureCloudProof(snapshot){
@@ -20075,59 +20743,122 @@ async function syncNow(){
     await runPendingRetriesV202();
 
     updateSyncProgress(
-      42,
+      40,
       'Đang tải Cloud',
       'Lấy dữ liệu thật từ Supabase để đối chiếu'
     );
 
-    await loadCloudFastV202(true);
+    await loadCloudFastV202(
+      true
+    );
+
+    let coverage=
+      v228Coverage();
+
+    let historyRepair=null;
+
+    if(
+      v191PendingCount()===0 &&
+      coverage.proofAvailable &&
+      Number(
+        coverage.localOnly||0
+      )>0
+    ){
+      updateSyncProgress(
+        58,
+        'Đang đối chiếu lịch sử',
+        v228CoverageBreakdownText(
+          coverage
+        )
+      );
+
+      historyRepair=
+        await v229RepairMissingHistory();
+
+      coverage=
+        v228Coverage();
+    }
 
     updateSyncProgress(
-      70,
+      72,
       'Đồng bộ thiết bị',
       'Đang hợp nhất dữ liệu local'
     );
 
-    const cred=autoSyncCredentials();
+    const cred=
+      autoSyncCredentials();
+
     let canonical=null;
 
-    if(cred.code&&cred.passphrase){
-      canonical=await v189CanonicalSync(
-        cred.code,
-        cred.passphrase
-      );
+    if(
+      cred.code&&
+      cred.passphrase
+    ){
+      canonical=
+        await v189CanonicalSync(
+          cred.code,
+          cred.passphrase
+        );
 
       saveFastSyncStateV202({
-        last_revision:Number(canonical?.revision||0)
+        last_revision:
+          Number(
+            canonical?.revision||0
+          )
       });
     }
 
     updateSyncProgress(
-      90,
-      'Đối chiếu Cloud thật',
-      'So từng record local với dữ liệu Supabase vừa tải'
+      92,
+      'Xác minh cuối',
+      'Đang xác nhận lại dữ liệu trên Supabase'
     );
 
-    const cleaned=v228ClearProvenStaleFlags();
-    const pending=v191PendingCount();
-    const coverage=v228Coverage();
+    // A canonical merge can update local state, so compare once more.
+    await loadCloudFastV202(
+      true
+    );
+
+    const cleaned=
+      v228ClearProvenStaleFlags();
+
+    const pending=
+      v191PendingCount();
+
+    coverage=
+      v228Coverage();
 
     const success=
       cloudOnline &&
       coverage.proofAvailable &&
       pending===0 &&
       coverage.localOnly===0 &&
-      (!canonical||canonical.converged);
+      (
+        !canonical ||
+        canonical.converged
+      );
 
     finishSyncProgress({
       success,
       pending,
-      stage:success?'Đã đồng bộ':'Chưa đồng bộ hết',
+      stage:
+        success
+          ?'Đã đồng bộ'
+          :'Chưa đồng bộ hết',
       detail:
         success
           ?(
             `Cloud xác nhận ${coverage.covered}/${coverage.total} record`+
-            (cleaned?` • dọn ${cleaned} cờ local cũ`:'')
+            (
+              historyRepair?.repaired
+                ?` • phục hồi ${historyRepair.repaired} record lịch sử`
+                :''
+            )+
+            (
+              cleaned
+                ?` • dọn ${cleaned} cờ local cũ`
+                :''
+            )
           )
           :(
             coverage.proofAvailable
@@ -20149,14 +20880,23 @@ async function syncNow(){
     );
 
   }catch(e){
-    console.error('syncNow',e);
+    console.error(
+      'syncNow',
+      e
+    );
 
     finishSyncProgress({
       success:false,
-      pending:v191PendingCount(),
-      stage:'Lỗi đồng bộ',
-      detail:e?.message||String(e),
-      error:e?.message||String(e)
+      pending:
+        v191PendingCount(),
+      stage:
+        'Lỗi đồng bộ',
+      detail:
+        e?.message||
+        String(e),
+      error:
+        e?.message||
+        String(e)
     });
 
     toastMsg(
@@ -37905,7 +38645,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V228',
+    app_version:'V229',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -38214,7 +38954,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:228,
+    version:229,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -38396,13 +39136,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:228,
+    version:229,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V228',storage:'supabase-storage',
+      schema:185,app_version:'V229',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -39608,7 +40348,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:228,
+    version:229,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -42173,7 +42913,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V228',
+      app_version:'V229',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -42188,7 +42928,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:228,
+      version:229,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -42465,7 +43205,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v228-full-backup-'+
+    'lat-yen-v229-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
