@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V229",
+  "name": "Quản Lý Lát Yên V230",
   "short_name": "Lát Yên",
-  "description": "Safe history backfill: semantically reconciles and restores truly missing sales/history rows without replaying inventory effects.",
+  "description": "Targeted sale-pair normalizer that physically remaps the final legacy sale and sale_item to verified Cloud UUIDs without touching inventory.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

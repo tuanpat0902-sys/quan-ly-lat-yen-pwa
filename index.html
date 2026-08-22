@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V229 SAFE HISTORY BACKFILL ===== */
+/* ===== V230 SALE PAIR NORMALIZER ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -16906,6 +16906,60 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V230 normalize a missing sale + sale_item pair first.
+  try{
+    const beforeCoverage=
+      v228Coverage();
+
+    const missing=
+      v229MissingRows();
+
+    const tables=
+      Object.entries(missing)
+        .filter(([,rows])=>
+          Array.isArray(rows)&&
+          rows.length
+        )
+        .map(([table])=>table);
+
+    const salePairOnly=
+      tables.length>0 &&
+      tables.every(table=>
+        table==='sales'||
+        table==='sale_items'
+      );
+
+    if(
+      beforeCoverage.proofAvailable &&
+      beforeCoverage.localOnly>0 &&
+      v191PendingCount()===0 &&
+      salePairOnly
+    ){
+      const repair=
+        await v230RepairMissingSalePairs();
+
+      add(
+        'Sale Pair Normalize V230',
+        Number(repair.remaining||0)===0,
+        repair.skipped
+          ?`Bỏ qua: ${repair.reason||'không phù hợp'}`
+          :`Đã chuẩn hóa ${Number(repair.repaired||0)} phiếu • còn ${Number(repair.remaining||0)} record`
+      );
+    }else{
+      add(
+        'Sale Pair Normalize V230',
+        true,
+        'Không cần chuẩn hóa cặp phiếu bán'
+      );
+    }
+  }catch(e){
+    add(
+      'Sale Pair Normalize V230',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V229 safe history-only repair.
   try{
     const beforeCoverage=
@@ -16991,7 +17045,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:229,
+    version:230,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -18811,6 +18865,1002 @@ const V229_HISTORY_TABLES=new Set([
   'sale_items',
   'stock_transactions'
 ]);
+
+
+/* ===== V230 SALE PAIR NORMALIZER ===== */
+function v230SameNumber(a,b,epsilon=0.01){
+  return Math.abs(
+    Number(a||0)-
+    Number(b||0)
+  )<=epsilon;
+}
+
+function v230SaleItemsFor(
+  saleId,
+  rows=db.saleItems||[]
+){
+  const mapped=
+    v205LegacyReplacement(
+      'references',
+      saleId
+    );
+
+  return rows.filter(row=>{
+    const rowSale=
+      v205LegacyReplacement(
+        'references',
+        row.sale_id
+      );
+
+    return (
+      String(row.sale_id||'')===
+        String(saleId||'') ||
+      String(rowSale||'')===
+        String(mapped||'')
+    );
+  });
+}
+
+function v230ItemEquivalent(
+  local,
+  cloud
+){
+  return (
+    String(
+      v205LegacyReplacement(
+        'products',
+        local?.product_id
+      )||''
+    )===
+    String(
+      cloud?.product_id||''
+    ) &&
+    v230SameNumber(
+      local?.quantity,
+      cloud?.quantity,
+      0.000001
+    ) &&
+    v230SameNumber(
+      local?.unit_price,
+      cloud?.unit_price,
+      0.01
+    )
+  );
+}
+
+function v230SaleCandidateScore(
+  localSale,
+  localItems,
+  cloudSale,
+  cloudItems
+){
+  const localWarehouse=
+    v205LegacyReplacement(
+      'warehouses',
+      localSale?.warehouse_id
+    );
+
+  if(
+    String(localWarehouse||'')!==
+    String(cloudSale?.warehouse_id||'')
+  ){
+    return -1;
+  }
+
+  if(
+    !v230SameNumber(
+      localSale?.total_amount,
+      cloudSale?.total_amount,
+      0.01
+    )
+  ){
+    return -1;
+  }
+
+  const candidateItems=
+    cloudItems.filter(
+      row=>
+        String(row.sale_id||'')===
+        String(cloudSale.id||'')
+    );
+
+  const allItemsMatch=
+    localItems.every(local=>
+      candidateItems.some(cloud=>
+        v230ItemEquivalent(
+          local,
+          cloud
+        )
+      )
+    );
+
+  if(!allItemsMatch){
+    return -1;
+  }
+
+  let score=100;
+
+  const localTime=
+    Date.parse(
+      localSale?.sold_at||
+      localSale?.created_at||
+      ''
+    );
+
+  const cloudTime=
+    Date.parse(
+      cloudSale?.sold_at||
+      cloudSale?.created_at||
+      ''
+    );
+
+  if(
+    Number.isFinite(localTime) &&
+    Number.isFinite(cloudTime)
+  ){
+    const diff=
+      Math.abs(
+        localTime-cloudTime
+      );
+
+    if(diff<=60*1000){
+      score+=30;
+    }else if(diff<=10*60*1000){
+      score+=20;
+    }else if(diff<=60*60*1000){
+      score+=10;
+    }else if(diff<=24*60*60*1000){
+      score+=3;
+    }
+  }
+
+  if(
+    v228NormText(
+      localSale?.source
+    )===
+    v228NormText(
+      cloudSale?.source
+    )
+  ){
+    score+=5;
+  }
+
+  return score;
+}
+
+function v230MovementDerivedReference(
+  localSale,
+  cloudMovements
+){
+  const oldSaleId=
+    String(
+      localSale?.id||''
+    );
+
+  const mappedSaleId=
+    String(
+      v205LegacyReplacement(
+        'references',
+        oldSaleId
+      )||''
+    );
+
+  const localMovements=
+    (db.movements||[])
+      .filter(row=>
+        String(
+          row.transaction_type||''
+        ).toUpperCase()==='SALE' &&
+        (
+          String(
+            row.reference_id||''
+          )===oldSaleId ||
+          String(
+            v205LegacyReplacement(
+              'references',
+              row.reference_id
+            )||''
+          )===mappedSaleId
+        )
+      );
+
+  if(!localMovements.length){
+    return null;
+  }
+
+  const cloudById=
+    new Map(
+      (cloudMovements||[])
+        .filter(row=>
+          row?.id &&
+          String(
+            row.transaction_type||''
+          ).toUpperCase()==='SALE'
+        )
+        .map(row=>[
+          String(row.id),
+          row
+        ])
+    );
+
+  const refVotes=
+    new Map();
+
+  const vote=ref=>{
+    if(!isUuidValue(ref))return;
+
+    refVotes.set(
+      ref,
+      Number(
+        refVotes.get(ref)||0
+      )+1
+    );
+  };
+
+  // Strongest evidence: same movement UUID on Cloud.
+  for(const local of localMovements){
+    const cloud=
+      local.id
+        ?cloudById.get(
+            String(local.id)
+          )
+        :null;
+
+    if(cloud?.reference_id){
+      vote(
+        String(
+          cloud.reference_id
+        )
+      );
+    }
+  }
+
+  // Fallback: same ingredient/warehouse/quantity. The shared Cloud
+  // reference across several movement lines identifies the receipt.
+  if(!refVotes.size){
+    for(const local of localMovements){
+      const warehouseId=
+        v205LegacyReplacement(
+          'warehouses',
+          local.warehouse_id
+        );
+
+      const ingredientId=
+        v205LegacyReplacement(
+          'ingredients',
+          local.ingredient_id
+        );
+
+      for(const cloud of cloudMovements||[]){
+        if(
+          String(
+            cloud.transaction_type||''
+          ).toUpperCase()!=='SALE'
+        ){
+          continue;
+        }
+
+        if(
+          String(
+            cloud.warehouse_id||''
+          )!==String(
+            warehouseId||''
+          )
+        ){
+          continue;
+        }
+
+        if(
+          String(
+            cloud.ingredient_id||''
+          )!==String(
+            ingredientId||''
+          )
+        ){
+          continue;
+        }
+
+        if(
+          !v230SameNumber(
+            cloud.quantity,
+            local.quantity,
+            0.000001
+          )
+        ){
+          continue;
+        }
+
+        vote(
+          String(
+            cloud.reference_id||''
+          )
+        );
+      }
+    }
+  }
+
+  const ranked=
+    [...refVotes.entries()]
+      .sort((a,b)=>
+        b[1]-a[1]
+      );
+
+  if(!ranked.length){
+    return null;
+  }
+
+  if(
+    ranked.length>1 &&
+    ranked[0][1]===
+    ranked[1][1]
+  ){
+    return null;
+  }
+
+  return ranked[0][0];
+}
+
+function v230DedupLocalSales(){
+  const saleMap=
+    new Map();
+
+  for(const row of db.sales||[]){
+    const key=
+      String(
+        row.id||''
+      );
+
+    const current=
+      saleMap.get(key);
+
+    if(!current){
+      saleMap.set(
+        key,
+        row
+      );
+
+      continue;
+    }
+
+    const currentPending=
+      current._sync_status==='pending' ||
+      current._local_only===true;
+
+    const rowPending=
+      row._sync_status==='pending' ||
+      row._local_only===true;
+
+    if(
+      currentPending &&
+      !rowPending
+    ){
+      saleMap.set(
+        key,
+        row
+      );
+    }
+  }
+
+  db.sales=[
+    ...saleMap.values()
+  ];
+
+  const itemMap=
+    new Map();
+
+  for(const row of db.saleItems||[]){
+    const key=
+      row.id
+        ?String(row.id)
+        :[
+            row.sale_id,
+            row.product_id,
+            v228NormNumber(
+              row.quantity
+            ),
+            v228NormNumber(
+              row.unit_price
+            )
+          ].join('|');
+
+    const current=
+      itemMap.get(key);
+
+    if(!current){
+      itemMap.set(
+        key,
+        row
+      );
+
+      continue;
+    }
+
+    const currentPending=
+      current._sync_status==='pending' ||
+      current._local_only===true;
+
+    const rowPending=
+      row._sync_status==='pending' ||
+      row._local_only===true;
+
+    if(
+      currentPending &&
+      !rowPending
+    ){
+      itemMap.set(
+        key,
+        row
+      );
+    }
+  }
+
+  db.saleItems=[
+    ...itemMap.values()
+  ];
+}
+
+async function v230RepairOneSalePair(
+  localSale,
+  cloudSales,
+  cloudItems,
+  cloudMovements
+){
+  const oldSaleId=
+    String(
+      localSale.id||''
+    );
+
+  const localItems=
+    v230SaleItemsFor(
+      oldSaleId
+    );
+
+  if(!localItems.length){
+    throw new Error(
+      'Phiếu bán local không có chi tiết món.'
+    );
+  }
+
+  let targetSaleId=
+    v230MovementDerivedReference(
+      localSale,
+      cloudMovements
+    );
+
+  let cloudSale=
+    targetSaleId
+      ?cloudSales.find(row=>
+          String(row.id||'')===
+          String(targetSaleId)
+        )
+      :null;
+
+  // Next preference: permanent legacy map.
+  if(!targetSaleId){
+    const mapped=
+      v205LegacyReplacement(
+        'references',
+        oldSaleId
+      );
+
+    if(
+      isUuidValue(mapped)
+    ){
+      targetSaleId=
+        mapped;
+
+      cloudSale=
+        cloudSales.find(row=>
+          String(row.id||'')===
+          String(mapped)
+        )||null;
+    }
+  }
+
+  // Then find an existing Cloud receipt from business fields.
+  if(!cloudSale){
+    const scored=
+      cloudSales
+        .map(row=>({
+          row,
+          score:
+            v230SaleCandidateScore(
+              localSale,
+              localItems,
+              row,
+              cloudItems
+            )
+        }))
+        .filter(x=>
+          x.score>=100
+        )
+        .sort((a,b)=>
+          b.score-a.score
+        );
+
+    if(
+      scored.length &&
+      (
+        scored.length===1 ||
+        scored[0].score>
+        scored[1].score
+      )
+    ){
+      cloudSale=
+        scored[0].row;
+
+      targetSaleId=
+        String(
+          cloudSale.id
+        );
+    }
+  }
+
+  // Last safe path: create/complete history at deterministic UUID.
+  if(!targetSaleId){
+    targetSaleId=
+      isUuidValue(oldSaleId)
+        ?oldSaleId
+        :await deterministicUuidV198(
+            'reference',
+            oldSaleId
+          );
+  }
+
+  if(!isUuidValue(targetSaleId)){
+    throw new Error(
+      'Không xác định được UUID Cloud an toàn cho phiếu bán.'
+    );
+  }
+
+  const warehouseId=
+    v205LegacyReplacement(
+      'warehouses',
+      localSale.warehouse_id
+    );
+
+  if(!isUuidValue(warehouseId)){
+    throw new Error(
+      'Kho của phiếu bán chưa có UUID Cloud hợp lệ.'
+    );
+  }
+
+  // If header is absent, create HISTORY ONLY. No business RPC.
+  if(!cloudSale){
+    const salePayload={
+      id:
+        targetSaleId,
+      warehouse_id:
+        warehouseId,
+      total_amount:
+        Number(
+          localSale.total_amount||0
+        ),
+      source:
+        localSale.source||
+        'manual',
+      sold_at:
+        localSale.sold_at||
+        localSale.created_at||
+        new Date().toISOString(),
+      note:
+        localSale.note||
+        ''
+    };
+
+    const saved=
+      await promiseWithTimeout(
+        sb.from('sales')
+          .upsert(
+            salePayload,
+            {
+              onConflict:'id'
+            }
+          )
+          .select()
+          .single(),
+        15000,
+        'Hoàn thiện phiếu bán lịch sử'
+      );
+
+    if(saved.error){
+      throw saved.error;
+    }
+
+    cloudSale=
+      saved.data||
+      salePayload;
+
+    cloudSales.push(
+      cloudSale
+    );
+  }
+
+  const normalizedItems=[];
+
+  for(
+    let i=0;
+    i<localItems.length;
+    i++
+  ){
+    const localItem=
+      localItems[i];
+
+    let cloudItem=
+      cloudItems.find(row=>
+        String(
+          row.sale_id||''
+        )===
+        String(
+          targetSaleId
+        ) &&
+        v230ItemEquivalent(
+          localItem,
+          row
+        )
+      );
+
+    if(!cloudItem){
+      const productId=
+        v205LegacyReplacement(
+          'products',
+          localItem.product_id
+        );
+
+      if(!isUuidValue(productId)){
+        throw new Error(
+          'Sản phẩm của chi tiết bán chưa có UUID Cloud hợp lệ.'
+        );
+      }
+
+      const targetItemId=
+        isUuidValue(
+          localItem.id
+        )
+          ?localItem.id
+          :await deterministicUuidV198(
+              'sale_item',
+              localItem.id||
+              `${oldSaleId}|${localItem.product_id}|${localItem.quantity}|${localItem.unit_price}|${i}`
+            );
+
+      const itemPayload={
+        id:
+          targetItemId,
+        sale_id:
+          targetSaleId,
+        product_id:
+          productId,
+        quantity:
+          Number(
+            localItem.quantity||0
+          ),
+        unit_price:
+          Number(
+            localItem.unit_price||0
+          )
+      };
+
+      const saved=
+        await promiseWithTimeout(
+          sb.from('sale_items')
+            .upsert(
+              itemPayload,
+              {
+                onConflict:'id'
+              }
+            )
+            .select()
+            .single(),
+          15000,
+          'Hoàn thiện chi tiết phiếu bán lịch sử'
+        );
+
+      if(saved.error){
+        throw saved.error;
+      }
+
+      cloudItem=
+        saved.data||
+        itemPayload;
+
+      cloudItems.push(
+        cloudItem
+      );
+    }
+
+    normalizedItems.push({
+      local:
+        localItem,
+      cloud:
+        cloudItem
+    });
+  }
+
+  // Verify header and all item IDs before local remap.
+  const verifySale=
+    await promiseWithTimeout(
+      sb.from('sales')
+        .select(
+          'id,warehouse_id,total_amount,sold_at,source'
+        )
+        .eq(
+          'id',
+          targetSaleId
+        )
+        .maybeSingle(),
+      10000,
+      'Xác minh phiếu bán Cloud'
+    );
+
+  if(
+    verifySale.error ||
+    !verifySale.data
+  ){
+    throw (
+      verifySale.error||
+      new Error(
+        'Cloud chưa xác nhận phiếu bán sau repair.'
+      )
+    );
+  }
+
+  const itemIds=
+    normalizedItems
+      .map(x=>
+        String(
+          x.cloud.id||''
+        )
+      )
+      .filter(Boolean);
+
+  if(itemIds.length){
+    const verifyItems=
+      await promiseWithTimeout(
+        sb.from('sale_items')
+          .select(
+            'id,sale_id,product_id,quantity,unit_price'
+          )
+          .in(
+            'id',
+            itemIds
+          ),
+        10000,
+        'Xác minh chi tiết bán Cloud'
+      );
+
+    if(verifyItems.error){
+      throw verifyItems.error;
+    }
+
+    const confirmed=
+      new Set(
+        (verifyItems.data||[])
+          .map(row=>
+            String(row.id)
+          )
+      );
+
+    const missingIds=
+      itemIds.filter(id=>
+        !confirmed.has(id)
+      );
+
+    if(missingIds.length){
+      throw new Error(
+        `Cloud còn thiếu ${missingIds.length} chi tiết bán sau repair.`
+      );
+    }
+  }
+
+  /*
+    Physical local normalization is the missing piece from V229.
+    This prevents canonical sync from resurrecting the old sale/sale_item IDs.
+  */
+  if(
+    oldSaleId!==targetSaleId
+  ){
+    saveLegacyCloudMapV205({
+      references:{
+        [oldSaleId]:
+          targetSaleId
+      }
+    });
+  }
+
+  localSale.id=
+    targetSaleId;
+
+  localSale.warehouse_id=
+    warehouseId;
+
+  delete localSale._local_only;
+  delete localSale._sync_status;
+  delete localSale._sync_error;
+
+  for(const pair of normalizedItems){
+    pair.local.id=
+      pair.cloud.id;
+
+    pair.local.sale_id=
+      targetSaleId;
+
+    pair.local.product_id=
+      pair.cloud.product_id;
+
+    delete pair.local._local_only;
+    delete pair.local._sync_status;
+    delete pair.local._sync_error;
+  }
+
+  for(const movement of db.movements||[]){
+    if(
+      String(
+        movement.transaction_type||''
+      ).toUpperCase()!=='SALE'
+    ){
+      continue;
+    }
+
+    if(
+      String(
+        movement.reference_id||''
+      )===oldSaleId
+    ){
+      movement.reference_id=
+        targetSaleId;
+    }
+  }
+
+  v230DedupLocalSales();
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+  flushCacheSave();
+
+  return {
+    oldSaleId,
+    targetSaleId,
+    items:
+      normalizedItems.length,
+    matchedExisting:
+      !!cloudSales.find(row=>
+        String(row.id||'')===
+        targetSaleId
+      )
+  };
+}
+
+async function v230RepairMissingSalePairs(){
+  if(!navigator.onLine){
+    throw new Error(
+      'Thiết bị đang offline.'
+    );
+  }
+
+  if(!v228CloudProof?.at){
+    await loadCloudFastV202(
+      true
+    );
+  }
+
+  const missing=
+    v229MissingRows();
+
+  const missingTables=
+    Object.entries(missing)
+      .filter(([,rows])=>
+        Array.isArray(rows)&&
+        rows.length
+      )
+      .map(([table])=>
+        table
+      );
+
+  const safeOnly=
+    missingTables.every(table=>
+      table==='sales' ||
+      table==='sale_items'
+    );
+
+  if(!safeOnly){
+    return {
+      repaired:0,
+      remaining:
+        Number(
+          v228Coverage().localOnly||0
+        ),
+      skipped:true,
+      reason:
+        'not_sale_pair_only',
+      missingTables
+    };
+  }
+
+  const sales=
+    missing.sales||[];
+
+  if(!sales.length){
+    return {
+      repaired:0,
+      remaining:
+        Number(
+          v228Coverage().localOnly||0
+        ),
+      skipped:true,
+      reason:
+        'no_missing_sale'
+    };
+  }
+
+  const [
+    cloudSales,
+    cloudItems,
+    cloudMovements
+  ]=
+    await Promise.all([
+      fetchAllCloudRows(
+        'sales',
+        {
+          orderColumn:'sold_at',
+          ascending:false
+        }
+      ),
+      fetchAllCloudRows(
+        'sale_items'
+      ),
+      fetchAllCloudRows(
+        'stock_transactions',
+        {
+          orderColumn:'created_at',
+          ascending:false
+        }
+      )
+    ]);
+
+  const results=[];
+
+  for(const sale of sales){
+    results.push(
+      await v230RepairOneSalePair(
+        sale,
+        cloudSales,
+        cloudItems,
+        cloudMovements
+      )
+    );
+  }
+
+  // Fresh proof after physical normalization.
+  await loadCloudFastV202(
+    true
+  );
+
+  const coverage=
+    v228Coverage();
+
+  if(
+    Number(
+      coverage.localOnly||0
+    )===0
+  ){
+    v228ClearProvenStaleFlags();
+    cacheSave();
+    flushCacheSave();
+  }
+
+  return {
+    repaired:
+      results.length,
+    results,
+    remaining:
+      Number(
+        coverage.localOnly||0
+      ),
+    skipped:false
+  };
+}
 
 function v229MissingRows(){
   if(!v228CloudProof?.at){
@@ -20756,6 +21806,7 @@ async function syncNow(){
       v228Coverage();
 
     let historyRepair=null;
+    let salePairRepair=null;
 
     if(
       v191PendingCount()===0 &&
@@ -20764,16 +21815,50 @@ async function syncNow(){
         coverage.localOnly||0
       )>0
     ){
-      updateSyncProgress(
-        58,
-        'Đang đối chiếu lịch sử',
-        v228CoverageBreakdownText(
-          coverage
-        )
-      );
+      const missing=
+        v229MissingRows();
 
-      historyRepair=
-        await v229RepairMissingHistory();
+      const tables=
+        Object.entries(missing)
+          .filter(([,rows])=>
+            Array.isArray(rows)&&
+            rows.length
+          )
+          .map(([table])=>
+            table
+          );
+
+      const salePairOnly=
+        tables.length>0 &&
+        tables.every(table=>
+          table==='sales'||
+          table==='sale_items'
+        );
+
+      if(salePairOnly){
+        updateSyncProgress(
+          58,
+          'Chuẩn hóa phiếu bán',
+          v228CoverageBreakdownText(
+            coverage
+          )
+        );
+
+        salePairRepair=
+          await v230RepairMissingSalePairs();
+
+      }else{
+        updateSyncProgress(
+          58,
+          'Đang đối chiếu lịch sử',
+          v228CoverageBreakdownText(
+            coverage
+          )
+        );
+
+        historyRepair=
+          await v229RepairMissingHistory();
+      }
 
       coverage=
         v228Coverage();
@@ -20814,7 +21899,6 @@ async function syncNow(){
       'Đang xác nhận lại dữ liệu trên Supabase'
     );
 
-    // A canonical merge can update local state, so compare once more.
     await loadCloudFastV202(
       true
     );
@@ -20849,6 +21933,11 @@ async function syncNow(){
         success
           ?(
             `Cloud xác nhận ${coverage.covered}/${coverage.total} record`+
+            (
+              salePairRepair?.repaired
+                ?` • chuẩn hóa ${salePairRepair.repaired} phiếu bán`
+                :''
+            )+
             (
               historyRepair?.repaired
                 ?` • phục hồi ${historyRepair.repaired} record lịch sử`
@@ -38645,7 +39734,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V229',
+    app_version:'V230',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -38954,7 +40043,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:229,
+    version:230,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -39136,13 +40225,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:229,
+    version:230,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V229',storage:'supabase-storage',
+      schema:185,app_version:'V230',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -40348,7 +41437,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:229,
+    version:230,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -42913,7 +44002,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V229',
+      app_version:'V230',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -42928,7 +44017,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:229,
+      version:230,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -43205,7 +44294,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v229-full-backup-'+
+    'lat-yen-v230-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
