@@ -11419,7 +11419,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V270</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V271</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -14642,28 +14642,18 @@ function cachePayload(){
 }
 
 function cacheSaveNow(){
-  if(cacheWriteInProgress)return false;
-
-  cacheWriteInProgress=true;
+  /*
+    V271 CLOUD-ONLY:
+    Do not persist db business rows locally. Remove any historical mirror.
+    Auth session is owned by Supabase SDK and is stored under different keys.
+  */
   cacheSaveDirty=false;
 
   try{
-    localStorage.setItem(CACHE_KEY,cachePayload());
-    return true;
-  }catch(e){
-    console.warn('Cache write failed, optimizing storage:',e);
+    localStorage.removeItem(CACHE_KEY);
+  }catch(e){}
 
-    try{
-      if(typeof optimizeLocalStorage==='function')optimizeLocalStorage();
-      localStorage.setItem(CACHE_KEY,cachePayload());
-      return true;
-    }catch(e2){
-      console.error('Cache retry failed:',e2);
-      return false;
-    }
-  }finally{
-    cacheWriteInProgress=false;
-  }
+  return true;
 }
 
 /* ===== V208 SYNC ON EVERY DATA ACTION ===== */
@@ -15905,36 +15895,12 @@ function flushCacheSave(){
 }
 
 function cacheLoad(){
-  try{
-    const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
-    if(!c?.db)return false;
-
-    const empty={
-      warehouses:[],suppliers:[],ingredients:[],inventory:[],products:[],
-      recipeItems:[],preparedItems:[],sales:[],saleItems:[],movements:[]
-    };
-
-    db={...empty,...c.db};
-
-    for(const key of Object.keys(empty)){
-      if(!Array.isArray(db[key]))db[key]=[];
-    }
-
-    currentWarehouseId=c.currentWarehouseId||currentWarehouseId;
-    invalidateDataIndexes();
-    return true;
-
-  }catch(e){
-    console.warn('Cache load error:',e);
-    return false;
-  }
-  try{
-    if(typeof normalizeLegacyCacheV205==='function'){
-      normalizeLegacyCacheV205();
-    }
-  }catch(e){
-    console.warn('V205 cache normalize',e);
-  }
+  /*
+    V271 CLOUD-ONLY:
+    Business data is never restored from localStorage/IndexedDB.
+    Supabase is the only authoritative read source.
+  */
+  return false;
 }
 
 function warehouseIngredientIds(warehouseId=currentWarehouseId){
@@ -18311,390 +18277,159 @@ function v205LegacyGhostCount(data=db){
 }
 
 async function loadCloud(){
- v208BeginRemoteApply();
+  v208BeginRemoteApply();
 
- try{
-
- if(syncing){
-  cloudReloadRequested=true;
-  return;
- }
- // V205: remap/tombstone already-migrated legacy IDs before Cloud pull.
- normalizeLegacyCacheV205();
-
- const localBefore=v205FilterSupersededLegacyRows(db);
-
- // V204: create local recovery point before any Cloud pull.
- v218EmergencySnapshotMaybe('before_loadCloud');
-
- const pendingQueue=getPendingSync();
- const pendingIds=new Set(pendingQueue.filter(x=>x.kind==='save_ingredient').map(x=>x.ingredient_id));
- const pendingRecipeIds=new Set(pendingQueue.filter(x=>x.kind==='save_recipe').map(x=>x.product_id));
- syncing=true;setCloudStatus('Đang đồng bộ…');
- try{
-  // Thử hoàn tất các lệnh xóa phiếu nhập còn treo từ lần trước.
-  try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
-
-  const [warehouses,suppliers,ingredients,inventory,products,recipeItems,preparedItems,sales,saleItems,movementsRaw]=await Promise.all([
-   fetchAllCloudRows('warehouses',{orderColumn:'created_at',ascending:true}),
-   fetchAllCloudRows('suppliers',{orderColumn:'created_at',ascending:true}),
-   fetchAllCloudRows('ingredients',{orderColumn:'created_at',ascending:true}),
-   fetchAllCloudRows('inventory'),
-   fetchAllCloudRows('products',{orderColumn:'created_at',ascending:true}),
-   fetchAllCloudRows('recipe_items'),
-   fetchAllCloudRows('prepared_ingredient_items'),
-   fetchAllCloudRows('sales',{orderColumn:'sold_at',ascending:false}),
-   fetchAllCloudRows('sale_items',{orderColumn:'created_at',ascending:false}),
-   fetchAllCloudRows('stock_transactions',{orderColumn:'created_at',ascending:false})
-  ]);
-  const movements=filterDeletedExportMovements(
-    filterDeletedStocktakeMovements(
-      filterDeletedImportMovements(movementsRaw)
-    )
-  );
-
-  // V228: proof from exact Supabase response, before local rows are overlaid.
-  v228CaptureCloudProof({
-    warehouses,
-    suppliers,
-    ingredients,
-    inventory,
-    products,
-    recipe_items:recipeItems,
-    prepared_ingredient_items:preparedItems,
-    sales,
-    sale_items:saleItems,
-    stock_transactions:movementsRaw
-  });
-
-  /*
-    V235 mid-flight yield:
-    a background pull may have started while idle, then the user begins
-    typing before the network response arrives. Keep the fetched proof,
-    but do not mutate the live db.
-  */
-  if(
-    v235DeferCloudApply &&
-    !v235CanApplyRemote()
-  ){
-    v235CloudApplyDeferred=true;
-    v235NeedFullReconcile=true;
-    cloudOnline=true;
-
-    setCloudStatus(
-      'Cloud đã nhận • chờ áp dụng khi rảnh',
-      'online'
-    );
-
+  if(syncing){
     cloudReloadRequested=true;
-
-    return {
-      deferred:true
-    };
+    v208EndRemoteApply();
+    return;
   }
-  /*
-    V236: compare migrated Excel-origin UUID rows BEFORE Cloud merge.
-    If V235 previously kept an edit local-only, reconstruct its pending op so
-    the user's change is pushed instead of silently accepting the older Cloud row.
-  */
-  v236RecoverMigratedExcelEdits(
-    localBefore,
-    {
+
+  syncing=true;
+  setCloudStatus('Đang tải Cloud…');
+
+  try{
+    const [
+      warehouses,
+      suppliers,
       ingredients,
+      inventory,
       products,
       recipeItems,
-      preparedItems
-    }
-  );
+      preparedItems,
+      sales,
+      saleItems,
+      movementsRaw
+    ]=await Promise.all([
+      fetchAllCloudRows(
+        'warehouses',
+        {orderColumn:'created_at',ascending:true}
+      ),
+      fetchAllCloudRows(
+        'suppliers',
+        {orderColumn:'created_at',ascending:true}
+      ),
+      fetchAllCloudRows(
+        'ingredients',
+        {orderColumn:'created_at',ascending:true}
+      ),
+      fetchAllCloudRows('inventory'),
+      fetchAllCloudRows(
+        'products',
+        {orderColumn:'created_at',ascending:true}
+      ),
+      fetchAllCloudRows('recipe_items'),
+      fetchAllCloudRows(
+        'prepared_ingredient_items'
+      ),
+      fetchAllCloudRows(
+        'sales',
+        {orderColumn:'sold_at',ascending:false}
+      ),
+      fetchAllCloudRows(
+        'sale_items',
+        {orderColumn:'created_at',ascending:false}
+      ),
+      fetchAllCloudRows(
+        'stock_transactions',
+        {orderColumn:'created_at',ascending:false}
+      )
+    ]);
 
-  // Không cho các kho đã xóa local xuất hiện trở lại nếu Cloud chưa xóa được.
-  const deletedWarehouseIds=getDeletedWarehouseIds();
-  for(let i=warehouses.length-1;i>=0;i--){
-    if(deletedWarehouseIds.has(warehouses[i].id))warehouses.splice(i,1);
-  }
-  for(let i=inventory.length-1;i>=0;i--){
-    if(deletedWarehouseIds.has(inventory[i].warehouse_id))inventory.splice(i,1);
-  }
-  for(let i=movements.length-1;i>=0;i--){
-    if(deletedWarehouseIds.has(movements[i].warehouse_id))movements.splice(i,1);
-  }
-
-  /*
-    V242: a warehouse created/edited local-first must survive a Cloud pull
-    until Supabase confirms it. Otherwise loadCloud could make the new
-    warehouse disappear immediately after creation.
-  */
-  const pendingWarehouses=
-    (localBefore.warehouses||[])
-      .filter(x=>
-        (
-          x?._sync_status==='pending' ||
-          x?._local_only===true
-        ) &&
-        !deletedWarehouseIds.has(
-          x.id
+    const movements=
+      filterDeletedExportMovements(
+        filterDeletedStocktakeMovements(
+          filterDeletedImportMovements(
+            movementsRaw
+          )
         )
       );
 
-  for(const localWarehouse of pendingWarehouses){
-    const idx=
-      warehouses.findIndex(x=>
-        x.id===localWarehouse.id
-      );
+    /*
+      V271: direct Cloud replacement.
+      There is NO legacy local snapshot merge or pending overlay,
+      NO Excel resurrection, NO cache fallback.
+    */
+    db={
+      warehouses:Array.isArray(warehouses)?warehouses:[],
+      suppliers:Array.isArray(suppliers)?suppliers:[],
+      ingredients:Array.isArray(ingredients)?ingredients:[],
+      inventory:Array.isArray(inventory)?inventory:[],
+      products:Array.isArray(products)?products:[],
+      recipeItems:Array.isArray(recipeItems)?recipeItems:[],
+      preparedItems:Array.isArray(preparedItems)?preparedItems:[],
+      sales:Array.isArray(sales)?sales:[],
+      saleItems:Array.isArray(saleItems)?saleItems:[],
+      movements:Array.isArray(movements)?movements:[]
+    };
 
-    if(idx>=0){
-      warehouses[idx]={
-        ...warehouses[idx],
-        ...localWarehouse
-      };
-    }else{
-      warehouses.push(
-        localWarehouse
-      );
-    }
-  }
+    v228CaptureCloudProof({
+      warehouses:db.warehouses,
+      suppliers:db.suppliers,
+      ingredients:db.ingredients,
+      inventory:db.inventory,
+      products:db.products,
+      recipe_items:db.recipeItems,
+      prepared_ingredient_items:db.preparedItems,
+      sales:db.sales,
+      sale_items:db.saleItems,
+      stock_transactions:
+        Array.isArray(movementsRaw)
+          ?movementsRaw
+          :[]
+    });
 
-  // Cloud is authoritative for synced records, but never discard local records waiting for sync.
-  const pendingIngredients=(localBefore.ingredients||[]).filter(x=>pendingIds.has(x.id)||x._sync_status==='pending');
-  for(const li of pendingIngredients){
-    const idx=ingredients.findIndex(x=>x.id===li.id);
-    if(idx>=0)ingredients[idx]={...ingredients[idx],...li};
-    else ingredients.push(li);
-  }
+    /*
+      Product warehouse local map is only a UI compatibility mirror
+      generated FROM Cloud rows. It is never used as an authoritative source.
+    */
+    try{
+      v266RepairProductWarehouseOwnership();
+    }catch(e){}
 
-  const pendingInventory=(localBefore.inventory||[]).filter(x=>
-    pendingIds.has(x.ingredient_id) ||
-    x._local_only ||
-    x._sync_status==='pending'
-  );
-  for(const li of pendingInventory){
-    const idx=inventory.findIndex(x=>x.warehouse_id===li.warehouse_id&&x.ingredient_id===li.ingredient_id);
-    if(idx>=0)inventory[idx]={...inventory[idx],...li};
-    else inventory.push(li);
-  }
+    currentWarehouseId=
+      db.warehouses[0]?.id||'';
 
-  // Giữ nhà cung cấp tạo local khi Cloud chưa đồng bộ được.
-  const pendingSuppliers=(localBefore.suppliers||[]).filter(x=>x._local_only||x._sync_status==='pending');
-  for(const ls of pendingSuppliers){
-    const idx=suppliers.findIndex(x=>x.id===ls.id || (
-      String(x.name||'').trim().toLowerCase()===String(ls.name||'').trim().toLowerCase()
-    ));
-    if(idx>=0)suppliers[idx]={...suppliers[idx],...ls};
-    else suppliers.push(ls);
-  }
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
 
-  // Giữ sản phẩm/công thức local hoặc đang chờ Cloud.
-  const localRecipeProductIds=new Set(
-    (localBefore.products||[])
-      .filter(p=>
-        pendingRecipeIds.has(p.id) ||
-        p._local_only===true ||
-        p._recipe_local_only===true ||
-        p._sync_status==='pending'
-      )
-      .map(p=>p.id)
-  );
-
-  for(const lp of localBefore.products||[]){
-    if(!localRecipeProductIds.has(lp.id))continue;
-
-    const idx=products.findIndex(x=>x.id===lp.id);
-    if(idx>=0)products[idx]={...products[idx],...lp};
-    else products.push(lp);
-  }
-
-  if(localRecipeProductIds.size){
-    for(let i=recipeItems.length-1;i>=0;i--){
-      if(localRecipeProductIds.has(recipeItems[i].product_id)){
-        recipeItems.splice(i,1);
-      }
-    }
-
-    for(const row of localBefore.recipeItems||[]){
-      if(localRecipeProductIds.has(row.product_id)){
-        recipeItems.push(row);
-      }
-    }
-  }
-
-  // Giữ phiếu bán hàng local/pending để Cloud reload không làm mất
-  // phiếu vừa tạo hoặc phiếu có product local/Excel.
-  const pendingSales=(localBefore.sales||[]).filter(x=>
-    x._local_only===true ||
-    x._sync_status==='pending'
-  );
-
-  for(const ls of pendingSales){
-    const idx=sales.findIndex(x=>x.id===ls.id);
-
-    if(idx>=0)sales[idx]={...sales[idx],...ls};
-    else sales.push(ls);
-  }
-
-  const pendingSaleIds=new Set(
-    pendingSales.map(x=>x.id)
-  );
-
-  const pendingSaleItems=(localBefore.saleItems||[]).filter(x=>
-    x._local_only===true ||
-    x._sync_status==='pending' ||
-    pendingSaleIds.has(x.sale_id)
-  );
-
-  for(const li of pendingSaleItems){
-    const idx=saleItems.findIndex(x=>x.id===li.id);
-
-    if(idx>=0)saleItems[idx]={...saleItems[idx],...li};
-    else saleItems.push(li);
-  }
-
-  const cloudPrepared=preparedItems||[];
-  const localPrepared=(localBefore.preparedItems||[]).filter(x=>pendingIds.has(x.prepared_ingredient_id)||x._local_only);
-  for(const pid of pendingIds){
-    for(let i=cloudPrepared.length-1;i>=0;i--){
-      if(cloudPrepared[i].prepared_ingredient_id===pid)cloudPrepared.splice(i,1);
-    }
-  }
-  cloudPrepared.push(...localPrepared);
-
-  const cloudCandidate={
-   warehouses,
-   suppliers,
-   ingredients,
-   inventory,
-   products,
-   recipeItems,
-   preparedItems:cloudPrepared,
-   sales,
-   saleItems,
-   movements
-  };
-
-  // V204: Cloud pull is a MERGE, never a blind replacement.
-  db=v204SafeMergeDb(
-   localBefore,
-   cloudCandidate
-  );
-
-  // Giữ mọi biến động kho local/pending chưa có trên Cloud.
-  // Điều này đặc biệt quan trọng với phiếu nhập vừa tạo.
-  const pendingMovements=(localBefore.movements||[]).filter(x=>{
-    if(
-      x.transaction_type==='ADJUSTMENT' &&
-      String(x.note||'').includes('Phiếu kiểm kê:') &&
-      isStocktakeReceiptDeleted(stocktakeReceiptGroupKey(x))
-    )return false;
-
-    if(
-      String(x.transaction_type||'').toUpperCase()==='EXPORT' &&
-      isExportReceiptDeleted(x.reference_id)
-    )return false;
-
-    return (
-      x._local_only===true ||
-      x._sync_status==='pending' ||
-      x._stocktake_audit_only===true
+    cloudOnline=true;
+    setCloudStatus(
+      'Cloud đã tải',
+      'online'
     );
-  });
-  for(const row of pendingMovements){
-    const exists=db.movements.some(x=>x.id===row.id);
-    if(!exists)db.movements.push(row);
-  }
 
-  // Legacy Excel IDs already migrated to UUID must never be resurrected.
-  preserveExcelImportedLocal(localBefore,db);
-  v205RemapLegacyRowsInPlace(db);
-  v205FilterSupersededLegacyRows(db);
-  v228ClearProvenStaleFlags(db);
+    renderAll();
 
-  /*
-    V255: local-first warehouse master rows missing from Cloud are self-healed.
-  */
-  try{
-    const warehouseCoverage=v228Coverage();
+    return {
+      ok:true,
+      cloudOnly:true
+    };
 
-    if(
-      warehouseCoverage.proofAvailable &&
-      Number(warehouseCoverage.missingByTable?.warehouses||0)>0
-    ){
-      await v255RepairMissingWarehouses();
-    }
   }catch(e){
-    console.warn('V255 warehouse self-heal after Cloud pull',e);
-  }
-
-  /*
-    V258:
-    authoritative pull must also converge recipe coverage even when pending=0.
-  */
-  try{
-    const recipeCoverage=
-      v228Coverage();
-
-    if(
-      recipeCoverage.proofAvailable &&
-      Number(
-        recipeCoverage.missingByTable?.recipe_items||0
-      )>0
-    ){
-      await v258HealCoverageIfNeeded();
-    }
-  }catch(e){
-    console.warn(
-      'V258 recipe coverage self-heal after Cloud pull',
+    console.error(
+      'V271 Cloud-only load failed',
       e
     );
+
+    v271CloudOnlyError(
+      'Không tải được dữ liệu Supabase. Phần mềm không sử dụng dữ liệu local cũ.'
+    );
+
+    return {
+      ok:false,
+      error:e
+    };
+
+  }finally{
+    syncing=false;
+    v208EndRemoteApply();
+
+    if(cloudReloadRequested){
+      cloudReloadRequested=false;
+      v233ScheduleCloudReload(700);
+    }
   }
-
-  /*
-    V253: 100% Cloud coverage must converge local pending metadata too.
-    Matching rows are ACKed; real ingredient differences get a rebuilt queue
-    and are pushed again instead of remaining permanently pending.
-  */
-  try{
-    await v253AutoHealAfterCloudPull();
-  }catch(e){
-    console.warn('V253 pending convergence',e);
-  }
-
-  const unsafeDrops=
-   v204DetectUnsafeDrop(
-    localBefore,
-    db
-   );
-
-  if(unsafeDrops.length){
-   console.error(
-    'V204 blocked unsafe Cloud pull',
-    unsafeDrops
-   );
-
-   db=localBefore;
-
-   invalidateDataIndexes();
-   invalidateDerivedCaches();
-   cacheSave();
-
-   throw new Error(
-    'Đã chặn Cloud pull vì phát hiện dữ liệu local giảm bất thường. Dữ liệu local đã được giữ nguyên.'
-   );
-  }
-
-  ensureProductWarehouseOwnership(db.products);
-  if(!currentWarehouseId||!db.warehouses.some(w=>w.id===currentWarehouseId))currentWarehouseId=db.warehouses[0]?.id||'';
-  localStorage.setItem('kho_v3_warehouse',currentWarehouseId);cleanupInvalidExcelSyncQueue();cacheSave();cloudOnline=true;setCloudStatus('Cloud đã đồng bộ','online');v235RequestBackgroundRender();
- }catch(e){console.error(e);cloudOnline=false;setCloudStatus('Offline • dùng cache','offline');if(v235CanApplyRemote()){cacheLoad();v235RequestBackgroundRender();}else{v235NeedFullReconcile=true;v235ScheduleIdleReconcile();}toastMsg('Không kết nối được Supabase. Đang dùng dữ liệu cache.');v226NotifySyncError(e?.message||'Không kết nối được Supabase.');}
- finally{
-  syncing=false;
-
-  if(cloudReloadRequested){
-    cloudReloadRequested=false;
-    v233ScheduleCloudReload(700);
-  }
- }
- }finally{
-  v208EndRemoteApply();
- }
 }
 
 async function syncPendingOperations(){
@@ -44322,7 +44057,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V270',
+    app_version:'V271',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -44972,7 +44707,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V270',storage:'supabase-storage',
+      schema:185,app_version:'V271',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -49162,7 +48897,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V270',
+      app_version:'V271',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53717,7 +53452,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V270',
+      app_version:'V271',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53768,18 +53503,20 @@ function renderSettings(){
         </div>
       </div>
 
-      <button class="secondary sm" onclick="v260LogoutAndWipe()">
-        Đăng xuất
-      </button>
+      <button
+        class="secondary sm"
+        onclick="v260LogoutAndWipe()"
+      >Đăng xuất</button>
     </div>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
         <div>
-          <h2 style="margin:0 0 6px">Đồng bộ Cloud</h2>
+          <h2 style="margin:0 0 6px">Supabase Cloud</h2>
+
           <div class="muted">
-            Cloud là nguồn dữ liệu chính. Realtime nhận thay đổi giữa các thiết bị;
-            Smart Sync chỉ dùng để bắt lại khi WebSocket/mạng bị gián đoạn.
+            <b>Cloud là nguồn dữ liệu nghiệp vụ duy nhất.</b>
+            Dữ liệu local từ các phiên bản cũ không được đọc hoặc trộn vào phần mềm.
           </div>
         </div>
 
@@ -53796,13 +53533,13 @@ function renderSettings(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
         <button
           class="primary"
-          onclick="autoSyncNow({force:true,reason:'manual',silent:false})"
-        >Đồng bộ ngay</button>
+          onclick="loadCloud()"
+        >Tải lại từ Cloud</button>
 
         <button
           class="secondary"
           onclick="v269ReconnectRealtime()"
-        >Kết nối lại Cloud</button>
+        >Kết nối lại Realtime</button>
       </div>
 
       ${
@@ -53815,23 +53552,43 @@ function renderSettings(){
     <div class="section-gap"></div>
 
     <div class="card">
+      <h2>Dữ liệu trên thiết bị</h2>
+
+      <p class="muted">
+        V271 không lưu database nghiệp vụ vào localStorage và không khôi phục dữ liệu
+        nghiệp vụ từ IndexedDB. Trình duyệt/PWA vẫn có thể dùng bộ nhớ kỹ thuật cho
+        Service Worker, file giao diện và phiên đăng nhập Supabase; các dữ liệu này
+        không được dùng để tạo Kho, Nguyên liệu, Công thức, Nhập/Xuất, Kiểm kê hay Bán hàng.
+      </p>
+
+      <button
+        class="secondary sm"
+        onclick="v271PurgeLegacyBusinessLocal().then(()=>loadCloud())"
+      >Xóa dữ liệu local cũ & tải lại Cloud</button>
+    </div>
+
+    <div class="section-gap"></div>
+
+    <div class="card">
       <h2>Dữ liệu & an toàn</h2>
 
       <div class="grid2">
         <div>
           <h3>Backup ngoài Cloud</h3>
           <p class="muted">
-            File backup chỉ là bản dự phòng thủ công.
+            Chỉ dùng khi cần một bản sao thủ công bên ngoài Supabase.
           </p>
 
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="secondary sm" onclick="exportBackup()">
-              Xuất file backup
-            </button>
+            <button
+              class="secondary sm"
+              onclick="exportBackup()"
+            >Xuất file backup</button>
 
-            <button class="secondary sm" onclick="selectBackupImport()">
-              Khôi phục từ file
-            </button>
+            <button
+              class="secondary sm"
+              onclick="selectBackupImport()"
+            >Khôi phục từ file</button>
           </div>
 
           <input
@@ -53846,39 +53603,14 @@ function renderSettings(){
         <div>
           <h3>Làm mới Cloud</h3>
           <p class="muted">
-            Xóa toàn bộ dữ liệu nghiệp vụ Cloud; tài khoản admin vẫn giữ.
+            Xóa toàn bộ dữ liệu nghiệp vụ Supabase; tài khoản admin vẫn giữ.
           </p>
 
-          <button class="danger sm" onclick="v264ResetCloudClean()">
-            Xóa sạch dữ liệu Cloud
-          </button>
+          <button
+            class="danger sm"
+            onclick="v264ResetCloudClean()"
+          >Xóa sạch dữ liệu Cloud</button>
         </div>
-      </div>
-    </div>
-
-    <div class="section-gap"></div>
-
-    <div class="card">
-      <h2>Cache thiết bị</h2>
-
-      <p class="muted">
-        Đây không phải database chính. App giữ một bản cache nhỏ trên thiết bị
-        để mở nhanh, giữ phiên đăng nhập và không mất thao tác khi mạng chập chờn.
-        Dữ liệu nghiệp vụ chính nằm trên Supabase Cloud.
-      </p>
-
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <span class="badge">
-          Cache hiện tại: ${storageHuman(storageBytes())}
-        </span>
-
-        <button class="secondary sm" onclick="manualOptimizeStorage()">
-          Tối ưu cache
-        </button>
-
-        <button class="secondary sm" onclick="v270ClearDeviceCache()">
-          Xóa cache & tải lại Cloud
-        </button>
       </div>
     </div>
 
@@ -53888,23 +53620,39 @@ function renderSettings(){
       <div class="brand-settings-head">
         <div>
           <h2>Nhận diện phần mềm</h2>
-          <div class="muted">Tên và logo hiển thị của ứng dụng.</div>
+          <div class="muted">
+            Tên và logo giao diện; không phải dữ liệu nghiệp vụ.
+          </div>
         </div>
 
-        ${brand.logo?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`:''}
+        ${
+          brand.logo
+            ?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`
+            :''
+        }
       </div>
 
       <div class="brand-settings-grid">
         <div>
           <label>Tên phần mềm</label>
+
           <div class="brand-name-actions">
-            <input id="brandNameInput" maxlength="80" value="${esc(brand.name)}">
-            <button class="primary" onclick="saveAppName()">Lưu tên</button>
+            <input
+              id="brandNameInput"
+              maxlength="80"
+              value="${esc(brand.name)}"
+            >
+
+            <button
+              class="primary"
+              onclick="saveAppName()"
+            >Lưu tên</button>
           </div>
         </div>
 
         <div>
           <label>Logo phần mềm</label>
+
           <input
             id="brandLogoInput"
             type="file"
@@ -53914,11 +53662,18 @@ function renderSettings(){
           >
 
           <div class="brand-logo-actions">
-            <button class="secondary" onclick="selectAppLogo()">
+            <button
+              class="secondary"
+              onclick="selectAppLogo()"
+            >
               ${brand.logo?'Thay logo':'Thêm logo'}
             </button>
 
-            ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`:''}
+            ${
+              brand.logo
+                ?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`
+                :''
+            }
           </div>
         </div>
       </div>
@@ -53929,8 +53684,8 @@ function renderSettings(){
     <div class="card">
       <h2>Thiết bị khác</h2>
       <p class="muted">
-        Không dùng QR/mã ghép. Chỉ cần đăng nhập cùng tài khoản
-        <b>admin@latyen.vn</b>; dữ liệu sẽ tải từ Cloud.
+        Chỉ cần đăng nhập cùng tài khoản <b>admin@latyen.vn</b>.
+        Mỗi thiết bị tải dữ liệu trực tiếp từ Supabase Cloud.
       </p>
     </div>
   `;
@@ -54830,7 +54585,7 @@ function v262StartSmartSync(){
 }
 
 
-/* ===== V270 CLOUD TRANSACTION CORE ===== */
+/* ===== V271 CLOUD-ONLY AUTHORITATIVE BOOT ===== */
 const V269_SYNC_INTERVAL_MS=10000;
 const V269_PULL_INTERVAL_MS=20000;
 const V269_ACTION_DEBOUNCE_MS=250;
@@ -55578,6 +55333,110 @@ async function v263ResetOrganizationData(){
 }
 
 
+
+/* ===== V271 CLOUD-ONLY AUTHORITATIVE BOOT ===== */
+const V271_CLOUD_ONLY_MARKER='lat_yen_cloud_only_v271';
+
+function v271EmptyDb(){
+  return {
+    warehouses:[],
+    suppliers:[],
+    ingredients:[],
+    inventory:[],
+    products:[],
+    recipeItems:[],
+    preparedItems:[],
+    sales:[],
+    saleItems:[],
+    movements:[]
+  };
+}
+
+async function v271PurgeLegacyBusinessLocal(){
+  /*
+    Purge every startup. This is intentional:
+    no business row or old pending queue is allowed to survive a reload
+    and re-enter the live application from previous versions.
+    Supabase auth keys (sb-...-auth-token) are not touched.
+  */
+  const remove=[];
+
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i)||'';
+
+    if(
+      key===CACHE_KEY ||
+      key===V2_KEY ||
+      key===PENDING_SYNC_KEY ||
+      key.startsWith('lat_yen_') ||
+      key.startsWith('kho_v3_') ||
+      key.startsWith('kho_do_uong_') ||
+      key.startsWith('__latyen_')
+    ){
+      /*
+        V271 marker is re-created below. Supabase auth is not under
+        these prefixes in this app.
+      */
+      remove.push(key);
+    }
+  }
+
+  for(const key of remove){
+    try{
+      localStorage.removeItem(key);
+    }catch(e){}
+  }
+
+  try{
+    sessionStorage.clear();
+  }catch(e){}
+
+  /*
+    Delete old application IndexedDB stores if the browser permits it.
+    Supabase Auth uses localStorage, not these legacy app databases.
+  */
+  try{
+    await v257DeleteIndexedDbData?.();
+  }catch(e){}
+
+  try{
+    localStorage.setItem(
+      V271_CLOUD_ONLY_MARKER,
+      new Date().toISOString()
+    );
+  }catch(e){}
+
+  db=v271EmptyDb();
+  currentWarehouseId='';
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+}
+
+function v271CloudOnlyError(message){
+  db=v271EmptyDb();
+  currentWarehouseId='';
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+
+  try{
+    renderAll();
+  }catch(e){}
+
+  cloudOnline=false;
+
+  setCloudStatus(
+    'Chưa tải được Cloud',
+    'offline'
+  );
+
+  toastMsg(
+    message||
+    'Không tải được dữ liệu Supabase. Dữ liệu local cũ sẽ không được hiển thị.'
+  );
+}
+
 /* ===== V270 CLOUD TRANSACTION CORE ===== */
 function v270PendingBreakdown(){
   const pending=x=>(
@@ -55757,18 +55616,22 @@ async function init(){
     return;
   }
 
+  /*
+    V271: remove every legacy local business row/queue before the app
+    is allowed to initialize its business state.
+  */
+  await v271PurgeLegacyBusinessLocal();
+
   try{
     await v261EnsureOrganization();
-  setupRealtime(); // V267: subscribe with organization filter
   }catch(e){
     v260ShowAuthGate();
-    v260AuthStatus(e?.message||String(e),true);
+    v260AuthStatus(
+      e?.message||String(e),
+      true
+    );
     return;
   }
-
-  v262StartSmartSync();
-  localStorage.setItem(V264_CLEAN_MODE_KEY,'1');
-  localStorage.setItem(V263_MODE_KEY,'1');
 
   normalizeAllTableHeaders(document);
   installPageStickyTableDock();
@@ -55776,39 +55639,57 @@ async function init(){
   installStickyTableHeaders();
   installSerialNumbering();
   applyAppBrand();
-  maybeOptimizeStorage();navInit();restoreNavGroupStateV238();installSaleHandler();
+  navInit();
+  restoreNavGroupStateV238();
+  installSaleHandler();
 
-  window.addEventListener('beforeunload',flushCacheSave);
-  document.addEventListener('visibilitychange',()=>{
-    if(document.hidden){
-      flushCacheSave();
-      v218ScheduleMemoryTrim();
-    }else{
-      flushDeferredRenders();
-
-      if(cloudReloadRequested && navigator.onLine){
-        cloudReloadRequested=false;
-        debouncedCloudReload();
-      }
-
-      schedulePageStickyDock();
+  window.addEventListener(
+    'beforeunload',
+    ()=>{
+      /*
+        V271 intentionally does not flush business db to local storage.
+      */
     }
-  });if(cacheLoad()){cleanupInvalidExcelSyncQueue();renderAll();setCloudStatus('Cache đã tải');}window.addEventListener('online',async()=>{
-  if(v208ActionSyncQueued){
-    v209FollowupCount=0;
-    setTimeout(
-      ()=>v208FlushActionSync(),
-      100
-    );
+  );
+
+  window.addEventListener(
+    'offline',
+    ()=>{
+      cloudOnline=false;
+      setCloudStatus(
+        'Offline • dữ liệu Cloud chỉ đọc từ bản đang mở',
+        'offline'
+      );
+    }
+  );
+
+  window.addEventListener(
+    'online',
+    async()=>{
+      setupRealtime();
+
+      await loadCloud();
+
+      updatePendingSyncBadge();
+    }
+  );
+
+  setupRealtime();
+
+  /*
+    First visible business state comes from Supabase only.
+  */
+  const loaded=
+    await loadCloud();
+
+  if(!loaded?.ok){
+    return;
   }
-try{await syncPendingOperations()}catch(e){}
-if(v219InteractionActive()){
-  cloudReloadRequested=true;
-  v233ScheduleCloudReload(900);
-}else{
-  await loadCloud();
+
+  v262StartSmartSync();
+
+  updatePendingSyncBadge();
 }
-updatePendingSyncBadge()});window.addEventListener('offline',()=>{cloudOnline=false;setCloudStatus('Offline • dùng cache','offline')});setupRealtime();await loadCloud();applyEmbeddedExcelImport(false);cleanupInvalidExcelSyncQueue();try{await syncPendingOperations()}catch(e){}try{await v268RunCloudCycle({forcePull:true,reason:'init_final'})}catch(e){}updatePendingSyncBadge()}
 init();
 
 let lastRuntimeErrorAt=0;
