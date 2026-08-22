@@ -1,0 +1,37 @@
+V236 - MIGRATED EDIT SYNC
+
+Lỗi đã xác định:
+- V198/V205 đã đổi excel_* thành UUID Cloud.
+- Nhưng _excel_import_batch vẫn còn.
+- isExcelLocalIngredient() của các bản trước coi mọi record có marker Excel
+  là local-only, kể cả khi ID đã là UUID.
+- Vì vậy sửa nguyên liệu không queue Cloud.
+- recipeCanSyncCloud() cũng từ chối công thức dùng các nguyên liệu đó.
+
+Lỗi phụ:
+- applyEmbeddedExcelImport(false) có thể nhập lại excel_* sau migration
+  vì kho excel_kho_latyen đã được đổi thành UUID.
+
+V236:
+1. UUID là tiêu chí Cloud-ready.
+   _excel_import_batch chỉ còn là thông tin nguồn dữ liệu.
+2. Nguyên liệu Excel đã migrate UUID được sửa và đồng bộ Cloud bình thường.
+3. Công thức dùng nguyên liệu đã migrate UUID được đồng bộ Cloud bình thường.
+4. Queue save_ingredient là last-write-wins; sửa nhiều lần chỉ giữ payload mới nhất.
+5. Embedded Excel không tự nhập lại nếu marker import đã tồn tại.
+6. preserveExcelImportedLocal chỉ giữ record thật sự còn ID legacy,
+   không ghi đè Cloud bằng record đã migrate UUID.
+7. Recovery tự động:
+   - Khi Cloud Pull, V236 so local migrated-Excel với Cloud.
+   - Nếu phát hiện thay đổi mà V235 từng giữ local, tự tái tạo queue pending.
+   - Không bắt người dùng sửa lại.
+8. Diagnostics có mục "Migrated Excel Editable V236".
+
+Giữ:
+- V235 Non-Blocking Sync.
+- V234 Smart Dropdown.
+- V233 Interaction Freeze.
+- V231/V228 sync safety.
+- Không có Print.
+
+Không cần SQL mới.

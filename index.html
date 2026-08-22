@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V235 NON-BLOCKING SYNC ===== */
+/* ===== V237 SYNC UX SIMPLIFIED ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10742,6 +10742,263 @@ select:not([multiple]){
   Background data may arrive, but panel DOM is not rebuilt until quiet.
 */
 
+
+/* ===== V237 SYNC UX SIMPLIFIED ===== */
+.sync-v237-card{
+  padding:12px!important;
+}
+
+.sync-v237-head{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:flex-start;
+}
+
+.sync-v237-title{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  min-width:0;
+}
+
+.sync-v237-title h2{
+  margin:0 0 2px;
+}
+
+.sync-v237-progress{
+  margin-top:10px;
+}
+
+.sync-v237-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 14px;
+  padding-top:6px;
+  font-size:11px;
+  color:#516274;
+}
+
+.sync-v237-tech-inline{
+  opacity:.62;
+}
+
+.sync-v237-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  padding-top:10px;
+}
+
+.sync-v237-primary{
+  min-width:126px;
+}
+
+.sync-v237-auto{
+  margin-left:auto;
+}
+
+.sync-v237-tip{
+  margin-top:10px;
+  padding:9px 11px;
+  border:1px solid #d9e5ef;
+  border-radius:9px;
+  background:#f7fbff;
+  font-size:11px;
+}
+
+.sync-v237-section{
+  margin-top:10px;
+  border:1px solid #dbe4ec;
+  border-radius:9px;
+  background:#fff;
+  overflow:hidden;
+}
+
+.sync-v237-section>summary{
+  cursor:pointer;
+  padding:10px 12px;
+  list-style:none;
+  display:flex;
+  align-items:center;
+}
+
+.sync-v237-section>summary::-webkit-details-marker{
+  display:none;
+}
+
+.sync-v237-section>summary>span{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.sync-v237-section>summary small{
+  color:#718096;
+  font-weight:400;
+}
+
+.sync-v237-section>summary:after{
+  content:'⌄';
+  margin-left:auto;
+  font-size:15px;
+  color:#64748b;
+}
+
+.sync-v237-section[open]>summary:after{
+  transform:rotate(180deg);
+}
+
+.sync-v237-section-body{
+  border-top:1px solid #edf1f5;
+  padding:10px;
+}
+
+.sync-v237-group{
+  padding:10px;
+  border:1px solid #e5ebf0;
+  border-radius:8px;
+  background:#fbfcfd;
+}
+
+.sync-v237-group+.sync-v237-group{
+  margin-top:8px;
+}
+
+.sync-v237-group-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.sync-v237-group-head>div:first-child{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.sync-v237-group-head span,
+.sync-v237-maintenance-item span{
+  color:#65758b;
+  font-size:11px;
+}
+
+.sync-v237-row-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+.sync-v237-subdetails{
+  margin-top:8px;
+  padding-top:7px;
+  border-top:1px dashed #dce4eb;
+}
+
+.sync-v237-subdetails>summary{
+  cursor:pointer;
+  color:#52657a;
+  font-size:11px;
+}
+
+.sync-v237-pair-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:9px;
+}
+
+.sync-v237-backup-status{
+  margin-top:8px;
+}
+
+.sync-v237-backup-message.danger{
+  border-color:#f2d28f!important;
+  background:#fff9e8!important;
+  color:#7a5200!important;
+}
+
+.sync-v237-maintenance-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+
+.sync-v237-maintenance-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px;
+  border:1px solid #e5ebf0;
+  border-radius:8px;
+  background:#fbfcfd;
+}
+
+.sync-v237-maintenance-item>div{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.sync-v237-tech-details{
+  margin-top:9px;
+}
+
+.sync-v237-tech-details>details{
+  border-top:1px dashed #dce4eb;
+  padding:8px 2px;
+}
+
+.sync-v237-tech-details>details>summary{
+  cursor:pointer;
+  font-size:11px;
+  font-weight:600;
+}
+
+.sync-v237-tech-footer{
+  margin-top:7px;
+  color:#8794a3;
+  font-size:10px;
+}
+
+.section-gap-sm{
+  margin-top:7px;
+}
+
+.ok-text{
+  color:#087f5b!important;
+}
+
+.warn-text{
+  color:#b45309!important;
+}
+
+/* V237 intentionally hides old dense sync helpers if an old DOM survives. */
+.sync-v186-summary,
+.sync-v186-advanced,
+.sync-v202-tools{
+  /* new renderSettings no longer emits these blocks */
+}
+
+@media(max-width:800px){
+  .sync-v237-head,
+  .sync-v237-group-head{
+    flex-direction:column;
+  }
+
+  .sync-v237-auto{
+    margin-left:0;
+  }
+
+  .sync-v237-pair-grid,
+  .sync-v237-maintenance-grid{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -10829,25 +11086,480 @@ function excelImportedRecord(x){
   return x?._excel_import_batch===EXCEL_IMPORT_ID;
 }
 
+
+/* ===== V236 MIGRATED EXCEL CLOUD EDITS ===== */
+function v236ComparableIngredient(row){
+  return {
+    name:
+      String(row?.name||'').trim(),
+    unit:
+      String(row?.unit||'').trim(),
+    minimum_stock:
+      Number(row?.minimum_stock||0),
+    ingredient_type:
+      String(
+        row?.ingredient_type||
+        'purchased'
+      ),
+    batch_output_qty:
+      Number(row?.batch_output_qty||1),
+    cost:
+      Number(row?.cost||0),
+    active:
+      row?.active!==false
+  };
+}
+
+function v236ComparableProduct(row){
+  return {
+    name:
+      String(row?.name||'').trim(),
+    sku:
+      row?.sku||null,
+    selling_price:
+      Number(row?.selling_price||0),
+    active:
+      row?.active!==false
+  };
+}
+
+function v236StableRecipeRows(rows){
+  return (rows||[])
+    .map(row=>({
+      ingredient_id:
+        String(row.ingredient_id||''),
+      quantity:
+        Number(row.quantity||0)
+    }))
+    .sort((a,b)=>
+      a.ingredient_id.localeCompare(
+        b.ingredient_id
+      )
+    );
+}
+
+function v236SameValue(a,b){
+  return (
+    JSON.stringify(a)===
+    JSON.stringify(b)
+  );
+}
+
+function v236QueueIngredientLatest(op){
+  queueSync({
+    ...op,
+    kind:'save_ingredient'
+  });
+}
+
+function v236RecoverMigratedExcelEdits(
+  localBefore,
+  cloud
+){
+  let ingredientRecovered=0;
+  let recipeRecovered=0;
+
+  const cloudIngredients=
+    new Map(
+      (cloud?.ingredients||[])
+        .filter(x=>x?.id)
+        .map(x=>[
+          String(x.id),
+          x
+        ])
+    );
+
+  const cloudProducts=
+    new Map(
+      (cloud?.products||[])
+        .filter(x=>x?.id)
+        .map(x=>[
+          String(x.id),
+          x
+        ])
+    );
+
+  const cloudRecipeByProduct=
+    new Map();
+
+  for(const row of cloud?.recipeItems||[]){
+    const id=
+      String(row.product_id||'');
+
+    if(!cloudRecipeByProduct.has(id)){
+      cloudRecipeByProduct.set(
+        id,
+        []
+      );
+    }
+
+    cloudRecipeByProduct
+      .get(id)
+      .push(row);
+  }
+
+  for(const local of localBefore?.ingredients||[]){
+    if(
+      !local?._excel_import_batch ||
+      !isUuidValue(local.id)
+    ){
+      continue;
+    }
+
+    const cloudRow=
+      cloudIngredients.get(
+        String(local.id)
+      );
+
+    const changed=
+      !cloudRow ||
+      !v236SameValue(
+        v236ComparableIngredient(
+          local
+        ),
+        v236ComparableIngredient(
+          cloudRow
+        )
+      );
+
+    if(!changed){
+      continue;
+    }
+
+    local._sync_status='pending';
+    local._local_only=true;
+
+    const preparedLines=
+      String(
+        local.ingredient_type||''
+      )==='prepared'
+        ?(
+          localBefore.preparedItems||[]
+        )
+          .filter(row=>
+            String(
+              row.prepared_ingredient_id||''
+            )===
+            String(local.id)
+          )
+          .map(row=>({
+            source_ingredient_id:
+              row.source_ingredient_id,
+            quantity:
+              Number(row.quantity||0)
+          }))
+        :[];
+
+    v236QueueIngredientLatest({
+      ingredient_id:
+        local.id,
+      payload:{
+        name:local.name,
+        unit:local.unit,
+        minimum_stock:
+          Number(
+            local.minimum_stock||0
+          ),
+        ingredient_type:
+          local.ingredient_type||
+          'purchased',
+        batch_output_qty:
+          Number(
+            local.batch_output_qty||1
+          ),
+        active:
+          local.active!==false,
+        updated_at:
+          local.updated_at||
+          new Date().toISOString(),
+        cost:
+          Number(local.cost||0)
+      },
+      prepared_lines:
+        preparedLines
+    });
+
+    ingredientRecovered++;
+  }
+
+  for(const product of localBefore?.products||[]){
+    if(
+      !product?._excel_import_batch ||
+      !isUuidValue(product.id)
+    ){
+      continue;
+    }
+
+    const localLines=
+      (localBefore.recipeItems||[])
+        .filter(row=>
+          String(row.product_id||'')===
+          String(product.id)
+        );
+
+    if(!localLines.length){
+      continue;
+    }
+
+    const cloudProduct=
+      cloudProducts.get(
+        String(product.id)
+      );
+
+    const cloudLines=
+      cloudRecipeByProduct.get(
+        String(product.id)
+      )||[];
+
+    const productChanged=
+      !cloudProduct ||
+      !v236SameValue(
+        v236ComparableProduct(
+          product
+        ),
+        v236ComparableProduct(
+          cloudProduct
+        )
+      );
+
+    const recipeChanged=
+      !v236SameValue(
+        v236StableRecipeRows(
+          localLines
+        ),
+        v236StableRecipeRows(
+          cloudLines
+        )
+      );
+
+    if(
+      !productChanged &&
+      !recipeChanged
+    ){
+      continue;
+    }
+
+    const lines=
+      localLines.map(row=>({
+        ingredient_id:
+          row.ingredient_id,
+        quantity:
+          Number(row.quantity||0)
+      }));
+
+    if(
+      !recipeCanSyncCloud(
+        product.id,
+        lines
+      )
+    ){
+      continue;
+    }
+
+    product._sync_status='pending';
+    product._local_only=true;
+    delete product._recipe_local_only;
+
+    for(const row of localLines){
+      row._local_only=true;
+      row._recipe_local_only=true;
+    }
+
+    queueRecipeSync({
+      product_id:
+        product.id,
+      warehouse_id:
+        currentWarehouseId,
+      unit:
+        product.unit||
+        productUnitMap()?.[
+          product.id
+        ]||
+        'ly',
+      payload:{
+        name:product.name,
+        sku:product.sku||null,
+        selling_price:
+          Number(
+            product.selling_price||0
+          ),
+        active:
+          product.active!==false
+      },
+      lines
+    });
+
+    recipeRecovered++;
+  }
+
+  if(
+    ingredientRecovered ||
+    recipeRecovered
+  ){
+    cacheSave();
+
+    console.info(
+      'V236 recovered migrated Excel edits',
+      {
+        ingredientRecovered,
+        recipeRecovered
+      }
+    );
+  }
+
+  return {
+    ingredientRecovered,
+    recipeRecovered
+  };
+}
+
+function v236MigratedExcelStats(){
+  return {
+    cloudReadyIngredients:
+      (db.ingredients||[])
+        .filter(row=>
+          row?._excel_import_batch &&
+          isUuidValue(row.id)
+        ).length,
+    cloudReadyProducts:
+      (db.products||[])
+        .filter(row=>
+          row?._excel_import_batch &&
+          isUuidValue(row.id)
+        ).length,
+    queuedIngredients:
+      getPendingSync()
+        .filter(x=>
+          x?.kind==='save_ingredient'
+        ).length,
+    queuedRecipes:
+      getPendingSync()
+        .filter(x=>
+          x?.kind==='save_recipe'
+        ).length
+  };
+}
+
 function preserveExcelImportedLocal(localBefore,targetDb){
-  if(!localBefore||!targetDb)return targetDb;
-  const keys=['warehouses','suppliers','ingredients','inventory','products','recipeItems','preparedItems','sales','saleItems','movements'];
+  if(!localBefore||!targetDb){
+    return targetDb;
+  }
+
+  const legacyRow=(key,row)=>{
+    if(!excelImportedRecord(row)){
+      return false;
+    }
+
+    if(key==='warehouses'){
+      return !isUuidValue(row.id);
+    }
+
+    if(key==='suppliers'){
+      return !!row.id &&
+        !isUuidValue(row.id);
+    }
+
+    if(key==='ingredients'){
+      return !isUuidValue(row.id);
+    }
+
+    if(key==='inventory'){
+      return !isUuidValue(row.warehouse_id) ||
+        !isUuidValue(row.ingredient_id);
+    }
+
+    if(key==='products'){
+      return !isUuidValue(row.id);
+    }
+
+    if(key==='recipeItems'){
+      return !isUuidValue(row.product_id) ||
+        !isUuidValue(row.ingredient_id);
+    }
+
+    if(key==='preparedItems'){
+      return !isUuidValue(row.prepared_ingredient_id) ||
+        !isUuidValue(row.source_ingredient_id);
+    }
+
+    if(key==='sales'){
+      return !isUuidValue(row.id) ||
+        !isUuidValue(row.warehouse_id);
+    }
+
+    if(key==='saleItems'){
+      return !isUuidValue(row.sale_id) ||
+        !isUuidValue(row.product_id);
+    }
+
+    if(key==='movements'){
+      return !isUuidValue(row.warehouse_id) ||
+        !isUuidValue(row.ingredient_id);
+    }
+
+    return true;
+  };
+
+  const keys=[
+    'warehouses',
+    'suppliers',
+    'ingredients',
+    'inventory',
+    'products',
+    'recipeItems',
+    'preparedItems',
+    'sales',
+    'saleItems',
+    'movements'
+  ];
 
   for(const key of keys){
-    const local=(localBefore[key]||[]).filter(excelImportedRecord);
-    if(!targetDb[key])targetDb[key]=[];
+    const local=
+      (localBefore[key]||[])
+        .filter(row=>
+          legacyRow(
+            key,
+            row
+          )
+        );
+
+    if(!targetDb[key]){
+      targetDb[key]=[];
+    }
 
     for(const item of local){
       let idx=-1;
+
       if(key==='inventory'){
-        idx=targetDb[key].findIndex(x=>x.warehouse_id===item.warehouse_id&&x.ingredient_id===item.ingredient_id);
+        idx=
+          targetDb[key]
+            .findIndex(x=>
+              x.warehouse_id===
+                item.warehouse_id &&
+              x.ingredient_id===
+                item.ingredient_id
+            );
       }else{
-        idx=targetDb[key].findIndex(x=>x.id===item.id);
+        idx=
+          targetDb[key]
+            .findIndex(x=>
+              x.id===item.id
+            );
       }
-      if(idx>=0)targetDb[key][idx]={...targetDb[key][idx],...item};
-      else targetDb[key].push(item);
+
+      if(idx>=0){
+        targetDb[key][idx]={
+          ...targetDb[key][idx],
+          ...item
+        };
+      }else{
+        targetDb[key].push(
+          item
+        );
+      }
     }
   }
+
   return targetDb;
 }
 
@@ -10878,8 +11590,15 @@ function excelImportIngredientMaps(){
 
 function applyEmbeddedExcelImport(force=false){
   const marker=localStorage.getItem(EXCEL_IMPORT_MARKER_KEY);
-  const alreadyPresent=(db.warehouses||[]).some(x=>x.id===EXCEL_WAREHOUSE_ID&&excelImportedRecord(x));
-  if(!force && marker===EXCEL_IMPORT_ID && alreadyPresent)return false;
+
+  // V236: migration legitimately removes excel_kho_latyen.
+  // The marker alone proves this embedded dataset was already imported.
+  if(
+    !force &&
+    marker===EXCEL_IMPORT_ID
+  ){
+    return false;
+  }
 
   removeExistingExcelImport();
 
@@ -11114,11 +11833,31 @@ const PENDING_SYNC_KEY='lat_yen_pending_sync_v1';
 function getPendingSync(){try{return JSON.parse(localStorage.getItem(PENDING_SYNC_KEY)||'[]')}catch(e){return []}}
 
 function isExcelLocalIngredient(ingredientOrId){
-  const ing=typeof ingredientOrId==='string'
-    ? (db.ingredients||[]).find(x=>x.id===ingredientOrId)
-    : ingredientOrId;
+  const ing=
+    typeof ingredientOrId==='string'
+      ?(db.ingredients||[])
+        .find(x=>
+          x.id===ingredientOrId
+        )
+      :ingredientOrId;
 
-  const id=String(ing?.id||ingredientOrId||'');
+  const id=
+    String(
+      ing?.id||
+      ingredientOrId||
+      ''
+    );
+
+  /*
+    V236 FIX:
+    _excel_import_batch is provenance, NOT a reason to remain local forever.
+    After V198/V205 migration the row has a real Cloud UUID and must be
+    editable/syncable like every other ingredient.
+  */
+  if(isUuidValue(id)){
+    return false;
+  }
+
   return !!(
     ing?._excel_import_batch ||
     id.startsWith('excel_ing_') ||
@@ -11169,7 +11908,34 @@ function cleanupInvalidExcelSyncQueue(){
 }
 
 function setPendingSync(items){localStorage.setItem(PENDING_SYNC_KEY,JSON.stringify(items||[]))}
-function queueSync(op){let q=getPendingSync();q.push({...op,queued_at:new Date().toISOString()});setPendingSync(q);updatePendingSyncBadge()}
+function queueSync(op){
+  let q=getPendingSync();
+
+  /*
+    V236: edits must be last-write-wins.
+    Repeated ingredient edits should not leave older payloads ahead of the
+    newest payload in the queue.
+  */
+  if(
+    op?.kind==='save_ingredient' &&
+    op?.ingredient_id
+  ){
+    q=q.filter(x=>!(
+      x?.kind==='save_ingredient' &&
+      String(x.ingredient_id)===
+      String(op.ingredient_id)
+    ));
+  }
+
+  q.push({
+    ...op,
+    queued_at:
+      new Date().toISOString()
+  });
+
+  setPendingSync(q);
+  updatePendingSyncBadge();
+}
 function updatePendingSyncBadge(){
   const n=getPendingSync().length;
   const el=document.getElementById('cloudStatus');
@@ -16190,6 +16956,21 @@ async function loadCloud(){
       deferred:true
     };
   }
+  /*
+    V236: compare migrated Excel-origin UUID rows BEFORE Cloud merge.
+    If V235 previously kept an edit local-only, reconstruct its pending op so
+    the user's change is pushed instead of silently accepting the older Cloud row.
+  */
+  v236RecoverMigratedExcelEdits(
+    localBefore,
+    {
+      ingredients,
+      products,
+      recipeItems,
+      preparedItems
+    }
+  );
+
   // Không cho các kho đã xóa local xuất hiện trở lại nếu Cloud chưa xóa được.
   const deletedWarehouseIds=getDeletedWarehouseIds();
   for(let i=warehouses.length-1;i>=0;i--){
@@ -17805,6 +18586,24 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V236 migrated Excel rows must remain Cloud editable after UUID migration.
+  try{
+    const s=
+      v236MigratedExcelStats();
+
+    add(
+      'Migrated Excel Editable V236',
+      true,
+      `${s.cloudReadyIngredients} nguyên liệu + ${s.cloudReadyProducts} món đã có UUID Cloud • queue NL:${s.queuedIngredients} • CT:${s.queuedRecipes}`
+    );
+  }catch(e){
+    add(
+      'Migrated Excel Editable V236',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V231 verifies Auto Sync uses the same final-repair path.
   try{
     add(
@@ -17961,7 +18760,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:235,
+    version:237,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -40679,7 +41478,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V235',
+    app_version:'V237',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -40988,7 +41787,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:235,
+    version:237,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -41170,13 +41969,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:235,
+    version:237,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V235',storage:'supabase-storage',
+      schema:185,app_version:'V237',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -42388,7 +43187,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:235,
+    version:237,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -44939,26 +45738,24 @@ async function refreshMultiDeviceStatusV203(){
     now-v203StatusCache.at<
       V203_STATUS_CACHE_MS
   ){
-    box.innerHTML=
-      v203StatusCache.html;
+    box.innerHTML=v203StatusCache.html;
     return;
   }
 
   box.innerHTML=
-    '<span class="muted">Đang kiểm tra…</span>';
+    '<span class="muted">Đang kiểm tra bản sao lưu…</span>';
 
   try{
-    const status=
-      await cloudBackupStatus();
+    const status=await cloudBackupStatus();
 
     const cls={
       synced:'ok',
-      conflict:'danger',
+      conflict:'warn',
       'cloud-newer':'warn',
       'local-newer':'warn',
       empty:'neutral',
       'no-code':'neutral',
-      error:'danger'
+      error:'warn'
     }[status.state]||'neutral';
 
     const cloudAt=
@@ -44966,10 +45763,32 @@ async function refreshMultiDeviceStatusV203(){
         ?dt(status.cloud.updated_at)
         :'—';
 
+    const label={
+      synced:'Bản sao lưu khớp với dữ liệu hiện tại',
+      conflict:'Bản sao lưu và dữ liệu hiện tại đang khác nhau',
+      'cloud-newer':'Bản sao lưu Cloud khác dữ liệu hiện tại',
+      'local-newer':'Dữ liệu hiện tại đã thay đổi kể từ lần sao lưu',
+      empty:'Chưa có bản sao lưu Cloud',
+      'no-code':'Chưa có mã ghép thiết bị',
+      error:'Chưa kiểm tra được bản sao lưu'
+    }[status.state]||status.text;
+
+    const hint=
+      status.state==='synced'
+        ?'Không cần thao tác.'
+        :(
+          ['conflict','cloud-newer','local-newer'].includes(status.state)
+            ?'Đây chỉ là trạng thái BACKUP, không phải lỗi đồng bộ dữ liệu hằng ngày.'
+            :''
+        );
+
     const html=`
-      <div class="multi-sync-status ${cls}">
-        <b>${esc(status.text)}</b>
-        <span>Cloud cập nhật: ${esc(cloudAt)}</span>
+      <div class="multi-sync-status ${cls} sync-v237-backup-message">
+        <b>${esc(label)}</b>
+        <span>
+          ${cloudAt!=='—'?`Backup Cloud: ${esc(cloudAt)}`:''}
+          ${hint?`${cloudAt!=='—'?' • ':''}${esc(hint)}`:''}
+        </span>
       </div>
     `;
 
@@ -44981,7 +45800,7 @@ async function refreshMultiDeviceStatusV203(){
     box.innerHTML=html;
   }catch(e){
     box.innerHTML=
-      '<span class="muted">Không kiểm tra được trạng thái.</span>';
+      '<span class="muted">Chưa kiểm tra được bản sao lưu.</span>';
   }
 }
 
@@ -45049,7 +45868,7 @@ async function cloudBackupStatus(){
   if(!values.code){
     return {
       state:'no-code',
-      text:'Chưa có mã đồng bộ'
+      text:'Chưa có mã ghép thiết bị'
     };
   }
 
@@ -45061,7 +45880,7 @@ async function cloudBackupStatus(){
     if(!cloud){
       return {
         state:'empty',
-        text:'Cloud chưa có bản sao lưu',
+        text:'Chưa có bản sao lưu Cloud',
         localHash:local.hash
       };
     }
@@ -45069,28 +45888,37 @@ async function cloudBackupStatus(){
     const cloudHash=
       String(cloud?.meta?.content_hash||'');
 
-    if(cloudHash && cloudHash===local.hash){
+    if(
+      cloudHash &&
+      cloudHash===local.hash
+    ){
       return {
         state:'synced',
-        text:'Đã đồng bộ',
+        text:'Bản sao lưu khớp dữ liệu hiện tại',
         cloud,
         localHash:local.hash
       };
     }
 
-    const lastHash=cfg.last_cloud_hash||'';
+    const lastHash=
+      cfg.last_cloud_hash||'';
+
     const localChanged=
       !!lastHash &&
       local.hash!==lastHash;
+
     const cloudChanged=
       !!lastHash &&
       cloudHash &&
       cloudHash!==lastHash;
 
-    if(localChanged && cloudChanged){
+    if(
+      localChanged &&
+      cloudChanged
+    ){
       return {
         state:'conflict',
-        text:'Có thay đổi ở cả thiết bị và Cloud',
+        text:'Bản sao lưu và dữ liệu hiện tại khác nhau',
         cloud,
         localHash:local.hash
       };
@@ -45099,7 +45927,7 @@ async function cloudBackupStatus(){
     if(cloudChanged){
       return {
         state:'cloud-newer',
-        text:'Cloud có dữ liệu mới hơn',
+        text:'Bản sao lưu Cloud khác dữ liệu hiện tại',
         cloud,
         localHash:local.hash
       };
@@ -45107,51 +45935,31 @@ async function cloudBackupStatus(){
 
     return {
       state:'local-newer',
-      text:'Thiết bị có thay đổi chưa sao lưu',
+      text:'Dữ liệu hiện tại đã thay đổi kể từ lần sao lưu',
       cloud,
       localHash:local.hash
     };
+
   }catch(e){
     return {
       state:'error',
       text:
         String(e?.message||e)
           .includes('app_backups')
-          ?'Chưa tạo bảng app_backups trên Supabase'
-          :'Không kiểm tra được Cloud Backup',
+            ?'Chưa cấu hình Cloud Backup'
+            :'Không kiểm tra được bản sao lưu',
       error:e
     };
   }
 }
 
 async function refreshMultiDeviceStatus(){
-  const box=$('multiDeviceStatus');
-  if(!box)return;
+  v203StatusCache={
+    at:0,
+    html:''
+  };
 
-  box.innerHTML='<span class="muted">Đang kiểm tra…</span>';
-  const status=await cloudBackupStatus();
-
-  const cls={
-    synced:'ok',
-    conflict:'danger',
-    'cloud-newer':'warn',
-    'local-newer':'warn',
-    empty:'neutral',
-    'no-code':'neutral',
-    error:'danger'
-  }[status.state]||'neutral';
-
-  const cloudAt=
-    status.cloud?.updated_at
-      ?dt(status.cloud.updated_at)
-      :'—';
-
-  box.innerHTML=`
-    <div class="multi-sync-status ${cls}">
-      <b>${esc(status.text)}</b>
-      <span>Cloud cập nhật: ${esc(cloudAt)}</span>
-    </div>
-  `;
+  return refreshMultiDeviceStatusV203();
 }
 
 async function backupToCloud(){
@@ -45213,7 +46021,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V235',
+      app_version:'V237',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -45228,7 +46036,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:235,
+      version:237,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -45505,7 +46313,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v235-full-backup-'+
+    'lat-yen-v237-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -45562,64 +46370,67 @@ function renderSettings(){
   const cfg=multiDeviceConfig();
   const auto=loadAutoSyncConfig();
   const paired=!!(auto.code&&auto.passphrase);
+  const progress=loadSyncProgress();
+  const pending=Number(v191PendingCount?.()||getPendingSync().length||0);
 
-  const syncLabel={
-    synced:'Đã đồng bộ',
-    uploaded:'Đã sao lưu',
-    downloaded:'Đã cập nhật',
-    merged_conflicts:'Đã đồng bộ',
-    catching_up:'Đang hội tụ',
-    conflict:'Có xung đột',
-    error:'Lỗi đồng bộ',
-    paired:'Đã ghép'
-  }[auto.last_result]||(
-    paired?'Sẵn sàng':'Chưa ghép'
-  );
-
-  const syncClass=
-    auto.last_result==='conflict'||auto.last_result==='error'
-      ?'danger'
+  const mainLabel=
+    progress.running
+      ?'Đang đồng bộ'
       :(
-        paired&&auto.enabled
-          ?'ok'
-          :'warn'
+        progress.percent===100 &&
+        pending===0
+          ?'Đã đồng bộ'
+          :(
+            cloudOnline
+              ?'Sẵn sàng'
+              :'Đang dùng dữ liệu local'
+          )
+      );
+
+  const mainClass=
+    !cloudOnline
+      ?'warn'
+      :(
+        progress.error
+          ?'danger'
+          :'ok'
       );
 
   E.settings.innerHTML=`
     <div id="v221SettingsHealth" class="v221-health"></div>
 
-    <div class="card sync-v186-card">
-      <div class="sync-v186-top">
-        <div class="sync-v186-title">
+    <div class="card sync-v237-card">
+      <div class="sync-v237-head">
+        <div class="sync-v237-title">
           <div class="sync-v186-icon">☁</div>
           <div>
             <h2>Đồng bộ dữ liệu</h2>
             <div class="muted">
-              Cloud là nguồn dữ liệu chính. Auto Sync chỉ tải lại khi có thay đổi để tăng tốc.
+              Dữ liệu được đồng bộ tự động. Chỉ cần dùng nút “Đồng bộ ngay” khi muốn kiểm tra tức thì.
             </div>
           </div>
         </div>
 
-        <div class="sync-v186-state ${syncClass}">
-          <b id="autoSyncLiveStatus">${esc(syncLabel)}</b>
+        <div class="sync-v186-state ${mainClass}">
+          <b id="autoSyncLiveStatus">${esc(mainLabel)}</b>
           <span>
             ${
               auto.last_sync_at
                 ?esc(dt(auto.last_sync_at))
-                :'Chưa có lần đồng bộ'
+                :'Chưa đồng bộ'
             }
           </span>
         </div>
       </div>
 
-      <div id="syncProgressWrap" class="sync-v193-progress">
+      <div id="syncProgressWrap" class="sync-v193-progress sync-v237-progress">
         <div class="sync-v193-progress-head">
           <div>
-            <b id="syncProgressStage">${esc(loadSyncProgress().stage||'Sẵn sàng')}</b>
-            <span id="syncProgressDetail">${esc(loadSyncProgress().detail||'')}</span>
+            <b id="syncProgressStage">${esc(progress.stage||'Sẵn sàng')}</b>
+            <span id="syncProgressDetail">${esc(progress.detail||'')}</span>
           </div>
           <div id="syncProgressPercent" class="sync-v193-percent">
-            ${Math.round(Number(loadSyncProgress().percent||0))}%
+            ${Math.round(Number(progress.percent||0))}%
           </div>
         </div>
 
@@ -45627,93 +46438,61 @@ function renderSettings(){
           <div
             id="syncProgressBarFill"
             class="sync-v193-fill"
-            style="width:${Math.round(Number(loadSyncProgress().percent||0))}%"
+            style="width:${Math.round(Number(progress.percent||0))}%"
           ></div>
         </div>
 
-        <div class="sync-v193-meta">
-          <span>
-            Còn chờ:
-            <b id="syncProgressPending">${Number(loadSyncProgress().pending||0)}</b>
+        <div class="sync-v237-meta">
+          <span class="${cloudOnline?'ok-text':'warn-text'}">
+            ${cloudOnline?'● Cloud đang kết nối':'● Đang offline'}
           </span>
           <span>
-            100% khi pending = 0 và Supabase xác nhận toàn bộ record
+            ${paired?'● Đã ghép thiết bị':'○ Chưa ghép thiết bị'}
           </span>
+          <span>
+            ${pending?`● ${pending} mục đang chờ`:'● Không có dữ liệu chờ'}
+          </span>
+          ${
+            auto.cloud_revision
+              ?`<span class="sync-v237-tech-inline">Rev ${Number(auto.cloud_revision)}</span>`
+              :''
+          }
         </div>
       </div>
 
-      <div class="sync-v186-summary">
-        <div class="sync-v186-pill ${paired?'ok':'warn'}">
-          <span class="dot"></span>
-          ${paired?'Đã ghép thiết bị':'Chưa ghép'}
-        </div>
+      <div class="sync-v237-actions">
+        <button
+          class="primary sync-v237-primary"
+          onclick="autoSyncNow({force:true,reason:'manual',silent:false})"
+          ${!paired?'disabled':''}
+        >
+          Đồng bộ ngay
+        </button>
 
-        <div class="sync-v186-pill ${auto.enabled?'ok':'off'}">
-          <span class="dot"></span>
-          Auto Sync ${auto.enabled?'Bật':'Tắt'}
-        </div>
-
-        <div class="sync-v186-pill ${cloudOnline?'ok':'off'}">
-          <span class="dot"></span>
-          Cloud ${cloudOnline?'Online':'Offline'}
-        </div>
-
-        <div class="sync-v186-pill ok">
-          <span class="dot"></span>
-          Atomic Sales Safe
-        </div>
+        <button
+          class="secondary"
+          onclick="${paired?'showPairingQr()':'scanPairingQr()'}"
+        >
+          ${paired?'Ghép thiết bị mới':'Ghép thiết bị'}
+        </button>
 
         ${
-          auto.cloud_revision
-            ?`<div class="sync-v186-pill ok"><span class="dot"></span>Revision ${auto.cloud_revision}</div>`
-            :''
-        }
-
-        ${
-          conflictArchiveCount()
-            ?`<div class="sync-v186-pill warn"><span class="dot"></span>${conflictArchiveCount()} xung đột đã lưu</div>`
-            :''
-        }
-
-        ${
-          getPendingSync().length
-            ?`<div class="sync-v186-pill warn"><span class="dot"></span>${getPendingSync().length} chờ đồng bộ</div>`
-            :''
-        }
-      </div>
-
-      <div class="sync-v186-main-actions">
-        ${
-          paired
+          !paired
             ?`
               <button
-                class="primary"
-                onclick="autoSyncNow({force:true,reason:'manual',silent:false})"
-              >Đồng bộ ngay</button>
-
-              <button
                 class="secondary"
                 onclick="showPairingQr()"
-              >Ghép thiết bị mới</button>
+              >Tạo mã ghép</button>
             `
-            :`
-              <button
-                class="primary"
-                onclick="showPairingQr()"
-              >Tạo QR ghép thiết bị</button>
-
-              <button
-                class="secondary"
-                onclick="scanPairingQr()"
-              >Quét QR</button>
-            `
+            :''
         }
 
-        <label class="sync-v186-switch" title="Bật/tắt Auto Sync">
+        <label class="sync-v186-switch sync-v237-auto" title="Bật/tắt đồng bộ tự động">
           <input
             type="checkbox"
             ${auto.enabled?'checked':''}
             onchange="setAutoSyncEnabled(this.checked)"
+            ${!paired?'disabled':''}
           >
           <span></span>
           <b>Tự động</b>
@@ -45721,290 +46500,237 @@ function renderSettings(){
       </div>
 
       ${
-        auto.last_result==='merged_conflicts'
+        !paired
           ?`
-            <div class="sync-v186-alert sync-v187-merged">
-              <b>Đã xử lý xung đột tự động.</b>
-              Các bản ghi khác nhau đã được hợp nhất; khi cùng một bản ghi bị sửa trên nhiều thiết bị,
-              V188 dùng logical revision để mọi thiết bị chọn cùng một kết quả, không phụ thuộc giờ hệ thống; bản còn lại vẫn được lưu trong lịch sử xung đột.
+            <div class="sync-v237-tip">
+              <b>Thiết bị này chưa được ghép.</b>
+              Quét QR từ thiết bị đang sử dụng hoặc tạo mã ghép nếu đây là thiết bị chính.
             </div>
           `
           :''
       }
 
-
-
-
-      <details class="sync-v202-tools" ontoggle="if(this.open)renderAdvancedSyncToolsV203()">
-        <summary>Công cụ đồng bộ nâng cao</summary>
-        <div class="sync-v202-tools-body">
-
-
-          <div class="sync-v205-finalize">
-            <b>Migration đã khóa ID cũ</b>
-            <span>
-              ID Excel/local đã chuyển lên Cloud sẽ không được phép xuất hiện lại.
-              ${
-                v205LegacyGhostCount()
-                  ?`Đang phát hiện ${v205LegacyGhostCount()} ID cũ cần remap.`
-                  :'Không phát hiện ID cũ quay trở lại.'
-              }
-            </span>
-            <button
-              class="secondary sm"
-              onclick="normalizeLegacyCacheV205(); renderAll(); toastMsg('Đã chuẩn hóa cache theo UUID Cloud')"
-            >Chuẩn hóa cache</button>
-          </div>
-
-          <div class="sync-v204-safety">
-            <div>
-              <b>Bảo vệ dữ liệu local</b>
-              <span>
-                Cloud chỉ được merge vào dữ liệu hiện có. Có snapshot khôi phục trước mỗi pull.
-              </span>
-            </div>
-            <button
-              class="secondary sm"
-              onclick="restoreLocalSnapshotV204()"
-            >Khôi phục local</button>
-          </div>
-
-
-      <div class="sync-v198-migration-card">
-        <div>
-          <b>Đưa dữ liệu local/Excel lên Cloud</b>
-          <span>
-            Chuyển ID local sang UUID Cloud thật để các thiết bị nhận cùng dữ liệu.
-          </span>
-        </div>
-
-        <div class="sync-v198-migration-actions">
-          <span id="cloudMigrationStatusV198" class="muted">
-            Hệ thống đã ổn định • chỉ dùng khi có dữ liệu legacy mới
-          </span>
-
-          <button
-            class="sm"
-            onclick="migrateAndSyncV199()"
-          >Batch migrate</button>
-        </div>
-      </div>
-
-
-
-      <div
-        id="migrationDedupV201"
-        class="sync-v201-dedup-note"
-      >
-        Chưa kiểm tra dữ liệu trùng.
-      </div>
-
-      <div
-        id="migrationProgressWrapV199"
-        class="sync-v199-progress"
-        style="display:none"
-      >
-        <div class="sync-v199-head">
-          <div>
-            <b id="migrationProgressPhaseV199">Sẵn sàng</b>
-            <span id="migrationProgressDetailV199"></span>
-          </div>
-
-          <strong id="migrationProgressPctV199">0%</strong>
-        </div>
-
-        <div class="sync-v199-track">
-          <div
-            id="migrationProgressFillV199"
-            class="sync-v199-fill"
-            style="width:0%"
-          ></div>
-        </div>
-      </div>
-
-
-      <div class="sync-v216-repair-report">
-        <div>
-          <b>Chẩn đoán phiếu bán pending</b>
-          <span id="saleRepairReportV216">
-            ${(()=>{
-              const r=v216LoadRepairReport();
-              if(!r?.errors?.length){
-                return 'Chưa có lỗi repair cụ thể.';
-              }
-              return esc(v216RepairErrorSummary(r));
-            })()}
-          </span>
-        </div>
-      </div>
-
-      <div class="sync-v195-pending-card">
-        <div class="sync-v195-pending-head">
-          <div>
-            <b>Dữ liệu đang chờ Cloud</b>
-            <span>
-              Xem chính xác record nào đang pending và lỗi gần nhất.
-            </span>
-          </div>
-
-          <div class="sync-v195-actions">
-            <button
-              class="secondary sm"
-              onclick="renderPendingInspector()"
-            >Làm mới</button>
-
-            <button
-              class="secondary sm"
-              onclick="repairAndRetrySyncV197()"
-            >Sửa pending local</button>
-
-            <button
-              class="sm"
-              onclick="retryAllPendingV195()"
-            >Thử đồng bộ lại</button>
-          </div>
-        </div>
-
-        <div id="pendingInspectorSummary"></div>
-        <div id="pendingBlockerAnalysis"></div>
-
-        <details class="sync-v195-pending-details" open>
-          <summary>
-            Xem chi tiết các mục đang chờ
-          </summary>
-          <div id="pendingInspectorList"></div>
-        </details>
-      </div>
-
-      <div class="sync-v194-diagnostics">
-        <div class="sync-v194-diag-head">
-          <div>
-            <b>Kiểm tra đồng bộ</b>
-            <span>
-              Test trực tiếp Database, RPC, Storage, Pull, Retry và Pending.
-            </span>
-          </div>
-
-          <button
-            class="secondary sm"
-            onclick="runSyncDiagnostics()"
-          >Chạy kiểm tra</button>
-        </div>
-
-        <div
-          id="syncDiagStatus"
-          class="muted"
-        >
-          Chưa chạy kiểm tra.
-        </div>
-
-        <div id="syncDiagResults"></div>
-      </div>
-
-        </div>
-      </details>
-
-      <details class="sync-v186-advanced">
+      <details class="sync-v237-section">
         <summary>
-          <span>Nâng cao</span>
-          <span class="muted">Backup, khôi phục, mã ghép</span>
+          <span>
+            <b>Thiết bị & sao lưu</b>
+            <small>Ghép thêm thiết bị, tạo bản sao hoặc khôi phục khi cần</small>
+          </span>
         </summary>
 
-        <div class="sync-v186-advanced-body">
-          <div class="sync-v186-fields">
-            <div>
-              <label>Mã đồng bộ</label>
-              <div class="multi-code-row">
-                <input
-                  id="multiDeviceCode"
-                  autocomplete="off"
-                  spellcheck="false"
-                  value="${esc(auto.code||cfg.code||'')}"
-                  placeholder="LY-XXXXX-XXXXX"
-                >
-                <button
-                  type="button"
-                  class="secondary sm"
-                  onclick="newMultiDeviceCode()"
-                >Tạo mã</button>
+        <div class="sync-v237-section-body">
+          <div class="sync-v237-group">
+            <div class="sync-v237-group-head">
+              <div>
+                <b>Ghép thiết bị</b>
+                <span>Ưu tiên dùng QR. Mã thủ công chỉ dùng khi không quét được.</span>
+              </div>
+              <div class="sync-v237-row-actions">
+                <button class="secondary sm" onclick="showPairingQr()">Hiện QR</button>
+                <button class="secondary sm" onclick="scanPairingQr()">Quét QR</button>
               </div>
             </div>
 
-            <div>
-              <label>Mật khẩu mã hóa</label>
+            <details class="sync-v237-subdetails">
+              <summary>Nhập mã thủ công</summary>
+
+              <div class="sync-v237-pair-grid">
+                <div>
+                  <label>Mã đồng bộ</label>
+                  <div class="multi-code-row">
+                    <input
+                      id="multiDeviceCode"
+                      autocomplete="off"
+                      spellcheck="false"
+                      value="${esc(auto.code||cfg.code||'')}"
+                      placeholder="LY-XXXXX-XXXXX"
+                    >
+                    <button class="secondary sm" type="button" onclick="newMultiDeviceCode()">Tạo mã</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label>Mật khẩu mã hóa</label>
+                  <input
+                    id="multiDevicePassphrase"
+                    type="password"
+                    minlength="6"
+                    autocomplete="new-password"
+                    value="${paired?'••••••••••••':''}"
+                    placeholder="Ít nhất 6 ký tự"
+                    onfocus="if(this.value==='••••••••••••')this.value=''"
+                  >
+                </div>
+              </div>
+
+              <div class="sync-v237-row-actions section-gap-sm">
+                <button class="secondary sm" onclick="copyPairingCode()">Sao chép mã</button>
+                <button class="secondary sm" onclick="pastePairingCode()">Dán mã ghép</button>
+              </div>
+            </details>
+          </div>
+
+          <div class="sync-v237-group">
+            <div class="sync-v237-group-head">
+              <div>
+                <b>Sao lưu dự phòng</b>
+                <span>
+                  Đây là bản sao để phục hồi khi cần, <strong>không phải trạng thái đồng bộ trực tiếp</strong>.
+                </span>
+              </div>
+
+              <div class="sync-v237-row-actions">
+                <button
+                  id="backupToCloudBtn"
+                  class="secondary sm"
+                  onclick="backupToCloud()"
+                >Tạo bản sao Cloud</button>
+
+                <button
+                  id="restoreFromCloudBtn"
+                  class="secondary sm"
+                  onclick="restoreFromCloud()"
+                >Khôi phục bản sao</button>
+              </div>
+            </div>
+
+            <div id="multiDeviceStatus" class="sync-v237-backup-status">
+              <span class="muted">Trạng thái bản sao lưu sẽ được kiểm tra tự động.</span>
+            </div>
+
+            <details class="sync-v237-subdetails">
+              <summary>Backup bằng tệp</summary>
+
+              <div class="sync-v237-row-actions">
+                <button class="secondary sm" onclick="exportBackup()">Xuất file backup</button>
+                <button class="secondary sm" onclick="selectBackupImport()">Khôi phục từ file</button>
+              </div>
+
               <input
-                id="multiDevicePassphrase"
-                type="password"
-                minlength="6"
-                autocomplete="new-password"
-                value="${paired?'••••••••••••':''}"
-                placeholder="Ít nhất 6 ký tự"
-                onfocus="if(this.value==='••••••••••••')this.value=''"
+                id="backupImportInput"
+                type="file"
+                accept="application/json,.json"
+                style="display:none"
+                onchange="importBackupFile(this)"
               >
+            </details>
+          </div>
+        </div>
+      </details>
+
+      <details
+        class="sync-v237-section sync-v237-technical"
+        ontoggle="if(this.open)renderAdvancedSyncToolsV203()"
+      >
+        <summary>
+          <span>
+            <b>Chẩn đoán & bảo trì</b>
+            <small>Chỉ dùng khi đồng bộ báo lỗi hoặc được yêu cầu kiểm tra</small>
+          </span>
+        </summary>
+
+        <div class="sync-v237-section-body">
+          <div class="sync-v237-maintenance-grid">
+            <div class="sync-v237-maintenance-item">
+              <div>
+                <b>Dữ liệu chờ Cloud</b>
+                <span>Xem và thử lại các mục pending.</span>
+              </div>
+              <button class="secondary sm" onclick="retryAllPendingV195()">Thử lại pending</button>
+            </div>
+
+            <div class="sync-v237-maintenance-item">
+              <div>
+                <b>Kiểm tra hệ thống đồng bộ</b>
+                <span>Chạy bộ kiểm tra Database, Pull, RPC và Cloud Proof.</span>
+              </div>
+              <button class="secondary sm" onclick="runSyncDiagnostics()">Chạy kiểm tra</button>
+            </div>
+
+            <div class="sync-v237-maintenance-item">
+              <div>
+                <b>Chuẩn hóa dữ liệu cũ</b>
+                <span>Chỉ cần khi còn ID legacy/Excel chưa chuyển hoàn toàn.</span>
+              </div>
+              <button class="secondary sm" onclick="normalizeLegacyCacheV205(); renderAll(); toastMsg('Đã chuẩn hóa dữ liệu cũ')">Chuẩn hóa</button>
+            </div>
+
+            <div class="sync-v237-maintenance-item">
+              <div>
+                <b>Chuyển dữ liệu legacy lên Cloud</b>
+                <span>Không dùng cho thao tác hằng ngày.</span>
+              </div>
+              <button class="secondary sm" onclick="migrateAndSyncV199()">Chuyển dữ liệu cũ</button>
+            </div>
+
+            <div class="sync-v237-maintenance-item">
+              <div>
+                <b>Khôi phục snapshot local</b>
+                <span>Dùng khi vừa có Cloud Pull lỗi và cần quay lại dữ liệu trước đó.</span>
+              </div>
+              <button class="secondary sm" onclick="restoreLocalSnapshotV204()">Khôi phục local</button>
             </div>
           </div>
 
-          <div class="sync-v186-tools">
-            <button
-              class="secondary sm"
-              onclick="scanPairingQr()"
-            >Quét QR</button>
+          <div class="sync-v237-tech-details">
+            <details>
+              <summary>Xem pending chi tiết</summary>
+              <div class="sync-v195-pending-card">
+                <div class="sync-v195-actions">
+                  <button class="secondary sm" onclick="renderPendingInspector()">Làm mới</button>
+                  <button class="secondary sm" onclick="repairAndRetrySyncV197()">Sửa pending local</button>
+                </div>
+                <div id="pendingInspectorSummary"></div>
+                <div id="pendingBlockerAnalysis"></div>
+                <div id="pendingInspectorList"></div>
+              </div>
+            </details>
 
-            <button
-              class="secondary sm"
-              onclick="copyPairingCode()"
-            >Sao chép mã ghép</button>
+            <details>
+              <summary>Kết quả kiểm tra kỹ thuật</summary>
+              <div id="syncDiagStatus" class="muted">Chưa chạy kiểm tra.</div>
+              <div id="syncDiagResults"></div>
+            </details>
 
-            <button
-              class="secondary sm"
-              onclick="pastePairingCode()"
-            >Nhập mã ghép</button>
+            <details>
+              <summary>Migration & lỗi phiếu bán cũ</summary>
+              <div id="cloudMigrationStatusV198" class="muted">
+                Hệ thống đã ổn định • chỉ dùng khi có dữ liệu legacy mới
+              </div>
 
-            <button
-              id="backupToCloudBtn"
-              class="secondary sm"
-              onclick="backupToCloud()"
-            >Sao lưu Cloud</button>
+              <div id="migrationDedupV201" class="sync-v201-dedup-note"></div>
 
-            <button
-              id="restoreFromCloudBtn"
-              class="secondary sm"
-              onclick="restoreFromCloud()"
-            >Khôi phục Cloud</button>
+              <div id="migrationProgressWrapV199" class="sync-v199-progress" style="display:none">
+                <div class="sync-v199-head">
+                  <div>
+                    <b id="migrationProgressPhaseV199">Sẵn sàng</b>
+                    <span id="migrationProgressDetailV199"></span>
+                  </div>
+                  <strong id="migrationProgressPctV199">0%</strong>
+                </div>
+                <div class="sync-v199-track">
+                  <div id="migrationProgressFillV199" class="sync-v199-fill" style="width:0%"></div>
+                </div>
+              </div>
 
-            <button
-              class="secondary sm"
-              onclick="refreshMultiDeviceStatus()"
-            >Kiểm tra Cloud</button>
+              <div class="sync-v216-repair-report section-gap-sm">
+                <b>Phiếu bán pending</b>
+                <span id="saleRepairReportV216">
+                  ${(()=>{
+                    const r=v216LoadRepairReport();
+                    return r?.errors?.length
+                      ?esc(v216RepairErrorSummary(r))
+                      :'Không có lỗi repair cụ thể.';
+                  })()}
+                </span>
+              </div>
+            </details>
 
-            <button
-              class="secondary sm"
-              onclick="syncNow().then(()=>autoSyncNow({force:true,reason:'business-sync',silent:true}))"
-            >Đồng bộ nghiệp vụ</button>
-
-            <button
-              class="secondary sm"
-              onclick="exportBackup()"
-            >Xuất backup</button>
-
-            <button
-              class="secondary sm"
-              onclick="selectBackupImport()"
-            >Nhập backup</button>
-
-            <input
-              id="backupImportInput"
-              type="file"
-              accept="application/json,.json"
-              style="display:none"
-              onchange="importBackupFile(this)"
-            >
-          </div>
-
-          <div id="multiDeviceStatus" class="sync-v186-cloud-detail">
-            <span class="muted">
-              Supabase DB canonical • CAS transaction • Storage chỉ dùng backup/ghép thiết bị
-            </span>
+            <div class="sync-v237-tech-footer">
+              Cloud: ${cloudOnline?'Online':'Offline'}
+              ${auto.cloud_revision?` • Canonical Rev ${Number(auto.cloud_revision)}`:''}
+              • Atomic Sales Safe
+            </div>
           </div>
         </div>
       </details>
@@ -46036,10 +46762,7 @@ function renderSettings(){
               maxlength="80"
               value="${esc(brand.name)}"
             >
-            <button
-              class="primary"
-              onclick="saveAppName()"
-            >Lưu tên</button>
+            <button class="primary" onclick="saveAppName()">Lưu tên</button>
           </div>
         </div>
 
@@ -46053,10 +46776,7 @@ function renderSettings(){
             onchange="handleAppLogo(this)"
           >
           <div class="brand-logo-actions">
-            <button
-              class="secondary"
-              onclick="selectAppLogo()"
-            >
+            <button class="secondary" onclick="selectAppLogo()">
               ${brand.logo?'Thay logo':'Thêm logo'}
             </button>
             ${
@@ -46084,22 +46804,15 @@ function renderSettings(){
           <div class="storage-card-head">
             <div>
               <h3>Dung lượng lưu trữ</h3>
-              <div class="muted">
-                Tự động tối ưu mỗi 7 ngày.
-              </div>
+              <div class="muted">Tự động tối ưu mỗi 7 ngày.</div>
             </div>
-            <div class="storage-size">
-              ${storageHuman(storageBytes())}
-            </div>
+            <div class="storage-size">${storageHuman(storageBytes())}</div>
           </div>
-          <button
-            class="secondary sm"
-            onclick="manualOptimizeStorage()"
-          >Tối ưu ngay</button>
+          <button class="secondary sm" onclick="manualOptimizeStorage()">Tối ưu ngay</button>
         </div>
 
         <div class="card">
-          <h3>Supabase</h3>
+          <h3>Kết nối Cloud</h3>
           <p>
             <b>Trạng thái:</b>
             ${
@@ -46108,21 +46821,14 @@ function renderSettings(){
                 :'<span class="badge warnb">Offline</span>'
             }
           </p>
-          <p class="muted">
-            Storage: lat-yen-backups
-          </p>
+          <p class="muted">Supabase • backup bucket: lat-yen-backups</p>
         </div>
       </div>
 
       <div class="card section-gap">
         <h3>Di chuyển dữ liệu V2</h3>
-        <p class="muted">
-          Chỉ dùng nếu thiết bị còn dữ liệu V2 cũ.
-        </p>
-        <button
-          class="secondary sm"
-          onclick="migrateV2ToCloud()"
-        >Import dữ liệu V2</button>
+        <p class="muted">Chỉ dùng nếu thiết bị còn dữ liệu V2 cũ.</p>
+        <button class="secondary sm" onclick="migrateV2ToCloud()">Import dữ liệu V2</button>
       </div>
     </details>
   `;
@@ -46133,7 +46839,7 @@ function renderSettings(){
     if(auto.code||cfg.code){
       runWhenIdleV203(
         ()=>refreshMultiDeviceStatusV203(),
-        600
+        700
       );
     }
   },120);

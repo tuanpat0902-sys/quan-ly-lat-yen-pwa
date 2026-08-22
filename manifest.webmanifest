@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V235",
+  "name": "Quản Lý Lát Yên V237",
   "short_name": "Lát Yên",
-  "description": "Non-blocking sync engine: push-first user actions, queued realtime, in-memory canonical CAS and idle-only remote application.",
+  "description": "Simplified sync UX that separates everyday live sync from backup/restore and moves technical maintenance behind collapsed sections.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
