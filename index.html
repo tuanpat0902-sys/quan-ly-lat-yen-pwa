@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V198 CLOUD MIGRATION ===== */
+/* ===== V200 TRANSACTION TYPE FIX ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9785,6 +9785,70 @@ button{
   }
 }
 
+
+/* ===== V199 BATCH MIGRATION PROGRESS ===== */
+.sync-v199-progress{
+  margin-top:8px;
+  padding:9px 10px;
+  border:1px solid #bfdbfe;
+  border-radius:9px;
+  background:#eff6ff;
+}
+
+.sync-v199-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:10px;
+}
+
+.sync-v199-head b{
+  display:block;
+  font-size:9.5px;
+  color:#1e3a8a;
+}
+
+.sync-v199-head span{
+  display:block;
+  margin-top:2px;
+  color:#475569;
+  font-size:8.3px;
+}
+
+.sync-v199-head strong{
+  color:#1d4ed8;
+  font-size:16px;
+}
+
+.sync-v199-track{
+  margin-top:7px;
+  height:9px;
+  background:#dbeafe;
+  border-radius:999px;
+  overflow:hidden;
+}
+
+.sync-v199-fill{
+  height:100%;
+  background:linear-gradient(90deg,#2563eb,#16a34a);
+  border-radius:999px;
+  transition:width .2s ease;
+}
+
+.sync-v199-progress.error{
+  border-color:#fecaca;
+  background:#fef2f2;
+}
+
+.sync-v199-progress.error .sync-v199-head strong{
+  color:#b91c1c;
+}
+
+.sync-v199-progress.done{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -12503,7 +12567,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:198,
+    version:200,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -14174,6 +14238,600 @@ function v198CloudCoverage(){
           )
         :100
   };
+}
+
+
+/* ===== V199 RESUMABLE BATCH MIGRATION ===== */
+const V199_PROGRESS_KEY='lat_yen_migration_progress_v199';
+const V199_BATCH_SIZE=150;
+
+function loadMigrationProgressV199(){
+  try{
+    return {
+      running:false,
+      percent:0,
+      phase:'Sẵn sàng',
+      detail:'',
+      done:0,
+      total:0,
+      error:'',
+      ...JSON.parse(
+        localStorage.getItem(V199_PROGRESS_KEY)||'{}'
+      )
+    };
+  }catch(e){
+    return {
+      running:false,
+      percent:0,
+      phase:'Sẵn sàng',
+      detail:'',
+      done:0,
+      total:0,
+      error:''
+    };
+  }
+}
+
+function saveMigrationProgressV199(patch){
+  const next={
+    ...loadMigrationProgressV199(),
+    ...(patch||{}),
+    updated_at:new Date().toISOString()
+  };
+
+  next.percent=Math.max(0,Math.min(100,Number(next.percent||0)));
+
+  localStorage.setItem(
+    V199_PROGRESS_KEY,
+    JSON.stringify(next)
+  );
+
+  renderMigrationProgressV199(next);
+  return next;
+}
+
+function renderMigrationProgressV199(p=loadMigrationProgressV199()){
+  const wrap=$('migrationProgressWrapV199');
+  if(!wrap)return;
+
+  const fill=$('migrationProgressFillV199');
+  const pct=$('migrationProgressPctV199');
+  const phase=$('migrationProgressPhaseV199');
+  const detail=$('migrationProgressDetailV199');
+
+  wrap.style.display=(p.running||p.percent>0||p.error)?'block':'none';
+
+  if(fill)fill.style.width=`${Math.round(Number(p.percent||0))}%`;
+  if(pct)pct.textContent=`${Math.round(Number(p.percent||0))}%`;
+  if(phase)phase.textContent=p.phase||'Sẵn sàng';
+  if(detail){
+    detail.textContent=p.error
+      ?`Lỗi: ${p.error}`
+      :(p.detail||`${Number(p.done||0)}/${Number(p.total||0)} record`);
+  }
+
+  wrap.classList.toggle('error',!!p.error);
+  wrap.classList.toggle('done',!p.running&&!p.error&&Number(p.percent||0)===100);
+}
+
+async function v199UpsertBatches({
+  table,
+  rows,
+  onConflict='id',
+  phase,
+  startDone,
+  total
+}){
+  let done=startDone;
+
+  if(!rows.length){
+    return done;
+  }
+
+  for(let i=0;i<rows.length;i+=V199_BATCH_SIZE){
+    const batch=rows.slice(i,i+V199_BATCH_SIZE);
+
+    saveMigrationProgressV199({
+      running:true,
+      phase,
+      detail:`Đang ghi ${table} • batch ${Math.floor(i/V199_BATCH_SIZE)+1}/${Math.ceil(rows.length/V199_BATCH_SIZE)}`,
+      done,
+      total,
+      percent:Math.min(95,Math.round(done/Math.max(1,total)*100))
+    });
+
+    const r=await promiseWithTimeout(
+      sb.from(table)
+        .upsert(batch,{onConflict})
+        .select(),
+      30000,
+      `Migrate ${table}`
+    );
+
+    if(r.error){
+      throw new Error(
+        `${table}: ${r.error.message||String(r.error)}`
+      );
+    }
+
+    done+=batch.length;
+
+    saveMigrationProgressV199({
+      running:true,
+      phase,
+      detail:`Đã ghi ${done}/${total} record`,
+      done,
+      total,
+      percent:Math.min(95,Math.round(done/Math.max(1,total)*100))
+    });
+  }
+
+  return done;
+}
+
+
+/* ===== V200 TRANSACTION TYPE NORMALIZATION ===== */
+const migrationUnknownTypesV200=new Set();
+
+function normalizeTransactionTypeV200(value){
+  const raw=String(value||'').trim().toUpperCase();
+
+  const aliases={
+    IMPORT:'IMPORT',
+    IN:'IMPORT',
+    INPUT:'IMPORT',
+    PURCHASE:'IMPORT',
+    PURCHASE_IN:'IMPORT',
+    RECEIPT:'IMPORT',
+    NHAP:'IMPORT',
+
+    EXPORT:'EXPORT',
+    OUT:'EXPORT',
+    OUTPUT:'EXPORT',
+    ISSUE:'EXPORT',
+    STOCK_OUT:'EXPORT',
+    XUAT:'EXPORT',
+
+    SALE:'SALE',
+    SALES:'SALE',
+    SELL:'SALE',
+    SOLD:'SALE',
+    BAN:'SALE',
+
+    ADJUSTMENT:'ADJUSTMENT',
+    ADJUST:'ADJUSTMENT',
+    STOCKTAKE:'ADJUSTMENT',
+    STOCK_TAKE:'ADJUSTMENT',
+    INVENTORY_ADJUSTMENT:'ADJUSTMENT',
+    INVENTORY_COUNT:'ADJUSTMENT',
+    KIEM_KE:'ADJUSTMENT',
+    KIEMKE:'ADJUSTMENT'
+  };
+
+  return aliases[raw]||'';
+}
+
+function migrationUnknownSummaryV200(){
+  return [...migrationUnknownTypesV200];
+}
+
+async function buildMigrationPayloadV199(){
+  const map=await buildCloudIdMapV198();
+
+  const payload={
+    warehouses:[],
+    ingredients:[],
+    suppliers:[],
+    products:[],
+    inventory:[],
+    recipe_items:[],
+    prepared_ingredient_items:[],
+    stock_transactions:[]
+  };
+
+  for(const row of db.warehouses||[]){
+    const id=v198MapId(map,'warehouses',row.id);
+    if(!isUuidValue(id))continue;
+    payload.warehouses.push({
+      id,
+      name:row.name||'Kho',
+      address:row.address||'',
+      active:row.active!==false
+    });
+  }
+
+  for(const row of db.ingredients||[]){
+    const id=v198MapId(map,'ingredients',row.id);
+    if(!isUuidValue(id))continue;
+    payload.ingredients.push({
+      id,
+      name:row.name||'Nguyên liệu',
+      unit:row.unit||'',
+      cost:Number(row.cost||0),
+      minimum_stock:Number(row.minimum_stock||0),
+      active:row.active!==false
+    });
+  }
+
+  for(const row of db.suppliers||[]){
+    const id=v198MapId(map,'suppliers',row.id);
+    if(!isUuidValue(id))continue;
+    payload.suppliers.push({
+      id,
+      name:row.name||'',
+      phone:row.phone||'',
+      address:row.address||'',
+      note:row.note||''
+    });
+  }
+
+  for(const row of db.products||[]){
+    const id=v198MapId(map,'products',row.id);
+    if(!isUuidValue(id))continue;
+    payload.products.push({
+      id,
+      name:row.name||'Món',
+      sku:row.sku||null,
+      selling_price:Number(row.selling_price||0),
+      active:row.active!==false
+    });
+  }
+
+  for(const row of db.inventory||[]){
+    const warehouse_id=v198MapId(map,'warehouses',row.warehouse_id);
+    const ingredient_id=v198MapId(map,'ingredients',row.ingredient_id);
+    if(!isUuidValue(warehouse_id)||!isUuidValue(ingredient_id))continue;
+
+    payload.inventory.push({
+      warehouse_id,
+      ingredient_id,
+      quantity:Number(row.quantity||0),
+      updated_at:row.updated_at||new Date().toISOString()
+    });
+  }
+
+  for(const row of db.recipeItems||[]){
+    const product_id=v198MapId(map,'products',row.product_id);
+    const ingredient_id=v198MapId(map,'ingredients',row.ingredient_id);
+    if(!isUuidValue(product_id)||!isUuidValue(ingredient_id))continue;
+
+    payload.recipe_items.push({
+      id:isUuidValue(row.id)
+        ?row.id
+        :await deterministicUuidV198('recipe_item',row.id||`${row.product_id}|${row.ingredient_id}`),
+      product_id,
+      ingredient_id,
+      quantity:Number(row.quantity||0)
+    });
+  }
+
+  for(const row of db.preparedItems||[]){
+    const prepared_ingredient_id=v198MapId(map,'ingredients',row.prepared_ingredient_id);
+    const source_ingredient_id=v198MapId(map,'ingredients',row.source_ingredient_id);
+
+    if(!isUuidValue(prepared_ingredient_id)||!isUuidValue(source_ingredient_id))continue;
+
+    payload.prepared_ingredient_items.push({
+      id:isUuidValue(row.id)
+        ?row.id
+        :await deterministicUuidV198(
+            'prepared_item',
+            row.id||`${row.prepared_ingredient_id}|${row.source_ingredient_id}`
+          ),
+      prepared_ingredient_id,
+      source_ingredient_id,
+      quantity:Number(row.quantity||0)
+    });
+  }
+
+  for(const row of db.movements||[]){
+    const warehouse_id=v198MapId(map,'warehouses',row.warehouse_id);
+    const ingredient_id=v198MapId(map,'ingredients',row.ingredient_id);
+    const reference_id=v198MapId(map,'references',row.reference_id);
+
+    if(
+      !isUuidValue(warehouse_id) ||
+      !isUuidValue(ingredient_id) ||
+      (reference_id&&!isUuidValue(reference_id))
+    ){
+      continue;
+    }
+
+    const normalizedType=normalizeTransactionTypeV200(row.transaction_type);
+
+    if(!normalizedType){
+      migrationUnknownTypesV200.add(String(row.transaction_type||'(trống)'));
+      continue;
+    }
+
+    const out={
+      id:isUuidValue(row.id)
+        ?row.id
+        :await deterministicUuidV198(
+            'movement',
+            row.id||`${row.transaction_type}|${row.reference_id}|${row.ingredient_id}|${row.created_at}`
+          ),
+      warehouse_id,
+      ingredient_id,
+      transaction_type:normalizedType,
+      quantity:Number(row.quantity||0),
+      note:row.note||'',
+      reference_id:reference_id||null
+    };
+
+    if(row.created_at)out.created_at=row.created_at;
+    if(row.unit_cost!=null)out.unit_cost=Number(row.unit_cost||0);
+    if(row.total_cost!=null)out.total_cost=Number(row.total_cost||0);
+
+    const supplier_id=v198MapId(map,'suppliers',row.supplier_id);
+    if(supplier_id&&isUuidValue(supplier_id))out.supplier_id=supplier_id;
+
+    payload.stock_transactions.push(out);
+  }
+
+  return {map,payload};
+}
+
+async function remapLocalAfterMigrationV199(map){
+  for(const row of db.warehouses||[]){
+    row.id=v198MapId(map,'warehouses',row.id);
+  }
+
+  for(const row of db.ingredients||[]){
+    row.id=v198MapId(map,'ingredients',row.id);
+    delete row._local_only;
+    delete row._sync_status;
+    delete row._sync_error;
+  }
+
+  for(const row of db.products||[]){
+    row.id=v198MapId(map,'products',row.id);
+    delete row._local_only;
+    delete row._recipe_local_only;
+    delete row._sync_status;
+    delete row._sync_error;
+  }
+
+  for(const row of db.suppliers||[]){
+    row.id=v198MapId(map,'suppliers',row.id);
+    delete row._local_only;
+    delete row._sync_status;
+    delete row._sync_error;
+  }
+
+  for(const row of db.inventory||[]){
+    row.warehouse_id=v198MapId(map,'warehouses',row.warehouse_id);
+    row.ingredient_id=v198MapId(map,'ingredients',row.ingredient_id);
+    delete row._local_only;
+    delete row._sync_status;
+    delete row._sync_error;
+  }
+
+  for(const row of db.movements||[]){
+    row.warehouse_id=v198MapId(map,'warehouses',row.warehouse_id);
+    row.ingredient_id=v198MapId(map,'ingredients',row.ingredient_id);
+    row.reference_id=v198MapId(map,'references',row.reference_id);
+    row.supplier_id=v198MapId(map,'suppliers',row.supplier_id);
+
+    if(needsCloudIdMigrationV198(row.id)){
+      row.id=await deterministicUuidV198(
+        'movement',
+        row.id||`${row.transaction_type}|${row.reference_id}|${row.ingredient_id}|${row.created_at}`
+      );
+    }
+
+    delete row._local_only;
+    delete row._sync_status;
+    delete row._sync_error;
+  }
+
+  for(const row of db.recipeItems||[]){
+    row.product_id=v198MapId(map,'products',row.product_id);
+    row.ingredient_id=v198MapId(map,'ingredients',row.ingredient_id);
+    delete row._local_only;
+    delete row._recipe_local_only;
+    delete row._sync_status;
+    delete row._sync_error;
+  }
+
+  for(const row of db.preparedItems||[]){
+    row.prepared_ingredient_id=v198MapId(map,'ingredients',row.prepared_ingredient_id);
+    row.source_ingredient_id=v198MapId(map,'ingredients',row.source_ingredient_id);
+    delete row._local_only;
+  }
+
+  if(map.warehouses[currentWarehouseId]){
+    currentWarehouseId=map.warehouses[currentWarehouseId];
+    localStorage.setItem('kho_v3_warehouse',currentWarehouseId);
+  }
+
+  try{
+    const ownership=getProductWarehouseMap();
+    const next={};
+
+    for(const [productId,warehouseId] of Object.entries(ownership||{})){
+      next[
+        v198MapId(map,'products',productId)
+      ]=
+        v198MapId(map,'warehouses',warehouseId);
+    }
+
+    saveProductWarehouseMap(next);
+  }catch(e){
+    console.warn('V199 ownership remap',e);
+  }
+
+  setPendingSync(
+    getPendingSync().filter(op=>{
+      if(op?.kind==='save_ingredient'){
+        return !map.ingredients[op.ingredient_id];
+      }
+      if(op?.kind==='save_recipe'){
+        return !map.products[op.product_id];
+      }
+      return true;
+    })
+  );
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+  flushCacheSave();
+}
+
+async function migrateLocalDataToCloudV199(){
+  if(!navigator.onLine){
+    throw new Error('Thiết bị đang offline');
+  }
+
+  saveMigrationProgressV199({
+    running:true,
+    percent:1,
+    phase:'Chuẩn bị',
+    detail:'Đang xây dựng danh sách migrate…',
+    done:0,
+    total:0,
+    error:''
+  });
+
+  migrationUnknownTypesV200.clear();
+  const {map,payload}=await buildMigrationPayloadV199();
+
+  const unknownTypes=migrationUnknownSummaryV200();
+  if(unknownTypes.length){
+    console.warn('V200 skipped unknown transaction types:',unknownTypes);
+  }
+
+  const phases=[
+    ['warehouses','warehouses','id','Kho/chi nhánh'],
+    ['ingredients','ingredients','id','Nguyên liệu'],
+    ['suppliers','suppliers','id','Nhà cung cấp'],
+    ['products','products','id','Thực đơn'],
+    ['inventory','inventory','warehouse_id,ingredient_id','Tồn kho'],
+    ['recipe_items','recipe_items','id','Công thức'],
+    ['prepared_ingredient_items','prepared_ingredient_items','id','Pha chế'],
+    ['stock_transactions','stock_transactions','id','Lịch sử kho']
+  ];
+
+  const total=phases.reduce((sum,[key])=>sum+payload[key].length,0);
+  let done=0;
+
+  saveMigrationProgressV199({
+    running:true,
+    percent:2,
+    phase:'Bắt đầu migrate',
+    detail:`Tổng ${total} record • batch ${V199_BATCH_SIZE}`,
+    done:0,
+    total,
+    error:''
+  });
+
+  for(const [key,table,onConflict,label] of phases){
+    done=await v199UpsertBatches({
+      table,
+      rows:payload[key],
+      onConflict,
+      phase:label,
+      startDone:done,
+      total
+    });
+  }
+
+  saveMigrationProgressV199({
+    running:true,
+    percent:96,
+    phase:'Remap dữ liệu local',
+    detail:'Đang đổi ID local sang UUID Cloud…',
+    done,
+    total
+  });
+
+  await remapLocalAfterMigrationV199(map);
+
+  saveMigrationProgressV199({
+    running:true,
+    percent:98,
+    phase:'Xác minh Cloud',
+    detail:'Đang tải lại dữ liệu từ Supabase…',
+    done,
+    total
+  });
+
+  await loadCloud();
+
+  const coverage=v198CloudCoverage();
+
+  if(coverage.localOnly>0){
+    throw new Error(
+      `Migration chưa hoàn tất: còn ${coverage.localOnly} record local`
+    );
+  }
+
+  saveMigrationProgressV199({
+    running:false,
+    percent:100,
+    phase:'Migration hoàn tất',
+    detail:`Đã chuyển ${done}/${total} record lên Cloud`,
+    done,
+    total,
+    error:'',
+    finished_at:new Date().toISOString()
+  });
+
+  return {
+    map,
+    total,
+    done,
+    skipped_unknown_transaction_types:unknownTypes
+  };
+}
+
+async function migrateAndSyncV199(){
+  const count=countLocalCloudMigrationRowsV198();
+
+  if(!count){
+    toastMsg('Không còn dữ liệu local cần chuyển.');
+    await syncNow();
+    return;
+  }
+
+  const ok=await appConfirm(
+    `Phát hiện ${count} record local/Excel cần đưa lên Cloud.\n\n`+
+    `V199 sẽ migrate theo batch ${V199_BATCH_SIZE} record, có hiển thị tiến độ và lỗi cụ thể.\n\n`+
+    `Hãy chạy trên thiết bị có dữ liệu đầy đủ nhất.`,
+    'Batch Migration V199'
+  );
+
+  if(!ok)return;
+
+  try{
+    const migrated=await migrateLocalDataToCloudV199();
+
+    if(migrated.skipped_unknown_transaction_types?.length){
+      toastMsg(
+        `Đã migrate Cloud • bỏ qua loại giao dịch lạ: ${migrated.skipped_unknown_transaction_types.join(', ')}`
+      );
+    }
+
+    await syncNow();
+    renderPendingInspector();
+    renderSyncDiagnostics();
+    renderAll();
+  }catch(e){
+    console.error('V199 migration',e);
+
+    saveMigrationProgressV199({
+      running:false,
+      phase:'Migration bị dừng',
+      error:e?.message||String(e)
+    });
+
+    alert(
+      'Migration bị dừng:\n\n'+
+      (e?.message||String(e))+
+      '\n\nV199 đã giữ nguyên checkpoint và dữ liệu local. Hãy gửi ảnh phần Migration để xác định table bị lỗi.'
+    );
+  }
 }
 
 async function syncNow(){
@@ -31616,7 +32274,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V198',
+    app_version:'V200',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -31925,7 +32583,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:198,
+    version:200,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -32107,13 +32765,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:198,
+    version:200,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V198',storage:'supabase-storage',
+      schema:185,app_version:'V200',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -33326,7 +33984,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:198,
+    version:200,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -34093,7 +34751,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V198',
+      app_version:'V200',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -34108,7 +34766,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:198,
+      version:200,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -34385,7 +35043,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v198-full-backup-'+
+    'lat-yen-v200-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -34632,8 +35290,32 @@ function renderSettings(){
 
           <button
             class="sm"
-            onclick="migrateAndSyncV198()"
-          >Chuyển lên Cloud</button>
+            onclick="migrateAndSyncV199()"
+          >Batch migrate</button>
+        </div>
+      </div>
+
+
+      <div
+        id="migrationProgressWrapV199"
+        class="sync-v199-progress"
+        style="display:none"
+      >
+        <div class="sync-v199-head">
+          <div>
+            <b id="migrationProgressPhaseV199">Sẵn sàng</b>
+            <span id="migrationProgressDetailV199"></span>
+          </div>
+
+          <strong id="migrationProgressPctV199">0%</strong>
+        </div>
+
+        <div class="sync-v199-track">
+          <div
+            id="migrationProgressFillV199"
+            class="sync-v199-fill"
+            style="width:0%"
+          ></div>
         </div>
       </div>
 
@@ -34928,6 +35610,7 @@ function renderSettings(){
     renderSyncDiagnostics();
     renderPendingInspector();
     renderPendingBlockersV196();
+    renderMigrationProgressV199();
 
     if(auto.code||cfg.code){
       refreshMultiDeviceStatus();

@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V198",
+  "name": "Quản Lý Lát Yên V200",
   "short_name": "Lát Yên",
-  "description": "Migrate local/Excel IDs to deterministic Cloud UUIDs; 100% means true cloud coverage.",
+  "description": "Transaction type normalization and safe stock transaction migration.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

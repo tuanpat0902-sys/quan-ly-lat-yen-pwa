@@ -1,4 +1,4 @@
-const CACHE='lat-yen-pwa-v198';
+const CACHE='lat-yen-pwa-v200';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)));
