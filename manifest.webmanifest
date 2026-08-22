@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V204",
+  "name": "Quản Lý Lát Yên V205",
   "short_name": "Lát Yên",
-  "description": "Safe non-destructive cloud merge with automatic local snapshots and rollback guard.",
+  "description": "Finalized Cloud ID migration prevents legacy Excel/local IDs from reappearing.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

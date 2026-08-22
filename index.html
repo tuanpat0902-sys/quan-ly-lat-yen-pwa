@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V204 SAFE MERGE ===== */
+/* ===== V205 MIGRATION FINALIZE ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10002,6 +10002,44 @@ button{
   }
 }
 
+
+/* ===== V205 MIGRATION FINALIZE ===== */
+.sync-v205-finalize{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:3px 10px;
+  align-items:center;
+  margin-top:7px;
+  padding:8px;
+  border:1px solid #c7d2fe;
+  border-radius:8px;
+  background:#eef2ff;
+}
+
+.sync-v205-finalize b{
+  font-size:9px;
+  color:#3730a3;
+}
+
+.sync-v205-finalize span{
+  grid-column:1/2;
+  font-size:8px;
+  color:#475569;
+}
+
+.sync-v205-finalize button{
+  grid-column:2/3;
+  grid-row:1/3;
+}
+
+@media(max-width:700px){
+  .sync-v205-finalize{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -10546,6 +10584,13 @@ function cacheLoad(){
   }catch(e){
     console.warn('Cache load error:',e);
     return false;
+  }
+  try{
+    if(typeof normalizeLegacyCacheV205==='function'){
+      normalizeLegacyCacheV205();
+    }
+  }catch(e){
+    console.warn('V205 cache normalize',e);
   }
 }
 
@@ -11521,12 +11566,295 @@ async function restoreLocalSnapshotV204(){
   }
 }
 
+
+/* ===== V205 MIGRATION FINALIZE / LEGACY-ID TOMBSTONES ===== */
+const V205_LEGACY_MAP_KEY='lat_yen_legacy_cloud_map_v205';
+const V205_FINALIZED_KEY='lat_yen_migration_finalized_v205';
+
+function loadLegacyCloudMapV205(){
+  try{
+    return {
+      warehouses:{},
+      ingredients:{},
+      products:{},
+      suppliers:{},
+      references:{},
+      ...JSON.parse(
+        localStorage.getItem(V205_LEGACY_MAP_KEY)||'{}'
+      )
+    };
+  }catch(e){
+    return {
+      warehouses:{},
+      ingredients:{},
+      products:{},
+      suppliers:{},
+      references:{}
+    };
+  }
+}
+
+function saveLegacyCloudMapV205(map){
+  const current=loadLegacyCloudMapV205();
+  const next={
+    warehouses:{...current.warehouses,...(map?.warehouses||{})},
+    ingredients:{...current.ingredients,...(map?.ingredients||{})},
+    products:{...current.products,...(map?.products||{})},
+    suppliers:{...current.suppliers,...(map?.suppliers||{})},
+    references:{...current.references,...(map?.references||{})}
+  };
+
+  localStorage.setItem(
+    V205_LEGACY_MAP_KEY,
+    JSON.stringify(next)
+  );
+
+  return next;
+}
+
+function v205LegacyReplacement(group,value){
+  if(!value)return value;
+
+  const map=loadLegacyCloudMapV205();
+
+  return map?.[group]?.[value]||value;
+}
+
+function v205IsSupersededLegacyId(group,value){
+  if(!value)return false;
+
+  const map=loadLegacyCloudMapV205();
+
+  return !!map?.[group]?.[value];
+}
+
+function v205FilterSupersededLegacyRows(data){
+  if(!data)return data;
+
+  data.warehouses=(data.warehouses||[])
+    .filter(x=>!v205IsSupersededLegacyId('warehouses',x.id));
+
+  data.ingredients=(data.ingredients||[])
+    .filter(x=>!v205IsSupersededLegacyId('ingredients',x.id));
+
+  data.products=(data.products||[])
+    .filter(x=>!v205IsSupersededLegacyId('products',x.id));
+
+  data.suppliers=(data.suppliers||[])
+    .filter(x=>!v205IsSupersededLegacyId('suppliers',x.id));
+
+  data.inventory=(data.inventory||[])
+    .filter(x=>
+      !v205IsSupersededLegacyId('warehouses',x.warehouse_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.ingredient_id)
+    );
+
+  data.movements=(data.movements||[])
+    .filter(x=>
+      !v205IsSupersededLegacyId('warehouses',x.warehouse_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.ingredient_id) &&
+      !v205IsSupersededLegacyId('references',x.reference_id)
+    );
+
+  data.recipeItems=(data.recipeItems||[])
+    .filter(x=>
+      !v205IsSupersededLegacyId('products',x.product_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.ingredient_id)
+    );
+
+  data.preparedItems=(data.preparedItems||[])
+    .filter(x=>
+      !v205IsSupersededLegacyId('ingredients',x.prepared_ingredient_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.source_ingredient_id)
+    );
+
+  return data;
+}
+
+function v205RemapLegacyRowsInPlace(data=db){
+  if(!data)return 0;
+
+  let changed=0;
+
+  const remap=(group,value)=>{
+    const next=v205LegacyReplacement(group,value);
+    if(next!==value)changed++;
+    return next;
+  };
+
+  for(const row of data.warehouses||[]){
+    row.id=remap('warehouses',row.id);
+  }
+
+  for(const row of data.ingredients||[]){
+    row.id=remap('ingredients',row.id);
+  }
+
+  for(const row of data.products||[]){
+    row.id=remap('products',row.id);
+  }
+
+  for(const row of data.suppliers||[]){
+    row.id=remap('suppliers',row.id);
+  }
+
+  for(const row of data.inventory||[]){
+    row.warehouse_id=remap('warehouses',row.warehouse_id);
+    row.ingredient_id=remap('ingredients',row.ingredient_id);
+  }
+
+  for(const row of data.movements||[]){
+    row.warehouse_id=remap('warehouses',row.warehouse_id);
+    row.ingredient_id=remap('ingredients',row.ingredient_id);
+    row.reference_id=remap('references',row.reference_id);
+    row.supplier_id=remap('suppliers',row.supplier_id);
+  }
+
+  for(const row of data.recipeItems||[]){
+    row.product_id=remap('products',row.product_id);
+    row.ingredient_id=remap('ingredients',row.ingredient_id);
+  }
+
+  for(const row of data.preparedItems||[]){
+    row.prepared_ingredient_id=remap(
+      'ingredients',
+      row.prepared_ingredient_id
+    );
+
+    row.source_ingredient_id=remap(
+      'ingredients',
+      row.source_ingredient_id
+    );
+  }
+
+  // Deduplicate after remap.
+  const uniq=(rows,keyFn)=>{
+    const map=new Map();
+    for(const row of rows||[]){
+      map.set(String(keyFn(row)),row);
+    }
+    return [...map.values()];
+  };
+
+  data.warehouses=uniq(data.warehouses,x=>x.id);
+  data.ingredients=uniq(data.ingredients,x=>x.id);
+  data.products=uniq(data.products,x=>x.id);
+  data.suppliers=uniq(data.suppliers,x=>x.id);
+  data.inventory=uniq(
+    data.inventory,
+    x=>`${x.warehouse_id}|${x.ingredient_id}`
+  );
+  data.recipeItems=uniq(
+    data.recipeItems,
+    x=>x.id||`${x.product_id}|${x.ingredient_id}`
+  );
+  data.preparedItems=uniq(
+    data.preparedItems,
+    x=>x.id||`${x.prepared_ingredient_id}|${x.source_ingredient_id}`
+  );
+  data.movements=uniq(
+    data.movements,
+    x=>x.id||`${x.transaction_type}|${x.reference_id}|${x.ingredient_id}|${x.created_at}`
+  );
+
+  return changed;
+}
+
+function finalizeMigrationMapV205(map){
+  const saved=saveLegacyCloudMapV205(map);
+
+  localStorage.setItem(
+    V205_FINALIZED_KEY,
+    JSON.stringify({
+      at:new Date().toISOString(),
+      counts:{
+        warehouses:Object.keys(saved.warehouses||{}).length,
+        ingredients:Object.keys(saved.ingredients||{}).length,
+        products:Object.keys(saved.products||{}).length,
+        suppliers:Object.keys(saved.suppliers||{}).length,
+        references:Object.keys(saved.references||{}).length
+      }
+    })
+  );
+
+  return saved;
+}
+
+function hydrateLegacyMapFromPreviousMigrationV205(){
+  try{
+    const previous=loadCloudIdMigrationV198();
+
+    if(previous?.map){
+      finalizeMigrationMapV205(previous.map);
+      return true;
+    }
+  }catch(e){
+    console.warn('V205 hydrate migration map',e);
+  }
+
+  return false;
+}
+
+function normalizeLegacyCacheV205(){
+  hydrateLegacyMapFromPreviousMigrationV205();
+
+  const changed=v205RemapLegacyRowsInPlace(db);
+
+  if(changed){
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+    flushCacheSave();
+  }
+
+  return changed;
+}
+
+function v205LegacyGhostCount(data=db){
+  const map=loadLegacyCloudMapV205();
+  let count=0;
+
+  const has=(group,value)=>!!map?.[group]?.[value];
+
+  for(const x of data.warehouses||[]){
+    if(has('warehouses',x.id))count++;
+  }
+
+  for(const x of data.ingredients||[]){
+    if(has('ingredients',x.id))count++;
+  }
+
+  for(const x of data.products||[]){
+    if(has('products',x.id))count++;
+  }
+
+  for(const x of data.inventory||[]){
+    if(
+      has('warehouses',x.warehouse_id) ||
+      has('ingredients',x.ingredient_id)
+    )count++;
+  }
+
+  for(const x of data.movements||[]){
+    if(
+      has('warehouses',x.warehouse_id) ||
+      has('ingredients',x.ingredient_id) ||
+      has('references',x.reference_id)
+    )count++;
+  }
+
+  return count;
+}
+
 async function loadCloud(){
  if(syncing){
   cloudReloadRequested=true;
   return;
  }
- const localBefore=db;
+ // V205: remap/tombstone already-migrated legacy IDs before Cloud pull.
+ normalizeLegacyCacheV205();
+
+ const localBefore=v205FilterSupersededLegacyRows(db);
 
  // V204: create local recovery point before any Cloud pull.
  v204EmergencySnapshot('before_loadCloud');
@@ -11715,7 +12043,10 @@ async function loadCloud(){
     if(!exists)db.movements.push(row);
   }
 
+  // Legacy Excel IDs already migrated to UUID must never be resurrected.
   preserveExcelImportedLocal(localBefore,db);
+  v205RemapLegacyRowsInPlace(db);
+  v205FilterSupersededLegacyRows(db);
 
   const unsafeDrops=
    v204DetectUnsafeDrop(
@@ -13074,7 +13405,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:204,
+    version:205,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -14701,21 +15032,32 @@ function v198CloudCoverage(){
   };
 
   for(const x of db.warehouses||[]){
-    count(isUuidValue(x.id));
+    count(
+      isUuidValue(x.id) &&
+      !v205IsSupersededLegacyId('warehouses',x.id)
+    );
   }
 
   for(const x of db.ingredients||[]){
-    count(isUuidValue(x.id));
+    count(
+      isUuidValue(x.id) &&
+      !v205IsSupersededLegacyId('ingredients',x.id)
+    );
   }
 
   for(const x of db.products||[]){
-    count(isUuidValue(x.id));
+    count(
+      isUuidValue(x.id) &&
+      !v205IsSupersededLegacyId('products',x.id)
+    );
   }
 
   for(const x of db.inventory||[]){
     count(
       isUuidValue(x.warehouse_id) &&
-      isUuidValue(x.ingredient_id)
+      isUuidValue(x.ingredient_id) &&
+      !v205IsSupersededLegacyId('warehouses',x.warehouse_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.ingredient_id)
     );
   }
 
@@ -14726,18 +15068,30 @@ function v198CloudCoverage(){
       (
         !x.reference_id ||
         isUuidValue(x.reference_id)
-      )
+      ) &&
+      !v205IsSupersededLegacyId('warehouses',x.warehouse_id) &&
+      !v205IsSupersededLegacyId('ingredients',x.ingredient_id) &&
+      !v205IsSupersededLegacyId('references',x.reference_id)
     );
   }
+
+  const ghosts=
+    typeof v205LegacyGhostCount==='function'
+      ?v205LegacyGhostCount(db)
+      :0;
+
+  const baseLocalOnly=
+    Math.max(
+      0,
+      total-cloudReady
+    );
 
   return {
     total,
     cloudReady,
     localOnly:
-      Math.max(
-        0,
-        total-cloudReady
-      ),
+      baseLocalOnly+ghosts,
+    legacyGhosts:ghosts,
     percent:
       total
         ?Math.round(
@@ -15430,6 +15784,9 @@ async function remapLocalAfterMigrationV199(map){
     })
   );
 
+  // V205: persist old-ID -> Cloud-UUID mapping permanently.
+  finalizeMigrationMapV205(map);
+
   invalidateDataIndexes();
   invalidateDerivedCaches();
   cacheSave();
@@ -15582,6 +15939,8 @@ async function migrateLocalDataToCloudV199(){
   await remapLocalAfterMigrationV199(
     map
   );
+
+  finalizeMigrationMapV205(map);
 
   saveMigrationProgressV199({
     running:true,
@@ -33051,7 +33410,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V204',
+    app_version:'V205',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -33360,7 +33719,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:204,
+    version:205,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -33542,13 +33901,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:204,
+    version:205,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V204',storage:'supabase-storage',
+      schema:185,app_version:'V205',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -34761,7 +35120,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:204,
+    version:205,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -35542,6 +35901,7 @@ async function refreshMultiDeviceStatusV203(){
   }
 }
 
+try{normalizeLegacyCacheV205()}catch(e){console.warn(e)}
 initV185AutoSync();
 function multiDeviceFormValues(){
   const auto=loadAutoSyncConfig();
@@ -35769,7 +36129,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V204',
+      app_version:'V205',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -35784,7 +36144,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:204,
+      version:205,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -36061,7 +36421,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v204-full-backup-'+
+    'lat-yen-v205-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -36292,6 +36652,23 @@ function renderSettings(){
       <details class="sync-v202-tools" ontoggle="if(this.open)renderAdvancedSyncToolsV203()">
         <summary>Công cụ đồng bộ nâng cao</summary>
         <div class="sync-v202-tools-body">
+
+
+          <div class="sync-v205-finalize">
+            <b>Migration đã khóa ID cũ</b>
+            <span>
+              ID Excel/local đã chuyển lên Cloud sẽ không được phép xuất hiện lại.
+              ${
+                v205LegacyGhostCount()
+                  ?`Đang phát hiện ${v205LegacyGhostCount()} ID cũ cần remap.`
+                  :'Không phát hiện ID cũ quay trở lại.'
+              }
+            </span>
+            <button
+              class="secondary sm"
+              onclick="normalizeLegacyCacheV205(); renderAll(); toastMsg('Đã chuẩn hóa cache theo UUID Cloud')"
+            >Chuẩn hóa cache</button>
+          </div>
 
           <div class="sync-v204-safety">
             <div>

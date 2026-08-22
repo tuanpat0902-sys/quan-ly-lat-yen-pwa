@@ -1,0 +1,27 @@
+V205 - MIGRATION FINALIZE
+
+Triệu chứng:
+- Dữ liệu đã migrate lên Cloud.
+- Sau một thời gian lại xuất hiện "còn record local".
+- Có thể xảy ra khi cache/Excel/thiết bị cũ tái tạo ID excel_* / local_*.
+
+Nguyên nhân:
+V204 bảo vệ local record không có trên Cloud.
+Nhưng sau migration, ID local cũ phải bị coi là đã bị thay thế vĩnh viễn bởi UUID Cloud.
+
+V205:
+- Lưu permanent map old local ID -> Cloud UUID.
+- Sau mỗi migration, map được finalize.
+- Khi app mở/cache load/Cloud pull: tự remap ID cũ sang UUID.
+- ID cũ đã migrate bị tombstone, không được preserveExcelImportedLocal phục hồi.
+- Deduplicate sau remap.
+- Cloud Coverage tính cả legacy ghost.
+- Có nút "Chuẩn hóa cache".
+
+Không cần SQL mới.
+
+Cách triển khai:
+1. Update V205 trên TẤT CẢ thiết bị.
+2. Thiết bị đã migrate trước đây sẽ đọc map migration V198/V199 và tự tạo V205 permanent map.
+3. Bấm Đồng bộ ngay một lần.
+4. Nếu còn ghost, mở Công cụ nâng cao -> Chuẩn hóa cache.
