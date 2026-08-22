@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V208 ACTION SYNC ===== */
+/* ===== V209 LOOP GUARD ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10589,7 +10589,7 @@ function v208ScheduleActionSync(
   reason='data_change',
   delay=V208_ACTION_SYNC_DEBOUNCE_MS
 ){
-  if(v208IsRemoteOrInternal()){
+  if(!v209CanScheduleActionSync()){
     return;
   }
 
@@ -10606,12 +10606,23 @@ function v208ScheduleActionSync(
     return;
   }
 
+  const elapsed=
+    Date.now()-
+    Number(v209LastActionSyncAt||0);
+
+  const cooldown=
+    Math.max(
+      0,
+      V209_ACTION_COOLDOWN_MS-elapsed
+    );
+
   v208ActionSyncTimer=
     setTimeout(
       ()=>v208FlushActionSync(),
       Math.max(
-        50,
-        Number(delay||0)
+        80,
+        Number(delay||0),
+        cooldown
       )
     );
 }
@@ -10633,40 +10644,65 @@ async function v208FlushActionSync(){
   if(
     autoSyncBusy ||
     syncing ||
-    v206RealtimePullBusy
+    v206RealtimePullBusy ||
+    v208IsRemoteOrInternal()
   ){
-    v208ActionSyncTimer=
-      setTimeout(
-        ()=>v208FlushActionSync(),
-        V208_ACTION_SYNC_RETRY_MS
-      );
+    if(v209FollowupCount<V209_MAX_FOLLOWUP){
+      v209FollowupCount++;
+
+      v208ActionSyncTimer=
+        setTimeout(
+          ()=>v208FlushActionSync(),
+          V208_ACTION_SYNC_RETRY_MS
+        );
+    }
 
     return;
   }
 
   v208ActionSyncQueued=false;
+  v209FollowupCount=0;
+  v209LastActionSyncAt=Date.now();
+
+  // Hard internal guard around the whole action-triggered sync.
+  v208InternalWriteDepth++;
 
   try{
     await autoSyncNow({
       force:false,
-      reason:
-        'action:'+
-        v208LastActionReason,
+      reason:'action:'+v208LastActionReason,
       silent:true
     });
+
   }catch(e){
     console.warn(
-      'V208 action sync',
+      'V209 action sync',
       e
     );
 
-    v208ActionSyncQueued=true;
+    // Keep at most one retry, never a self-sustaining loop.
+    if(
+      navigator.onLine &&
+      v209FollowupCount<V209_MAX_FOLLOWUP
+    ){
+      v208ActionSyncQueued=true;
+      v209FollowupCount++;
 
-    v208ActionSyncTimer=
-      setTimeout(
-        ()=>v208FlushActionSync(),
-        V208_ACTION_SYNC_RETRY_MS
+      v208ActionSyncTimer=
+        setTimeout(
+          ()=>v208FlushActionSync(),
+          V208_ACTION_SYNC_RETRY_MS
+        );
+    }
+
+  }finally{
+    v208InternalWriteDepth=
+      Math.max(
+        0,
+        v208InternalWriteDepth-1
       );
+
+    v208LastActionReason='';
   }
 }
 
@@ -10760,7 +10796,10 @@ function installV208StorageSyncHook(){
         this===localStorage &&
         oldValue!==String(value) &&
         v208BusinessStorageKey(key) &&
-        !v208IsRemoteOrInternal()
+        !v208IsRemoteOrInternal() &&
+        !autoSyncBusy &&
+        !syncing &&
+        !v206RealtimePullBusy
       ){
         v208ScheduleActionSync(
           'storage:'+
@@ -10793,15 +10832,34 @@ function v208ActionSyncStatus(){
   };
 }
 
+
+/* ===== V209 ACTION SYNC LOOP GUARD ===== */
+const V209_ACTION_COOLDOWN_MS=1200;
+const V209_MAX_FOLLOWUP=1;
+
+let v209LastActionSyncAt=0;
+let v209FollowupCount=0;
+
+function v209CanScheduleActionSync(){
+  return !(
+    v208IsRemoteOrInternal() ||
+    autoSyncBusy ||
+    syncing ||
+    v206RealtimePullBusy
+  );
+}
+
+function v209ResetQueuedSync(){
+  clearTimeout(v208ActionSyncTimer);
+  v208ActionSyncTimer=null;
+  v208ActionSyncQueued=false;
+  v208LastActionReason='';
+  v209FollowupCount=0;
+}
+
 function cacheSave(){
   invalidateDataIndexes();
   cacheSaveDirty=true;
-
-  if(!v208IsRemoteOrInternal()){
-    v208ScheduleActionSync(
-      'db_mutation'
-    );
-  }
 
   if(cacheSaveTimer)return;
 
@@ -13673,7 +13731,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:208,
+    version:209,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -18456,6 +18514,9 @@ async function saveIngredient(id){
   }finally{
     if(btn){btn.disabled=false;btn.textContent='Lưu'}
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('ingredient_save');
+  }
 }
 
 function produceIngredientModal(id){
@@ -20414,6 +20475,9 @@ async function saveExportReceipt(){
         :'Xác nhận xuất kho';
     }
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('export_save');
+  }
 }
 
 function exportReceiptHistoryTable(){
@@ -20730,6 +20794,9 @@ async function deleteExportReceipt(encodedReferenceId){
     renderImports();
 
     alert('Lỗi xóa phiếu xuất kho: '+(e?.message||e));
+  }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('export_delete');
   }
 }
 
@@ -21955,6 +22022,9 @@ async function deleteImportReceipt(encodedKey){
 
     alert('Lỗi xóa phiếu: '+(e?.message||e));
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('import_delete');
+  }
 }
 
 async function revertReceiptForEdit(encodedKey){
@@ -22340,6 +22410,9 @@ async function saveImportReceipt(){
       btn.textContent=editKey?'Lưu thay đổi phiếu':'Xác nhận nhập kho';
     }
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('import_save');
+  }
 }
 
 function updateImportPreview(){
@@ -22671,6 +22744,9 @@ async function deleteIngredient(id){
   }catch(e){
     alert('Lỗi xóa nguyên liệu/ dụng cụ: '+(e?.message||e));
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('ingredient_delete');
+  }
 }
 
 
@@ -22813,6 +22889,9 @@ async function deleteRecipe(productId){
         </div>
       </div>
     `);
+  }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('recipe_delete');
   }
 }
 
@@ -23445,6 +23524,9 @@ async function saveRecipe(id){
 
     alert('Lỗi công thức: '+(e?.message||e));
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('recipe_save');
+  }
 }
 
 
@@ -23824,6 +23906,9 @@ function editSaleReceipt(saleId){
     }),
     40
   );
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('sale_edit');
+  }
 }
 
 function toggleSaleReceiptForm(forceOpen=null){
@@ -24541,6 +24626,9 @@ async function deleteSaleReceipt(saleId){
   }catch(e){
     const msg=e?.message||String(e);
     alert('Lỗi xóa phiếu bán hàng: '+msg);
+  }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('sale_delete');
   }
 }
 
@@ -26138,6 +26226,9 @@ async function saveSaleReceipt(){
           :'Xác nhận bán & trừ kho';
     }
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('sale_save');
+  }
 }
 
 async function doSale(){
@@ -26887,6 +26978,9 @@ async function deleteStocktakeReceipt(encodedKey){
 
     alert('Lỗi xóa phiếu kiểm kê: '+(e?.message||e));
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('stocktake_delete');
+  }
 }
 
 async function saveEditedStocktakeReceipt(editKey,receiptNo,receiptDate,generalNote,lines){
@@ -27046,6 +27140,9 @@ async function saveEditedStocktakeReceipt(editKey,receiptNo,receiptDate,generalN
   );
 
   return true;
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('stocktake_edit');
+  }
 }
 
 function parseStocktakeMeta(m){
@@ -27870,6 +27967,9 @@ async function saveStocktakeReceipt(){
       btn.textContent='Lưu phiếu kiểm kê';
     }
   }
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('stocktake_save');
+  }
 }
 
 async function saveStocktake(){
@@ -28548,6 +28648,9 @@ function addCashflowEntry(){
       )
   );
   v208MarkBusinessAction('cashflow');
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('cashflow_save');
+  }
 }
 
 function deleteCashflowEntry(id){
@@ -28579,6 +28682,9 @@ function deleteCashflowEntry(id){
 
   toastMsg('Đã xóa');
   v208MarkBusinessAction('cashflow_delete');
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('cashflow_delete');
+  }
 }
 
 
@@ -31356,6 +31462,9 @@ function deleteEmployee(id){
     alert('Xóa nhân viên thất bại: '+(err?.message||String(err)));
   }
   v208MarkBusinessAction('employee_delete');
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('employee_delete');
+  }
 }
 
 
@@ -32187,6 +32296,9 @@ function saveAttendanceForEmployee(employeeId){
   auditLog('Chấm công','Lưu chấm công',auditEmployee?.name||employeeId,`Tháng ${month}`);
   toastMsg('Đã lưu chấm công nhân viên');
   v208MarkBusinessAction('attendance');
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('attendance_save');
+  }
 }
 
 function integratedPayrollRow(employeeId){
@@ -33189,6 +33301,9 @@ function saveEmployee(id=''){
   auditLog('Nhân viên',id?'Cập nhật':'Thêm mới',`${payload.code} • ${payload.name}`,`${payload.role||''} • ${payload.attendance_mode==='day'?'Chấm công ngày':'Chấm công giờ'}`);
   toastMsg('Đã lưu nhân viên');
   v208MarkBusinessAction('employee');
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('employee_save');
+  }
 }
 
 
@@ -33406,6 +33521,9 @@ async function deleteWarehouse(id){
     if(btn){btn.disabled=false;btn.textContent='Xác nhận xóa'}
   }
   v208MarkBusinessAction('warehouse_delete');
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('warehouse_delete');
+  }
 }
 
 function warehouseModal(id=''){let w=db.warehouses.find(x=>x.id===id)||{name:'',address:''};openModal(`<div class="modal-head"><h3>${id?'Sửa':'Thêm'} kho</h3><button class="x" onclick="closeModal()">×</button></div><div class="form-grid"><div><label>Tên</label><input id="wName" value="${esc(w.name)}"></div><div class="full"><label>Địa chỉ</label><input id="wAddress" value="${esc(w.address||'')}"></div></div><button class="primary section-gap" onclick="saveWarehouse('${id}')">Lưu lên Cloud</button>`)}
@@ -33455,6 +33573,9 @@ async function saveWarehouse(id){
     alert('Lỗi: '+(e?.message||e));
   }
   v208MarkBusinessAction('warehouse');
+  if(v209CanScheduleActionSync()){
+    v208ScheduleActionSync('warehouse_save');
+  }
 }
 
 
@@ -34071,7 +34192,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V208',
+    app_version:'V209',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34380,7 +34501,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:208,
+    version:209,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -34562,13 +34683,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:208,
+    version:209,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V208',storage:'supabase-storage',
+      schema:185,app_version:'V209',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -35781,7 +35902,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:208,
+    version:209,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -36772,7 +36893,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V208',
+      app_version:'V209',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -36787,7 +36908,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:208,
+      version:209,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -37064,7 +37185,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v208-full-backup-'+
+    'lat-yen-v209-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -38336,6 +38457,7 @@ async function init(){
     }
   });if(cacheLoad()){cleanupInvalidExcelSyncQueue();renderAll();setCloudStatus('Cache đã tải');}window.addEventListener('online',async()=>{
   if(v208ActionSyncQueued){
+    v209FollowupCount=0;
     setTimeout(
       ()=>v208FlushActionSync(),
       100

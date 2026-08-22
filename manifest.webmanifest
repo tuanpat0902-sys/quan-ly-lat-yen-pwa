@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V208",
+  "name": "Quản Lý Lát Yên V209",
   "short_name": "Lát Yên",
-  "description": "Immediate sync after every data-changing action with realtime echo protection.",
+  "description": "Loop-safe immediate action sync with explicit business mutation triggers.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
