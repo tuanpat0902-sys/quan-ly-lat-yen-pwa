@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V188",
+  "name": "Quản Lý Lát Yên V189",
   "short_name": "Lát Yên",
-  "description": "Đồng bộ đa thiết bị với Cloud Revision và kiểm tra hội tụ.",
+  "description": "Đồng bộ đa thiết bị với Supabase Database canonical state và transaction CAS.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

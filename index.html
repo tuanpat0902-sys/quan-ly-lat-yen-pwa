@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V188 CLOUD REVISION ===== */
+/* ===== V189 DB CANONICAL ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10436,6 +10436,64 @@ async function q(table,query){
   if(r.error)throw r.error;
   return r.data||[];
 }
+
+/* ===== V189 FULL CLOUD PAGINATION ===== */
+async function fetchAllCloudRows(
+  table,
+  options={}
+){
+  const {
+    orderColumn='',
+    ascending=true,
+    pageSize=1000
+  }=options;
+
+  const rows=[];
+  let from=0;
+
+  while(true){
+    let query=
+      sb.from(table)
+        .select('*');
+
+    if(orderColumn){
+      query=
+        query.order(
+          orderColumn,
+          {ascending}
+        );
+    }
+
+    query=
+      query.range(
+        from,
+        from+pageSize-1
+      );
+
+    const page=
+      await q(
+        table,
+        query
+      );
+
+    rows.push(...page);
+
+    if(page.length<pageSize){
+      break;
+    }
+
+    from+=pageSize;
+
+    if(from>200000){
+      throw new Error(
+        `Quá nhiều dữ liệu ở bảng ${table}.`
+      );
+    }
+  }
+
+  return rows;
+}
+
 async function loadCloud(){
  if(syncing){
   cloudReloadRequested=true;
@@ -10451,16 +10509,16 @@ async function loadCloud(){
   try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
 
   const [warehouses,suppliers,ingredients,inventory,products,recipeItems,preparedItems,sales,saleItems,movementsRaw]=await Promise.all([
-   q('warehouses',sb.from('warehouses').select('*').order('created_at')),
-   q('suppliers',sb.from('suppliers').select('*').order('created_at')),
-   q('ingredients',sb.from('ingredients').select('*').order('created_at')),
-   q('inventory',sb.from('inventory').select('*')),
-   q('products',sb.from('products').select('*').order('created_at')),
-   q('recipe_items',sb.from('recipe_items').select('*')),
-   q('prepared_ingredient_items',sb.from('prepared_ingredient_items').select('*')),
-   q('sales',sb.from('sales').select('*').order('sold_at',{ascending:false}).limit(1000)),
-   q('sale_items',sb.from('sale_items').select('*').order('created_at',{ascending:false}).limit(3000)),
-   q('stock_transactions',sb.from('stock_transactions').select('*').order('created_at',{ascending:false}).limit(2000))
+   fetchAllCloudRows('warehouses',{orderColumn:'created_at',ascending:true}),
+   fetchAllCloudRows('suppliers',{orderColumn:'created_at',ascending:true}),
+   fetchAllCloudRows('ingredients',{orderColumn:'created_at',ascending:true}),
+   fetchAllCloudRows('inventory'),
+   fetchAllCloudRows('products',{orderColumn:'created_at',ascending:true}),
+   fetchAllCloudRows('recipe_items'),
+   fetchAllCloudRows('prepared_ingredient_items'),
+   fetchAllCloudRows('sales',{orderColumn:'sold_at',ascending:false}),
+   fetchAllCloudRows('sale_items',{orderColumn:'created_at',ascending:false}),
+   fetchAllCloudRows('stock_transactions',{orderColumn:'created_at',ascending:false})
   ]);
   const movements=filterDeletedExportMovements(
     filterDeletedStocktakeMovements(
@@ -10904,29 +10962,53 @@ async function syncNow(){
   }
 
   try{
-    try{await syncDeletedImportMovementTombstones()}catch(e){console.warn(e)}
-    await loadCloud();
-
-    if(cloudOnline){
-      try{
-        await syncPendingOperations();
-      }catch(e){
-        console.warn('Pending sync remains:',e);
-      }
-
-      try{
-        await syncPendingSaleReceipts();
-      }catch(e){
-        console.warn('Pending sale sync remains:',e);
-      }
+    // V189: PUSH trước.
+    try{
+      await syncDeletedImportMovementTombstones();
+    }catch(e){
+      console.warn(e);
     }
 
+    try{
+      await syncPendingOperations();
+    }catch(e){
+      console.warn(
+        'Pending sync remains:',
+        e
+      );
+    }
+
+    try{
+      await syncPendingSaleReceipts();
+    }catch(e){
+      console.warn(
+        'Pending sale sync remains:',
+        e
+      );
+    }
+
+    // Sau push phải PULL lại toàn bộ Cloud.
+    await loadCloud();
+
+    // Nếu realtime/ghi Cloud vừa phát sinh trong lúc pull,
+    // loadCloud sẽ tự xếp thêm một lần reload.
     updatePendingSyncBadge();
-    toastMsg(cloudOnline?'Đồng bộ xong':'Đang ở chế độ offline');
+
+    toastMsg(
+      cloudOnline
+        ?'Đã đẩy và tải lại dữ liệu Cloud'
+        :'Đang ở chế độ offline'
+    );
 
   }catch(e){
-    console.error('syncNow',e);
-    toastMsg('Đồng bộ chưa hoàn tất. Dữ liệu local vẫn an toàn.');
+    console.error(
+      'syncNow',
+      e
+    );
+
+    toastMsg(
+      'Đồng bộ chưa hoàn tất. Dữ liệu local vẫn an toàn.'
+    );
   }
 }
 function setupRealtime(){
@@ -27890,7 +27972,7 @@ function manualOptimizeStorage(){
 /* ===== V183 MULTI-DEVICE ENCRYPTED BACKUP ===== */
 const MULTI_DEVICE_CONFIG_KEY='lat_yen_multidevice_config_v1';
 const MULTI_DEVICE_TABLE='__storage_v184_unused';
-const MULTI_DEVICE_SCHEMA=188;
+const MULTI_DEVICE_SCHEMA=189;
 
 const MULTI_DEVICE_BUCKET='lat-yen-backups';
 const MULTI_DEVICE_STORAGE_DIR='v184';
@@ -28158,7 +28240,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V188',
+    app_version:'V189',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -28467,7 +28549,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:188,
+    version:189,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -28649,13 +28731,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:188,
+    version:189,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V188',storage:'supabase-storage',
+      schema:185,app_version:'V189',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -29758,6 +29840,274 @@ async function convergeCloudRevision(
   };
 }
 
+
+/* ===== V189 TRANSACTIONAL CANONICAL LOCAL STATE ===== */
+const V189_CANONICAL_TABLE='app_sync_state';
+const V189_COMMIT_RPC='commit_app_sync_state';
+const V189_MAX_RETRIES=6;
+
+async function v189SyncKey(code){
+  return await backupLookupKey(code);
+}
+
+async function v189FetchCanonical(
+  code,
+  passphrase
+){
+  const key=
+    await v189SyncKey(code);
+
+  const r=
+    await promiseWithTimeout(
+      sb.from(V189_CANONICAL_TABLE)
+        .select(
+          'sync_key,revision,envelope,updated_at'
+        )
+        .eq('sync_key',key)
+        .maybeSingle(),
+      12000,
+      'Đọc trạng thái đồng bộ'
+    );
+
+  if(r.error){
+    throw r.error;
+  }
+
+  if(!r.data){
+    return {
+      key,
+      revision:0,
+      payload:null,
+      updated_at:''
+    };
+  }
+
+  let payload=null;
+
+  if(r.data.envelope){
+    try{
+      payload=
+        await decryptBackupSnapshot(
+          r.data.envelope,
+          passphrase
+        );
+    }catch(e){
+      throw new Error(
+        'Không giải mã được trạng thái Cloud. Hãy ghép lại thiết bị bằng QR.'
+      );
+    }
+  }
+
+  return {
+    key,
+    revision:
+      Number(r.data.revision||0),
+    payload,
+    updated_at:
+      r.data.updated_at||''
+  };
+}
+
+async function v189CommitCanonical(
+  code,
+  passphrase,
+  expectedRevision,
+  payload
+){
+  const key=
+    await v189SyncKey(code);
+
+  const encrypted=
+    await encryptBackupSnapshot(
+      payload,
+      passphrase
+    );
+
+  const envelope={
+    version:189,
+    ciphertext:encrypted.ciphertext,
+    iv:encrypted.iv,
+    salt:encrypted.salt,
+    meta:{
+      schema:189,
+      compression:
+        encrypted.compression,
+      device_id:
+        multiDeviceDeviceId(),
+      device_name:
+        multiDeviceDeviceName()
+    }
+  };
+
+  const r=
+    await promiseWithTimeout(
+      sb.rpc(
+        V189_COMMIT_RPC,
+        {
+          p_sync_key:key,
+          p_expected_revision:
+            Number(expectedRevision||0),
+          p_envelope:envelope
+        }
+      ),
+      15000,
+      'Ghi trạng thái đồng bộ'
+    );
+
+  if(r.error){
+    throw r.error;
+  }
+
+  const row=
+    Array.isArray(r.data)
+      ?r.data[0]
+      :r.data;
+
+  if(!row){
+    throw new Error(
+      'RPC không trả về trạng thái.'
+    );
+  }
+
+  return {
+    success:!!row.success,
+    revision:
+      Number(row.revision||0),
+    envelope:
+      row.envelope||null,
+    updated_at:
+      row.updated_at||''
+  };
+}
+
+async function v189CanonicalSync(
+  code,
+  passphrase
+){
+  for(
+    let attempt=1;
+    attempt<=V189_MAX_RETRIES;
+    attempt++
+  ){
+    const remote=
+      await v189FetchCanonical(
+        code,
+        passphrase
+      );
+
+    const local=
+      prepareConcurrentLocalState();
+
+    const states=[];
+
+    if(
+      remote.payload?.state
+    ){
+      states.push(
+        remote.payload
+      );
+    }
+
+    states.push(local);
+
+    const merged=
+      mergeConcurrentStates(
+        states
+      );
+
+    const applied=
+      applyConcurrentMergedState(
+        merged
+      );
+
+    const finalLocal=
+      prepareConcurrentLocalState();
+
+    finalLocal.schema=189;
+
+    const commit=
+      await v189CommitCanonical(
+        code,
+        passphrase,
+        remote.revision,
+        finalLocal
+      );
+
+    if(!commit.success){
+      // Thiết bị khác vừa commit trước chúng ta.
+      // Pull revision mới và merge lại, không ghi đè.
+      await sleepMs(
+        Math.min(
+          1200,
+          120*attempt
+        )
+      );
+      continue;
+    }
+
+    // Xác minh bằng một pull thật từ DB sau commit.
+    const verify=
+      await v189FetchCanonical(
+        code,
+        passphrase
+      );
+
+    if(
+      verify.revision!==
+        commit.revision
+    ){
+      // Có thiết bị khác commit ngay sau ta.
+      // Lặp lại để bắt kịp revision mới.
+      continue;
+    }
+
+    if(
+      verify.payload?.state
+    ){
+      const verified=
+        mergeConcurrentStates([
+          verify.payload
+        ]);
+
+      applyConcurrentMergedState(
+        verified
+      );
+    }
+
+    return {
+      converged:true,
+      revision:
+        verify.revision,
+      conflicts:
+        applied.conflicts||0,
+      attempts:attempt
+    };
+  }
+
+  const latest=
+    await v189FetchCanonical(
+      code,
+      passphrase
+    );
+
+  if(latest.payload?.state){
+    applyConcurrentMergedState(
+      mergeConcurrentStates([
+        latest.payload
+      ])
+    );
+  }
+
+  return {
+    converged:false,
+    revision:
+      latest.revision||0,
+    conflicts:0,
+    attempts:
+      V189_MAX_RETRIES
+  };
+}
+
 async function autoSyncNow(options={}){
   const {
     force=false,
@@ -29797,61 +30147,79 @@ async function autoSyncNow(options={}){
   }
 
   try{
-    // Đồng bộ hàng đợi nghiệp vụ lên Supabase trước.
-    if(
-      force&&
-      typeof syncPendingOperations==='function'
-    ){
-      try{
-        await syncPendingOperations();
-      }catch(e){
-        console.warn(
-          'Pending business sync',
-          e
-        );
-      }
+    // 1. PUSH mọi pending nghiệp vụ.
+    try{
+      await syncDeletedImportMovementTombstones();
+    }catch(e){
+      console.warn(e);
     }
 
-    if(
-      force&&
-      typeof syncPendingSaleReceipts==='function'
-    ){
-      try{
-        await syncPendingSaleReceipts();
-      }catch(e){
-        console.warn(
-          'Pending sale sync',
-          e
-        );
-      }
+    try{
+      await syncPendingOperations();
+    }catch(e){
+      console.warn(
+        'Pending business sync',
+        e
+      );
     }
 
-    // V188: merge local-only + tạo revision marker + đọc lại đến khi hội tụ.
-    const result=
-      await convergeCloudRevision(
+    try{
+      await syncPendingSaleReceipts();
+    }catch(e){
+      console.warn(
+        'Pending sale sync',
+        e
+      );
+    }
+
+    // 2. PULL toàn bộ database nghiệp vụ, có pagination.
+    await loadCloud();
+
+    // 3. Local-only dùng DB transaction CAS.
+    const canonical=
+      await v189CanonicalSync(
         cred.code,
         cred.passphrase
       );
 
+    // 4. PULL lần cuối để chắc chắn UI/cache nghiệp vụ
+    //    không đứng ở trạng thái trước commit của thiết bị khác.
+    await loadCloud();
+
     const now=
       new Date().toISOString();
+
+    const pending=
+      getPendingSync().length+
+      (db.sales||[])
+        .filter(x=>
+          x._sync_status==='pending'||
+          x._local_only===true
+        ).length;
+
+    const fullySynced=
+      canonical.converged&&
+      pending===0&&
+      cloudOnline;
 
     saveAutoSyncConfig({
       code:cred.code,
       passphrase:cred.passphrase,
       last_sync_at:now,
       last_result:
-        result.converged
+        fullySynced
           ?(
-            result.conflicts
+            canonical.conflicts
               ?'merged_conflicts'
               :'synced'
           )
           :'catching_up',
       cloud_revision:
-        result.revision||0,
+        canonical.revision||0,
       cloud_revision_token:
-        result.token||''
+        String(
+          canonical.revision||0
+        )
     });
 
     saveMultiDeviceConfig({
@@ -29860,29 +30228,30 @@ async function autoSyncNow(options={}){
     });
 
     if(!silent){
-      if(!result.converged){
+      if(fullySynced){
         toastMsg(
-          `Cloud đang có thay đổi mới • đang chờ vòng tiếp theo • Rev ${result.revision||0}`
-        );
-      }else if(result.conflicts){
-        toastMsg(
-          `Đã hội tụ Rev ${result.revision} • lưu ${result.conflicts} xung đột`
+          `Đã đồng bộ hoàn toàn • Rev ${canonical.revision}`
         );
       }else{
         toastMsg(
-          `Đã đồng bộ • Rev ${result.revision}`
+          `Đang hoàn tất đồng bộ • Rev ${canonical.revision} • ${pending} mục chờ`
         );
       }
     }
 
     return {
-      direction:'revision-merge',
-      ...result
+      direction:'db-canonical',
+      converged:fullySynced,
+      revision:
+        canonical.revision,
+      conflicts:
+        canonical.conflicts,
+      pending
     };
 
   }catch(e){
     console.warn(
-      'V188 revision sync',
+      'V189 sync',
       reason,
       e
     );
@@ -29893,8 +30262,9 @@ async function autoSyncNow(options={}){
 
     if(!silent&&reason!=='timer'){
       alert(
-        'Đồng bộ V188 chưa hoàn tất.\n\n'+
-        String(e?.message||e)
+        'Đồng bộ V189 chưa hoàn tất.\n\n'+
+        String(e?.message||e)+
+        '\n\nNếu đây là lần đầu dùng V189, hãy chạy file SQL V189 trong Supabase SQL Editor.'
       );
     }
 
@@ -29911,9 +30281,9 @@ async function autoSyncNow(options={}){
 
     if(statusEl){
       const label={
-        synced:'Đã đồng bộ',
+        synced:'Đã đồng bộ hoàn toàn',
         merged_conflicts:'Đã đồng bộ • có lịch sử xung đột',
-        catching_up:'Đang chờ hội tụ',
+        catching_up:'Đang hoàn tất đồng bộ',
         error:'Lỗi đồng bộ',
         paired:'Đã ghép'
       }[current.last_result]||
@@ -29922,11 +30292,7 @@ async function autoSyncNow(options={}){
       statusEl.textContent=
         current.cloud_revision
           ?`${label} • Rev ${current.cloud_revision}`
-          :(
-            current.last_sync_at
-              ?`${label} • ${dt(current.last_sync_at)}`
-              :label
-          );
+          :label;
     }
   }
 }
@@ -30198,7 +30564,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V188',
+      app_version:'V189',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -30213,7 +30579,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:188,
+      version:189,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -30490,7 +30856,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v188-full-backup-'+
+    'lat-yen-v189-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -30578,7 +30944,7 @@ function renderSettings(){
           <div>
             <h2>Đồng bộ dữ liệu</h2>
             <div class="muted">
-              Nhiều thiết bị có thể dùng cùng lúc; chỉ báo Đã đồng bộ khi local đã bắt kịp Cloud Revision mới nhất.
+              Cloud là nguồn dữ liệu chính. V189 chỉ báo Đã đồng bộ khi đã push pending, pull lại toàn bộ database và xác nhận revision transaction.
             </div>
           </div>
         </div>
@@ -30613,7 +30979,7 @@ function renderSettings(){
 
         <div class="sync-v186-pill ok">
           <span class="dot"></span>
-          Multi-device Safe
+          DB Transaction Safe
         </div>
 
         ${
@@ -30784,7 +31150,7 @@ function renderSettings(){
 
           <div id="multiDeviceStatus" class="sync-v186-cloud-detail">
             <span class="muted">
-              Bucket: lat-yen-backups • AES-GCM 256-bit • snapshot từng thiết bị • Cloud Revision
+              Supabase DB canonical • CAS transaction • Storage chỉ dùng backup/ghép thiết bị
             </span>
           </div>
         </div>
