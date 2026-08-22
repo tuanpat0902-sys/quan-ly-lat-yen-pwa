@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V184 STORAGE BACKUP ===== */
+/* ===== V185 AUTO SYNC QR ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -8962,6 +8962,29 @@ button{
 }
 .multi-device-storage-note code{
   font-weight:800;
+}
+
+
+/* ===== V185 AUTO SYNC + QR PAIRING ===== */
+.v185-auto-summary{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:8px 10px;border:1px solid #dbeafe;background:#f8fbff;border-radius:9px;font-size:10px}
+.v185-pair-actions{display:flex;flex-wrap:wrap;gap:7px}
+.v185-auto-toggle{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px;border:1px solid #d1fae5;background:#f0fdf4;border-radius:9px}
+.v185-auto-toggle label{display:flex;align-items:center;gap:7px;margin:0;font-weight:700;color:#166534}
+.v185-security-warning{margin-top:9px;padding:8px 10px;border-left:3px solid #f59e0b;border-radius:0 8px 8px 0;background:#fffbeb;color:#92400e;font-size:10px;line-height:1.4}
+.v185-pairing-modal,.v185-scan-modal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.72)}
+.v185-pairing-box,.v185-scan-box{width:min(92vw,420px);background:white;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.28);padding:14px}
+.v185-pairing-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.v185-pairing-head h3{margin:0 0 4px}
+.v185-qr-canvas{min-height:280px;display:flex;align-items:center;justify-content:center;padding:10px;background:white;border:1px solid #e2e8f0;border-radius:12px}
+.v185-qr-canvas img,.v185-qr-canvas canvas{max-width:100%;height:auto!important}
+.v185-pairing-warning{margin-top:10px;padding:8px 10px;border-radius:8px;background:#fff7ed;color:#9a3412;font-size:10px;line-height:1.4}
+.v185-scan-box{position:relative;overflow:hidden}
+#v185PairingVideo{width:100%;max-height:62vh;display:block;object-fit:cover;border-radius:10px;background:#111827}
+.v185-scan-line{position:absolute;left:12%;right:12%;top:54%;height:2px;background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.8)}
+@media(max-width:700px){
+  .v185-pair-actions>*{flex:1 1 46%}
+  .v185-auto-toggle{align-items:flex-start;flex-direction:column}
+  .v185-auto-toggle button{width:100%}
 }
 
 </style>
@@ -27570,7 +27593,7 @@ function manualOptimizeStorage(){
 /* ===== V183 MULTI-DEVICE ENCRYPTED BACKUP ===== */
 const MULTI_DEVICE_CONFIG_KEY='lat_yen_multidevice_config_v1';
 const MULTI_DEVICE_TABLE='__storage_v184_unused';
-const MULTI_DEVICE_SCHEMA=184;
+const MULTI_DEVICE_SCHEMA=185;
 
 const MULTI_DEVICE_BUCKET='lat-yen-backups';
 const MULTI_DEVICE_STORAGE_DIR='v184';
@@ -27838,7 +27861,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V184',
+    app_version:'V185',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -28014,16 +28037,483 @@ async function backupLookupKey(code){
   );
 }
 
+
+/* ===== V185 AUTO SYNC + QR PAIRING ===== */
+const AUTO_SYNC_KEY='lat_yen_auto_sync_v185';
+const AUTO_SYNC_INTERVAL_MS=30000;
+let autoSyncBusy=false;
+let autoSyncTimer=null;
+let pairingScanStream=null;
+let pairingScanTimer=null;
+
+function loadAutoSyncConfig(){
+  try{
+    const x=JSON.parse(localStorage.getItem(AUTO_SYNC_KEY)||'{}');
+    return {
+      enabled:x.enabled!==false,
+      code:String(x.code||''),
+      passphrase:String(x.passphrase||''),
+      last_hash:String(x.last_hash||''),
+      last_sync_at:String(x.last_sync_at||''),
+      last_result:String(x.last_result||''),
+      paired_at:String(x.paired_at||'')
+    };
+  }catch(e){
+    return {enabled:true,code:'',passphrase:'',last_hash:'',last_sync_at:'',last_result:'',paired_at:''};
+  }
+}
+
+function saveAutoSyncConfig(patch){
+  const next={...loadAutoSyncConfig(),...(patch||{})};
+  localStorage.setItem(AUTO_SYNC_KEY,JSON.stringify(next));
+  if(next.code){
+    saveMultiDeviceConfig({
+      code:next.code,
+      last_cloud_hash:next.last_hash||multiDeviceConfig().last_cloud_hash||'',
+      last_cloud_at:next.last_sync_at||multiDeviceConfig().last_cloud_at||''
+    });
+  }
+  return next;
+}
+
+function stableSnapshotForHash(snapshot){
+  const clone=JSON.parse(JSON.stringify(snapshot||{}));
+  delete clone.exported_at;
+  delete clone.app_version;
+  if(clone.local_storage){
+    delete clone.local_storage[AUTO_SYNC_KEY];
+    delete clone.local_storage[MULTI_DEVICE_CONFIG_KEY];
+    delete clone.local_storage['lat_yen_multidevice_device_id_v1'];
+    delete clone.local_storage['lat_yen_storage_optimized_at'];
+  }
+  return clone;
+}
+
+async function snapshotContentHash(snapshot){
+  return sha256Text(JSON.stringify(stableSnapshotForHash(snapshot)));
+}
+
+function autoSyncCredentials(){
+  const cfg=loadAutoSyncConfig();
+  return {
+    code:String(cfg.code||multiDeviceConfig().code||'').trim().toUpperCase(),
+    passphrase:String(cfg.passphrase||'')
+  };
+}
+
+function makePairingSecret(){
+  return 'LY'+Array.from(
+    crypto.getRandomValues(new Uint8Array(14)),
+    b=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b%32]
+  ).join('');
+}
+
+function pairingPayload(){
+  const auto=loadAutoSyncConfig();
+  const uiCode=(
+    $('multiDeviceCode')?.value||
+    auto.code||
+    multiDeviceConfig().code||
+    ''
+  ).trim().toUpperCase();
+
+  let code=uiCode;
+  if(!code){
+    code=generateMultiDeviceCode();
+    saveMultiDeviceConfig({code});
+    const el=$('multiDeviceCode');
+    if(el)el.value=code;
+  }
+
+  const uiPass=$('multiDevicePassphrase')?.value||'';
+  let passphrase=(
+    uiPass && uiPass!=='••••••••••••'
+      ?uiPass
+      :auto.passphrase
+  )||'';
+
+  if(!passphrase){
+    passphrase=makePairingSecret();
+    const el=$('multiDevicePassphrase');
+    if(el)el.value=passphrase;
+  }
+
+  saveAutoSyncConfig({
+    enabled:true,
+    code,
+    passphrase,
+    paired_at:auto.paired_at||new Date().toISOString()
+  });
+
+  return {
+    type:'lat-yen-pairing',
+    version:185,
+    code,
+    passphrase,
+    bucket:MULTI_DEVICE_BUCKET
+  };
+}
+
+function utf8ToBase64(value){
+  return bytesToBase64(new TextEncoder().encode(String(value||'')));
+}
+
+function base64ToUtf8(value){
+  return new TextDecoder().decode(base64ToBytes(value));
+}
+
+function pairingPayloadText(){
+  return 'LATYEN185:'+utf8ToBase64(JSON.stringify(pairingPayload()));
+}
+
+function parsePairingPayload(text){
+  const raw=String(text||'').trim();
+  if(!raw.startsWith('LATYEN185:')){
+    throw new Error('QR không phải mã ghép thiết bị Lát Yên V185.');
+  }
+  const payload=JSON.parse(base64ToUtf8(raw.slice('LATYEN185:'.length)));
+  if(payload?.type!=='lat-yen-pairing'||Number(payload?.version)!==185){
+    throw new Error('Mã ghép thiết bị không đúng phiên bản V185.');
+  }
+  if(!/^LY-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(String(payload.code||''))){
+    throw new Error('Mã đồng bộ trong QR không hợp lệ.');
+  }
+  if(String(payload.passphrase||'').length<6){
+    throw new Error('Mật khẩu mã hóa trong QR không hợp lệ.');
+  }
+  return payload;
+}
+
+function ensureQrLibrary(){
+  return new Promise((resolve,reject)=>{
+    if(window.QRCode){resolve();return;}
+    const existing=document.querySelector('script[data-latyen-qrcode]');
+    if(existing){
+      existing.addEventListener('load',()=>resolve(),{once:true});
+      existing.addEventListener('error',()=>reject(new Error('Không tải được thư viện QR.')),{once:true});
+      return;
+    }
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+    s.async=true;
+    s.dataset.latyenQrcode='1';
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('Không tải được thư viện QR.'));
+    document.head.appendChild(s);
+  });
+}
+
+async function showPairingQr(){
+  try{
+    await ensureQrLibrary();
+    const payload=pairingPayloadText();
+    const modal=document.createElement('div');
+    modal.className='v185-pairing-modal';
+    modal.innerHTML=`
+      <div class="v185-pairing-box">
+        <div class="v185-pairing-head">
+          <div>
+            <h3>Ghép thiết bị mới</h3>
+            <div class="muted">Trên thiết bị mới mở V185 → Cài đặt → Quét QR ghép thiết bị.</div>
+          </div>
+          <button class="secondary sm" onclick="this.closest('.v185-pairing-modal').remove()">Đóng</button>
+        </div>
+        <div id="v185PairingQrCanvas" class="v185-qr-canvas"></div>
+        <div class="v185-pairing-warning">
+          QR này chứa thông tin ghép nối và mật khẩu mã hóa. Chỉ quét trên thiết bị bạn tin cậy.
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    new QRCode(modal.querySelector('#v185PairingQrCanvas'),{
+      text:payload,width:260,height:260,correctLevel:QRCode.CorrectLevel.M
+    });
+  }catch(e){
+    alert('Không tạo được QR.\n\n'+String(e?.message||e));
+  }
+}
+
+function closePairingScanner(){
+  if(pairingScanTimer){clearInterval(pairingScanTimer);pairingScanTimer=null;}
+  if(pairingScanStream){
+    for(const track of pairingScanStream.getTracks())track.stop();
+    pairingScanStream=null;
+  }
+  document.querySelector('.v185-scan-modal')?.remove();
+}
+
+async function applyPairingPayload(payload){
+  const code=String(payload.code||'').trim().toUpperCase();
+  const passphrase=String(payload.passphrase||'');
+  saveMultiDeviceConfig({code,last_cloud_hash:'',last_cloud_at:''});
+  saveAutoSyncConfig({
+    enabled:true,code,passphrase,last_hash:'',last_sync_at:'',
+    last_result:'paired',paired_at:new Date().toISOString()
+  });
+  closePairingScanner();
+  toastMsg('Đã ghép thiết bị • đang đồng bộ…');
+  renderSettings();
+  setTimeout(()=>autoSyncNow({force:true,reason:'pairing',silent:false}),200);
+}
+
+async function scanPairingQr(){
+  if(!navigator.mediaDevices?.getUserMedia){
+    alert('Trình duyệt này không hỗ trợ camera. Hãy dùng “Nhập mã ghép”.');
+    return;
+  }
+  if(typeof BarcodeDetector==='undefined'){
+    alert('Trình duyệt chưa hỗ trợ quét QR trực tiếp. Hãy dùng Chrome Android mới hoặc “Nhập mã ghép”.');
+    return;
+  }
+  try{
+    const modal=document.createElement('div');
+    modal.className='v185-scan-modal';
+    modal.innerHTML=`
+      <div class="v185-scan-box">
+        <div class="v185-pairing-head">
+          <div><h3>Quét QR ghép thiết bị</h3><div class="muted">Đưa QR vào giữa khung hình.</div></div>
+          <button class="secondary sm" onclick="closePairingScanner()">Đóng</button>
+        </div>
+        <video id="v185PairingVideo" playsinline autoplay muted></video>
+        <div class="v185-scan-line"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    const video=modal.querySelector('#v185PairingVideo');
+    pairingScanStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'}},audio:false
+    });
+    video.srcObject=pairingScanStream;
+    await video.play();
+    const detector=new BarcodeDetector({formats:['qr_code']});
+    pairingScanTimer=setInterval(async()=>{
+      try{
+        if(!video.videoWidth||!video.videoHeight)return;
+        const codes=await detector.detect(video);
+        if(!codes?.length)return;
+        await applyPairingPayload(parsePairingPayload(codes[0].rawValue||''));
+      }catch(e){
+        if(String(e?.message||'').includes('Lát Yên')){
+          closePairingScanner();
+          alert(e.message);
+        }
+      }
+    },500);
+  }catch(e){
+    closePairingScanner();
+    alert('Không mở được camera.\n\n'+String(e?.message||e));
+  }
+}
+
+async function pastePairingCode(){
+  let text='';
+  try{text=await navigator.clipboard.readText();}catch(e){}
+  if(!text)text=prompt('Dán mã ghép thiết bị V185:')||'';
+  if(!text)return;
+  try{
+    await applyPairingPayload(parsePairingPayload(text));
+  }catch(e){
+    alert('Không ghép được thiết bị.\n\n'+String(e?.message||e));
+  }
+}
+
+function copyPairingCode(){
+  const payload=pairingPayloadText();
+  navigator.clipboard?.writeText(payload)
+    .then(()=>toastMsg('Đã sao chép mã ghép'))
+    .catch(()=>prompt('Sao chép mã ghép này:',payload));
+}
+
+async function autoSyncUpload(code,passphrase,local){
+  const encrypted=await encryptBackupSnapshot(local.snapshot,passphrase);
+  const updatedAt=new Date().toISOString();
+  const backupKey=await backupLookupKey(code);
+  const envelope={
+    version:185,
+    backup_key:backupKey,
+    ciphertext:encrypted.ciphertext,
+    iv:encrypted.iv,
+    salt:encrypted.salt,
+    meta:{
+      schema:185,app_version:'V185',storage:'supabase-storage',
+      bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
+      compression:encrypted.compression,device_id:multiDeviceDeviceId(),
+      device_name:multiDeviceDeviceName(),updated_at:updatedAt,
+      summary:backupSnapshotSummary(local.snapshot)
+    },
+    updated_at:updatedAt
+  };
+  await uploadCloudBackupEnvelope(code,envelope);
+  saveMultiDeviceConfig({
+    code,last_cloud_hash:local.hash,last_cloud_at:updatedAt,last_device_name:multiDeviceDeviceName()
+  });
+  saveAutoSyncConfig({
+    code,passphrase,last_hash:local.hash,last_sync_at:updatedAt,last_result:'uploaded'
+  });
+  return {direction:'up',hash:local.hash,updated_at:updatedAt};
+}
+
+async function autoSyncRestore(envelope,code,passphrase){
+  let snapshot;
+  try{
+    snapshot=await decryptBackupSnapshot(envelope,passphrase);
+  }catch(e){
+    throw new Error('Không giải mã được Cloud Backup. Thiết bị này cần ghép lại bằng QR.');
+  }
+  await applyFullBackupSnapshot(snapshot);
+  const hash=envelope?.meta?.content_hash||await snapshotContentHash(snapshot);
+  const updatedAt=envelope.updated_at||new Date().toISOString();
+  saveMultiDeviceConfig({
+    code,last_cloud_hash:hash,last_cloud_at:updatedAt,last_device_name:envelope?.meta?.device_name||''
+  });
+  saveAutoSyncConfig({
+    code,passphrase,last_hash:hash,last_sync_at:updatedAt,last_result:'downloaded'
+  });
+  return {direction:'down',hash,updated_at:updatedAt};
+}
+
+async function autoSyncNow(options={}){
+  const {force=false,reason='timer',silent=true}=options;
+  const cfg=loadAutoSyncConfig();
+  if(autoSyncBusy||!cfg.enabled||!navigator.onLine)return null;
+  const cred=autoSyncCredentials();
+  if(!cred.code||!cred.passphrase)return null;
+
+  autoSyncBusy=true;
+  const statusEl=$('autoSyncLiveStatus');
+  if(statusEl)statusEl.textContent='Đang đồng bộ…';
+
+  try{
+    const local=await currentLocalSnapshotAndHash();
+    const cloud=await fetchCloudBackupEnvelope(cred.code);
+    const lastHash=cfg.last_hash||multiDeviceConfig().last_cloud_hash||'';
+
+    if(!cloud){
+      const r=await autoSyncUpload(cred.code,cred.passphrase,local);
+      if(!silent)toastMsg('Đã tạo Cloud Backup tự động');
+      return r;
+    }
+
+    const cloudHash=String(cloud?.meta?.content_hash||'');
+    if(cloudHash&&cloudHash===local.hash){
+      const updatedAt=cloud.updated_at||new Date().toISOString();
+      saveAutoSyncConfig({
+        code:cred.code,passphrase:cred.passphrase,last_hash:local.hash,
+        last_sync_at:updatedAt,last_result:'synced'
+      });
+      saveMultiDeviceConfig({
+        code:cred.code,last_cloud_hash:local.hash,last_cloud_at:updatedAt
+      });
+      return {direction:'none',hash:local.hash,updated_at:updatedAt};
+    }
+
+    const localChanged=lastHash?local.hash!==lastHash:false;
+    const cloudChanged=lastHash?cloudHash!==lastHash:true;
+
+    if(!lastHash&&force&&reason==='pairing'){
+      const r=await autoSyncRestore(cloud,cred.code,cred.passphrase);
+      toastMsg('Ghép thành công • đã tải dữ liệu Cloud');
+      return r;
+    }
+
+    if(localChanged&&cloudChanged){
+      saveAutoSyncConfig({last_result:'conflict'});
+      if(statusEl)statusEl.textContent='Xung đột • cần kiểm tra';
+      if(!silent){
+        alert('Cả thiết bị và Cloud đều đã thay đổi. Auto Sync đã dừng để tránh ghi đè. Vào Cài đặt để chọn Sao lưu lên Cloud hoặc Khôi phục từ Cloud.');
+      }
+      return {direction:'conflict'};
+    }
+
+    if(cloudChanged&&!localChanged){
+      const r=await autoSyncRestore(cloud,cred.code,cred.passphrase);
+      if(!silent)toastMsg('Đã tự tải dữ liệu mới từ Cloud');
+      return r;
+    }
+
+    if(localChanged&&!cloudChanged){
+      const r=await autoSyncUpload(cred.code,cred.passphrase,local);
+      if(!silent)toastMsg('Đã tự sao lưu thay đổi lên Cloud');
+      return r;
+    }
+
+    return null;
+  }catch(e){
+    console.warn('V185 auto sync',reason,e);
+    saveAutoSyncConfig({last_result:'error'});
+    if(!silent&&reason!=='timer'){
+      alert('Auto Sync chưa hoàn tất.\n\n'+String(e?.message||e));
+    }
+    return {direction:'error',error:e};
+  }finally{
+    autoSyncBusy=false;
+    const c=loadAutoSyncConfig();
+    if(statusEl){
+      const label={
+        synced:'Đã đồng bộ',uploaded:'Đã đẩy lên Cloud',downloaded:'Đã tải từ Cloud',
+        conflict:'Xung đột',error:'Lỗi đồng bộ',paired:'Đã ghép'
+      }[c.last_result]||'Sẵn sàng';
+      statusEl.textContent=c.last_sync_at?`${label} • ${dt(c.last_sync_at)}`:label;
+    }
+  }
+}
+
+function setAutoSyncEnabled(enabled){
+  saveAutoSyncConfig({enabled:!!enabled});
+  if(enabled){
+    startAutoSyncLoop();
+    setTimeout(()=>autoSyncNow({force:true,reason:'enabled',silent:false}),100);
+  }else stopAutoSyncLoop();
+  renderSettings();
+}
+
+function stopAutoSyncLoop(){
+  if(autoSyncTimer){clearInterval(autoSyncTimer);autoSyncTimer=null;}
+}
+
+function startAutoSyncLoop(){
+  stopAutoSyncLoop();
+  const cfg=loadAutoSyncConfig();
+  if(!cfg.enabled||!cfg.code||!cfg.passphrase)return;
+  autoSyncTimer=setInterval(
+    ()=>autoSyncNow({reason:'timer',silent:true}),
+    AUTO_SYNC_INTERVAL_MS
+  );
+}
+
+function initV185AutoSync(){
+  const cfg=loadAutoSyncConfig();
+  if(cfg.code)saveMultiDeviceConfig({code:cfg.code});
+  startAutoSyncLoop();
+
+  const first=()=>autoSyncNow({force:true,reason:'startup',silent:true});
+  if(document.readyState==='complete')setTimeout(first,1200);
+  else window.addEventListener('load',()=>setTimeout(first,1200),{once:true});
+
+  window.addEventListener('online',()=>autoSyncNow({force:true,reason:'online',silent:true}));
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'){
+      autoSyncNow({force:true,reason:'focus',silent:true});
+    }
+  });
+}
+initV185AutoSync();
+
 function multiDeviceFormValues(){
+  const auto=loadAutoSyncConfig();
+  const ui=$('multiDevicePassphrase')?.value||'';
   return {
     code:(
       $('multiDeviceCode')?.value||
+      auto.code||
       multiDeviceConfig().code||
       ''
     ).trim().toUpperCase(),
-    passphrase:
-      $('multiDevicePassphrase')?.value||
-      ''
+    passphrase:(
+      ui==='••••••••••••'
+        ?auto.passphrase
+        :ui
+    )||auto.passphrase||''
   };
 }
 
@@ -28235,7 +28725,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V184',
+      app_version:'V185',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -28250,7 +28740,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:184,
+      version:185,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -28271,6 +28761,16 @@ async function backupToCloud(){
       last_device_name:
         multiDeviceDeviceName()
     });
+    saveAutoSyncConfig({
+      enabled:true,
+      code:values.code,
+      passphrase:values.passphrase,
+      last_hash:local.hash,
+      last_sync_at:updatedAt,
+      last_result:'uploaded',
+      paired_at:loadAutoSyncConfig().paired_at||new Date().toISOString()
+    });
+    startAutoSyncLoop();
 
     auditLog(
       'Cài đặt',
@@ -28458,6 +28958,16 @@ async function restoreFromCloud(){
         envelope?.meta?.device_name||
         ''
     });
+    saveAutoSyncConfig({
+      enabled:true,
+      code:values.code,
+      passphrase:values.passphrase,
+      last_hash:envelope?.meta?.content_hash||restoredHash,
+      last_sync_at:envelope.updated_at||new Date().toISOString(),
+      last_result:'downloaded',
+      paired_at:loadAutoSyncConfig().paired_at||new Date().toISOString()
+    });
+    startAutoSyncLoop();
 
     auditLog(
       'Cài đặt',
@@ -28507,7 +29017,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v184-full-backup-'+
+    'lat-yen-v185-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -28562,91 +29072,75 @@ async function importBackupFile(input){
 function renderSettings(){
   const brand=loadAppBrand();
   const cfg=multiDeviceConfig();
+  const auto=loadAutoSyncConfig();
+  const paired=!!(auto.code&&auto.passphrase);
 
   E.settings.innerHTML=`
     <div class="card settings-sync-card multi-device-card">
       <div class="settings-sync-head">
         <div>
-          <h2>Đồng bộ & Sao lưu đa thiết bị</h2>
-          <div class="muted">
-            Windows và Android dùng chung dữ liệu Cloud; dữ liệu local được sao lưu mã hóa để chuyển/khôi phục giữa các thiết bị.
-          </div>
+          <h2>Auto Sync & Ghép thiết bị</h2>
+          <div class="muted">Ghép một lần bằng QR. Sau đó V185 tự đồng bộ khi mở app, online lại và định kỳ mỗi 30 giây.</div>
         </div>
-        <span class="cloud settings-cloud-status">
-          ${cloudOnline?'Cloud Online':'Offline / Cache'}
-        </span>
+        <span class="cloud settings-cloud-status">${cloudOnline?'Cloud Online':'Offline / Cache'}</span>
+      </div>
+
+      <div class="v185-auto-summary section-gap">
+        <div><b>Trạng thái ghép:</b> ${paired?'<span class="badge okb">Đã ghép</span>':'<span class="badge warnb">Chưa ghép</span>'}</div>
+        <div><b>Auto Sync:</b> ${auto.enabled?'<span class="badge okb">Đang bật</span>':'<span class="badge warnb">Đang tắt</span>'}</div>
+        <div id="autoSyncLiveStatus" class="muted">${auto.last_sync_at?`Lần cuối: ${esc(dt(auto.last_sync_at))}`:'Chưa đồng bộ tự động'}</div>
+      </div>
+
+      <div class="v185-pair-actions section-gap">
+        <button class="primary" onclick="showPairingQr()">Hiện QR ghép thiết bị</button>
+        <button class="secondary" onclick="scanPairingQr()">Quét QR ghép thiết bị</button>
+        <button class="secondary" onclick="copyPairingCode()">Sao chép mã ghép</button>
+        <button class="secondary" onclick="pastePairingCode()">Nhập mã ghép</button>
+      </div>
+
+      <div class="v185-auto-toggle section-gap">
+        <label>
+          <input type="checkbox" ${auto.enabled?'checked':''} onchange="setAutoSyncEnabled(this.checked)">
+          Tự động đồng bộ giữa các thiết bị đã ghép
+        </label>
+        <button class="secondary sm" onclick="autoSyncNow({force:true,reason:'manual',silent:false})">Đồng bộ ngay</button>
       </div>
 
       <div class="multi-device-grid section-gap">
         <div>
           <label>Mã đồng bộ</label>
           <div class="multi-code-row">
-            <input
-              id="multiDeviceCode"
-              autocomplete="off"
-              spellcheck="false"
-              value="${esc(cfg.code||'')}"
-              placeholder="LY-XXXXX-XXXXX"
-            >
-            <button
-              type="button"
-              class="secondary"
-              onclick="newMultiDeviceCode()"
-            >Tạo mã</button>
+            <input id="multiDeviceCode" autocomplete="off" spellcheck="false" value="${esc(auto.code||cfg.code||'')}" placeholder="LY-XXXXX-XXXXX">
+            <button type="button" class="secondary" onclick="newMultiDeviceCode()">Tạo mã</button>
           </div>
-          <div class="muted">
-            Dùng cùng mã này trên các thiết bị. Có thể lưu mã; không nên chia sẻ công khai.
-          </div>
+          <div class="muted">V185 tự nhớ mã sau khi ghép QR.</div>
         </div>
 
         <div>
           <label>Mật khẩu mã hóa</label>
-          <input
-            id="multiDevicePassphrase"
-            type="password"
-            minlength="6"
-            autocomplete="new-password"
-            placeholder="Ít nhất 6 ký tự"
-          >
-          <div class="muted">
-            Mật khẩu không được lưu trên Cloud hoặc thiết bị. Cần nhập lại khi sao lưu/khôi phục.
-          </div>
+          <input id="multiDevicePassphrase" type="password" minlength="6" autocomplete="new-password"
+            value="${paired?'••••••••••••':''}" placeholder="Ít nhất 6 ký tự"
+            onfocus="if(this.value==='••••••••••••')this.value=''">
+          <div class="muted">Sau khi ghép, mật khẩu được lưu trên thiết bị để Auto Sync hoạt động. Không gửi mật khẩu lên Supabase.</div>
         </div>
       </div>
 
-      <div id="multiDeviceStatus" class="section-gap">
-        <span class="muted">Bấm “Kiểm tra trạng thái” để so sánh thiết bị với Cloud.</span>
-      </div>
+      <div id="multiDeviceStatus" class="section-gap"><span class="muted">Bấm “Kiểm tra trạng thái” để so sánh thiết bị với Cloud.</span></div>
 
       <div class="settings-sync-actions multi-device-actions section-gap">
-        <button
-          id="backupToCloudBtn"
-          class="primary"
-          onclick="backupToCloud()"
-        >Sao lưu lên Cloud</button>
-
-        <button
-          id="restoreFromCloudBtn"
-          class="secondary"
-          onclick="restoreFromCloud()"
-        >Khôi phục từ Cloud</button>
-
-        <button
-          class="secondary"
-          onclick="refreshMultiDeviceStatus()"
-        >Kiểm tra trạng thái</button>
+        <button id="backupToCloudBtn" class="primary" onclick="backupToCloud()">Sao lưu lên Cloud</button>
+        <button id="restoreFromCloudBtn" class="secondary" onclick="restoreFromCloud()">Khôi phục từ Cloud</button>
+        <button class="secondary" onclick="refreshMultiDeviceStatus()">Kiểm tra trạng thái</button>
       </div>
 
       <div class="multi-device-storage-note">
-        <b>Storage:</b>
-        backup được lưu tại bucket <code>lat-yen-backups</code>.
-        Chỉ cần tạo bucket và cấp quyền Upload/Update/Select trong Storage Policies.
+        <b>Storage:</b> tiếp tục dùng bucket <code>lat-yen-backups</code>. Policy V184 giữ nguyên.
       </div>
-
       <div class="multi-device-security-note">
-        <b>Mã hóa đầu-cuối:</b>
-        nội dung backup được mã hóa AES‑GCM bằng mật khẩu của bạn trước khi gửi lên Supabase.
-        Hệ thống cảnh báo nếu Cloud và thiết bị cùng thay đổi để hạn chế ghi đè nhầm.
+        <b>Auto Sync an toàn:</b> nếu chỉ một phía thay đổi, V185 tự đồng bộ. Nếu cả hai phía cùng thay đổi, hệ thống báo xung đột và không tự ghi đè.
+      </div>
+      <div class="v185-security-warning">
+        <b>Lưu ý:</b> QR ghép thiết bị chứa mã đồng bộ và mật khẩu mã hóa. Chỉ hiển thị QR khi ghép thiết bị của bạn.
       </div>
     </div>
 
@@ -28656,84 +29150,42 @@ function renderSettings(){
       <div class="settings-sync-head">
         <div>
           <h2>Đồng bộ dữ liệu nghiệp vụ</h2>
-          <div class="muted">
-            Đồng bộ các bảng Supabase hiện có: kho, nguyên liệu, công thức, bán hàng và giao dịch kho.
-          </div>
+          <div class="muted">Đồng bộ các bảng Supabase hiện có: kho, nguyên liệu, công thức, bán hàng và giao dịch kho.</div>
         </div>
-        <span class="cloud settings-cloud-status">
-          ${cloudOnline?'Cloud Online':'Offline / Cache'}
-        </span>
+        <span class="cloud settings-cloud-status">${cloudOnline?'Cloud Online':'Offline / Cache'}</span>
       </div>
-
       <div class="settings-sync-actions section-gap">
-        <button class="primary" onclick="syncNow()">Đồng bộ ngay</button>
+        <button class="primary" onclick="syncNow().then(()=>autoSyncNow({force:true,reason:'business-sync',silent:true}))">Đồng bộ ngay</button>
         <button class="secondary" onclick="exportBackup()">Xuất backup toàn bộ</button>
         <button class="secondary" onclick="selectBackupImport()">Nhập backup</button>
-        <input
-          id="backupImportInput"
-          type="file"
-          accept="application/json,.json"
-          style="display:none"
-          onchange="importBackupFile(this)"
-        >
+        <input id="backupImportInput" type="file" accept="application/json,.json" style="display:none" onchange="importBackupFile(this)">
       </div>
-
-      <div class="muted section-gap">
-        Đang chờ đồng bộ: <b>${getPendingSync().length}</b>
-        ${cfg.last_cloud_at
-          ?` • Backup Cloud gần nhất trên thiết bị này: <b>${esc(dt(cfg.last_cloud_at))}</b>`
-          :''}
-      </div>
+      <div class="muted section-gap">Đang chờ đồng bộ: <b>${getPendingSync().length}</b>${auto.last_sync_at?` • Auto Sync gần nhất: <b>${esc(dt(auto.last_sync_at))}</b>`:''}</div>
     </div>
 
     <div class="section-gap"></div>
 
     <div class="card brand-settings-card">
       <div class="brand-settings-head">
-        <div>
-          <h2>Nhận diện phần mềm</h2>
-          <div class="muted">
-            Tùy chỉnh tên và logo hiển thị ở đầu phần mềm.
-          </div>
-        </div>
-        ${brand.logo
-          ?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`
-          :''}
+        <div><h2>Nhận diện phần mềm</h2><div class="muted">Tùy chỉnh tên và logo hiển thị ở đầu phần mềm.</div></div>
+        ${brand.logo?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`:''}
       </div>
-
       <div class="brand-settings-grid">
         <div>
           <label>Tên phần mềm</label>
           <div class="brand-name-actions">
-            <input
-              id="brandNameInput"
-              maxlength="80"
-              value="${esc(brand.name)}"
-            >
+            <input id="brandNameInput" maxlength="80" value="${esc(brand.name)}">
             <button class="primary" onclick="saveAppName()">Lưu tên</button>
           </div>
         </div>
-
         <div>
           <label>Logo phần mềm</label>
-          <input
-            id="brandLogoInput"
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            style="display:none"
-            onchange="handleAppLogo(this)"
-          >
+          <input id="brandLogoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAppLogo(this)">
           <div class="brand-logo-actions">
-            <button class="secondary" onclick="selectAppLogo()">
-              ${brand.logo?'Thay logo':'Thêm logo'}
-            </button>
-            ${brand.logo
-              ?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`
-              :''}
+            <button class="secondary" onclick="selectAppLogo()">${brand.logo?'Thay logo':'Thêm logo'}</button>
+            ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`:''}
           </div>
-          <div class="muted brand-logo-note">
-            PNG, JPG hoặc WebP • tối đa 2 MB • tự nén còn tối đa 256 px.
-          </div>
+          <div class="muted brand-logo-note">PNG, JPG hoặc WebP • tối đa 2 MB • tự nén còn tối đa 256 px.</div>
         </div>
       </div>
     </div>
@@ -28742,12 +29194,7 @@ function renderSettings(){
 
     <div class="card storage-card">
       <div class="storage-card-head">
-        <div>
-          <h3>Dung lượng lưu trữ</h3>
-          <div class="muted">
-            Tự động dọn dữ liệu thừa mỗi 7 ngày. Nhật ký giữ tối đa 1.500 hoạt động trong 12 tháng gần nhất.
-          </div>
-        </div>
+        <div><h3>Dung lượng lưu trữ</h3><div class="muted">Tự động dọn dữ liệu thừa mỗi 7 ngày. Nhật ký giữ tối đa 1.500 hoạt động trong 12 tháng gần nhất.</div></div>
         <div class="storage-size">${storageHuman(storageBytes())}</div>
       </div>
       <button class="secondary sm" onclick="manualOptimizeStorage()">Tối ưu ngay</button>
@@ -28759,39 +29206,23 @@ function renderSettings(){
       <div class="card">
         <h2>Kết nối Supabase</h2>
         <p><b>Project:</b> hbffhiipryqvgwpccqtx</p>
-        <p>
-          <b>Trạng thái:</b>
-          ${cloudOnline
-            ?'<span class="badge okb">Online</span>'
-            :'<span class="badge warnb">Offline/cache</span>'}
-        </p>
-        <p class="muted">
-          V184 dùng bucket Supabase Storage <b>lat-yen-backups</b>; không cần tạo bảng app_backups.
-        </p>
+        <p><b>Trạng thái:</b> ${cloudOnline?'<span class="badge okb">Online</span>':'<span class="badge warnb">Offline/cache</span>'}</p>
+        <p class="muted">V185 tiếp tục dùng bucket <b>lat-yen-backups</b>. Không cần thay đổi policy nếu V184 đã sao lưu thành công.</p>
       </div>
-
       <div class="card">
         <h2>Di chuyển dữ liệu V2</h2>
-        <p class="muted">
-          Nếu thiết bị này có dữ liệu V2 cũ trong localStorage, có thể import lên Supabase một lần.
-        </p>
-        <button class="secondary" onclick="migrateV2ToCloud()">
-          Import dữ liệu V2 lên Cloud
-        </button>
+        <p class="muted">Nếu thiết bị này có dữ liệu V2 cũ trong localStorage, có thể import lên Supabase một lần.</p>
+        <button class="secondary" onclick="migrateV2ToCloud()">Import dữ liệu V2 lên Cloud</button>
       </div>
     </div>
 
     <div class="warnbox section-gap">
-      <b>Bảo mật database:</b>
-      database nghiệp vụ hiện vẫn dùng policy test cho anon/publishable key.
-      Backup V184 đã được mã hóa phía client, nhưng trước khi triển khai quy mô lớn vẫn nên chuyển dữ liệu nghiệp vụ sang Supabase Auth + RLS.
+      <b>Bảo mật database:</b> dữ liệu nghiệp vụ vẫn đang dùng policy test cho anon/publishable key. Backup được mã hóa phía client; về lâu dài vẫn nên bổ sung Supabase Auth + RLS.
     </div>
   `;
 
   setTimeout(()=>{
-    if(cfg.code){
-      refreshMultiDeviceStatus();
-    }
+    if(auto.code||cfg.code)refreshMultiDeviceStatus();
   },120);
 }
 

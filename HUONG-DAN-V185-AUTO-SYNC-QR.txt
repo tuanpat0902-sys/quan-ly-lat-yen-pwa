@@ -1,0 +1,34 @@
+V185 - AUTO SYNC + QR PAIRING
+
+1. Bucket Supabase Storage vẫn là: lat-yen-backups.
+2. Policy SELECT / INSERT / UPDATE từ V184 giữ nguyên.
+
+THIẾT BỊ CHÍNH
+- Mở V185 -> Cài đặt -> Hiện QR ghép thiết bị.
+- Nếu chưa có mã/mật khẩu, V185 tự tạo.
+
+THIẾT BỊ MỚI
+- Mở V185 -> Cài đặt -> Quét QR ghép thiết bị.
+- Cho phép Camera.
+- Quét QR thiết bị chính.
+- V185 tự nhớ mã + mật khẩu và tự tải dữ liệu Cloud.
+
+AUTO SYNC
+- Khi mở app.
+- Khi online lại.
+- Khi quay lại app.
+- Mỗi 30 giây.
+- Local đổi -> tự upload.
+- Cloud đổi -> tự download.
+- Cả hai đổi -> báo xung đột, không tự ghi đè.
+
+BẢO MẬT
+- Backup vẫn AES-GCM 256-bit.
+- QR có chứa mã đồng bộ và mật khẩu mã hóa.
+- Chỉ hiển thị QR trên thiết bị tin cậy.
+- Mật khẩu được lưu local trên thiết bị đã ghép để không phải nhập lại.
+- Supabase chỉ nhận backup đã mã hóa.
+
+NẾU KHÔNG QUÉT ĐƯỢC QR
+- Máy chính: Sao chép mã ghép.
+- Máy mới: Nhập mã ghép.

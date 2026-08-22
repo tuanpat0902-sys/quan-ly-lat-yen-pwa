@@ -1,20 +1,13 @@
 {
-  "id": "./",
-  "name": "Quản Lý Lát Yên V184",
+  "name": "Quản Lý Lát Yên V185",
   "short_name": "Lát Yên",
-  "description": "Quản lý Lát Yên với sao lưu mã hóa đa thiết bị qua Supabase Storage.",
-  "lang": "vi",
-  "start_url": "./index.html",
+  "description": "Quản lý Lát Yên với Auto Sync và ghép thiết bị bằng QR.",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
-  "background_color": "#f8fafc",
+  "background_color": "#ffffff",
   "theme_color": "#0f766e",
-  "categories": [
-    "business",
-    "finance",
-    "productivity"
-  ],
+  "lang": "vi",
   "icons": [
     {
       "src": "./icon.svg",
