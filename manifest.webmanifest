@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V248",
+  "name": "Quản Lý Lát Yên V249",
   "short_name": "Lát Yên",
-  "description": "Crash-safe Cloud Reset lock using Chrome Web Locks, session-stable ownership, heartbeat fallback and automatic stale-lock recovery.",
+  "description": "Canonical read-after-write hardening with two CAS confirmations, bounded SELECT visibility polling, and helper-level pairing rollback before destructive Cloud reset.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

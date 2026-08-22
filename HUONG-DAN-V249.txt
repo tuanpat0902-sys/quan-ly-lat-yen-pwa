@@ -1,0 +1,24 @@
+V249 - CANONICAL READ-AFTER-WRITE
+
+Lỗi V248:
+RPC commit trả revision 1 nhưng SELECT ngay sau đó trả revision 0.
+V248 hiểu sai 0 thành "Canonical bị thay đổi".
+
+V249:
+- CAS RPC lần 1: tạo canonical mới.
+- Giải mã envelope RPC và đối chiếu state.
+- CAS RPC lần 2 với expected_revision của lần 1:
+  success => server xác nhận lần 1 thực sự đã persist.
+- Poll SELECT với backoff.
+- revision 0 = chưa visible, KHÔNG phải conflict.
+- revision thấp hơn expected = stale read, tiếp tục chờ.
+- revision expected/newer + state đúng = PASS.
+- revision expected/newer + state khác = lỗi thật.
+- Nếu SELECT không bao giờ thấy row mới: dừng trước DELETE vì Auto Sync sau đó sẽ không đọc được canonical.
+
+Sửa thêm:
+v247PrepareCleanGeneration tự restore pairing identity nếu rotate code rồi lỗi.
+Không còn mắc ở mã generation thất bại.
+
+Giữ nguyên V248 lock, V246 probe, V245 normalizer, V244 safety.
+Không cần SQL mới.
