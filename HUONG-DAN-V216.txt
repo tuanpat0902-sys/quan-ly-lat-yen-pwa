@@ -1,0 +1,29 @@
+V216 - SALE REPAIR DIAGNOSTICS
+
+Ảnh V215 xác nhận:
+- Canonical Merge PASS.
+- Cloud Coverage 100%.
+- Còn 10 SALE movement thuộc 2 phiếu.
+- Atomic repair thất bại ở 2 phiếu nhưng V215 chỉ báo chung chung.
+
+V216:
+- Lưu report repair theo từng sale_id.
+- Mỗi phiếu ghi rõ số movement + lỗi thật.
+- Phân loại:
+  missing_sale
+  missing_sale_items
+  local_id
+  idempotency_conflict
+  network
+  rpc_or_data
+- Pending Inspector movement cũng nhận _sync_error cụ thể.
+- Diagnostics Pending Retry hiện luôn lỗi của từng phiếu.
+- Không tự xóa pending khi chưa đủ bằng chứng.
+- Không update inventory trực tiếp.
+
+Không cần SQL mới.
+
+Sau update:
+1. Chạy kiểm tra.
+2. Xem dòng Pending Retry hoặc "Chẩn đoán phiếu bán pending".
+3. Lỗi cụ thể sẽ cho biết bước sửa cuối cùng cần làm.

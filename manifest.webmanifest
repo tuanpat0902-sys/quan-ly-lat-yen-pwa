@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V215",
+  "name": "Quản Lý Lát Yên V216",
   "short_name": "Lát Yên",
-  "description": "Atomic repair of genuinely missing pending sale movements using idempotent sale RPC.",
+  "description": "Exact per-receipt diagnostics for unresolved sale movement repair.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

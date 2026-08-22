@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V215 ATOMIC SALE REPAIR ===== */
+/* ===== V216 SALE REPAIR DIAGNOSTICS ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -10040,6 +10040,31 @@ button{
   }
 }
 
+
+/* ===== V216 SALE REPAIR REPORT ===== */
+.sync-v216-repair-report{
+  margin-top:7px;
+  padding:8px;
+  border:1px solid #fed7aa;
+  border-radius:8px;
+  background:#fff7ed;
+}
+
+.sync-v216-repair-report b{
+  display:block;
+  font-size:9px;
+  color:#9a3412;
+}
+
+.sync-v216-repair-report span{
+  display:block;
+  margin-top:3px;
+  font-size:8px;
+  line-height:1.4;
+  color:#7c2d12;
+  overflow-wrap:anywhere;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -13935,14 +13960,23 @@ async function runSyncDiagnostics(){
         retryResult?.saleRepair?.failed||0
       );
 
+    const repairSummary=
+      v216RepairErrorSummary(
+        retryResult?.saleRepair
+      );
+
     add(
       'Pending Retry',
       failed===0,
       repaired
-        ?`Đã phục hồi atomic ${repaired} phiếu bán pending`
+        ?(
+          failed
+            ?`Đã sửa ${repaired} phiếu • còn ${failed} phiếu: ${repairSummary}`
+            :`Đã phục hồi atomic ${repaired} phiếu bán pending`
+        )
         :(
           failed
-            ?`Còn ${failed} phiếu bán cần kiểm tra chi tiết`
+            ?`Còn ${failed} phiếu: ${repairSummary}`
             :'Đã chạy retry cho toàn bộ nhóm nghiệp vụ'
         )
     );
@@ -14053,7 +14087,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:215,
+    version:216,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -34533,7 +34567,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V215',
+    app_version:'V216',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -34842,7 +34876,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:215,
+    version:216,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -35024,13 +35058,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:215,
+    version:216,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V215',storage:'supabase-storage',
+      schema:185,app_version:'V216',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -36243,7 +36277,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:215,
+    version:216,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -37280,6 +37314,110 @@ async function v215RepairOneSale(ref){
   };
 }
 
+
+/* ===== V216 SALE REPAIR DIAGNOSTICS ===== */
+const V216_REPAIR_REPORT_KEY='lat_yen_sale_repair_report_v216';
+
+function v216SaveRepairReport(report){
+  try{
+    localStorage.setItem(
+      V216_REPAIR_REPORT_KEY,
+      JSON.stringify({
+        at:new Date().toISOString(),
+        ...(report||{})
+      })
+    );
+  }catch(e){}
+}
+
+function v216LoadRepairReport(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(V216_REPAIR_REPORT_KEY)||'{}'
+    );
+  }catch(e){
+    return {};
+  }
+}
+
+function v216ClassifySaleRepairError(message=''){
+  const m=String(message||'').toLowerCase();
+
+  if(m.includes('không tìm thấy phiếu bán')){
+    return 'missing_sale';
+  }
+
+  if(
+    m.includes('không có chi tiết món') ||
+    m.includes('sale_items')
+  ){
+    return 'missing_sale_items';
+  }
+
+  if(
+    m.includes('product id local') ||
+    m.includes('warehouse/ingredient id local') ||
+    m.includes('uuid')
+  ){
+    return 'local_id';
+  }
+
+  if(
+    m.includes('idempot') ||
+    m.includes('payload') ||
+    m.includes('hash') ||
+    m.includes('conflict')
+  ){
+    return 'idempotency_conflict';
+  }
+
+  if(
+    m.includes('timeout') ||
+    m.includes('network') ||
+    m.includes('fetch')
+  ){
+    return 'network';
+  }
+
+  return 'rpc_or_data';
+}
+
+function v216PendingMovementCountForRef(ref){
+  return (db.movements||[])
+    .filter(row=>
+      row?._sync_status==='pending' &&
+      String(row.transaction_type||'').toUpperCase()==='SALE' &&
+      String(row.reference_id||'')===String(ref)
+    )
+    .length;
+}
+
+function v216RepairErrorSummary(report){
+  const errors=
+    Array.isArray(report?.errors)
+      ?report.errors
+      :[];
+
+  if(!errors.length){
+    return '';
+  }
+
+  return errors
+    .map(err=>{
+      const count=
+        v216PendingMovementCountForRef(
+          err.ref
+        );
+
+      return (
+        `Phiếu ${String(err.ref||'').slice(0,8)}…`+
+        ` (${count} movement): `+
+        String(err.message||'Không rõ lỗi')
+      );
+    })
+    .join(' | ');
+}
+
 async function repairPendingSaleReceiptsV215(){
   const refs=
     v215PendingSaleRefs();
@@ -37301,15 +37439,16 @@ async function repairPendingSaleReceiptsV215(){
     report.after=
       report.before;
 
+    v216SaveRepairReport(report);
+
     return report;
   }
 
-  // First acknowledge rows that are already on Cloud.
   try{
     await reconcilePendingSaleMovementsV211();
   }catch(e){
     console.warn(
-      'V215 pre-reconcile',
+      'V216 pre-reconcile',
       e
     );
   }
@@ -37325,9 +37464,14 @@ async function repairPendingSaleReceiptsV215(){
         );
 
       report.repaired++;
-      report.receipts.push(
-        result
-      );
+
+      report.receipts.push({
+        ...result,
+        movement_count:
+          v216PendingMovementCountForRef(
+            ref
+          )
+      });
 
     }catch(e){
       report.failed++;
@@ -37336,30 +37480,46 @@ async function repairPendingSaleReceiptsV215(){
         e?.message||
         String(e);
 
+      const type=
+        v216ClassifySaleRepairError(
+          message
+        );
+
+      const movementCount=
+        v216PendingMovementCountForRef(
+          ref
+        );
+
       report.errors.push({
         ref,
+        type,
+        movement_count:
+          movementCount,
         message
       });
 
       v215SetSaleMovementError(
         ref,
-        message
+        `[${type}] ${message}`
       );
 
       console.warn(
-        'V215 sale repair failed',
-        ref,
-        e
+        'V216 sale repair failed',
+        {
+          ref,
+          type,
+          movementCount,
+          message
+        }
       );
     }
   }
 
-  // Final ACK from Cloud after atomic repair.
   try{
     await reconcilePendingSaleMovementsV211();
   }catch(e){
     console.warn(
-      'V215 final reconcile',
+      'V216 final reconcile',
       e
     );
   }
@@ -37367,6 +37527,8 @@ async function repairPendingSaleReceiptsV215(){
   report.after=
     v211PendingSaleMovements()
       .length;
+
+  v216SaveRepairReport(report);
 
   updatePendingSyncBadge();
 
@@ -38156,7 +38318,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V215',
+      app_version:'V216',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -38171,7 +38333,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:215,
+      version:216,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -38448,7 +38610,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v215-full-backup-'+
+    'lat-yen-v216-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -38760,6 +38922,22 @@ function renderSettings(){
             class="sync-v199-fill"
             style="width:0%"
           ></div>
+        </div>
+      </div>
+
+
+      <div class="sync-v216-repair-report">
+        <div>
+          <b>Chẩn đoán phiếu bán pending</b>
+          <span id="saleRepairReportV216">
+            ${(()=>{
+              const r=v216LoadRepairReport();
+              if(!r?.errors?.length){
+                return 'Chưa có lỗi repair cụ thể.';
+              }
+              return esc(v216RepairErrorSummary(r));
+            })()}
+          </span>
         </div>
       </div>
 
