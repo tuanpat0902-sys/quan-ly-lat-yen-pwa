@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V200",
+  "name": "Quản Lý Lát Yên V201",
   "short_name": "Lát Yên",
-  "description": "Transaction type normalization and safe stock transaction migration.",
+  "description": "Deduplicated batch migration prevents duplicate ON CONFLICT keys.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V200 TRANSACTION TYPE FIX ===== */
+/* ===== V201 DEDUP MIGRATION ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9849,6 +9849,18 @@ button{
   background:#f0fdf4;
 }
 
+
+/* ===== V201 DEDUP MIGRATION ===== */
+.sync-v201-dedup-note{
+  margin-top:7px;
+  padding:6px 8px;
+  border:1px solid #dbeafe;
+  border-radius:7px;
+  background:#f8fafc;
+  color:#475569;
+  font-size:8.3px;
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -12567,7 +12579,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:200,
+    version:201,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -14314,6 +14326,182 @@ function renderMigrationProgressV199(p=loadMigrationProgressV199()){
   wrap.classList.toggle('done',!p.running&&!p.error&&Number(p.percent||0)===100);
 }
 
+
+/* ===== V201 DEDUPLICATED MIGRATION ===== */
+const V201_DEDUP_KEY='lat_yen_migration_dedup_v201';
+
+function v201ConflictColumns(onConflict='id'){
+  return String(onConflict||'id')
+    .split(',')
+    .map(x=>x.trim())
+    .filter(Boolean);
+}
+
+function v201RowConflictKey(row,onConflict='id'){
+  const columns=
+    v201ConflictColumns(
+      onConflict
+    );
+
+  return columns
+    .map(col=>String(row?.[col]??''))
+    .join('|');
+}
+
+function v201RowTimestamp(row){
+  const candidates=[
+    row?.updated_at,
+    row?.created_at,
+    row?.sold_at,
+    row?.date
+  ];
+
+  for(const value of candidates){
+    if(!value)continue;
+
+    const ts=
+      Date.parse(value);
+
+    if(Number.isFinite(ts)){
+      return ts;
+    }
+  }
+
+  return 0;
+}
+
+function deduplicateMigrationRowsV201(
+  rows,
+  onConflict='id',
+  table=''
+){
+  const map=new Map();
+  let duplicates=0;
+
+  for(let index=0;index<(rows||[]).length;index++){
+    const row=rows[index];
+    const key=
+      v201RowConflictKey(
+        row,
+        onConflict
+      );
+
+    if(!key){
+      continue;
+    }
+
+    const current=
+      map.get(key);
+
+    if(!current){
+      map.set(
+        key,
+        {row,index}
+      );
+      continue;
+    }
+
+    duplicates++;
+
+    const currentTs=
+      v201RowTimestamp(
+        current.row
+      );
+
+    const incomingTs=
+      v201RowTimestamp(
+        row
+      );
+
+    // Prefer newest explicit timestamp.
+    // If timestamps tie/missing, prefer later source row.
+    if(
+      incomingTs>currentTs ||
+      (
+        incomingTs===currentTs &&
+        index>current.index
+      )
+    ){
+      map.set(
+        key,
+        {row,index}
+      );
+    }
+  }
+
+  const deduped=
+    [...map.values()]
+      .sort(
+        (a,b)=>a.index-b.index
+      )
+      .map(x=>x.row);
+
+  return {
+    rows:deduped,
+    duplicates,
+    before:(rows||[]).length,
+    after:deduped.length,
+    table,
+    onConflict
+  };
+}
+
+function saveMigrationDedupV201(stats){
+  localStorage.setItem(
+    V201_DEDUP_KEY,
+    JSON.stringify({
+      at:new Date().toISOString(),
+      stats:stats||[]
+    })
+  );
+}
+
+function loadMigrationDedupV201(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(V201_DEDUP_KEY)||'{}'
+    );
+  }catch(e){
+    return {};
+  }
+}
+
+function renderMigrationDedupV201(){
+  const el=
+    $('migrationDedupV201');
+
+  if(!el)return;
+
+  const data=
+    loadMigrationDedupV201();
+
+  const stats=
+    Array.isArray(data?.stats)
+      ?data.stats
+      :[];
+
+  const removed=
+    stats.reduce(
+      (sum,x)=>
+        sum+
+        Number(
+          x.duplicates||0
+        ),
+      0
+    );
+
+  if(!stats.length){
+    el.textContent=
+      'Chưa kiểm tra dữ liệu trùng.';
+    return;
+  }
+
+  el.textContent=
+    removed
+      ?`Đã gộp ${removed} dòng trùng trước khi migrate.`
+      :'Không phát hiện dòng trùng trong payload migration.';
+}
+
 async function v199UpsertBatches({
   table,
   rows,
@@ -14324,29 +14512,86 @@ async function v199UpsertBatches({
 }){
   let done=startDone;
 
-  if(!rows.length){
-    return done;
+  const dedup=
+    deduplicateMigrationRowsV201(
+      rows,
+      onConflict,
+      table
+    );
+
+  const safeRows=
+    dedup.rows;
+
+  if(!safeRows.length){
+    return {
+      done,
+      stat:dedup
+    };
   }
 
-  for(let i=0;i<rows.length;i+=V199_BATCH_SIZE){
-    const batch=rows.slice(i,i+V199_BATCH_SIZE);
+  for(
+    let i=0;
+    i<safeRows.length;
+    i+=V199_BATCH_SIZE
+  ){
+    const batch=
+      safeRows.slice(
+        i,
+        i+V199_BATCH_SIZE
+      );
+
+    // Safety check inside each actual batch.
+    const batchCheck=
+      deduplicateMigrationRowsV201(
+        batch,
+        onConflict,
+        table
+      );
+
+    if(
+      batchCheck.rows.length!==
+      batch.length
+    ){
+      throw new Error(
+        `${table}: payload vẫn còn khóa trùng sau dedup (${batch.length} -> ${batchCheck.rows.length})`
+      );
+    }
 
     saveMigrationProgressV199({
       running:true,
       phase,
-      detail:`Đang ghi ${table} • batch ${Math.floor(i/V199_BATCH_SIZE)+1}/${Math.ceil(rows.length/V199_BATCH_SIZE)}`,
+      detail:
+        `Đang ghi ${table} • `+
+        `batch ${Math.floor(i/V199_BATCH_SIZE)+1}/${Math.ceil(safeRows.length/V199_BATCH_SIZE)}`+
+        (
+          dedup.duplicates
+            ?` • đã gộp ${dedup.duplicates} dòng trùng`
+            :''
+        ),
       done,
       total,
-      percent:Math.min(95,Math.round(done/Math.max(1,total)*100))
+      percent:
+        Math.min(
+          95,
+          Math.round(
+            done/
+            Math.max(1,total)*
+            100
+          )
+        )
     });
 
-    const r=await promiseWithTimeout(
-      sb.from(table)
-        .upsert(batch,{onConflict})
-        .select(),
-      30000,
-      `Migrate ${table}`
-    );
+    const r=
+      await promiseWithTimeout(
+        sb.from(table)
+          .upsert(
+            batch,
+            {onConflict}
+          )
+          .select(),
+        30000,
+        `Migrate ${table}`
+      );
 
     if(r.error){
       throw new Error(
@@ -14359,14 +14604,31 @@ async function v199UpsertBatches({
     saveMigrationProgressV199({
       running:true,
       phase,
-      detail:`Đã ghi ${done}/${total} record`,
+      detail:
+        `Đã ghi ${done}/${total} record`+
+        (
+          dedup.duplicates
+            ?` • ${table} gộp ${dedup.duplicates} trùng`
+            :''
+        ),
       done,
       total,
-      percent:Math.min(95,Math.round(done/Math.max(1,total)*100))
+      percent:
+        Math.min(
+          95,
+          Math.round(
+            done/
+            Math.max(1,total)*
+            100
+          )
+        )
     });
   }
 
-  return done;
+  return {
+    done,
+    stat:dedup
+  };
 }
 
 
@@ -14681,25 +14943,34 @@ async function remapLocalAfterMigrationV199(map){
 
 async function migrateLocalDataToCloudV199(){
   if(!navigator.onLine){
-    throw new Error('Thiết bị đang offline');
+    throw new Error(
+      'Thiết bị đang offline'
+    );
   }
 
   saveMigrationProgressV199({
     running:true,
     percent:1,
     phase:'Chuẩn bị',
-    detail:'Đang xây dựng danh sách migrate…',
+    detail:'Đang xây dựng và gộp dữ liệu trùng…',
     done:0,
     total:0,
     error:''
   });
 
   migrationUnknownTypesV200.clear();
-  const {map,payload}=await buildMigrationPayloadV199();
 
-  const unknownTypes=migrationUnknownSummaryV200();
+  const {map,payload}=
+    await buildMigrationPayloadV199();
+
+  const unknownTypes=
+    migrationUnknownSummaryV200();
+
   if(unknownTypes.length){
-    console.warn('V200 skipped unknown transaction types:',unknownTypes);
+    console.warn(
+      'V200 skipped unknown transaction types:',
+      unknownTypes
+    );
   }
 
   const phases=[
@@ -14713,28 +14984,95 @@ async function migrateLocalDataToCloudV199(){
     ['stock_transactions','stock_transactions','id','Lịch sử kho']
   ];
 
-  const total=phases.reduce((sum,[key])=>sum+payload[key].length,0);
+  // Pre-deduplicate all phases so total progress is accurate.
+  const prepared=[];
+  const dedupStats=[];
+
+  for(
+    const [
+      key,
+      table,
+      onConflict,
+      label
+    ] of phases
+  ){
+    const dedup=
+      deduplicateMigrationRowsV201(
+        payload[key],
+        onConflict,
+        table
+      );
+
+    prepared.push({
+      key,
+      table,
+      onConflict,
+      label,
+      rows:dedup.rows
+    });
+
+    dedupStats.push(
+      dedup
+    );
+  }
+
+  saveMigrationDedupV201(
+    dedupStats
+  );
+
+  renderMigrationDedupV201();
+
+  const total=
+    prepared.reduce(
+      (sum,x)=>
+        sum+x.rows.length,
+      0
+    );
+
+  const totalDuplicates=
+    dedupStats.reduce(
+      (sum,x)=>
+        sum+
+        Number(
+          x.duplicates||0
+        ),
+      0
+    );
+
   let done=0;
 
   saveMigrationProgressV199({
     running:true,
     percent:2,
     phase:'Bắt đầu migrate',
-    detail:`Tổng ${total} record • batch ${V199_BATCH_SIZE}`,
+    detail:
+      `Tổng ${total} record duy nhất`+
+      (
+        totalDuplicates
+          ?` • đã gộp ${totalDuplicates} dòng trùng`
+          :''
+      )+
+      ` • batch ${V199_BATCH_SIZE}`,
     done:0,
     total,
     error:''
   });
 
-  for(const [key,table,onConflict,label] of phases){
-    done=await v199UpsertBatches({
-      table,
-      rows:payload[key],
-      onConflict,
-      phase:label,
-      startDone:done,
-      total
-    });
+  for(const item of prepared){
+    const result=
+      await v199UpsertBatches({
+        table:item.table,
+        rows:item.rows,
+        onConflict:item.onConflict,
+        phase:item.label,
+        startDone:done,
+        total
+      });
+
+    done=
+      Number(
+        result?.done??done
+      );
   }
 
   saveMigrationProgressV199({
@@ -14746,7 +15084,9 @@ async function migrateLocalDataToCloudV199(){
     total
   });
 
-  await remapLocalAfterMigrationV199(map);
+  await remapLocalAfterMigrationV199(
+    map
+  );
 
   saveMigrationProgressV199({
     running:true,
@@ -14759,9 +15099,12 @@ async function migrateLocalDataToCloudV199(){
 
   await loadCloud();
 
-  const coverage=v198CloudCoverage();
+  const coverage=
+    v198CloudCoverage();
 
-  if(coverage.localOnly>0){
+  if(
+    coverage.localOnly>0
+  ){
     throw new Error(
       `Migration chưa hoàn tất: còn ${coverage.localOnly} record local`
     );
@@ -14771,18 +15114,30 @@ async function migrateLocalDataToCloudV199(){
     running:false,
     percent:100,
     phase:'Migration hoàn tất',
-    detail:`Đã chuyển ${done}/${total} record lên Cloud`,
+    detail:
+      `Đã chuyển ${done}/${total} record duy nhất lên Cloud`+
+      (
+        totalDuplicates
+          ?` • gộp ${totalDuplicates} dòng trùng`
+          :''
+      ),
     done,
     total,
     error:'',
-    finished_at:new Date().toISOString()
+    finished_at:
+      new Date().toISOString()
   });
 
   return {
     map,
     total,
     done,
-    skipped_unknown_transaction_types:unknownTypes
+    deduplicated:
+      totalDuplicates,
+    dedup_stats:
+      dedupStats,
+    skipped_unknown_transaction_types:
+      unknownTypes
   };
 }
 
@@ -32274,7 +32629,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V200',
+    app_version:'V201',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -32583,7 +32938,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:200,
+    version:201,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -32765,13 +33120,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:200,
+    version:201,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V200',storage:'supabase-storage',
+      schema:185,app_version:'V201',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -33984,7 +34339,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:200,
+    version:201,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -34751,7 +35106,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V200',
+      app_version:'V201',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -34766,7 +35121,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:200,
+      version:201,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -35043,7 +35398,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v200-full-backup-'+
+    'lat-yen-v201-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -35295,6 +35650,14 @@ function renderSettings(){
         </div>
       </div>
 
+
+
+      <div
+        id="migrationDedupV201"
+        class="sync-v201-dedup-note"
+      >
+        Chưa kiểm tra dữ liệu trùng.
+      </div>
 
       <div
         id="migrationProgressWrapV199"
@@ -35611,6 +35974,7 @@ function renderSettings(){
     renderPendingInspector();
     renderPendingBlockersV196();
     renderMigrationProgressV199();
+    renderMigrationDedupV201();
 
     if(auto.code||cfg.code){
       refreshMultiDeviceStatus();
