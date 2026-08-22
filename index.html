@@ -11410,13 +11410,16 @@ html.v257-device-locked body{
 .v260-account-bar{padding:10px 12px;border:1px solid #d9e3e8;border-radius:9px;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 
 </style>
+
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
 </head>
 <body>
 <header>
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V268</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V269</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -15464,42 +15467,20 @@ function v235FinishDeferredAutoSync(
 
 function v208ScheduleActionSync(
   reason='data_change',
-  delay=V208_ACTION_SYNC_DEBOUNCE_MS
+  delay=V269_ACTION_DEBOUNCE_MS
 ){
   if(!v209CanScheduleActionSync()){
     return;
   }
 
-  v208LastActionReason=
-    String(reason||'data_change');
+  clearTimeout(v269ActionTimer);
 
-  v208ActionSyncQueued=true;
-
-  clearTimeout(
-    v208ActionSyncTimer
-  );
-
-  if(!navigator.onLine){
-    return;
-  }
-
-  const elapsed=
-    Date.now()-
-    Number(v209LastActionSyncAt||0);
-
-  const cooldown=
-    Math.max(
-      0,
-      V209_ACTION_COOLDOWN_MS-elapsed
-    );
-
-  v208ActionSyncTimer=
+  v269ActionTimer=
     setTimeout(
-      ()=>v208FlushActionSync(),
+      ()=>v269RequestSync(reason),
       Math.max(
-        80,
-        Number(delay||0),
-        cooldown
+        0,
+        Number(delay||0)
       )
     );
 }
@@ -15711,9 +15692,7 @@ function installV208StorageSyncHook(){
 function v208MarkBusinessAction(
   reason='business_action'
 ){
-  v208ScheduleActionSync(
-    reason
-  );
+  v269RequestSync(reason);
 }
 
 function v208ActionSyncStatus(){
@@ -15737,11 +15716,10 @@ let v209LastActionSyncAt=0;
 let v209FollowupCount=0;
 
 function v209CanScheduleActionSync(){
-  return !(
-    v208IsRemoteOrInternal() ||
-    autoSyncBusy ||
-    syncing ||
-    v206RealtimePullBusy
+  return !!(
+    v260Session &&
+    v261OrganizationId &&
+    !v208IsRemoteOrInternal()
   );
 }
 
@@ -18720,20 +18698,28 @@ async function loadCloud(){
 }
 
 async function syncPendingOperations(){
-  if(!navigator.onLine)throw new Error('Thiết bị đang offline');
+  if(!navigator.onLine){
+    throw new Error('Thiết bị đang offline');
+  }
+
   let queue=getPendingSync();
-  if(!queue.length){updatePendingSyncBadge();return}
+
+  if(!queue.length){
+    updatePendingSyncBadge();
+    return {synced:0,remaining:0};
+  }
 
   const remaining=[];
+  let synced=0;
 
   for(const op of queue){
     try{
       if(op.kind==='save_ingredient'){
-        const localIng=db.ingredients.find(x=>x.id===op.ingredient_id);
+        const localIng=(db.ingredients||[])
+          .find(x=>x.id===op.ingredient_id);
+
         if(!localIng)continue;
 
-        // Các bản ghi Excel là dữ liệu local có ID excel_*.
-        // Không gửi ID này vào cột UUID của Supabase.
         if(isExcelLocalIngredient(localIng)){
           delete localIng._sync_status;
           delete localIng._sync_error;
@@ -18741,85 +18727,169 @@ async function syncPendingOperations(){
           continue;
         }
 
-        // Try update by id; if row does not exist, insert with same UUID.
-        let exists=await sb.from('ingredients').select('id').eq('id',op.ingredient_id).maybeSingle();
-        if(exists.error)throw exists.error;
+        /*
+          V269: one UPSERT instead of SELECT -> UPDATE/INSERT.
+          This removes one network round trip for every ingredient save.
+        */
+        const saveResult=
+          await promiseWithTimeout(
+            sb.from('ingredients')
+              .upsert(
+                {
+                  id:op.ingredient_id,
+                  ...op.payload,
+                  organization_id:v261OrganizationId,
+                  updated_at:
+                    op.payload?.updated_at||
+                    new Date().toISOString()
+                },
+                {onConflict:'id'}
+              )
+              .select()
+              .single(),
+            10000,
+            'Lưu nguyên liệu lên Cloud'
+          );
 
-        let saveResult;
-        if(exists.data){
-          saveResult=await sb.from('ingredients').update({
-            ...op.payload,
-            organization_id:v261OrganizationId
-          }).eq('id',op.ingredient_id).select().single();
-        }else{
-          saveResult=await sb.from('ingredients').insert({
-            id:op.ingredient_id,
-            ...op.payload,
-            organization_id:v261OrganizationId
-          }).select().single();
+        if(saveResult.error){
+          throw saveResult.error;
         }
-        if(saveResult.error)throw saveResult.error;
 
-        // Ensure inventory rows exist for cloud warehouses.
-        for(const w of db.warehouses){
-          const invLocal=db.inventory.find(x=>x.warehouse_id===w.id&&x.ingredient_id===op.ingredient_id);
-          if(!invLocal)continue;
-          let invExists=await sb.from('inventory')
-            .select('warehouse_id,ingredient_id').eq('warehouse_id',w.id).eq('ingredient_id',op.ingredient_id).maybeSingle();
-          if(invExists.error)throw invExists.error;
-          if(!invExists.data){
-            let ir=await sb.from('inventory').insert({
-              warehouse_id:w.id,
-              ingredient_id:op.ingredient_id,
-              quantity:Number(invLocal.quantity||0),
-              organization_id:v261OrganizationId
-            });
-            if(ir.error)throw ir.error;
+        /*
+          Inventory is a composite row. Batch UPSERT all local warehouse rows
+          in one request instead of checking existence row by row.
+        */
+        const invRows=(db.inventory||[])
+          .filter(x=>
+            x.ingredient_id===op.ingredient_id &&
+            isUuidValue(x.warehouse_id)
+          )
+          .map(x=>({
+            warehouse_id:x.warehouse_id,
+            ingredient_id:op.ingredient_id,
+            quantity:Number(x.quantity||0),
+            organization_id:v261OrganizationId,
+            updated_at:x.updated_at||new Date().toISOString()
+          }));
+
+        if(invRows.length){
+          const invResult=
+            await promiseWithTimeout(
+              sb.from('inventory')
+                .upsert(
+                  invRows,
+                  {
+                    onConflict:
+                      'warehouse_id,ingredient_id'
+                  }
+                )
+                .select(),
+              10000,
+              'Lưu tồn kho Cloud'
+            );
+
+          if(invResult.error){
+            throw invResult.error;
+          }
+
+          for(const cloudInv of invResult.data||[]){
+            const local=(db.inventory||[]).find(x=>
+              x.warehouse_id===cloudInv.warehouse_id &&
+              x.ingredient_id===cloudInv.ingredient_id
+            );
+
+            if(local){
+              Object.assign(local,cloudInv);
+              delete local._sync_status;
+              delete local._sync_error;
+              delete local._local_only;
+            }
           }
         }
 
-        if(op.payload.ingredient_type==='prepared'){
-          // This may fail until Supabase schema is upgraded. If so, keep it queued.
-          let del=await sb.from('prepared_ingredient_items').delete().eq('prepared_ingredient_id',op.ingredient_id);
+        if(op.payload?.ingredient_type==='prepared'){
+          const del=
+            await sb.from('prepared_ingredient_items')
+              .delete()
+              .eq(
+                'prepared_ingredient_id',
+                op.ingredient_id
+              );
+
           if(del.error)throw del.error;
-          if((op.prepared_lines||[]).length){
-            let ins=await sb.from('prepared_ingredient_items').insert(
-              op.prepared_lines.map(x=>({
-                prepared_ingredient_id:op.ingredient_id,
-                source_ingredient_id:x.source_ingredient_id,
-                quantity:x.quantity,
-                organization_id:v261OrganizationId
-              }))
-            );
+
+          const prepared=(op.prepared_lines||[])
+            .map(x=>({
+              prepared_ingredient_id:
+                op.ingredient_id,
+              source_ingredient_id:
+                x.source_ingredient_id,
+              quantity:Number(x.quantity||0),
+              organization_id:
+                v261OrganizationId
+            }));
+
+          if(prepared.length){
+            const ins=
+              await sb.from('prepared_ingredient_items')
+                .insert(prepared)
+                .select();
+
             if(ins.error)throw ins.error;
           }
         }
 
-        if(localIng){
-          Object.assign(localIng,saveResult.data||{});
-          delete localIng._sync_status;
-          delete localIng._sync_error;
-          delete localIng._local_only;
-        }
+        Object.assign(
+          localIng,
+          saveResult.data||{}
+        );
+
+        delete localIng._sync_status;
+        delete localIng._sync_error;
+        delete localIng._local_only;
+
+        synced++;
 
       }else if(op.kind==='save_recipe'){
-        const localProduct=(db.products||[]).find(x=>x.id===op.product_id);
+        const localProduct=(db.products||[])
+          .find(x=>x.id===op.product_id);
+
         if(!localProduct)continue;
 
-        if(!recipeCanSyncCloud(op.product_id,op.lines||[])){
+        if(
+          !recipeCanSyncCloud(
+            op.product_id,
+            op.lines||[]
+          )
+        ){
           delete localProduct._sync_status;
           localProduct._recipe_local_only=true;
           continue;
         }
 
         await syncRecipeOperation(op);
+        synced++;
 
       }else{
+        /*
+          Unknown legacy operation is retained rather than silently discarded.
+          It no longer blocks other valid operations.
+        */
         remaining.push(op);
       }
+
     }catch(e){
-      console.warn('Pending operation kept:',op,e);
-      remaining.push({...op,last_error:e?.message||String(e)});
+      console.warn(
+        'V269 pending operation',
+        op,
+        e
+      );
+
+      remaining.push({
+        ...op,
+        last_error:
+          e?.message||String(e)
+      });
     }
   }
 
@@ -18827,7 +18897,10 @@ async function syncPendingOperations(){
   cacheSave();
   updatePendingSyncBadge();
 
-  if(remaining.length)throw new Error(remaining[0].last_error||'Còn dữ liệu chưa đồng bộ');
+  return {
+    synced,
+    remaining:remaining.length
+  };
 }
 
 async function syncPendingSaleReceipts(){
@@ -18841,12 +18914,11 @@ async function syncPendingSaleReceipts(){
   const pendingSales=
     (db.sales||[])
       .filter(s=>
-        s.warehouse_id===
-          currentWarehouseId &&
         (
           s._sync_status==='pending' ||
           s._local_only===true
-        )
+        ) &&
+        isUuidValue(s.warehouse_id)
       );
 
   let pending=0;
@@ -26304,33 +26376,21 @@ function v207ScheduleVerify(){
 
 function v207RealtimeHandler(table){
   return payload=>{
+    if(!payload)return;
+
     /*
-      V268 Cloud V2:
-      Realtime must not depend on the old V210 QR/Canonical leader election.
-      Each authenticated browser/device is an independent Cloud client.
+      Do not overwrite a form while the user is actively editing.
+      Queue it briefly, then the 8-second pull is the fallback.
     */
-    if(document.hidden){
-      cloudReloadRequested=true;
-
-      v226RealtimeNotification(
-        table,
-        payload
-      );
-
-      return;
-    }
-
-    if(!v235CanApplyRemote()){
+    if(
+      !document.hidden &&
+      !v235CanApplyRemote()
+    ){
       v235QueueRealtime(
         table,
         payload
       );
-
       return;
-    }
-
-    if(v235RealtimeQueue.size){
-      v235FlushRealtime();
     }
 
     const applied=
@@ -26341,30 +26401,11 @@ function v207RealtimeHandler(table){
 
     if(applied){
       cloudOnline=true;
-
-      setCloudStatus(
-        'Realtime • đã nhận thay đổi',
-        'online'
-      );
+      v269RealtimeState='online';
+      v269LastError='';
 
       v221SmartRender(table);
-
-      /*
-        BroadcastChannel notification remains useful for another tab on
-        the same device, but it is no longer a gate for Cloud sync.
-      */
-      try{
-        v210NotifyFollowers();
-      }catch(e){}
-    }
-
-    if(
-      table==='sales'||
-      table==='sale_items'||
-      table==='stock_transactions'||
-      table==='inventory'
-    ){
-      v207ScheduleVerify();
+      v269RenderSyncStatus();
     }
   };
 }
@@ -26391,12 +26432,11 @@ function setupRealtime(){
     return;
   }
 
-  const orgFilter=
-    `organization_id=eq.${v261OrganizationId}`;
+  v269RealtimeState='connecting';
 
   realtimeChannel=
     sb.channel(
-      'latyen-v268-'+
+      'latyen-v269-'+
       v261OrganizationId
     );
 
@@ -26408,7 +26448,8 @@ function setupRealtime(){
           event:'*',
           schema:'public',
           table,
-          filter:orgFilter
+          filter:
+            `organization_id=eq.${v261OrganizationId}`
         },
         v207RealtimeHandler(table)
       );
@@ -26418,21 +26459,17 @@ function setupRealtime(){
     status=>{
       if(status==='SUBSCRIBED'){
         cloudOnline=true;
-        v268RealtimeReady=true;
-        v268RealtimeLastReadyAt=Date.now();
+        v269RealtimeState='online';
+        v269LastError='';
 
         setCloudStatus(
-          'Realtime Online',
+          'Cloud • Realtime',
           'online'
         );
 
-        /*
-          Close any gap between the last pull and the moment the
-          websocket became subscribed.
-        */
-        v268RunCloudCycle({
+        v269SyncCycle({
           forcePull:true,
-          reason:'realtime_subscribed'
+          reason:'realtime_connected'
         }).catch(console.warn);
 
       }else if(
@@ -26440,18 +26477,17 @@ function setupRealtime(){
         status==='TIMED_OUT'||
         status==='CLOSED'
       ){
-        v268RealtimeReady=false;
+        v269RealtimeState='fallback';
 
-        /*
-          Realtime is an accelerator, not a single point of failure.
-          The heartbeat pull keeps devices converging while websocket
-          reconnects.
-        */
         setCloudStatus(
-          'Realtime gián đoạn • đang dùng Smart Sync',
-          'offline'
+          'Cloud • Smart Sync',
+          navigator.onLine
+            ?'online'
+            :'offline'
         );
       }
+
+      v269RenderSyncStatus();
     }
   );
 }
@@ -29832,7 +29868,10 @@ async function syncExportReceiptAtomicV192(
           p_reference_id:ref,
           p_old_reference_id:
             isUuidValue(oldRef)?oldRef:null,
-          p_warehouse_id:currentWarehouseId,
+          p_warehouse_id:
+            active[0]?.row?.warehouse_id||
+            active[0]?.payload?.warehouse_id||
+            currentWarehouseId,
           p_movements:
             active.map(x=>({
               ingredient_id:x.payload.ingredient_id,
@@ -33020,27 +33059,25 @@ function queueRecipeSync(op){
 
 async function syncRecipeOperation(op){
   const productId=op?.product_id;
-  const localProduct=(db.products||[]).find(x=>x.id===productId);
+  const localProduct=(db.products||[])
+    .find(x=>x.id===productId);
 
-  if(!productId || !localProduct)return;
+  if(!productId||!localProduct)return;
 
-  const lines=(op.lines||[]).filter(x=>
-    x.ingredient_id &&
-    Number(x.quantity)>0
-  );
+  const lines=(op.lines||[])
+    .filter(x=>
+      isUuidValue(x.ingredient_id) &&
+      Number(x.quantity)>0
+    );
 
-  if(!recipeCanSyncCloud(productId,lines)){
+  if(
+    !recipeCanSyncCloud(
+      productId,
+      lines
+    )
+  ){
     delete localProduct._sync_status;
     localProduct._recipe_local_only=true;
-    localProduct._local_only=!!localProduct._local_only;
-
-    for(const row of db.recipeItems||[]){
-      if(row.product_id===productId){
-        row._local_only=true;
-        row._recipe_local_only=true;
-      }
-    }
-
     return;
   }
 
@@ -33050,89 +33087,113 @@ async function syncRecipeOperation(op){
     currentWarehouseId||
     null;
 
-  if(!warehouseId){
+  if(!isUuidValue(warehouseId)){
     throw new Error(
-      'Công thức chưa xác định kho/chi nhánh'
+      'Công thức chưa xác định kho hợp lệ.'
     );
   }
 
   const payload={
-    name:String(op.payload?.name||localProduct.name||'').trim(),
+    id:productId,
+    name:String(
+      op.payload?.name||
+      localProduct.name||
+      ''
+    ).trim(),
     sku:op.payload?.sku||null,
-    selling_price:Number(op.payload?.selling_price||0),
+    selling_price:Number(
+      op.payload?.selling_price||0
+    ),
     active:true,
     warehouse_id:warehouseId,
     organization_id:v261OrganizationId,
     updated_at:new Date().toISOString()
   };
 
-  let exists=await promiseWithTimeout(
-    sb.from('products').select('id').eq('id',productId).maybeSingle(),
-    12000,
-    'Kiểm tra món trên Cloud'
-  );
-  if(exists.error)throw exists.error;
-
-  let savedProduct;
-
-  if(exists.data){
-    savedProduct=await promiseWithTimeout(
+  /*
+    V269: product UPSERT directly.
+  */
+  const savedProduct=
+    await promiseWithTimeout(
       sb.from('products')
-        .update(payload)
-        .eq('id',productId)
+        .upsert(
+          payload,
+          {onConflict:'id'}
+        )
         .select()
         .single(),
-      12000,
-      'Cập nhật món trên Cloud'
+      10000,
+      'Lưu món lên Cloud'
     );
-  }else{
-    savedProduct=await promiseWithTimeout(
-      sb.from('products')
-        .insert({id:productId,...payload})
-        .select()
-        .single(),
-      12000,
-      'Tạo món trên Cloud'
-    );
+
+  if(savedProduct.error){
+    throw savedProduct.error;
   }
 
-  if(savedProduct.error)throw savedProduct.error;
+  /*
+    Recipe replacement is kept deterministic:
+    delete existing lines then insert current lines.
+  */
+  const del=
+    await sb.from('recipe_items')
+      .delete()
+      .eq('product_id',productId);
 
-  const del=await promiseWithTimeout(
-    sb.from('recipe_items').delete().eq('product_id',productId),
-    12000,
-    'Cập nhật công thức Cloud'
-  );
   if(del.error)throw del.error;
 
-  const ins=await promiseWithTimeout(
-    sb.from('recipe_items')
-      .insert(lines.map(x=>({
-        product_id:productId,
-        ingredient_id:x.ingredient_id,
-        quantity:Number(x.quantity),
-        organization_id:v261OrganizationId
-      })))
-      .select(),
-    12000,
-    'Lưu thành phần công thức Cloud'
+  const recipeRows=
+    lines.map(x=>({
+      product_id:productId,
+      ingredient_id:x.ingredient_id,
+      quantity:Number(x.quantity),
+      organization_id:v261OrganizationId
+    }));
+
+  let cloudLines=[];
+
+  if(recipeRows.length){
+    const ins=
+      await sb.from('recipe_items')
+        .insert(recipeRows)
+        .select();
+
+    if(ins.error)throw ins.error;
+    cloudLines=ins.data||[];
+  }
+
+  db.recipeItems=(db.recipeItems||[])
+    .filter(x=>x.product_id!==productId);
+
+  db.recipeItems.push(...cloudLines);
+
+  Object.assign(
+    localProduct,
+    savedProduct.data||payload
   );
-  if(ins.error)throw ins.error;
 
-  db.recipeItems=(db.recipeItems||[]).filter(x=>x.product_id!==productId);
-  db.recipeItems.push(...(ins.data||[]));
+  localProduct.unit=
+    op.unit||
+    localProduct.unit||
+    'ly';
 
-  Object.assign(localProduct,savedProduct.data||payload);
-  localProduct.unit=op.unit||localProduct.unit||'ly';
-  localProduct.warehouse_id=warehouseId;
+  localProduct.warehouse_id=
+    warehouseId;
 
   delete localProduct._local_only;
   delete localProduct._recipe_local_only;
   delete localProduct._sync_status;
   delete localProduct._sync_error;
 
-  saveProductUnit(productId,localProduct.unit);
-  assignProductToWarehouse(productId,warehouseId);
+  saveProductUnit(
+    productId,
+    localProduct.unit
+  );
+
+  assignProductToWarehouse(
+    productId,
+    warehouseId
+  );
+
   invalidateDataIndexes();
 }
 
@@ -36325,7 +36386,10 @@ async function syncStocktakeAtomicV192(
         {
           p_reference_id:ref,
           p_old_reference_id:isUuidValue(oldRef)?oldRef:null,
-          p_warehouse_id:currentWarehouseId,
+          p_warehouse_id:
+            movements?.[0]?.row?.warehouse_id||
+            movements?.[0]?.payload?.warehouse_id||
+            currentWarehouseId,
           p_lines:lines,
           p_idempotency_key:`stocktake:${ref}`
         }
@@ -43167,7 +43231,9 @@ function v242WarehouseCloudPayload(row){
     id:row.id,
     name:String(row.name||'').trim(),
     address:String(row.address||'').trim(),
-    active:row.active!==false
+    active:row.active!==false,
+    organization_id:v261OrganizationId,
+    updated_at:row.updated_at||new Date().toISOString()
   };
 }
 
@@ -44313,7 +44379,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V268',
+    app_version:'V269',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -44963,7 +45029,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V268',storage:'supabase-storage',
+      schema:185,app_version:'V269',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -48296,134 +48362,15 @@ async function v231AutoRepairFinalSalePair(){
 }
 
 async function autoSyncNow(options={}){
-  const {
-    force=false,
-    reason='timer',
-    silent=true
-  }=options;
-
-  if(
-    !v264CleanMode() ||
-    !navigator.onLine
-  ){
-    return null;
-  }
-
-  if(
-    v233BackgroundAutoSyncReason?.(reason) &&
-    v219InteractionActive()
-  ){
-    return {
-      direction:'deferred_interaction',
-      reason
-    };
-  }
-
-  if(autoSyncBusy){
-    return null;
-  }
-
-  autoSyncBusy=true;
-  beginSyncProgress();
-
-  try{
-    updateSyncProgress(
-      15,
-      'Đang gửi thay đổi',
-      'Đẩy các thao tác local chưa hoàn tất'
-    );
-
-    try{
-      await syncPendingOperations();
-    }catch(e){
-      console.warn(
-        'V264 pending push',
-        e
-      );
-    }
-
-    updateSyncProgress(
-      50,
-      'Đồng bộ tăng dần',
-      'Chỉ tải các record thay đổi từ Cloud'
-    );
-
-    await v262SmartPull(
-      force
-    );
-
-    /*
-      Full pull is now a fallback/verification path only.
-      It is not the normal background sync mechanism.
-    */
-    if(force){
-      updateSyncProgress(
-        78,
-        'Xác minh Cloud',
-        'Kiểm tra dữ liệu sau đồng bộ thủ công'
-      );
-
-      try{
-        await loadCloudFastV202(true);
-      }catch(e){
-        console.warn(
-          'V264 verification pull',
-          e
-        );
-      }
-    }
-
-    const pending=
-      Number(
-        v191PendingCount?.()||0
-      );
-
-    finishSyncProgress({
-      success:pending===0,
-      pending,
-      stage:
-        pending===0
-          ?'Đã đồng bộ'
-          :'Còn dữ liệu chờ',
-      detail:
-        pending===0
-          ?'Cloud Data V2 đã hội tụ'
-          :`${pending} mục cần gửi lại`
-    });
-
-    updatePendingSyncBadge();
-
-    return {
-      direction:'auth_cloud_v2',
-      organization_id:
-        v261OrganizationId,
-      pending
-    };
-
-  }catch(e){
-    finishSyncProgress({
-      success:false,
-      pending:
-        Number(
-          v191PendingCount?.()||0
-        ),
-      stage:'Lỗi đồng bộ',
-      detail:e?.message||String(e),
-      error:e?.message||String(e)
-    });
-
-    if(!silent){
-      toastMsg(
-        'Đồng bộ lỗi: '+
-        (e?.message||String(e))
-      );
-    }
-
-    throw e;
-
-  }finally{
-    autoSyncBusy=false;
-  }
+  return v269SyncCycle({
+    forcePull:
+      options.force!==false,
+    reason:
+      options.reason||'manual',
+    manual:
+      options.silent===false ||
+      options.reason==='manual'
+  });
 }
 
 function setAutoSyncEnabled(enabled){
@@ -49272,7 +49219,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V268',
+      app_version:'V269',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53827,7 +53774,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V268',
+      app_version:'V269',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53867,440 +53814,114 @@ async function v239ResetCloudFromThisDevice(){
 
 function renderSettings(){
   const brand=loadAppBrand();
-  const cfg=multiDeviceConfig();
-  const auto=loadAutoSyncConfig();
-  const paired=!!(auto.code&&auto.passphrase);
-  const progress=loadSyncProgress();
-  const pending=Number(v191PendingCount?.()||getPendingSync().length||0);
-
-  const mainLabel=
-    progress.running
-      ?'Đang đồng bộ'
-      :(
-        progress.percent===100 &&
-        pending===0
-          ?'Đã đồng bộ'
-          :(
-            cloudOnline
-              ?'Sẵn sàng'
-              :'Đang dùng dữ liệu local'
-          )
-      );
-
-  const mainClass=
-    !cloudOnline
-      ?'warn'
-      :(
-        progress.error
-          ?'danger'
-          :'ok'
-      );
+  const pending=
+    Number(v191PendingCount?.()||0);
 
   E.settings.innerHTML=`
-    <div id="v221SettingsHealth" class="v221-health"></div>
-
     <div class="v260-account-bar">
       <div>
         <b>Tài khoản quản trị</b>
-        <div class="muted">${esc(v260AccountEmail()||'Đã đăng nhập')}</div>
+        <div class="muted">
+          ${esc(v260AccountEmail()||'admin@latyen.vn')}
+        </div>
       </div>
-      <button class="secondary sm" onclick="v260LogoutAndWipe()">Đăng xuất</button>
+
+      <button
+        class="secondary sm"
+        onclick="v260LogoutAndWipe()"
+      >Đăng xuất</button>
     </div>
 
-    <div class="card sync-v237-card">
-      <div class="sync-v237-head">
-        <div class="sync-v237-title">
-          <div class="sync-v186-icon">☁</div>
-          <div>
-            <h2>Đồng bộ dữ liệu</h2>
-            <div class="muted">
-              Dữ liệu được đồng bộ tự động. Chỉ cần dùng nút “Đồng bộ ngay” khi muốn kiểm tra tức thì.
-            </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <div>
+          <h2 style="margin:0 0 6px">Đồng bộ Cloud</h2>
+          <div class="muted">
+            Tự động hoạt động trong suốt phiên đăng nhập.
+            Realtime là đường chính; Smart Sync 8 giây là dự phòng.
           </div>
         </div>
 
-        <div class="sync-v186-state ${mainClass}">
-          <b id="autoSyncLiveStatus">${esc(mainLabel)}</b>
-          <span>
-            ${
-              auto.last_sync_at
-                ?esc(dt(auto.last_sync_at))
-                :'Chưa đồng bộ'
-            }
-          </span>
-        </div>
+        <span class="badge ${navigator.onLine?'okb':'warnb'}">
+          ${navigator.onLine?'Online':'Offline'}
+        </span>
       </div>
 
-      <div id="syncProgressWrap" class="sync-v193-progress sync-v237-progress">
-        <div class="sync-v193-progress-head">
-          <div>
-            <b id="syncProgressStage">${esc(progress.stage||'Sẵn sàng')}</b>
-            <span id="syncProgressDetail">${esc(progress.detail||'')}</span>
-          </div>
-          <div id="syncProgressPercent" class="sync-v193-percent">
-            ${Math.round(Number(progress.percent||0))}%
-          </div>
-        </div>
+      <div
+        id="v269SyncState"
+        style="margin-top:14px;padding:12px;border:1px solid var(--border,#d7dce2);border-radius:8px"
+      ></div>
 
-        <div class="sync-v193-track">
-          <div
-            id="syncProgressBarFill"
-            class="sync-v193-fill"
-            style="width:${Math.round(Number(progress.percent||0))}%"
-          ></div>
-        </div>
-
-        <div class="sync-v237-meta">
-          <span class="${cloudOnline?'ok-text':'warn-text'}">
-            ${cloudOnline?'● Cloud đang kết nối':'● Đang offline'}
-          </span>
-          <span>
-            ${paired?'● Đã ghép thiết bị':'○ Chưa ghép thiết bị'}
-          </span>
-          <span>
-            ${pending?`● ${pending} mục đang chờ`:'● Không có dữ liệu chờ'}
-          </span>
-          ${
-            auto.cloud_revision
-              ?`<span class="sync-v237-tech-inline">Rev ${Number(auto.cloud_revision)}</span>`
-              :''
-          }
-        </div>
-      </div>
-
-      <div class="sync-v237-actions">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
         <button
-          class="primary sync-v237-primary"
+          class="primary"
           onclick="autoSyncNow({force:true,reason:'manual',silent:false})"
-          ${!paired?'disabled':''}
-        >
-          Đồng bộ ngay
-        </button>
+        >Đồng bộ ngay</button>
 
         <button
           class="secondary"
-          onclick="${paired?'showPairingQr()':'scanPairingQr()'}"
-        >
-          ${paired?'Đăng nhập trên thiết bị khác':'Tài khoản & thiết bị'}
-        </button>
+          onclick="v269ReconnectRealtime()"
+        >Kết nối lại Cloud</button>
 
-        ${
-          !paired
-            ?`
-              <button
-                class="secondary"
-                onclick="v260LogoutAndWipe()"
-              >Tạo mã ghép</button>
-            `
-            :''
-        }
-
-        <label class="sync-v186-switch sync-v237-auto" title="Bật/tắt đồng bộ tự động">
-          <input
-            type="checkbox"
-            ${auto.enabled?'checked':''}
-            onchange="setAutoSyncEnabled(this.checked)"
-            ${!paired?'disabled':''}
-          >
-          <span></span>
-          <b>Tự động</b>
-        </label>
+        <button
+          class="secondary"
+          onclick="v269ReloadDeviceFromCloud()"
+        >Tải lại thiết bị từ Cloud</button>
       </div>
 
       ${
-        !paired
-          ?`
-            <div class="sync-v237-tip">
-              <b>Thiết bị này chưa được ghép.</b>
-              Quét QR từ thiết bị đang sử dụng hoặc tạo mã ghép nếu đây là thiết bị chính.
-            </div>
-          `
+        pending
+          ?`<div style="margin-top:10px;color:#b45309;font-size:12px">${pending} mục đang chờ gửi Cloud. Hệ thống sẽ tự thử lại.</div>`
           :''
       }
+    </div>
 
-      <div class="v256-cloud-card">
-        <div class="v256-cloud-grid">
-          <div>
-            <div class="sync-v237-group-head">
-              <div>
-                <b>Dung lượng Cloud</b>
-                <span>Ước tính dữ liệu nghiệp vụ đang chiếm trên Supabase.</span>
-              </div>
-            </div>
-            <div id="v256CloudUsage">
-              <span class="muted">Đang đo dữ liệu Cloud…</span>
-            </div>
+    <div class="section-gap"></div>
+
+    <div class="card">
+      <h2>Dữ liệu & an toàn</h2>
+
+      <div class="grid2">
+        <div>
+          <h3>Sao lưu bằng tệp</h3>
+          <p class="muted">
+            Dùng khi cần lưu một bản dự phòng ngoài Cloud.
+          </p>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button
+              class="secondary sm"
+              onclick="exportBackup()"
+            >Xuất file backup</button>
+
+            <button
+              class="secondary sm"
+              onclick="selectBackupImport()"
+            >Khôi phục từ file</button>
           </div>
 
-          <div>
-            <div class="sync-v237-group-head">
-              <div>
-                <b>Mô phỏng đồng bộ</b>
-                <span>Kiểm thử Local → Cloud và Thiết bị A → B mà không ghi dữ liệu thật.</span>
-              </div>
-              <button
-                class="secondary sm"
-                onclick="runSyncSimulationV256()"
-              >Chạy mô phỏng</button>
-            </div>
-            <div id="v256SyncLabResult">
-              <span class="muted">Chưa chạy mô phỏng.</span>
-            </div>
-          </div>
+          <input
+            id="backupImportInput"
+            type="file"
+            accept="application/json,.json"
+            style="display:none"
+            onchange="importBackupFile(this)"
+          >
+        </div>
+
+        <div>
+          <h3>Làm mới dữ liệu Cloud</h3>
+          <p class="muted">
+            Xóa toàn bộ dữ liệu nghiệp vụ của tài khoản.
+            Tài khoản admin vẫn được giữ.
+          </p>
+
+          <button
+            class="danger sm"
+            onclick="v264ResetCloudClean()"
+          >Xóa sạch dữ liệu Cloud</button>
         </div>
       </div>
-
-      <details class="sync-v237-section">
-        <summary>
-          <span>
-            <b>Thiết bị & sao lưu</b>
-            <small>Ghép thêm thiết bị, tạo bản sao hoặc khôi phục khi cần</small>
-          </span>
-        </summary>
-
-        <div class="sync-v237-section-body">
-          <div class="sync-v237-group">
-            <div class="sync-v237-group-head">
-              <div>
-                <b>Tài khoản & thiết bị</b>
-                <span>Thiết bị mới chỉ cần mở web/PWA và đăng nhập cùng tài khoản.</span>
-              </div>
-              <div class="sync-v237-row-actions">
-                <button class="secondary sm" onclick="v260LogoutAndWipe()">Hiện QR</button>
-                <button class="secondary sm" onclick="scanPairingQr()">Quét QR</button>
-              </div>
-            </div>
-
-            <details class="sync-v237-subdetails">
-              <summary>Nhập mã thủ công</summary>
-
-              <div class="sync-v237-pair-grid">
-                <div>
-                  <label>Mã đồng bộ cũ (đã ngừng)</label>
-                  <div class="multi-code-row">
-                    <input
-                      id="multiDeviceCode"
-                      autocomplete="off"
-                      spellcheck="false"
-                      value="${esc(auto.code||cfg.code||'')}"
-                      placeholder="LY-XXXXX-XXXXX"
-                    >
-                    <button class="secondary sm" type="button" onclick="newMultiDeviceCode()">Tạo mã</button>
-                  </div>
-                </div>
-
-                <div>
-                  <label>Mật khẩu mã hóa</label>
-                  <input
-                    id="multiDevicePassphrase"
-                    type="password"
-                    minlength="6"
-                    autocomplete="new-password"
-                    value="${paired?'••••••••••••':''}"
-                    placeholder="Ít nhất 6 ký tự"
-                    onfocus="if(this.value==='••••••••••••')this.value=''"
-                  >
-                </div>
-              </div>
-
-              <div class="sync-v237-row-actions section-gap-sm">
-                <button class="secondary sm" onclick="copyPairingCode()">Sao chép mã</button>
-                <button class="secondary sm" onclick="pastePairingCode()">Dán mã ghép</button>
-              </div>
-            </details>
-          </div>
-
-          <div class="sync-v237-group v257-disconnect-setting">
-            <div class="sync-v237-group-head">
-              <div>
-                <b>Ngắt kết nối thiết bị</b>
-                <span>
-                  Xóa toàn bộ dữ liệu trên thiết bị này và bắt buộc ghép lại để sử dụng.
-                  Cloud và thiết bị khác không bị xóa.
-                </span>
-              </div>
-
-              <div class="sync-v237-row-actions">
-                <button
-                  class="danger sm"
-                  onclick="disconnectThisDeviceV257()"
-                >Ngắt kết nối & xóa thiết bị</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="sync-v237-group">
-            <div class="sync-v237-group-head">
-              <div>
-                <b>Sao lưu dự phòng</b>
-                <span>
-                  Đây là bản sao để phục hồi khi cần, <strong>không phải trạng thái đồng bộ trực tiếp</strong>.
-                </span>
-              </div>
-
-              <div class="sync-v237-row-actions">
-                <button
-                  id="backupToCloudBtn"
-                  class="secondary sm"
-                  onclick="backupToCloud()"
-                >Tạo bản sao Cloud</button>
-
-                <button
-                  id="restoreFromCloudBtn"
-                  class="secondary sm"
-                  onclick="restoreFromCloud()"
-                >Khôi phục bản sao</button>
-              </div>
-            </div>
-
-            <div id="multiDeviceStatus" class="sync-v237-backup-status">
-              <span class="muted">Trạng thái bản sao lưu sẽ được kiểm tra tự động.</span>
-            </div>
-
-            <details class="sync-v237-subdetails">
-              <summary>Backup bằng tệp</summary>
-
-              <div class="sync-v237-row-actions">
-                <button class="secondary sm" onclick="exportBackup()">Xuất file backup</button>
-                <button class="secondary sm" onclick="selectBackupImport()">Khôi phục từ file</button>
-              </div>
-
-              <input
-                id="backupImportInput"
-                type="file"
-                accept="application/json,.json"
-                style="display:none"
-                onchange="importBackupFile(this)"
-              >
-            </details>
-          </div>
-        </div>
-      </details>
-
-      <details
-        class="sync-v237-section sync-v237-technical"
-        ontoggle="if(this.open)renderAdvancedSyncToolsV203()"
-      >
-        <summary>
-          <span>
-            <b>Chẩn đoán & bảo trì</b>
-            <small>Chỉ dùng khi đồng bộ báo lỗi hoặc được yêu cầu kiểm tra</small>
-          </span>
-        </summary>
-
-        <div class="sync-v237-section-body">
-          <div class="sync-v237-maintenance-grid">
-            <div class="sync-v237-maintenance-item">
-              <div>
-                <b>Dữ liệu chờ Cloud</b>
-                <span>Xem và thử lại các mục pending.</span>
-              </div>
-              <button class="secondary sm" onclick="retryAllPendingV195()">Thử lại pending</button>
-            </div>
-
-            <div class="sync-v237-maintenance-item">
-              <div>
-                <b>Kiểm tra hệ thống đồng bộ</b>
-                <span>Chạy bộ kiểm tra Database, Pull, RPC và Cloud Proof.</span>
-              </div>
-              <button class="secondary sm" onclick="runSyncDiagnostics()">Chạy kiểm tra</button>
-            </div>
-
-            <div class="sync-v237-maintenance-item">
-              <div>
-                <b>Chuẩn hóa dữ liệu cũ</b>
-                <span>Chỉ cần khi còn ID legacy/Excel chưa chuyển hoàn toàn.</span>
-              </div>
-              <button class="secondary sm" onclick="normalizeLegacyCacheV205(); renderAll(); toastMsg('Đã chuẩn hóa dữ liệu cũ')">Chuẩn hóa</button>
-            </div>
-
-            <div class="sync-v237-maintenance-item">
-              <div>
-                <b>Chuyển dữ liệu legacy lên Cloud</b>
-                <span>Không dùng cho thao tác hằng ngày.</span>
-              </div>
-              <button class="secondary sm" onclick="migrateAndSyncV199()">Chuyển dữ liệu cũ</button>
-            </div>
-
-            <div class="sync-v237-maintenance-item">
-              <div>
-                <b>Khôi phục snapshot local</b>
-                <span>Dùng khi vừa có Cloud Pull lỗi và cần quay lại dữ liệu trước đó.</span>
-              </div>
-              <button class="secondary sm" onclick="restoreLocalSnapshotV204()">Khôi phục local</button>
-            </div>
-
-            <div class="sync-v237-maintenance-item v239-reset-item">
-              <div>
-                <b>Đặt lại toàn bộ Cloud</b>
-                <span>Xóa dữ liệu Cloud và lấy thiết bị này làm nguồn chuẩn. Chỉ dùng khi cần xử lý xung đột triệt để.</span>
-              </div>
-              <button class="danger sm" onclick="v239ResetCloudFromThisDevice()">Reset Cloud</button>
-            </div>
-          </div>
-
-          <div class="sync-v237-tech-details">
-            <details>
-              <summary>Xem pending chi tiết</summary>
-              <div class="sync-v195-pending-card">
-                <div class="sync-v195-actions">
-                  <button class="secondary sm" onclick="renderPendingInspector()">Làm mới</button>
-                  <button class="secondary sm" onclick="repairAndRetrySyncV197()">Sửa pending local</button>
-                </div>
-                <div id="pendingInspectorSummary"></div>
-                <div id="pendingBlockerAnalysis"></div>
-                <div id="pendingInspectorList"></div>
-              </div>
-            </details>
-
-            <details>
-              <summary>Kết quả kiểm tra kỹ thuật</summary>
-              <div id="syncDiagStatus" class="muted">Chưa chạy kiểm tra.</div>
-              <div id="syncDiagResults"></div>
-            </details>
-
-            <details>
-              <summary>Migration & lỗi phiếu bán cũ</summary>
-              <div id="cloudMigrationStatusV198" class="muted">
-                Hệ thống đã ổn định • chỉ dùng khi có dữ liệu legacy mới
-              </div>
-
-              <div id="migrationDedupV201" class="sync-v201-dedup-note"></div>
-
-              <div id="migrationProgressWrapV199" class="sync-v199-progress" style="display:none">
-                <div class="sync-v199-head">
-                  <div>
-                    <b id="migrationProgressPhaseV199">Sẵn sàng</b>
-                    <span id="migrationProgressDetailV199"></span>
-                  </div>
-                  <strong id="migrationProgressPctV199">0%</strong>
-                </div>
-                <div class="sync-v199-track">
-                  <div id="migrationProgressFillV199" class="sync-v199-fill" style="width:0%"></div>
-                </div>
-              </div>
-
-              <div class="sync-v216-repair-report section-gap-sm">
-                <b>Phiếu bán pending</b>
-                <span id="saleRepairReportV216">
-                  ${(()=>{
-                    const r=v216LoadRepairReport();
-                    return r?.errors?.length
-                      ?esc(v216RepairErrorSummary(r))
-                      :'Không có lỗi repair cụ thể.';
-                  })()}
-                </span>
-              </div>
-            </details>
-
-            <div class="sync-v237-tech-footer">
-              Cloud: ${cloudOnline?'Online':'Offline'}
-              ${auto.cloud_revision?` • Canonical Rev ${Number(auto.cloud_revision)}`:''}
-              • Atomic Sales Safe
-            </div>
-          </div>
-        </div>
-      </details>
     </div>
 
     <div class="section-gap"></div>
@@ -54310,9 +53931,10 @@ function renderSettings(){
         <div>
           <h2>Nhận diện phần mềm</h2>
           <div class="muted">
-            Tùy chỉnh tên và logo hiển thị ở đầu phần mềm.
+            Tên và logo hiển thị của ứng dụng.
           </div>
         </div>
+
         ${
           brand.logo
             ?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`
@@ -54323,18 +53945,24 @@ function renderSettings(){
       <div class="brand-settings-grid">
         <div>
           <label>Tên phần mềm</label>
+
           <div class="brand-name-actions">
             <input
               id="brandNameInput"
               maxlength="80"
               value="${esc(brand.name)}"
             >
-            <button class="primary" onclick="saveAppName()">Lưu tên</button>
+
+            <button
+              class="primary"
+              onclick="saveAppName()"
+            >Lưu tên</button>
           </div>
         </div>
 
         <div>
           <label>Logo phần mềm</label>
+
           <input
             id="brandLogoInput"
             type="file"
@@ -54342,18 +53970,20 @@ function renderSettings(){
             style="display:none"
             onchange="handleAppLogo(this)"
           >
+
           <div class="brand-logo-actions">
-            <button class="secondary" onclick="selectAppLogo()">
+            <button
+              class="secondary"
+              onclick="selectAppLogo()"
+            >
               ${brand.logo?'Thay logo':'Thêm logo'}
             </button>
+
             ${
               brand.logo
                 ?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`
                 :''
             }
-          </div>
-          <div class="muted brand-logo-note">
-            PNG, JPG hoặc WebP • tối đa 2 MB.
           </div>
         </div>
       </div>
@@ -54361,60 +53991,35 @@ function renderSettings(){
 
     <div class="section-gap"></div>
 
-    <details class="settings-v186-more">
-      <summary>Cài đặt hệ thống nâng cao</summary>
-
-      <div class="section-gap"></div>
+    <div class="card">
+      <h2>Thiết bị</h2>
 
       <div class="grid2">
-        <div class="card storage-card">
-          <div class="storage-card-head">
-            <div>
-              <h3>Dung lượng lưu trữ</h3>
-              <div class="muted">Tự động tối ưu mỗi 7 ngày.</div>
-            </div>
-            <div class="storage-size">${storageHuman(storageBytes())}</div>
-          </div>
-          <button class="secondary sm" onclick="manualOptimizeStorage()">Tối ưu ngay</button>
-        </div>
-
-        <div class="card">
-          <h3>Kết nối Cloud</h3>
-          <p>
-            <b>Trạng thái:</b>
-            ${
-              cloudOnline
-                ?'<span class="badge okb">Online</span>'
-                :'<span class="badge warnb">Offline</span>'
-            }
+        <div>
+          <h3>Dung lượng local</h3>
+          <p class="muted">
+            ${storageHuman(storageBytes())}
           </p>
-          <p class="muted">Supabase • backup bucket: lat-yen-backups</p>
+
+          <button
+            class="secondary sm"
+            onclick="manualOptimizeStorage()"
+          >Tối ưu cache</button>
+        </div>
+
+        <div>
+          <h3>Thiết bị khác</h3>
+          <p class="muted">
+            Không dùng QR hoặc mã ghép.
+            Chỉ cần đăng nhập cùng tài khoản admin.
+          </p>
         </div>
       </div>
-
-      <div class="card section-gap">
-        <h3>Di chuyển dữ liệu V2</h3>
-        <p class="muted">Chỉ dùng nếu thiết bị còn dữ liệu V2 cũ.</p>
-        <button class="secondary sm" onclick="migrateV2ToCloud()">Import dữ liệu V2</button>
-      </div>
-    </details>
+    </div>
   `;
 
-  setTimeout(()=>{
-    renderSyncProgressLive();
-
-    if(auto.code||cfg.code){
-      runWhenIdleV203(
-        ()=>refreshMultiDeviceStatusV203(),
-        700
-      );
-    }
-  },120);
-
-  setTimeout(v221UpdateSettingsHealth,0);
-
   setTimeout(
-    ()=>renderCloudUsageV256(false),
+    v269RenderSyncStatus,
     0
   );
 }
@@ -55303,130 +54908,579 @@ function v262SaveCursors(x){
 }
 
 async function v262SmartPull(force=false){
+  return v269PullChanged(force);
+}
+
+function v262StartSmartSync(){
+  v269StartSyncEngine();
+}
+
+
+/* ===== V269 CLEAN SYNC CORE ===== */
+const V269_SYNC_INTERVAL_MS=8000;
+const V269_PULL_INTERVAL_MS=8000;
+const V269_ACTION_DEBOUNCE_MS=250;
+const V269_CURSOR_OVERLAP_MS=3000;
+
+let v269SyncTimer=null;
+let v269ActionTimer=null;
+let v269SyncBusy=false;
+let v269PullBusy=false;
+let v269LastPullAt=0;
+let v269LastSyncAt=0;
+let v269LastError='';
+let v269RealtimeState='connecting';
+
+function v269SyncReady(){
+  return !!(
+    navigator.onLine &&
+    v260Session &&
+    v261OrganizationId
+  );
+}
+
+function v269OverlapCursor(value){
+  if(!value)return '';
+
+  const t=
+    new Date(value).getTime();
+
+  if(!Number.isFinite(t)){
+    return value;
+  }
+
+  return new Date(
+    Math.max(
+      0,
+      t-V269_CURSOR_OVERLAP_MS
+    )
+  ).toISOString();
+}
+
+async function v269PullOneTable(
+  table,
+  force=false
+){
+  const cursors=v262Cursors();
+  const oldCursor=
+    force
+      ?''
+      :(cursors[table]||'');
+
+  const fromCursor=
+    oldCursor
+      ?v269OverlapCursor(oldCursor)
+      :'';
+
+  const pageSize=500;
+  let offset=0;
+  let maxCursor=oldCursor;
+  let applied=0;
+
+  while(true){
+    let q=
+      sb.from(table)
+        .select('*')
+        .eq(
+          'organization_id',
+          v261OrganizationId
+        )
+        .order(
+          'updated_at',
+          {ascending:true}
+        )
+        .range(
+          offset,
+          offset+pageSize-1
+        );
+
+    if(fromCursor){
+      q=q.gte(
+        'updated_at',
+        fromCursor
+      );
+    }
+
+    const {data,error}=await q;
+
+    if(error)throw error;
+
+    const rows=data||[];
+
+    for(const row of rows){
+      v207ApplyRealtimeRow(
+        table,
+        row.deleted_at
+          ?{
+              eventType:'DELETE',
+              old:row,
+              new:{}
+            }
+          :{
+              eventType:'UPDATE',
+              old:{},
+              new:row
+            }
+      );
+
+      if(
+        row.updated_at &&
+        (
+          !maxCursor ||
+          String(row.updated_at)>
+            String(maxCursor)
+        )
+      ){
+        maxCursor=row.updated_at;
+      }
+
+      applied++;
+    }
+
+    if(rows.length<pageSize){
+      break;
+    }
+
+    offset+=rows.length;
+  }
+
+  return {
+    table,
+    applied,
+    cursor:maxCursor
+  };
+}
+
+async function v269PullChanged(
+  force=false
+){
   if(
-    v262SmartBusy ||
-    !navigator.onLine ||
-    !v260Session ||
-    !v261OrganizationId
+    !v269SyncReady() ||
+    v269PullBusy
   ){
     return null;
   }
 
-  v262SmartBusy=true;
-
-  const cursors=v262Cursors();
-  let applied=0;
+  v269PullBusy=true;
 
   try{
-    for(const table of V262_TABLES){
-      const pageSize=500;
-      let offset=0;
-      let finalCursor=cursors[table]||'';
-      let more=true;
+    /*
+      Fetch tables in parallel. Realtime remains the fast path;
+      this pull is a reliable fallback and reconnect catch-up.
+    */
+    const results=
+      await Promise.all(
+        V262_TABLES.map(table=>
+          v269PullOneTable(
+            table,
+            force
+          )
+        )
+      );
 
-      while(more){
-        let q=
-          sb.from(table)
-            .select('*')
-            .eq(
-              'organization_id',
-              v261OrganizationId
-            )
-            .order(
-              'updated_at',
-              {ascending:true}
-            )
-            .range(
-              offset,
-              offset+pageSize-1
-            );
+    const cursors=v262Cursors();
 
-        if(
-          !force &&
-          cursors[table]
-        ){
-          q=q.gt(
-            'updated_at',
-            cursors[table]
-          );
-        }
-
-        const {
-          data,
-          error
-        }=await q;
-
-        if(error)throw error;
-
-        const rows=data||[];
-
-        for(const row of rows){
-          if(row.deleted_at){
-            v207ApplyRealtimeRow(
-              table,
-              {
-                eventType:'DELETE',
-                old:row,
-                new:{}
-              }
-            );
-          }else{
-            v207ApplyRealtimeRow(
-              table,
-              {
-                eventType:'UPDATE',
-                old:{},
-                new:row
-              }
-            );
-          }
-
-          if(
-            row.updated_at &&
-            String(row.updated_at)>
-              String(finalCursor)
-          ){
-            finalCursor=
-              row.updated_at;
-          }
-
-          applied++;
-        }
-
-        more=rows.length===pageSize;
-        offset+=rows.length;
-
-        if(rows.length===0){
-          more=false;
-        }
-      }
-
-      if(finalCursor){
-        cursors[table]=finalCursor;
+    for(const result of results){
+      if(result.cursor){
+        cursors[result.table]=
+          result.cursor;
       }
     }
 
     v262SaveCursors(cursors);
+
     cacheSave();
     v207ScheduleActiveRender?.();
 
+    v269LastPullAt=Date.now();
+
     return {
-      applied,
-      cursors
+      applied:results.reduce(
+        (n,x)=>n+Number(x.applied||0),
+        0
+      ),
+      results
     };
 
   }finally{
-    v262SmartBusy=false;
+    v269PullBusy=false;
   }
 }
 
-function v262StartSmartSync(){
+async function v269PushPending(){
+  if(!v269SyncReady()){
+    return {
+      pending:
+        Number(v191PendingCount?.()||0)
+    };
+  }
+
+  const errors=[];
+  const run=async(label,fn)=>{
+    try{
+      return await fn();
+    }catch(e){
+      errors.push(
+        `${label}: ${e?.message||e}`
+      );
+      return null;
+    }
+  };
+
   /*
-    V268 replaces the old pull-only 30s timer with the persistent Cloud V2
-    heartbeat below. Keep this function as the public entry point.
+    Only the business writers still required by the current app are run.
+    Legacy migration/canonical/repair chains are no longer part of the
+    normal sync loop.
   */
-  v268StartCloudHeartbeat();
+  await run(
+    'Kho',
+    ()=>syncPendingWarehousesV242()
+  );
+
+  await run(
+    'Nhà cung cấp',
+    ()=>syncPendingSuppliersV191()
+  );
+
+  await run(
+    'Nguyên liệu/Công thức',
+    ()=>syncPendingOperations()
+  );
+
+  await run(
+    'Xóa dữ liệu',
+    ()=>syncDeletionTombstonesV192()
+  );
+
+  await run(
+    'Xóa phiếu nhập',
+    ()=>syncDeletedImportMovementTombstones()
+  );
+
+  await run(
+    'Phiếu nhập',
+    ()=>syncPendingImportReceiptsV191()
+  );
+
+  await run(
+    'Phiếu xuất',
+    ()=>syncPendingExportReceiptsV192()
+  );
+
+  await run(
+    'Kiểm kê',
+    ()=>syncPendingStocktakeReceiptsV192()
+  );
+
+  await run(
+    'Phiếu bán',
+    ()=>syncPendingSaleReceipts()
+  );
+
+  const pending=
+    Number(v191PendingCount?.()||0);
+
+  v269LastError=
+    errors.join(' • ');
+
+  updatePendingSyncBadge();
+  cacheSave();
+
+  return {
+    pending,
+    errors
+  };
 }
+
+async function v269SyncCycle({
+  forcePull=false,
+  reason='timer',
+  manual=false
+}={}){
+  if(!v269SyncReady()){
+    v269RenderSyncStatus();
+    return null;
+  }
+
+  if(v269SyncBusy){
+    return null;
+  }
+
+  v269SyncBusy=true;
+
+  if(manual){
+    beginSyncProgress();
+    updateSyncProgress(
+      15,
+      'Đang gửi dữ liệu',
+      'Đẩy thay đổi lên Cloud'
+    );
+  }
+
+  try{
+    const pushed=
+      await v269PushPending();
+
+    if(manual){
+      updateSyncProgress(
+        60,
+        'Đang nhận dữ liệu',
+        'Đọc thay đổi từ Cloud'
+      );
+    }
+
+    const now=Date.now();
+
+    const needPull=
+      forcePull ||
+      !v269LastPullAt ||
+      now-v269LastPullAt>=
+        V269_PULL_INTERVAL_MS;
+
+    const pulled=
+      needPull
+        ?await v269PullChanged(forcePull)
+        :null;
+
+    const pending=
+      Number(v191PendingCount?.()||0);
+
+    v269LastSyncAt=Date.now();
+
+    if(!pending && !v269LastError){
+      cloudOnline=true;
+
+      setCloudStatus(
+        v269RealtimeState==='online'
+          ?'Cloud • Realtime'
+          :'Cloud • Online',
+        'online'
+      );
+    }else if(pending){
+      setCloudStatus(
+        `Cloud • ${pending} mục chờ`,
+        'offline'
+      );
+    }
+
+    if(manual){
+      finishSyncProgress({
+        success:
+          pending===0 &&
+          !v269LastError,
+        pending,
+        stage:
+          pending===0
+            ?'Đã đồng bộ'
+            :'Còn dữ liệu chờ',
+        detail:
+          v269LastError||
+          (
+            pending===0
+              ?'Thiết bị và Cloud đã hội tụ'
+              :`${pending} mục đang thử lại`
+          )
+      });
+    }
+
+    v269RenderSyncStatus();
+
+    return {
+      reason,
+      pushed,
+      pulled,
+      pending
+    };
+
+  }catch(e){
+    v269LastError=
+      e?.message||String(e);
+
+    if(manual){
+      finishSyncProgress({
+        success:false,
+        pending:
+          Number(v191PendingCount?.()||0),
+        stage:'Lỗi đồng bộ',
+        detail:v269LastError,
+        error:v269LastError
+      });
+    }
+
+    v269RenderSyncStatus();
+    throw e;
+
+  }finally{
+    v269SyncBusy=false;
+  }
+}
+
+function v269RequestSync(
+  reason='data_change'
+){
+  clearTimeout(v269ActionTimer);
+
+  v269ActionTimer=
+    setTimeout(
+      ()=>v269SyncCycle({
+        forcePull:false,
+        reason
+      }).catch(console.warn),
+      V269_ACTION_DEBOUNCE_MS
+    );
+}
+
+function v269StartSyncEngine(){
+  if(v269SyncTimer){
+    clearInterval(v269SyncTimer);
+  }
+
+  setTimeout(
+    ()=>v269SyncCycle({
+      forcePull:true,
+      reason:'startup'
+    }).catch(console.warn),
+    250
+  );
+
+  v269SyncTimer=
+    setInterval(
+      ()=>{
+        if(
+          document.hidden ||
+          !navigator.onLine
+        ){
+          return;
+        }
+
+        v269SyncCycle({
+          reason:'interval'
+        }).catch(console.warn);
+      },
+      V269_SYNC_INTERVAL_MS
+    );
+}
+
+function v269StopSyncEngine(){
+  clearTimeout(v269ActionTimer);
+
+  if(v269SyncTimer){
+    clearInterval(v269SyncTimer);
+    v269SyncTimer=null;
+  }
+}
+
+function v269RenderSyncStatus(){
+  const el=
+    document.getElementById(
+      'v269SyncState'
+    );
+
+  if(!el)return;
+
+  const pending=
+    Number(v191PendingCount?.()||0);
+
+  const realtime=
+    v269RealtimeState==='online'
+      ?'Realtime'
+      :'Smart Sync';
+
+  const state=
+    !navigator.onLine
+      ?'Offline'
+      :(
+        pending
+          ?`${pending} mục đang chờ`
+          :'Đã đồng bộ'
+      );
+
+  el.innerHTML=`
+    <div style="display:grid;gap:6px">
+      <div>
+        <b>${esc(state)}</b>
+        <span class="muted">
+          • ${esc(realtime)}
+        </span>
+      </div>
+
+      <div class="muted">
+        ${
+          v269LastSyncAt
+            ?`Lần cuối: ${esc(dt(new Date(v269LastSyncAt).toISOString()))}`
+            :'Đang khởi tạo đồng bộ…'
+        }
+      </div>
+
+      ${
+        v269LastError
+          ?`<div style="color:#b91c1c;font-size:12px">${esc(v269LastError)}</div>`
+          :''
+      }
+    </div>
+  `;
+}
+
+async function v269ReloadDeviceFromCloud(){
+  const ok=
+    await appConfirm(
+      'Xóa cache nghiệp vụ trên thiết bị này và tải lại từ Cloud?\n\nTài khoản đăng nhập và dữ liệu Cloud không bị xóa.',
+      'Tải lại thiết bị từ Cloud'
+    );
+
+  if(!ok)return;
+
+  await v264ClearLocalBusinessCache();
+  location.reload();
+}
+
+async function v269ReconnectRealtime(){
+  try{
+    setupRealtime();
+
+    await v269SyncCycle({
+      forcePull:true,
+      reason:'manual_reconnect',
+      manual:true
+    });
+  }catch(e){
+    alert(
+      'Không kết nối được Cloud: '+
+      (e?.message||e)
+    );
+  }
+}
+
+
+/* V269 foreground/network recovery */
+document.addEventListener(
+  'visibilitychange',
+  ()=>{
+    if(
+      !document.hidden &&
+      v269SyncReady()
+    ){
+      v269SyncCycle({
+        forcePull:true,
+        reason:'foreground'
+      }).catch(console.warn);
+    }
+  }
+);
+
+window.addEventListener(
+  'online',
+  ()=>{
+    if(v260Session&&v261OrganizationId){
+      setupRealtime();
+
+      v269SyncCycle({
+        forcePull:true,
+        reason:'online'
+      }).catch(console.warn);
+    }
+  }
+);
 
 /* ===== V268 PERSISTENT CLOUD V2 HEARTBEAT ===== */
 const V268_HEARTBEAT_MS=5000;
@@ -55440,117 +55494,11 @@ let v268RealtimeReady=false;
 let v268RealtimeLastReadyAt=0;
 let v268LastCycleError='';
 
-async function v268RunCloudCycle({
-  forcePull=false,
-  reason='heartbeat'
-}={}){
-  if(
-    v268HeartbeatBusy ||
-    !navigator.onLine ||
-    !v260Session ||
-    !v261OrganizationId
-  ){
-    return null;
-  }
-
-  v268HeartbeatBusy=true;
-
-  try{
-    /*
-      PUSH FIRST.
-      This is the critical V268 correction: V262 only pulled every 30s.
-      If a local mutation missed the old V208 action hook, it could stay
-      local forever until login/reload. Now every pending business row is
-      retried continuously while the app is open.
-    */
-    const before=
-      Number(v191PendingCount?.()||0);
-
-    let pushResult=null;
-
-    if(before>0){
-      try{
-        pushResult=
-          await runPendingRetriesV202();
-      }catch(e){
-        console.warn(
-          'V268 heartbeat push',
-          reason,
-          e
-        );
-
-        v268LastCycleError=
-          e?.message||String(e);
-      }
-    }
-
-    const now=Date.now();
-
-    const shouldPull=
-      forcePull ||
-      !v268LastPullAt ||
-      now-v268LastPullAt>=
-        V268_PULL_INTERVAL_MS;
-
-    let pullResult=null;
-
-    if(shouldPull){
-      try{
-        pullResult=
-          await v262SmartPull(false);
-
-        v268LastPullAt=Date.now();
-
-      }catch(e){
-        console.warn(
-          'V268 heartbeat pull',
-          reason,
-          e
-        );
-
-        v268LastCycleError=
-          e?.message||String(e);
-      }
-    }
-
-    const after=
-      Number(v191PendingCount?.()||0);
-
-    updatePendingSyncBadge();
-
-    if(after===0){
-      cloudOnline=true;
-
-      if(
-        !document.hidden &&
-        !v219InteractionActive()
-      ){
-        setCloudStatus(
-          v268RealtimeReady
-            ?'Cloud • Realtime'
-            :'Cloud • Smart Sync',
-          'online'
-        );
-      }
-    }else{
-      setCloudStatus(
-        `Cloud • còn ${after} mục chờ`,
-        'offline'
-      );
-    }
-
-    return {
-      reason,
-      before,
-      after,
-      pushResult,
-      pullResult,
-      realtime:v268RealtimeReady
-    };
-
-  }finally{
-    v268HeartbeatBusy=false;
-  }
+async function v268RunCloudCycle(options={}){
+  return v269SyncCycle({
+    forcePull:!!options.forcePull,
+    reason:options.reason||'compat'
+  });
 }
 
 function v268StartCloudHeartbeat(){
@@ -55717,7 +55665,7 @@ async function v263ResetOrganizationData(){
   location.reload();
 }
 
-/* ===== V268 PERSISTENT CLOUD SYNC ===== */
+/* ===== V269 CLEAN SYNC CORE ===== */
 const V264_CLEAN_MODE_KEY='lat_yen_v264_clean_auth_mode';
 
 function v264CleanMode(){
@@ -55908,5 +55856,14 @@ window.addEventListener('unhandledrejection',event=>{
 });
 
 </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(console.warn);
+  });
+}
+</script>
+
 </body>
 </html>
