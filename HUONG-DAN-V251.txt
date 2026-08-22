@@ -1,0 +1,58 @@
+V251 - VERIFIED RECIPE RECONCILIATION
+
+Lỗi V250:
+Sau DELETE + reseed + Canonical PASS, final coverage còn:
+công thức: 6
+
+V251 xử lý đúng riêng recipe_items:
+
+1. TRƯỚC DELETE
+Kiểm tra mọi recipe:
+- id UUID
+- product_id UUID
+- ingredient_id UUID
+- quantity > 0
+- không trùng product_id + ingredient_id
+Nếu sai => dừng trước DELETE.
+
+2. SAU SEED
+Fetch toàn bộ recipe_items từ Supabase.
+Đối chiếu theo:
+product_id + ingredient_id + quantity.
+
+3. Nếu pair đã tồn tại nhưng quantity sai
+=> UPDATE đúng quantity local.
+
+4. Nếu pair thật sự thiếu
+=> INSERT đúng row local.
+Nếu INSERT gặp unique conflict:
+=> query lại pair, nếu row đã được trigger/concurrent tạo thì dùng row đó
+và chốt quantity.
+
+5. VERIFY LẠI
+Fetch Cloud lần nữa.
+Không chỉ kiểm tra số lượng; từng pair + quantity phải đủ.
+
+6. FINAL COVERAGE
+Nếu sau Cloud Pull chỉ còn recipe_items missing:
+=> tự chạy targeted recipe repair thêm một lần rồi pull lại.
+Không tự sửa/xóa/che lỗi của bảng khác.
+
+7. Cloud Coverage recipe được nâng cấp:
+trước đây pair product+ingredient là đủ.
+V251 yêu cầu semantic:
+product + ingredient + quantity.
+Không còn trường hợp Cloud có dòng nhưng định lượng sai mà vẫn báo 100%.
+
+8. Report:
+localStorage lat_yen_recipe_reset_repair_v251
+Diagnostics > Recipe Verify V251.
+
+Giữ nguyên:
+- V250 Canonical RPC fallback
+- V248 crash-safe reset lock
+- V246 schema-compatible probe
+- V245 collision-safe normalizer
+- V244 integrity/RLS/storage safety
+
+Không cần SQL mới.

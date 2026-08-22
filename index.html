@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V250 CANONICAL RPC READ FALLBACK ===== */
+/* ===== V251 VERIFIED RECIPE RECONCILIATION ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11666,7 +11666,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V250</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V251</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -19299,6 +19299,30 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V251 targeted recipe verification.
+  try{
+    const r=
+      JSON.parse(
+        localStorage.getItem(
+          V251_RECIPE_REPAIR_REPORT_KEY
+        )||'null'
+      );
+
+    add(
+      'Recipe Verify V251',
+      !r?.remaining,
+      r
+        ?`expected:${Number(r.expected||0)} • missing trước:${Number(r.missing_before||0)} • quantity lệch:${Number(r.quantity_mismatch_before||0)} • repair:${Number(r.repaired||0)} • còn:${Number(r.remaining||0)}`
+        :'Chưa có lần repair công thức sau Reset'
+    );
+  }catch(e){
+    add(
+      'Recipe Verify V251',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V250 canonical RPC read fallback.
   try{
     const cred=autoSyncCredentials();
@@ -19661,7 +19685,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:250,
+    version:251,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -21394,10 +21418,17 @@ function v228KeyCandidates(table,row){
 
   else if(table==='recipe_items'){
     add('id:'+row.id);
+
+    /*
+      V251: recipe coverage must validate quantity too.
+      Cloud may legitimately use another row UUID, so semantic business
+      identity is product + ingredient + quantity.
+    */
     add(
-      'pair:'+
+      'semantic:'+
       v228Remap('products',row.product_id)+'|'+
-      v228Remap('ingredients',row.ingredient_id)
+      v228Remap('ingredients',row.ingredient_id)+'|'+
+      v228NormNumber(row.quantity)
     );
   }
 
@@ -42952,7 +42983,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V250',
+    app_version:'V251',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -43261,7 +43292,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:250,
+    version:251,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -43443,13 +43474,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:250,
+    version:251,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V250',storage:'supabase-storage',
+      schema:185,app_version:'V251',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44809,7 +44840,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:250,
+    version:251,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -47644,7 +47675,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V250',
+      app_version:'V251',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47659,7 +47690,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:250,
+      version:251,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47936,7 +47967,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v250-full-backup-'+
+    'lat-yen-v251-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -49132,7 +49163,7 @@ function v248WriteResetHeartbeat(stage='reset'){
     JSON.stringify({
       owner:V244_RESET_OWNER,
       at:Date.now(),
-      version:250,
+      version:251,
       stage
     })
   );
@@ -50462,6 +50493,25 @@ async function v244CloudResetPreflight(){
     );
   }
 
+  const recipeSeedCheck=
+    v251ValidateRecipeSeed(
+      db.recipeItems||[]
+    );
+
+  if(!recipeSeedCheck.ok){
+    throw new Error(
+      'Công thức local chưa đủ điều kiện Reset:\n'+
+      recipeSeedCheck.errors
+        .slice(0,16)
+        .join('\n')+
+      (
+        recipeSeedCheck.errors.length>16
+          ?`\n... và ${recipeSeedCheck.errors.length-16} lỗi khác`
+          :''
+      )
+    );
+  }
+
   const integrity=
     v245PreNormalizeIntegrityAudit();
 
@@ -50604,6 +50654,612 @@ function v239LocalReadiness(){
     issues,
     counts:v204DbCounts(db),
     total:v204TotalCoreRecords(db)
+  };
+}
+
+
+/* ===== V251 VERIFIED RECIPE RECONCILIATION ===== */
+const V251_RECIPE_REPAIR_REPORT_KEY='lat_yen_recipe_reset_repair_v251';
+
+function v251RecipeSemanticKey(row){
+  return [
+    String(row?.product_id||''),
+    String(row?.ingredient_id||'')
+  ].join('|');
+}
+
+function v251RecipeExactKey(row){
+  return [
+    String(row?.product_id||''),
+    String(row?.ingredient_id||''),
+    v228NormNumber(row?.quantity)
+  ].join('|');
+}
+
+function v251SaveRecipeRepairReport(report){
+  try{
+    localStorage.setItem(
+      V251_RECIPE_REPAIR_REPORT_KEY,
+      JSON.stringify({
+        at:new Date().toISOString(),
+        ...(report||{})
+      })
+    );
+  }catch(e){}
+}
+
+function v251ValidateRecipeSeed(rows){
+  const errors=[];
+  const pairs=new Set();
+  const ids=new Set();
+
+  for(const row of rows||[]){
+    if(!isUuidValue(row.id)){
+      errors.push(
+        `recipe id chưa phải UUID: ${row.id||'(trống)'}`
+      );
+    }
+
+    if(!isUuidValue(row.product_id)){
+      errors.push(
+        `recipe product_id chưa phải UUID: ${row.product_id||'(trống)'}`
+      );
+    }
+
+    if(!isUuidValue(row.ingredient_id)){
+      errors.push(
+        `recipe ingredient_id chưa phải UUID: ${row.ingredient_id||'(trống)'}`
+      );
+    }
+
+    const qty=Number(row.quantity);
+
+    if(
+      !Number.isFinite(qty) ||
+      qty<=0
+    ){
+      errors.push(
+        `recipe ${row.id||''}: quantity phải > 0 (${row.quantity})`
+      );
+    }
+
+    const pair=v251RecipeSemanticKey(row);
+
+    if(pairs.has(pair)){
+      errors.push(
+        `recipe trùng product + ingredient: ${pair}`
+      );
+    }
+
+    pairs.add(pair);
+
+    if(row.id){
+      if(ids.has(String(row.id))){
+        errors.push(
+          `recipe trùng id: ${row.id}`
+        );
+      }
+
+      ids.add(String(row.id));
+    }
+  }
+
+  return {
+    ok:errors.length===0,
+    errors,
+    count:(rows||[]).length
+  };
+}
+
+async function v251CloudRecipeRows(){
+  return fetchAllCloudRows(
+    'recipe_items'
+  );
+}
+
+function v251RecipeDiff(
+  expected,
+  cloud
+){
+  const cloudByPair=new Map();
+
+  for(const row of cloud||[]){
+    const key=
+      v251RecipeSemanticKey(
+        row
+      );
+
+    if(!cloudByPair.has(key)){
+      cloudByPair.set(
+        key,
+        []
+      );
+    }
+
+    cloudByPair
+      .get(key)
+      .push(row);
+  }
+
+  const missing=[];
+  const quantityMismatch=[];
+  const matched=[];
+
+  for(const row of expected||[]){
+    const key=
+      v251RecipeSemanticKey(
+        row
+      );
+
+    const candidates=
+      cloudByPair.get(key)||
+      [];
+
+    if(!candidates.length){
+      missing.push(row);
+      continue;
+    }
+
+    const exact=
+      candidates.find(x=>
+        v228NormNumber(
+          x.quantity
+        )===
+        v228NormNumber(
+          row.quantity
+        )
+      );
+
+    if(exact){
+      matched.push({
+        local:row,
+        cloud:exact
+      });
+      continue;
+    }
+
+    quantityMismatch.push({
+      local:row,
+      cloud:candidates[0]
+    });
+  }
+
+  return {
+    missing,
+    quantityMismatch,
+    matched,
+    expected:
+      (expected||[]).length,
+    cloud:
+      (cloud||[]).length
+  };
+}
+
+async function v251RepairOneRecipeRow(
+  expected
+){
+  if(
+    !isUuidValue(expected.product_id) ||
+    !isUuidValue(expected.ingredient_id) ||
+    Number(expected.quantity)<=0
+  ){
+    throw new Error(
+      `Recipe không hợp lệ trước repair: ${v251RecipeSemanticKey(expected)}`
+    );
+  }
+
+  /*
+    First verify by business key. If the database generated another ID,
+    preserve that row and only correct quantity.
+  */
+  let lookup=
+    await promiseWithTimeout(
+      sb.from('recipe_items')
+        .select(
+          'id,product_id,ingredient_id,quantity'
+        )
+        .eq(
+          'product_id',
+          expected.product_id
+        )
+        .eq(
+          'ingredient_id',
+          expected.ingredient_id
+        ),
+      12000,
+      'Kiểm tra dòng công thức Cloud'
+    );
+
+  if(lookup.error){
+    throw lookup.error;
+  }
+
+  const existing=
+    (lookup.data||[])[0]||
+    null;
+
+  if(existing){
+    if(
+      v228NormNumber(
+        existing.quantity
+      )!==
+      v228NormNumber(
+        expected.quantity
+      )
+    ){
+      const update=
+        await promiseWithTimeout(
+          sb.from('recipe_items')
+            .update({
+              quantity:
+                Number(
+                  expected.quantity
+                )
+            })
+            .eq(
+              'id',
+              existing.id
+            )
+            .select(
+              'id,product_id,ingredient_id,quantity'
+            )
+            .single(),
+          12000,
+          'Sửa định lượng công thức Cloud'
+        );
+
+      if(update.error){
+        throw update.error;
+      }
+
+      return {
+        action:'updated',
+        row:update.data
+      };
+    }
+
+    return {
+      action:'already_present',
+      row:existing
+    };
+  }
+
+  /*
+    Truly absent: insert the local authoritative row.
+    Keep local UUID whenever possible.
+  */
+  let insert=
+    await promiseWithTimeout(
+      sb.from('recipe_items')
+        .insert({
+          id:expected.id,
+          product_id:
+            expected.product_id,
+          ingredient_id:
+            expected.ingredient_id,
+          quantity:
+            Number(
+              expected.quantity
+            )
+        })
+        .select(
+          'id,product_id,ingredient_id,quantity'
+        )
+        .single(),
+      12000,
+      'Bổ sung công thức Cloud'
+    );
+
+  if(!insert.error){
+    return {
+      action:'inserted',
+      row:insert.data
+    };
+  }
+
+  /*
+    A concurrent/trigger-generated row may have won the unique business pair.
+    Re-read by pair before declaring failure.
+  */
+  lookup=
+    await promiseWithTimeout(
+      sb.from('recipe_items')
+        .select(
+          'id,product_id,ingredient_id,quantity'
+        )
+        .eq(
+          'product_id',
+          expected.product_id
+        )
+        .eq(
+          'ingredient_id',
+          expected.ingredient_id
+        ),
+      12000,
+      'Kiểm tra lại công thức Cloud'
+    );
+
+  if(lookup.error){
+    throw lookup.error;
+  }
+
+  const after=
+    (lookup.data||[])[0]||
+    null;
+
+  if(after){
+    if(
+      v228NormNumber(
+        after.quantity
+      )!==
+      v228NormNumber(
+        expected.quantity
+      )
+    ){
+      const update=
+        await promiseWithTimeout(
+          sb.from('recipe_items')
+            .update({
+              quantity:
+                Number(
+                  expected.quantity
+                )
+            })
+            .eq(
+              'id',
+              after.id
+            )
+            .select(
+              'id,product_id,ingredient_id,quantity'
+            )
+            .single(),
+          12000,
+          'Chốt định lượng công thức Cloud'
+        );
+
+      if(update.error){
+        throw update.error;
+      }
+
+      return {
+        action:'updated_after_conflict',
+        row:update.data
+      };
+    }
+
+    return {
+      action:'present_after_conflict',
+      row:after
+    };
+  }
+
+  throw new Error(
+    `Không thể bổ sung recipe ${v251RecipeSemanticKey(expected)}: ${insert.error?.message||String(insert.error)}`
+  );
+}
+
+async function v251VerifyAndRepairRecipeSeed(
+  expectedRows
+){
+  const validation=
+    v251ValidateRecipeSeed(
+      expectedRows
+    );
+
+  if(!validation.ok){
+    throw new Error(
+      'Recipe seed chưa hợp lệ trước Cloud:\n'+
+      validation.errors
+        .slice(0,16)
+        .join('\n')+
+      (
+        validation.errors.length>16
+          ?`\n... và ${validation.errors.length-16} lỗi khác`
+          :''
+      )
+    );
+  }
+
+  let cloud=
+    await v251CloudRecipeRows();
+
+  let diff=
+    v251RecipeDiff(
+      expectedRows,
+      cloud
+    );
+
+  const report={
+    expected:
+      validation.count,
+    cloud_before:
+      cloud.length,
+    missing_before:
+      diff.missing.length,
+    quantity_mismatch_before:
+      diff.quantityMismatch.length,
+    inserted:0,
+    updated:0,
+    already_present:0,
+    repaired:0,
+    remaining:0,
+    errors:[]
+  };
+
+  const repairRows=[
+    ...diff.missing,
+    ...diff.quantityMismatch
+      .map(x=>x.local)
+  ];
+
+  for(const row of repairRows){
+    try{
+      const result=
+        await v251RepairOneRecipeRow(
+          row
+        );
+
+      if(
+        String(result.action)
+          .startsWith('insert')
+      ){
+        report.inserted++;
+      }else if(
+        String(result.action)
+          .startsWith('update') ||
+        result.action===
+          'updated_after_conflict'
+      ){
+        report.updated++;
+      }else{
+        report.already_present++;
+      }
+
+      report.repaired++;
+
+    }catch(e){
+      report.errors.push({
+        id:row.id||'',
+        product_id:
+          row.product_id||'',
+        ingredient_id:
+          row.ingredient_id||'',
+        quantity:
+          row.quantity,
+        message:
+          e?.message||
+          String(e)
+      });
+    }
+  }
+
+  cloud=
+    await v251CloudRecipeRows();
+
+  diff=
+    v251RecipeDiff(
+      expectedRows,
+      cloud
+    );
+
+  report.cloud_after=
+    cloud.length;
+
+  report.remaining=
+    diff.missing.length+
+    diff.quantityMismatch.length;
+
+  report.missing_after=
+    diff.missing.length;
+
+  report.quantity_mismatch_after=
+    diff.quantityMismatch.length;
+
+  report.remaining_examples=[
+    ...diff.missing.map(x=>({
+      type:'missing',
+      id:x.id,
+      pair:
+        v251RecipeSemanticKey(x),
+      quantity:x.quantity
+    })),
+    ...diff.quantityMismatch.map(x=>({
+      type:'quantity',
+      id:x.local?.id,
+      pair:
+        v251RecipeSemanticKey(
+          x.local
+        ),
+      local_quantity:
+        x.local?.quantity,
+      cloud_quantity:
+        x.cloud?.quantity
+    }))
+  ].slice(0,12);
+
+  v251SaveRecipeRepairReport(
+    report
+  );
+
+  if(
+    report.errors.length ||
+    report.remaining
+  ){
+    throw new Error(
+      `Recipe Cloud chưa hội tụ: còn ${report.remaining} dòng`+
+      (
+        report.errors.length
+          ?` • ${report.errors.length} lỗi ghi`
+          :''
+      )+
+      (
+        report.remaining_examples.length
+          ?` • ${report.remaining_examples.map(x=>x.pair).join(', ')}`
+          :''
+      )
+    );
+  }
+
+  return report;
+}
+
+async function v251RepairRecipeCoverageIfNeeded(
+  payload
+){
+  let coverage=
+    v228Coverage();
+
+  const recipeMissing=
+    Number(
+      coverage.missingByTable?.recipe_items||0
+    );
+
+  if(!recipeMissing){
+    return {
+      attempted:false,
+      repaired:0,
+      coverage
+    };
+  }
+
+  /*
+    Only self-heal automatically when ALL missing records are recipes.
+    Other tables still require the stricter reset failure path.
+  */
+  if(
+    Number(
+      coverage.localOnly||0
+    )!==recipeMissing
+  ){
+    return {
+      attempted:false,
+      repaired:0,
+      coverage,
+      reason:
+        'other_tables_missing'
+    };
+  }
+
+  const repair=
+    await v251VerifyAndRepairRecipeSeed(
+      payload.recipe_items||[]
+    );
+
+  await loadCloudFastV202(
+    true
+  );
+
+  coverage=
+    v228Coverage();
+
+  return {
+    attempted:true,
+    repaired:
+      Number(
+        repair.repaired||0
+      ),
+    repair,
+    coverage
   };
 }
 
@@ -51341,14 +51997,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:250,
+    version:251,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V250',
+      app_version:'V251',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -51634,6 +52290,37 @@ async function v239ResetCloudFromThisDevice(){
     report.seeded=
       seeded.done;
 
+    /*
+      V251: verify recipe_items immediately after seed. If a few rows are
+      missing or have wrong quantity, repair only those rows before the final
+      Cloud Pull instead of failing the whole Reset.
+    */
+    updateSyncProgress(
+      78,
+      'Đang xác minh công thức',
+      `${payload.recipe_items.length} dòng công thức • kiểm tra tồn tại + định lượng`
+    );
+
+    const recipeVerify=
+      await v251VerifyAndRepairRecipeSeed(
+        payload.recipe_items
+      );
+
+    report.recipe_repaired=
+      Number(
+        recipeVerify.repaired||0
+      );
+
+    report.recipe_missing_before=
+      Number(
+        recipeVerify.missing_before||0
+      );
+
+    report.recipe_quantity_fixed=
+      Number(
+        recipeVerify.updated||0
+      );
+
     v244ClearBusinessTombstones();
 
     /*
@@ -51653,8 +52340,46 @@ async function v239ResetCloudFromThisDevice(){
       true
     );
 
-    const coverage=
+    let coverage=
       v228Coverage();
+
+    /*
+      One last targeted self-heal: if the ONLY remaining records are recipes,
+      repair those recipes and pull proof again. Never auto-hide missing rows
+      from other business tables.
+    */
+    if(
+      coverage.proofAvailable &&
+      Number(
+        coverage.localOnly||0
+      )>0 &&
+      Number(
+        coverage.missingByTable?.recipe_items||0
+      )===
+      Number(
+        coverage.localOnly||0
+      )
+    ){
+      updateSyncProgress(
+        91,
+        'Đang chốt công thức Cloud',
+        `${coverage.localOnly} dòng cần xác nhận lại`
+      );
+
+      const recipeFinal=
+        await v251RepairRecipeCoverageIfNeeded(
+          payload
+        );
+
+      report.recipe_final_repaired=
+        Number(
+          recipeFinal.repaired||0
+        );
+
+      coverage=
+        recipeFinal.coverage||
+        v228Coverage();
+    }
 
     if(
       !coverage.proofAvailable||
@@ -51678,7 +52403,7 @@ async function v239ResetCloudFromThisDevice(){
         autoBefore.enabled!==false,
       last_sync_at:now,
       last_result:
-        'v250_rpc_read_fallback_complete',
+        'v251_verified_recipe_complete',
       cloud_revision:
         report.canonical_revision,
       cloud_revision_token:
@@ -51693,7 +52418,7 @@ async function v239ResetCloudFromThisDevice(){
       stage:
         'Cloud đã được đặt lại',
       detail:
-        `Thế hệ đồng bộ mới • ${report.new_sync_code} • Cloud ${coverage.covered}/${coverage.total}`
+        `Cloud ${coverage.covered}/${coverage.total} • công thức repair ${Number(report.recipe_repaired||0)+Number(report.recipe_final_repaired||0)}`
     });
 
     report.success=true;
