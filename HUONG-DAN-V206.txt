@@ -1,0 +1,18 @@
+V206 - REALTIME FAST SYNC
+
+Tăng tốc:
+- Supabase Realtime event -> pull an toàn sau ~350 ms.
+- Có pull xác minh khoảng 1 giây sau để bắt các row liên quan đến transaction đến muộn.
+- Chống pull chồng: tối thiểu 1.2 giây giữa realtime pulls.
+- Pull throttle chung giảm từ 8 giây xuống 2 giây.
+- Khi có pending: retry mỗi 5 giây.
+- Khi sạch: kiểm tra nền mỗi 30 giây.
+- Quay lại tab: nếu >5 giây từ lần sync cuối thì sync ngay.
+- Thêm Realtime cho warehouses và suppliers.
+
+Vẫn giữ:
+- V204 safe merge + snapshot + rollback
+- V205 khóa ID legacy đã migrate
+- không blind replace dữ liệu local
+
+Không cần SQL mới.

@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V205",
+  "name": "Quản Lý Lát Yên V206",
   "short_name": "Lát Yên",
-  "description": "Finalized Cloud ID migration prevents legacy Excel/local IDs from reappearing.",
+  "description": "Realtime-first fast sync with safe merge and low-latency pending retry.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

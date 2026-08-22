@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V205 MIGRATION FINALIZE ===== */
+/* ===== V206 REALTIME FAST ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -13405,7 +13405,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:205,
+    version:206,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -16162,20 +16162,92 @@ async function syncNow(){
     );
   }
 }
-function setupRealtime(){
- if(realtimeChannel)sb.removeChannel(realtimeChannel);
- realtimeChannel=sb.channel('kho-v3-live')
-  .on('postgres_changes',{event:'*',schema:'public',table:'inventory'},debouncedCloudReload)
-  .on('postgres_changes',{event:'*',schema:'public',table:'stock_transactions'},debouncedCloudReload)
-  .on('postgres_changes',{event:'*',schema:'public',table:'sales'},debouncedCloudReload)
-  .on('postgres_changes',{event:'*',schema:'public',table:'sale_items'},debouncedCloudReload)
-  .on('postgres_changes',{event:'*',schema:'public',table:'ingredients'},debouncedCloudReload)
-  .on('postgres_changes',{event:'*',schema:'public',table:'products'},debouncedCloudReload)
-  .on('postgres_changes',{event:'*',schema:'public',table:'recipe_items'},debouncedCloudReload)
-   .on('postgres_changes',{event:'*',schema:'public',table:'prepared_ingredient_items'},debouncedCloudReload)
-  .subscribe();
+
+/* ===== V206 REALTIME FAST SYNC ===== */
+const V206_REALTIME_DEBOUNCE_MS=350;
+const V206_REALTIME_MIN_GAP_MS=1200;
+const V206_REALTIME_VERIFY_MS=1000;
+const V206_IDLE_SYNC_MS=30000;
+const V206_PENDING_SYNC_MS=5000;
+const V206_FOCUS_SYNC_MIN_GAP_MS=5000;
+
+let v206LastRealtimePullAt=0;
+let v206RealtimeVerifyTimer=null;
+let v206RealtimePullBusy=false;
+let v206RealtimePullQueued=false;
+
+function v203NextSyncDelay(){
+  return v191PendingCount()>0
+    ?V206_PENDING_SYNC_MS
+    :V206_IDLE_SYNC_MS;
 }
-let rtTimer;function debouncedCloudReload(){
+
+function v203ShouldFocusSync(){
+  const last=
+    Date.parse(
+      loadAutoSyncConfig().last_sync_at||''
+    );
+
+  if(!Number.isFinite(last)){
+    return true;
+  }
+
+  return (
+    Date.now()-last
+    >=V206_FOCUS_SYNC_MIN_GAP_MS
+  );
+}
+
+async function v206RealtimePull(){
+  if(
+    document.visibilityState==='hidden'||
+    !navigator.onLine
+  ){
+    cloudReloadRequested=true;
+    return;
+  }
+
+  const now=Date.now();
+
+  if(
+    now-v206LastRealtimePullAt<
+    V206_REALTIME_MIN_GAP_MS
+  ){
+    v206RealtimePullQueued=true;
+    return;
+  }
+
+  if(
+    v206RealtimePullBusy||
+    syncing||
+    autoSyncBusy
+  ){
+    v206RealtimePullQueued=true;
+    return;
+  }
+
+  v206RealtimePullBusy=true;
+  v206LastRealtimePullAt=now;
+
+  try{
+    await loadCloudFastV202(true);
+  }catch(e){
+    console.warn('V206 realtime pull',e);
+  }finally{
+    v206RealtimePullBusy=false;
+
+    if(v206RealtimePullQueued){
+      v206RealtimePullQueued=false;
+
+      setTimeout(
+        ()=>v206RealtimePull(),
+        V206_REALTIME_MIN_GAP_MS
+      );
+    }
+  }
+}
+
+function debouncedCloudReload(){
   clearTimeout(rtTimer);
 
   if(document.hidden){
@@ -16183,10 +16255,94 @@ let rtTimer;function debouncedCloudReload(){
     return;
   }
 
-  // Một thao tác Cloud thường phát nhiều event liên tiếp
-  // (sales + sale_items + inventory + movements). Gom thành 1 lần reload.
-  rtTimer=setTimeout(()=>loadCloud(),1400);
+  rtTimer=setTimeout(
+    ()=>v206RealtimePull(),
+    V206_REALTIME_DEBOUNCE_MS
+  );
+
+  // A transaction can emit several table events.
+  // One verification pull catches late-arriving related rows.
+  clearTimeout(v206RealtimeVerifyTimer);
+
+  v206RealtimeVerifyTimer=setTimeout(
+    ()=>{
+      if(
+        !document.hidden &&
+        navigator.onLine &&
+        !v206RealtimePullBusy
+      ){
+        v206RealtimePull();
+      }
+    },
+    V206_REALTIME_DEBOUNCE_MS+
+    V206_REALTIME_VERIFY_MS
+  );
 }
+
+function setupRealtime(){
+  if(realtimeChannel){
+    sb.removeChannel(realtimeChannel);
+  }
+
+  realtimeChannel=
+    sb.channel('kho-v206-live')
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'inventory'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'stock_transactions'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'sales'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'sale_items'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'ingredients'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'products'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'recipe_items'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'prepared_ingredient_items'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'warehouses'},
+        debouncedCloudReload
+      )
+      .on(
+        'postgres_changes',
+        {event:'*',schema:'public',table:'suppliers'},
+        debouncedCloudReload
+      )
+      .subscribe(status=>{
+        if(status==='SUBSCRIBED'){
+          cloudOnline=true;
+        }
+      });
+}
+let rtTimer;
 
 function menuIcon(name, sub=false){
   const cls=`nav-icon${sub?' sub':''}`;
@@ -33410,7 +33566,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V205',
+    app_version:'V206',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -33719,7 +33875,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:205,
+    version:206,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -33901,13 +34057,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:205,
+    version:206,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V205',storage:'supabase-storage',
+      schema:185,app_version:'V206',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -35120,7 +35276,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:205,
+    version:206,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -35307,7 +35463,7 @@ async function v189CanonicalSync(
 
 /* ===== V202 FAST SYNC ===== */
 const V202_FAST_SYNC_KEY='lat_yen_fast_sync_v202';
-const V202_MIN_PULL_GAP_MS=8000;
+const V202_MIN_PULL_GAP_MS=2000;
 
 function loadFastSyncStateV202(){
   try{
@@ -35675,9 +35831,9 @@ function setAutoSyncEnabled(enabled){
 
 
 /* ===== V203 LOW RESOURCE MODE ===== */
-const V203_IDLE_SYNC_MS=90000;
-const V203_PENDING_SYNC_MS=20000;
-const V203_FOCUS_SYNC_MIN_GAP_MS=15000;
+const V203_IDLE_SYNC_MS=30000;
+const V203_PENDING_SYNC_MS=5000;
+const V203_FOCUS_SYNC_MIN_GAP_MS=5000;
 const V203_STATUS_CACHE_MS=15000;
 
 let v203StatusCache={
@@ -35685,11 +35841,7 @@ let v203StatusCache={
   html:''
 };
 
-function v203NextSyncDelay(){
-  return v191PendingCount()>0
-    ?V203_PENDING_SYNC_MS
-    :V203_IDLE_SYNC_MS;
-}
+
 
 function stopAutoSyncLoop(){
   if(autoSyncTimer){
@@ -35732,21 +35884,7 @@ function startAutoSyncLoop(){
   scheduleNextAutoSyncV203();
 }
 
-function v203ShouldFocusSync(){
-  const last=
-    Date.parse(
-      loadAutoSyncConfig().last_sync_at||''
-    );
 
-  if(!Number.isFinite(last)){
-    return true;
-  }
-
-  return (
-    Date.now()-last
-    >=V203_FOCUS_SYNC_MIN_GAP_MS
-  );
-}
 
 function initV185AutoSync(){
   const cfg=loadAutoSyncConfig();
@@ -36129,7 +36267,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V205',
+      app_version:'V206',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -36144,7 +36282,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:205,
+      version:206,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -36421,7 +36559,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v205-full-backup-'+
+    'lat-yen-v206-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
