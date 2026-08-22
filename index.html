@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V240 MENU READABILITY FIX ===== */
+/* ===== V241 TECHNICAL ID NORMALIZER ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11656,7 +11656,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V240</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V241</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -19210,6 +19210,26 @@ async function runSyncDiagnostics(){
     );
   }
 
+  // V241 technical row IDs left behind by early Excel migrations.
+  try{
+    const tech=
+      v241TechnicalLegacyStats();
+
+    add(
+      'Technical IDs V241',
+      true,
+      tech.total
+        ?`${tech.recipe_items} dòng công thức + ${tech.prepared_items} dòng pha chế còn ID legacy; Reset Cloud V241 sẽ tự chuẩn hóa`
+        :'Không còn ID kỹ thuật legacy'
+    );
+  }catch(e){
+    add(
+      'Technical IDs V241',
+      false,
+      e?.message||String(e)
+    );
+  }
+
   // V236 migrated Excel rows must remain Cloud editable after UUID migration.
   try{
     const s=
@@ -19384,7 +19404,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:240,
+    version:241,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -42323,7 +42343,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V240',
+    app_version:'V241',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -42632,7 +42652,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:240,
+    version:241,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -42814,13 +42834,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:240,
+    version:241,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V240',storage:'supabase-storage',
+      schema:185,app_version:'V241',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -44032,7 +44052,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:240,
+    version:241,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -46866,7 +46886,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V240',
+      app_version:'V241',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -46881,7 +46901,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:240,
+      version:241,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -47158,7 +47178,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v240-full-backup-'+
+    'lat-yen-v241-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -47225,6 +47245,202 @@ function v239SaveReport(report){
       })
     );
   }catch(e){}
+}
+
+
+/* ===== V241 TECHNICAL ID NORMALIZER ===== */
+function v241TechnicalLegacyStats(){
+  const recipeRows=
+    (db.recipeItems||[])
+      .filter(row=>
+        row?.id &&
+        !isUuidValue(row.id)
+      );
+
+  const preparedRows=
+    (db.preparedItems||[])
+      .filter(row=>
+        row?.id &&
+        !isUuidValue(row.id)
+      );
+
+  return {
+    recipe_items:recipeRows.length,
+    prepared_items:preparedRows.length,
+    total:
+      recipeRows.length+
+      preparedRows.length
+  };
+}
+
+function v241ResetPreflightReadiness(){
+  const strict=
+    v239LocalReadiness();
+
+  const technical=
+    v241TechnicalLegacyStats();
+
+  const hardIssues=
+    (strict.issues||[])
+      .filter(issue=>{
+        const text=
+          String(issue||'');
+
+        if(
+          text.startsWith(
+            'Công thức/id:'
+          )
+        ){
+          return false;
+        }
+
+        if(
+          text.startsWith(
+            'Pha chế/id:'
+          )
+        ){
+          return false;
+        }
+
+        return true;
+      });
+
+  return {
+    ok:
+      hardIssues.length===0,
+    issues:
+      hardIssues,
+    technical,
+    counts:
+      strict.counts,
+    total:
+      strict.total
+  };
+}
+
+async function v241NormalizeTechnicalLineIds(){
+  const changed={
+    recipe_items:0,
+    prepared_items:0
+  };
+
+  const recipeSeen=
+    new Set();
+
+  for(
+    let i=0;
+    i<(db.recipeItems||[]).length;
+    i++
+  ){
+    const row=
+      db.recipeItems[i];
+
+    if(!row)continue;
+
+    if(!isUuidValue(row.id)){
+      const oldId=
+        row.id||
+        `${row.product_id}|${row.ingredient_id}|${i}`;
+
+      row.id=
+        await deterministicUuidV198(
+          'recipe_item',
+          oldId
+        );
+
+      changed.recipe_items++;
+    }
+
+    /*
+      A deterministic ID collision should never happen for different old IDs.
+      Still fail before Cloud deletion rather than silently dropping a line.
+    */
+    if(recipeSeen.has(row.id)){
+      throw new Error(
+        `Trùng UUID dòng công thức sau chuẩn hóa: ${row.id}`
+      );
+    }
+
+    recipeSeen.add(
+      row.id
+    );
+  }
+
+  const preparedSeen=
+    new Set();
+
+  for(
+    let i=0;
+    i<(db.preparedItems||[]).length;
+    i++
+  ){
+    const row=
+      db.preparedItems[i];
+
+    if(!row)continue;
+
+    if(!isUuidValue(row.id)){
+      const oldId=
+        row.id||
+        `${row.prepared_ingredient_id}|${row.source_ingredient_id}|${i}`;
+
+      row.id=
+        await deterministicUuidV198(
+          'prepared_item',
+          oldId
+        );
+
+      changed.prepared_items++;
+    }
+
+    if(preparedSeen.has(row.id)){
+      throw new Error(
+        `Trùng UUID dòng pha chế sau chuẩn hóa: ${row.id}`
+      );
+    }
+
+    preparedSeen.add(
+      row.id
+    );
+  }
+
+  if(
+    changed.recipe_items ||
+    changed.prepared_items
+  ){
+    invalidateDataIndexes();
+    invalidateDerivedCaches();
+    cacheSave();
+    flushCacheSave();
+  }
+
+  return {
+    ...changed,
+    total:
+      changed.recipe_items+
+      changed.prepared_items
+  };
+}
+
+function v241StrictReadinessAfterNormalize(){
+  const readiness=
+    v239LocalReadiness();
+
+  if(readiness.ok){
+    return readiness;
+  }
+
+  throw new Error(
+    'Sau khi chuẩn hóa ID kỹ thuật vẫn còn dữ liệu chưa sẵn sàng:\n'+
+    readiness.issues
+      .slice(0,12)
+      .join('\n')+
+    (
+      readiness.issues.length>12
+        ?`\n... và ${readiness.issues.length-12} lỗi khác`
+        :''
+    )
+  );
 }
 
 function v239LocalReadiness(){
@@ -47686,14 +47902,14 @@ async function v239ReplaceCloudBackup(){
   const updatedAt=new Date().toISOString();
 
   const envelope={
-    version:240,
+    version:241,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V240',
+      app_version:'V241',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -47729,7 +47945,9 @@ async function v239ReplaceCloudBackup(){
 
 async function v239ResetCloudFromThisDevice(){
   if(v239ResetBusy){
-    toastMsg('Đang đặt lại Cloud');
+    toastMsg(
+      'Đang đặt lại Cloud'
+    );
     return;
   }
 
@@ -47742,50 +47960,79 @@ async function v239ResetCloudFromThisDevice(){
 
   normalizeLegacyCacheV205();
 
-  const readiness=v239LocalReadiness();
+  /*
+    V241 preflight:
+    legacy IDs of recipe/prepared LINE rows are repairable technical IDs.
+    They do not block the confirmation screen. All foreign-key/business IDs
+    remain strict.
+  */
+  const preflight=
+    v241ResetPreflightReadiness();
 
-  if(!readiness.ok){
+  if(!preflight.ok){
     alert(
-      'Chưa thể Reset Cloud vì local còn ID/record chưa sẵn sàng.\n\n'+
-      readiness.issues.slice(0,12).join('\n')+
+      'Chưa thể Reset Cloud vì local còn dữ liệu nghiệp vụ chưa sẵn sàng.\n\n'+
+      preflight.issues
+        .slice(0,12)
+        .join('\n')+
       (
-        readiness.issues.length>12
-          ?`\n... và ${readiness.issues.length-12} lỗi khác`
+        preflight.issues.length>12
+          ?`\n... và ${preflight.issues.length-12} lỗi khác`
           :''
       )+
       '\n\nHãy chạy Chuẩn hóa/Migration trước.'
     );
+
     return;
   }
 
-  const first=await appConfirm(
-    `Thiết bị hiện tại có ${readiness.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.\n\n`+
-    'Toàn bộ dữ liệu nghiệp vụ đang có trên Supabase sẽ bị xóa và nạp lại từ thiết bị này.\n\n'+
-    'Hãy đóng phần mềm trên tất cả thiết bị khác trước khi tiếp tục.',
-    'Đặt lại toàn bộ Cloud'
-  );
+  const technicalText=
+    preflight.technical.total
+      ?(
+        `\n\nPhần mềm sẽ tự chuẩn hóa ${preflight.technical.total} ID kỹ thuật trước khi Reset`+
+        ` (${preflight.technical.recipe_items} dòng công thức`+
+        ` + ${preflight.technical.prepared_items} dòng pha chế).`
+      )
+      :'';
+
+  const first=
+    await appConfirm(
+      `Thiết bị hiện tại có ${preflight.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.`+
+      technicalText+
+      '\n\nToàn bộ dữ liệu nghiệp vụ đang có trên Supabase sẽ bị xóa và nạp lại từ thiết bị này.'+
+      '\n\nHãy đóng phần mềm trên tất cả thiết bị khác trước khi tiếp tục.',
+      'Đặt lại toàn bộ Cloud'
+    );
 
   if(!first)return;
 
-  const second=await appConfirm(
-    'Xác nhận lần cuối:\n\n'+
-    '• KHÔNG xóa dữ liệu local trên thiết bị này.\n'+
-    '• Cloud sẽ bị làm sạch hoàn toàn.\n'+
-    '• Dữ liệu local hiện tại sẽ được nạp lại làm bản chuẩn.\n'+
-    '• Canonical và Backup Cloud cũ sẽ được thay bằng bản mới.\n\n'+
-    'Tiếp tục?',
-    'XÁC NHẬN RESET CLOUD'
-  );
+  const second=
+    await appConfirm(
+      'Xác nhận lần cuối:\n\n'+
+      '• KHÔNG xóa dữ liệu local trên thiết bị này.\n'+
+      '• ID kỹ thuật legacy sẽ được chuẩn hóa trước khi xóa Cloud.\n'+
+      '• Cloud sẽ bị làm sạch hoàn toàn.\n'+
+      '• Dữ liệu local hiện tại sẽ được nạp lại làm bản chuẩn.\n'+
+      '• Canonical và Backup Cloud cũ sẽ được thay bằng bản mới.\n\n'+
+      'Tiếp tục?',
+      'XÁC NHẬN RESET CLOUD'
+    );
 
   if(!second)return;
 
   v239ResetBusy=true;
 
-  const autoBefore=loadAutoSyncConfig();
+  const autoBefore=
+    loadAutoSyncConfig();
 
   const report={
-    started_at:new Date().toISOString(),
-    local_total:readiness.total,
+    started_at:
+      new Date().toISOString(),
+    local_total:
+      preflight.total,
+    normalized_technical_ids:0,
+    normalized_recipe_items:0,
+    normalized_prepared_items:0,
     deleted:[],
     seeded:0,
     canonical_revision:0,
@@ -47796,15 +48043,47 @@ async function v239ResetCloudFromThisDevice(){
   beginSyncProgress();
 
   try{
+    /*
+      Snapshot BEFORE any local technical-ID mutation.
+      If anything goes wrong, the user has a precise pre-reset recovery point.
+    */
     v204EmergencySnapshot(
-      'v239_before_cloud_reset'
+      'v241_before_technical_normalize_and_cloud_reset'
     );
+
+    updateSyncProgress(
+      3,
+      'Đang chuẩn hóa ID kỹ thuật',
+      preflight.technical.total
+        ?`${preflight.technical.total} dòng cần chuyển sang UUID`
+        :'Không có ID kỹ thuật legacy'
+    );
+
+    const normalized=
+      await v241NormalizeTechnicalLineIds();
+
+    report.normalized_technical_ids=
+      normalized.total;
+
+    report.normalized_recipe_items=
+      normalized.recipe_items;
+
+    report.normalized_prepared_items=
+      normalized.prepared_items;
+
+    const readiness=
+      v241StrictReadinessAfterNormalize();
+
+    report.local_total=
+      readiness.total;
 
     stopAutoSyncLoop();
 
     if(realtimeChannel){
       try{
-        sb.removeChannel(realtimeChannel);
+        sb.removeChannel(
+          realtimeChannel
+        );
       }catch(e){}
 
       realtimeChannel=null;
@@ -47818,22 +48097,31 @@ async function v239ResetCloudFromThisDevice(){
     v235NeedFullReconcile=false;
 
     updateSyncProgress(
-      5,
+      6,
       'Đã khóa đồng bộ nền',
-      'Local đã được snapshot • chuẩn bị làm sạch Cloud'
+      normalized.total
+        ?`Đã chuẩn hóa ${normalized.total} ID kỹ thuật • chuẩn bị làm sạch Cloud`
+        :'Local đã sẵn sàng • chuẩn bị làm sạch Cloud'
     );
 
-    const payload=await v239BuildCloudSeed();
+    const payload=
+      await v239BuildCloudSeed();
 
-    report.deleted=await v239DeleteBusinessCloud();
+    report.deleted=
+      await v239DeleteBusinessCloud();
 
-    const empty=await v239VerifyCloudEmpty();
+    const empty=
+      await v239VerifyCloudEmpty();
 
     if(!empty.empty){
       throw new Error(
         'Cloud chưa xóa sạch: '+
-        Object.entries(empty.nonEmpty)
-          .map(([k,v])=>`${k}:${v}`)
+        Object.entries(
+          empty.nonEmpty
+        )
+          .map(
+            ([k,v])=>`${k}:${v}`
+          )
           .join(' • ')
       );
     }
@@ -47844,11 +48132,13 @@ async function v239ResetCloudFromThisDevice(){
       'Bắt đầu nạp dữ liệu từ thiết bị này'
     );
 
-    const seeded=await v239SeedCloudFromLocal(
-      payload
-    );
+    const seeded=
+      await v239SeedCloudFromLocal(
+        payload
+      );
 
-    report.seeded=seeded.done;
+    report.seeded=
+      seeded.done;
 
     updateSyncProgress(
       80,
@@ -47856,13 +48146,17 @@ async function v239ResetCloudFromThisDevice(){
       'Thiết bị hiện tại trở thành canonical mới'
     );
 
-    const canonical=await v239ReplaceCanonicalFromLocal();
+    const canonical=
+      await v239ReplaceCanonicalFromLocal();
 
     report.canonical_revision=
-      Number(canonical.revision||0);
+      Number(
+        canonical.revision||0
+      );
 
     saveFastSyncStateV202({
-      last_revision:report.canonical_revision,
+      last_revision:
+        report.canonical_revision,
       last_pull_at:0
     });
 
@@ -47872,9 +48166,11 @@ async function v239ResetCloudFromThisDevice(){
       'Thay bản backup cũ bằng dữ liệu chuẩn'
     );
 
-    const backup=await v239ReplaceCloudBackup();
+    const backup=
+      await v239ReplaceCloudBackup();
 
-    report.backup_replaced=!backup.skipped;
+    report.backup_replaced=
+      !backup.skipped;
 
     updateSyncProgress(
       93,
@@ -47882,13 +48178,18 @@ async function v239ResetCloudFromThisDevice(){
       'Pull lại toàn bộ dữ liệu vừa khởi tạo'
     );
 
-    await loadCloudFastV202(true);
+    await loadCloudFastV202(
+      true
+    );
 
-    const coverage=v228Coverage();
+    const coverage=
+      v228Coverage();
 
     if(
-      !coverage.proofAvailable ||
-      Number(coverage.localOnly||0)!==0
+      !coverage.proofAvailable||
+      Number(
+        coverage.localOnly||0
+      )!==0
     ){
       throw new Error(
         `Xác minh sau Reset còn ${Number(coverage.localOnly||0)} record chưa được Cloud xác nhận • ${v228CoverageBreakdownText(coverage)}`
@@ -47896,35 +48197,49 @@ async function v239ResetCloudFromThisDevice(){
     }
 
     setPendingSync([]);
+
     repairFalsePendingLocalRowsV197();
 
-    const now=new Date().toISOString();
+    const now=
+      new Date().toISOString();
 
     saveAutoSyncConfig({
-      enabled:autoBefore.enabled!==false,
-      code:autoBefore.code,
-      passphrase:autoBefore.passphrase,
+      enabled:
+        autoBefore.enabled!==false,
+      code:
+        autoBefore.code,
+      passphrase:
+        autoBefore.passphrase,
       last_sync_at:now,
-      last_result:'v239_clean_takeover',
-      cloud_revision:report.canonical_revision,
-      cloud_revision_token:String(
-        report.canonical_revision||0
-      )
+      last_result:
+        'v241_clean_takeover',
+      cloud_revision:
+        report.canonical_revision,
+      cloud_revision_token:
+        String(
+          report.canonical_revision||0
+        )
     });
 
     finishSyncProgress({
       success:true,
       pending:0,
-      stage:'Cloud đã được đặt lại',
+      stage:
+        'Cloud đã được đặt lại',
       detail:
-        `Thiết bị này là nguồn chuẩn • Cloud xác nhận ${coverage.covered}/${coverage.total} record`
+        `Đã chuẩn hóa ${normalized.total} ID kỹ thuật • Cloud xác nhận ${coverage.covered}/${coverage.total} record`
     });
 
     report.success=true;
     report.finished_at=now;
-    v239SaveReport(report);
 
-    if(autoBefore.enabled!==false){
+    v239SaveReport(
+      report
+    );
+
+    if(
+      autoBefore.enabled!==false
+    ){
       startAutoSyncLoop();
     }
 
@@ -47933,6 +48248,11 @@ async function v239ResetCloudFromThisDevice(){
 
     alert(
       'Đã đặt lại Cloud thành công.\n\n'+
+      (
+        normalized.total
+          ?`Đã chuẩn hóa ${normalized.recipe_items} dòng công thức và ${normalized.prepared_items} dòng pha chế.\n`
+          :''
+      )+
       `Đã nạp lại ${report.seeded} lượt record.\n`+
       `Canonical Revision: ${report.canonical_revision||'mới'}.\n\n`+
       'Thiết bị hiện tại đã trở thành nguồn dữ liệu chuẩn.'
@@ -47940,33 +48260,54 @@ async function v239ResetCloudFromThisDevice(){
 
   }catch(e){
     console.error(
-      'V239 Cloud Reset',
+      'V241 Cloud Reset',
       e
     );
 
-    report.error=e?.message||String(e);
-    report.finished_at=new Date().toISOString();
-    v239SaveReport(report);
+    report.error=
+      e?.message||
+      String(e);
+
+    report.finished_at=
+      new Date().toISOString();
+
+    v239SaveReport(
+      report
+    );
 
     finishSyncProgress({
       success:false,
-      pending:v191PendingCount(),
-      stage:'Reset Cloud bị dừng',
-      detail:report.error,
-      error:report.error
+      pending:
+        v191PendingCount(),
+      stage:
+        'Reset Cloud bị dừng',
+      detail:
+        report.error,
+      error:
+        report.error
     });
 
+    /*
+      If Cloud deletion had already begun, reseed it from current local.
+      Local still has the emergency snapshot from BEFORE technical ID changes.
+    */
     try{
-      const payload=await v239BuildCloudSeed();
-      await v239SeedCloudFromLocal(payload);
+      const payload=
+        await v239BuildCloudSeed();
+
+      await v239SeedCloudFromLocal(
+        payload
+      );
     }catch(recoveryError){
       console.error(
-        'V239 emergency reseed',
+        'V241 emergency reseed',
         recoveryError
       );
     }
 
-    if(autoBefore.enabled!==false){
+    if(
+      autoBefore.enabled!==false
+    ){
       startAutoSyncLoop();
     }
 
@@ -47977,13 +48318,15 @@ async function v239ResetCloudFromThisDevice(){
     alert(
       'Reset Cloud đã dừng để bảo vệ dữ liệu local.\n\n'+
       report.error+
-      '\n\nDữ liệu trên thiết bị này vẫn được giữ nguyên. Nếu lỗi là quyền DELETE/RLS, cần sửa policy Supabase trước khi Reset lại.'
+      '\n\nDữ liệu local vẫn còn và đã có snapshot trước khi chuẩn hóa. Nếu lỗi là quyền DELETE/RLS, cần sửa policy Supabase trước khi Reset lại.'
     );
 
   }finally{
     v239ResetBusy=false;
 
-    if(activePanelId==='settings'){
+    if(
+      activePanelId==='settings'
+    ){
       renderSettings();
     }
   }

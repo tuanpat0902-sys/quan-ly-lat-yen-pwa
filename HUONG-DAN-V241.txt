@@ -1,0 +1,31 @@
+V241 - TECHNICAL ID NORMALIZER
+
+Lỗi ảnh người dùng:
+Công thức/id: excel_recipe_2_2
+Công thức/id: excel_recipe_3_1
+...
++ hàng trăm dòng tương tự.
+
+Nguyên nhân:
+V198 đã tạo UUID đúng khi upload recipe_items/prepared_items lên Cloud,
+nhưng một số canonical/cache cũ có thể khôi phục lại row.id dạng excel_*.
+product_id và ingredient_id đã là UUID; lỗi chỉ nằm ở ID kỹ thuật của dòng.
+
+V241:
+- Preflight Reset Cloud tách:
+  1) business/FK IDs = vẫn kiểm tra nghiêm ngặt.
+  2) recipe_items.id / prepared_items.id legacy = tự sửa được.
+- Trước khi sửa local: tạo Emergency Snapshot.
+- Sau khi người dùng xác nhận Reset:
+  + excel_recipe_* -> deterministic UUID bằng đúng namespace/kind V198 'recipe_item'
+  + prepared line legacy -> deterministic UUID kind 'prepared_item'
+- Kiểm tra duplicate UUID sau chuyển.
+- Kiểm tra readiness lại toàn bộ.
+- Chỉ khi PASS mới bắt đầu xóa Cloud.
+- Sau đó tiếp tục quy trình V239 Clean Takeover.
+- Diagnostics có mục Technical IDs V241.
+
+Không cần sửa thủ công hàng trăm dòng.
+Không xóa món/nguyên liệu/công thức.
+Không thay product_id / ingredient_id nếu chúng đã đúng.
+Không cần SQL mới.
