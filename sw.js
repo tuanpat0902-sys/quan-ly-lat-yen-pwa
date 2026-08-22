@@ -1,13 +1,11 @@
-const CACHE='lat-yen-pwa-v266';
+const CACHE='lat-yen-pwa-v268';
 const ASSETS=['./','./index.html','./manifest.webmanifest'];
-
 self.addEventListener('install',event=>{
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE).then(cache=>cache.addAll(ASSETS))
   );
 });
-
 self.addEventListener('activate',event=>{
   event.waitUntil((async()=>{
     const keys=await caches.keys();
@@ -19,12 +17,9 @@ self.addEventListener('activate',event=>{
     await self.clients.claim();
   })());
 });
-
 self.addEventListener('fetch',event=>{
   const req=event.request;
   if(req.method!=='GET')return;
-
-  // HTML: network-first so old app versions do not linger.
   if(req.mode==='navigate'){
     event.respondWith((async()=>{
       try{
@@ -40,7 +35,6 @@ self.addEventListener('fetch',event=>{
     })());
     return;
   }
-
   event.respondWith((async()=>{
     const cached=await caches.match(req);
     if(cached)return cached;
@@ -50,12 +44,9 @@ self.addEventListener('fetch',event=>{
     return fresh;
   })());
 });
-
-
 /* ===== V226 WEB PUSH RECEIVER ===== */
 self.addEventListener('push',event=>{
   let payload={};
-
   try{
     payload=event.data
       ?event.data.json()
@@ -65,11 +56,9 @@ self.addEventListener('push',event=>{
       body:event.data?.text?.()||''
     };
   }
-
   const title=
     payload.title||
     'Quản Lý Lát Yên';
-
   const options={
     body:
       payload.body||
@@ -94,7 +83,6 @@ self.addEventListener('push',event=>{
         ''
     }
   };
-
   event.waitUntil(
     self.registration.showNotification(
       title,
@@ -102,43 +90,35 @@ self.addEventListener('push',event=>{
     )
   );
 });
-
 self.addEventListener('notificationclick',event=>{
   event.notification.close();
-
   const data=
     event.notification.data||
     {};
-
   event.waitUntil((async()=>{
     const windows=
       await self.clients.matchAll({
         type:'window',
         includeUncontrolled:true
       });
-
     for(const client of windows){
       try{
         client.postMessage({
           type:'LAT_YEN_NOTIFICATION_OPEN',
           panel:data.panel||''
         });
-
         if('focus' in client){
           await client.focus();
         }
-
         return;
       }catch(e){}
     }
-
     if(self.clients.openWindow){
       const opened=
         await self.clients.openWindow(
           data.url||
           './'
         );
-
       if(opened){
         setTimeout(()=>{
           try{
