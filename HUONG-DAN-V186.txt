@@ -1,0 +1,11 @@
+V186 - TỐI ƯU GIAO DIỆN ĐỒNG BỘ
+
+- Một card Đồng bộ dữ liệu duy nhất.
+- Hiển thị nhanh: Ghép thiết bị / Auto Sync / Cloud / dữ liệu chờ.
+- Nút chính: Đồng bộ ngay + Ghép thiết bị.
+- Các chức năng ít dùng chuyển vào Nâng cao:
+  mã đồng bộ, mật khẩu, QR scan/copy/import, backup Cloud, restore Cloud,
+  kiểm tra Cloud, đồng bộ nghiệp vụ, xuất/nhập backup.
+- Cài đặt hệ thống ít dùng được thu gọn.
+- Không thay đổi cơ chế Auto Sync V185.
+- Không thay đổi bucket hoặc Storage Policy.

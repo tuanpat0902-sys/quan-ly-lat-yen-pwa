@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V185",
+  "name": "Quản Lý Lát Yên V186",
   "short_name": "Lát Yên",
-  "description": "Quản lý Lát Yên với Auto Sync và ghép thiết bị bằng QR.",
+  "description": "Quản lý Lát Yên với giao diện đồng bộ dữ liệu tối giản.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

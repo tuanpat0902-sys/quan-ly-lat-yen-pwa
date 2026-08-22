@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V185 AUTO SYNC QR ===== */
+/* ===== V186 COMPACT SYNC ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -8985,6 +8985,293 @@ button{
   .v185-pair-actions>*{flex:1 1 46%}
   .v185-auto-toggle{align-items:flex-start;flex-direction:column}
   .v185-auto-toggle button{width:100%}
+}
+
+
+/* ===== V186 COMPACT SYNC SETTINGS ===== */
+.sync-v186-card{
+  padding:14px;
+  border-top:3px solid #0f766e;
+}
+
+.sync-v186-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:14px;
+}
+
+.sync-v186-title{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.sync-v186-title h2{
+  margin:0 0 2px;
+}
+
+.sync-v186-icon{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#ecfdf5;
+  color:#047857;
+  font-size:18px;
+  font-weight:900;
+}
+
+.sync-v186-state{
+  min-width:132px;
+  padding:6px 9px;
+  border-radius:9px;
+  text-align:right;
+  line-height:1.2;
+}
+
+.sync-v186-state b,
+.sync-v186-state span{
+  display:block;
+}
+
+.sync-v186-state b{
+  font-size:10px;
+}
+
+.sync-v186-state span{
+  margin-top:2px;
+  font-size:9px;
+  color:#64748b;
+}
+
+.sync-v186-state.ok{
+  background:#f0fdf4;
+  color:#15803d;
+}
+
+.sync-v186-state.warn{
+  background:#fffbeb;
+  color:#92400e;
+}
+
+.sync-v186-state.danger{
+  background:#fef2f2;
+  color:#b91c1c;
+}
+
+.sync-v186-summary{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:11px;
+}
+
+.sync-v186-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:24px;
+  padding:3px 8px;
+  border:1px solid #e2e8f0;
+  border-radius:999px;
+  background:#fff;
+  font-size:9.5px;
+  font-weight:700;
+  color:#475569;
+}
+
+.sync-v186-pill .dot{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#94a3b8;
+}
+
+.sync-v186-pill.ok .dot{
+  background:#16a34a;
+}
+
+.sync-v186-pill.warn .dot{
+  background:#f59e0b;
+}
+
+.sync-v186-pill.off .dot{
+  background:#94a3b8;
+}
+
+.sync-v186-main-actions{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:11px;
+}
+
+.sync-v186-main-actions>button{
+  min-width:128px;
+}
+
+.sync-v186-switch{
+  margin-left:auto;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  user-select:none;
+}
+
+.sync-v186-switch input{
+  display:none;
+}
+
+.sync-v186-switch span{
+  width:31px;
+  height:18px;
+  border-radius:999px;
+  background:#cbd5e1;
+  position:relative;
+  transition:.18s ease;
+}
+
+.sync-v186-switch span:after{
+  content:'';
+  position:absolute;
+  top:3px;
+  left:3px;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.2);
+  transition:.18s ease;
+}
+
+.sync-v186-switch input:checked+span{
+  background:#0f766e;
+}
+
+.sync-v186-switch input:checked+span:after{
+  transform:translateX(13px);
+}
+
+.sync-v186-switch b{
+  font-size:9.5px;
+  color:#475569;
+}
+
+.sync-v186-alert{
+  margin-top:10px;
+  padding:8px 10px;
+  border-left:3px solid #dc2626;
+  border-radius:0 8px 8px 0;
+  background:#fef2f2;
+  color:#991b1b;
+  font-size:9.5px;
+  line-height:1.4;
+}
+
+.sync-v186-advanced{
+  margin-top:11px;
+  border-top:1px solid #e2e8f0;
+}
+
+.sync-v186-advanced>summary{
+  list-style:none;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  padding:9px 2px 0;
+  cursor:pointer;
+  font-weight:800;
+  font-size:10px;
+  color:#334155;
+}
+
+.sync-v186-advanced>summary::-webkit-details-marker{
+  display:none;
+}
+
+.sync-v186-advanced-body{
+  padding-top:10px;
+}
+
+.sync-v186-fields{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.sync-v186-tools{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:8px;
+}
+
+.sync-v186-tools button{
+  min-height:28px;
+  padding:5px 9px;
+}
+
+.sync-v186-cloud-detail{
+  margin-top:8px;
+  padding:6px 8px;
+  border-radius:7px;
+  background:#f8fafc;
+  font-size:9px;
+}
+
+.settings-v186-more{
+  margin-top:2px;
+}
+
+.settings-v186-more>summary{
+  cursor:pointer;
+  color:#64748b;
+  font-size:10px;
+  font-weight:800;
+}
+
+@media(max-width:700px){
+  .sync-v186-top{
+    align-items:stretch;
+  }
+
+  .sync-v186-state{
+    min-width:auto;
+  }
+
+  .sync-v186-fields{
+    grid-template-columns:1fr;
+  }
+
+  .sync-v186-main-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  .sync-v186-main-actions>button{
+    min-width:0;
+    width:100%;
+  }
+
+  .sync-v186-switch{
+    grid-column:1/-1;
+    margin-left:0;
+    justify-content:flex-end;
+  }
+
+  .sync-v186-tools{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  .sync-v186-tools button{
+    width:100%;
+  }
 }
 
 </style>
@@ -27861,7 +28148,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V185',
+    app_version:'V186',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -28147,7 +28434,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:185,
+    version:186,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -28329,13 +28616,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:185,
+    version:186,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V185',storage:'supabase-storage',
+      schema:185,app_version:'V186',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -28725,7 +29012,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V185',
+      app_version:'V186',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -28740,7 +29027,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:185,
+      version:186,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -29017,7 +29304,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v185-full-backup-'+
+    'lat-yen-v186-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -29075,154 +29362,351 @@ function renderSettings(){
   const auto=loadAutoSyncConfig();
   const paired=!!(auto.code&&auto.passphrase);
 
+  const syncLabel={
+    synced:'Đã đồng bộ',
+    uploaded:'Đã sao lưu',
+    downloaded:'Đã cập nhật',
+    conflict:'Có xung đột',
+    error:'Lỗi đồng bộ',
+    paired:'Đã ghép'
+  }[auto.last_result]||(
+    paired?'Sẵn sàng':'Chưa ghép'
+  );
+
+  const syncClass=
+    auto.last_result==='conflict'||auto.last_result==='error'
+      ?'danger'
+      :(
+        paired&&auto.enabled
+          ?'ok'
+          :'warn'
+      );
+
   E.settings.innerHTML=`
-    <div class="card settings-sync-card multi-device-card">
-      <div class="settings-sync-head">
-        <div>
-          <h2>Auto Sync & Ghép thiết bị</h2>
-          <div class="muted">Ghép một lần bằng QR. Sau đó V185 tự đồng bộ khi mở app, online lại và định kỳ mỗi 30 giây.</div>
-        </div>
-        <span class="cloud settings-cloud-status">${cloudOnline?'Cloud Online':'Offline / Cache'}</span>
-      </div>
-
-      <div class="v185-auto-summary section-gap">
-        <div><b>Trạng thái ghép:</b> ${paired?'<span class="badge okb">Đã ghép</span>':'<span class="badge warnb">Chưa ghép</span>'}</div>
-        <div><b>Auto Sync:</b> ${auto.enabled?'<span class="badge okb">Đang bật</span>':'<span class="badge warnb">Đang tắt</span>'}</div>
-        <div id="autoSyncLiveStatus" class="muted">${auto.last_sync_at?`Lần cuối: ${esc(dt(auto.last_sync_at))}`:'Chưa đồng bộ tự động'}</div>
-      </div>
-
-      <div class="v185-pair-actions section-gap">
-        <button class="primary" onclick="showPairingQr()">Hiện QR ghép thiết bị</button>
-        <button class="secondary" onclick="scanPairingQr()">Quét QR ghép thiết bị</button>
-        <button class="secondary" onclick="copyPairingCode()">Sao chép mã ghép</button>
-        <button class="secondary" onclick="pastePairingCode()">Nhập mã ghép</button>
-      </div>
-
-      <div class="v185-auto-toggle section-gap">
-        <label>
-          <input type="checkbox" ${auto.enabled?'checked':''} onchange="setAutoSyncEnabled(this.checked)">
-          Tự động đồng bộ giữa các thiết bị đã ghép
-        </label>
-        <button class="secondary sm" onclick="autoSyncNow({force:true,reason:'manual',silent:false})">Đồng bộ ngay</button>
-      </div>
-
-      <div class="multi-device-grid section-gap">
-        <div>
-          <label>Mã đồng bộ</label>
-          <div class="multi-code-row">
-            <input id="multiDeviceCode" autocomplete="off" spellcheck="false" value="${esc(auto.code||cfg.code||'')}" placeholder="LY-XXXXX-XXXXX">
-            <button type="button" class="secondary" onclick="newMultiDeviceCode()">Tạo mã</button>
+    <div class="card sync-v186-card">
+      <div class="sync-v186-top">
+        <div class="sync-v186-title">
+          <div class="sync-v186-icon">☁</div>
+          <div>
+            <h2>Đồng bộ dữ liệu</h2>
+            <div class="muted">
+              Tự đồng bộ giữa các thiết bị đã ghép.
+            </div>
           </div>
-          <div class="muted">V185 tự nhớ mã sau khi ghép QR.</div>
         </div>
 
-        <div>
-          <label>Mật khẩu mã hóa</label>
-          <input id="multiDevicePassphrase" type="password" minlength="6" autocomplete="new-password"
-            value="${paired?'••••••••••••':''}" placeholder="Ít nhất 6 ký tự"
-            onfocus="if(this.value==='••••••••••••')this.value=''">
-          <div class="muted">Sau khi ghép, mật khẩu được lưu trên thiết bị để Auto Sync hoạt động. Không gửi mật khẩu lên Supabase.</div>
+        <div class="sync-v186-state ${syncClass}">
+          <b id="autoSyncLiveStatus">${esc(syncLabel)}</b>
+          <span>
+            ${
+              auto.last_sync_at
+                ?esc(dt(auto.last_sync_at))
+                :'Chưa có lần đồng bộ'
+            }
+          </span>
         </div>
       </div>
 
-      <div id="multiDeviceStatus" class="section-gap"><span class="muted">Bấm “Kiểm tra trạng thái” để so sánh thiết bị với Cloud.</span></div>
-
-      <div class="settings-sync-actions multi-device-actions section-gap">
-        <button id="backupToCloudBtn" class="primary" onclick="backupToCloud()">Sao lưu lên Cloud</button>
-        <button id="restoreFromCloudBtn" class="secondary" onclick="restoreFromCloud()">Khôi phục từ Cloud</button>
-        <button class="secondary" onclick="refreshMultiDeviceStatus()">Kiểm tra trạng thái</button>
-      </div>
-
-      <div class="multi-device-storage-note">
-        <b>Storage:</b> tiếp tục dùng bucket <code>lat-yen-backups</code>. Policy V184 giữ nguyên.
-      </div>
-      <div class="multi-device-security-note">
-        <b>Auto Sync an toàn:</b> nếu chỉ một phía thay đổi, V185 tự đồng bộ. Nếu cả hai phía cùng thay đổi, hệ thống báo xung đột và không tự ghi đè.
-      </div>
-      <div class="v185-security-warning">
-        <b>Lưu ý:</b> QR ghép thiết bị chứa mã đồng bộ và mật khẩu mã hóa. Chỉ hiển thị QR khi ghép thiết bị của bạn.
-      </div>
-    </div>
-
-    <div class="section-gap"></div>
-
-    <div class="card settings-sync-card">
-      <div class="settings-sync-head">
-        <div>
-          <h2>Đồng bộ dữ liệu nghiệp vụ</h2>
-          <div class="muted">Đồng bộ các bảng Supabase hiện có: kho, nguyên liệu, công thức, bán hàng và giao dịch kho.</div>
+      <div class="sync-v186-summary">
+        <div class="sync-v186-pill ${paired?'ok':'warn'}">
+          <span class="dot"></span>
+          ${paired?'Đã ghép thiết bị':'Chưa ghép'}
         </div>
-        <span class="cloud settings-cloud-status">${cloudOnline?'Cloud Online':'Offline / Cache'}</span>
+
+        <div class="sync-v186-pill ${auto.enabled?'ok':'off'}">
+          <span class="dot"></span>
+          Auto Sync ${auto.enabled?'Bật':'Tắt'}
+        </div>
+
+        <div class="sync-v186-pill ${cloudOnline?'ok':'off'}">
+          <span class="dot"></span>
+          Cloud ${cloudOnline?'Online':'Offline'}
+        </div>
+
+        ${
+          getPendingSync().length
+            ?`<div class="sync-v186-pill warn"><span class="dot"></span>${getPendingSync().length} chờ đồng bộ</div>`
+            :''
+        }
       </div>
-      <div class="settings-sync-actions section-gap">
-        <button class="primary" onclick="syncNow().then(()=>autoSyncNow({force:true,reason:'business-sync',silent:true}))">Đồng bộ ngay</button>
-        <button class="secondary" onclick="exportBackup()">Xuất backup toàn bộ</button>
-        <button class="secondary" onclick="selectBackupImport()">Nhập backup</button>
-        <input id="backupImportInput" type="file" accept="application/json,.json" style="display:none" onchange="importBackupFile(this)">
+
+      <div class="sync-v186-main-actions">
+        ${
+          paired
+            ?`
+              <button
+                class="primary"
+                onclick="autoSyncNow({force:true,reason:'manual',silent:false})"
+              >Đồng bộ ngay</button>
+
+              <button
+                class="secondary"
+                onclick="showPairingQr()"
+              >Ghép thiết bị mới</button>
+            `
+            :`
+              <button
+                class="primary"
+                onclick="showPairingQr()"
+              >Tạo QR ghép thiết bị</button>
+
+              <button
+                class="secondary"
+                onclick="scanPairingQr()"
+              >Quét QR</button>
+            `
+        }
+
+        <label class="sync-v186-switch" title="Bật/tắt Auto Sync">
+          <input
+            type="checkbox"
+            ${auto.enabled?'checked':''}
+            onchange="setAutoSyncEnabled(this.checked)"
+          >
+          <span></span>
+          <b>Tự động</b>
+        </label>
       </div>
-      <div class="muted section-gap">Đang chờ đồng bộ: <b>${getPendingSync().length}</b>${auto.last_sync_at?` • Auto Sync gần nhất: <b>${esc(dt(auto.last_sync_at))}</b>`:''}</div>
+
+      ${
+        auto.last_result==='conflict'
+          ?`
+            <div class="sync-v186-alert">
+              <b>Phát hiện xung đột dữ liệu.</b>
+              Cloud và thiết bị đều có thay đổi. Hệ thống đã dừng tự ghi đè.
+              Mở Nâng cao để chọn bản cần giữ.
+            </div>
+          `
+          :''
+      }
+
+      <details class="sync-v186-advanced">
+        <summary>
+          <span>Nâng cao</span>
+          <span class="muted">Backup, khôi phục, mã ghép</span>
+        </summary>
+
+        <div class="sync-v186-advanced-body">
+          <div class="sync-v186-fields">
+            <div>
+              <label>Mã đồng bộ</label>
+              <div class="multi-code-row">
+                <input
+                  id="multiDeviceCode"
+                  autocomplete="off"
+                  spellcheck="false"
+                  value="${esc(auto.code||cfg.code||'')}"
+                  placeholder="LY-XXXXX-XXXXX"
+                >
+                <button
+                  type="button"
+                  class="secondary sm"
+                  onclick="newMultiDeviceCode()"
+                >Tạo mã</button>
+              </div>
+            </div>
+
+            <div>
+              <label>Mật khẩu mã hóa</label>
+              <input
+                id="multiDevicePassphrase"
+                type="password"
+                minlength="6"
+                autocomplete="new-password"
+                value="${paired?'••••••••••••':''}"
+                placeholder="Ít nhất 6 ký tự"
+                onfocus="if(this.value==='••••••••••••')this.value=''"
+              >
+            </div>
+          </div>
+
+          <div class="sync-v186-tools">
+            <button
+              class="secondary sm"
+              onclick="scanPairingQr()"
+            >Quét QR</button>
+
+            <button
+              class="secondary sm"
+              onclick="copyPairingCode()"
+            >Sao chép mã ghép</button>
+
+            <button
+              class="secondary sm"
+              onclick="pastePairingCode()"
+            >Nhập mã ghép</button>
+
+            <button
+              id="backupToCloudBtn"
+              class="secondary sm"
+              onclick="backupToCloud()"
+            >Sao lưu Cloud</button>
+
+            <button
+              id="restoreFromCloudBtn"
+              class="secondary sm"
+              onclick="restoreFromCloud()"
+            >Khôi phục Cloud</button>
+
+            <button
+              class="secondary sm"
+              onclick="refreshMultiDeviceStatus()"
+            >Kiểm tra Cloud</button>
+
+            <button
+              class="secondary sm"
+              onclick="syncNow().then(()=>autoSyncNow({force:true,reason:'business-sync',silent:true}))"
+            >Đồng bộ nghiệp vụ</button>
+
+            <button
+              class="secondary sm"
+              onclick="exportBackup()"
+            >Xuất backup</button>
+
+            <button
+              class="secondary sm"
+              onclick="selectBackupImport()"
+            >Nhập backup</button>
+
+            <input
+              id="backupImportInput"
+              type="file"
+              accept="application/json,.json"
+              style="display:none"
+              onchange="importBackupFile(this)"
+            >
+          </div>
+
+          <div id="multiDeviceStatus" class="sync-v186-cloud-detail">
+            <span class="muted">
+              Bucket: lat-yen-backups • AES-GCM 256-bit
+            </span>
+          </div>
+        </div>
+      </details>
     </div>
 
     <div class="section-gap"></div>
 
     <div class="card brand-settings-card">
       <div class="brand-settings-head">
-        <div><h2>Nhận diện phần mềm</h2><div class="muted">Tùy chỉnh tên và logo hiển thị ở đầu phần mềm.</div></div>
-        ${brand.logo?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`:''}
+        <div>
+          <h2>Nhận diện phần mềm</h2>
+          <div class="muted">
+            Tùy chỉnh tên và logo hiển thị ở đầu phần mềm.
+          </div>
+        </div>
+        ${
+          brand.logo
+            ?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`
+            :''
+        }
       </div>
+
       <div class="brand-settings-grid">
         <div>
           <label>Tên phần mềm</label>
           <div class="brand-name-actions">
-            <input id="brandNameInput" maxlength="80" value="${esc(brand.name)}">
-            <button class="primary" onclick="saveAppName()">Lưu tên</button>
+            <input
+              id="brandNameInput"
+              maxlength="80"
+              value="${esc(brand.name)}"
+            >
+            <button
+              class="primary"
+              onclick="saveAppName()"
+            >Lưu tên</button>
           </div>
         </div>
+
         <div>
           <label>Logo phần mềm</label>
-          <input id="brandLogoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAppLogo(this)">
+          <input
+            id="brandLogoInput"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            style="display:none"
+            onchange="handleAppLogo(this)"
+          >
           <div class="brand-logo-actions">
-            <button class="secondary" onclick="selectAppLogo()">${brand.logo?'Thay logo':'Thêm logo'}</button>
-            ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`:''}
+            <button
+              class="secondary"
+              onclick="selectAppLogo()"
+            >
+              ${brand.logo?'Thay logo':'Thêm logo'}
+            </button>
+            ${
+              brand.logo
+                ?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`
+                :''
+            }
           </div>
-          <div class="muted brand-logo-note">PNG, JPG hoặc WebP • tối đa 2 MB • tự nén còn tối đa 256 px.</div>
+          <div class="muted brand-logo-note">
+            PNG, JPG hoặc WebP • tối đa 2 MB.
+          </div>
         </div>
       </div>
     </div>
 
     <div class="section-gap"></div>
 
-    <div class="card storage-card">
-      <div class="storage-card-head">
-        <div><h3>Dung lượng lưu trữ</h3><div class="muted">Tự động dọn dữ liệu thừa mỗi 7 ngày. Nhật ký giữ tối đa 1.500 hoạt động trong 12 tháng gần nhất.</div></div>
-        <div class="storage-size">${storageHuman(storageBytes())}</div>
-      </div>
-      <button class="secondary sm" onclick="manualOptimizeStorage()">Tối ưu ngay</button>
-    </div>
+    <details class="settings-v186-more">
+      <summary>Cài đặt hệ thống</summary>
 
-    <div class="section-gap"></div>
+      <div class="section-gap"></div>
 
-    <div class="grid2">
-      <div class="card">
-        <h2>Kết nối Supabase</h2>
-        <p><b>Project:</b> hbffhiipryqvgwpccqtx</p>
-        <p><b>Trạng thái:</b> ${cloudOnline?'<span class="badge okb">Online</span>':'<span class="badge warnb">Offline/cache</span>'}</p>
-        <p class="muted">V185 tiếp tục dùng bucket <b>lat-yen-backups</b>. Không cần thay đổi policy nếu V184 đã sao lưu thành công.</p>
-      </div>
-      <div class="card">
-        <h2>Di chuyển dữ liệu V2</h2>
-        <p class="muted">Nếu thiết bị này có dữ liệu V2 cũ trong localStorage, có thể import lên Supabase một lần.</p>
-        <button class="secondary" onclick="migrateV2ToCloud()">Import dữ liệu V2 lên Cloud</button>
-      </div>
-    </div>
+      <div class="grid2">
+        <div class="card storage-card">
+          <div class="storage-card-head">
+            <div>
+              <h3>Dung lượng lưu trữ</h3>
+              <div class="muted">
+                Tự động tối ưu mỗi 7 ngày.
+              </div>
+            </div>
+            <div class="storage-size">
+              ${storageHuman(storageBytes())}
+            </div>
+          </div>
+          <button
+            class="secondary sm"
+            onclick="manualOptimizeStorage()"
+          >Tối ưu ngay</button>
+        </div>
 
-    <div class="warnbox section-gap">
-      <b>Bảo mật database:</b> dữ liệu nghiệp vụ vẫn đang dùng policy test cho anon/publishable key. Backup được mã hóa phía client; về lâu dài vẫn nên bổ sung Supabase Auth + RLS.
-    </div>
+        <div class="card">
+          <h3>Supabase</h3>
+          <p>
+            <b>Trạng thái:</b>
+            ${
+              cloudOnline
+                ?'<span class="badge okb">Online</span>'
+                :'<span class="badge warnb">Offline</span>'
+            }
+          </p>
+          <p class="muted">
+            Storage: lat-yen-backups
+          </p>
+        </div>
+      </div>
+
+      <div class="card section-gap">
+        <h3>Di chuyển dữ liệu V2</h3>
+        <p class="muted">
+          Chỉ dùng nếu thiết bị còn dữ liệu V2 cũ.
+        </p>
+        <button
+          class="secondary sm"
+          onclick="migrateV2ToCloud()"
+        >Import dữ liệu V2</button>
+      </div>
+    </details>
   `;
 
   setTimeout(()=>{
-    if(auto.code||cfg.code)refreshMultiDeviceStatus();
+    if(auto.code||cfg.code){
+      refreshMultiDeviceStatus();
+    }
   },120);
 }
 
