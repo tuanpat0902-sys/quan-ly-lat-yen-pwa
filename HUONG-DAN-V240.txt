@@ -1,0 +1,20 @@
+V240 - MENU READABILITY FIX
+
+Đã sửa:
+- Bỏ hoàn toàn menu Tổng quan.
+- Tăng sidebar desktop từ 258/282px lên 282px.
+- Tăng chữ menu chính lên 14px.
+- Tăng submenu lên 13.5px.
+- Tăng chiều cao dòng menu.
+- Tăng icon chính 34px, SVG 19px.
+- Tăng icon submenu 30px, SVG 17px.
+- Ép SVG stroke/display/visibility để tránh lỗi mất biểu tượng.
+- Active menu rõ hơn bằng nền xanh nhạt + vạch trái 4px.
+- Giữ nhóm: Bán hàng / Kho & nguyên liệu / Tài chính / Vận hành / Cài đặt.
+
+Không thay đổi:
+- Logic nghiệp vụ.
+- V239 Reset Cloud.
+- V236/V235 sync.
+- Dropdown V234.
+- Interaction Freeze.

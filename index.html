@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V238 NAV TYPOGRAPHY ===== */
+/* ===== V240 MENU READABILITY FIX ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -11458,6 +11458,171 @@ textarea::placeholder{
   }
 }
 
+
+/* ===== V239 CLOUD RESET UX ===== */
+.v239-reset-item{
+  border-color:#f4cccc!important;
+  background:#fffafa!important;
+}
+.v239-reset-item b{
+  color:#9f1d1d;
+}
+.v239-reset-item .danger{
+  font-weight:700!important;
+  white-space:nowrap;
+}
+
+
+/* ===== V240 MENU READABILITY FIX ===== */
+
+@media(min-width:761px){
+  :root{
+    --v238-sidebar-width:282px!important;
+  }
+
+  header{
+    width:282px!important;
+  }
+
+  main{
+    margin-left:282px!important;
+    width:calc(100% - 282px)!important;
+  }
+
+  #nav{
+    padding:12px 10px 16px!important;
+    gap:5px!important;
+  }
+
+  #nav .v238-nav-section-label{
+    padding:8px 11px 5px!important;
+    font-size:10px!important;
+    letter-spacing:.075em!important;
+  }
+
+  #nav>button,
+  #nav .nav-group-toggle,
+  #nav .nav-submenu button{
+    min-height:46px!important;
+    padding:7px 11px!important;
+    gap:11px!important;
+    border-radius:9px!important;
+    font-size:14px!important;
+    font-weight:600!important;
+  }
+
+  #nav>button>span:last-child,
+  #nav .nav-group-toggle .nav-label>span:last-child{
+    font-size:14px!important;
+  }
+
+  #nav .nav-submenu button{
+    min-height:42px!important;
+    padding:6px 9px!important;
+    font-size:13.5px!important;
+  }
+
+  #nav .nav-submenu button>span:last-child{
+    font-size:13.5px!important;
+  }
+
+  #nav button.active{
+    font-size:14px!important;
+    font-weight:750!important;
+    background:#e6f5f2!important;
+    border-color:#bfe0da!important;
+    box-shadow:inset 4px 0 0 var(--v238-accent)!important;
+  }
+
+  #nav .nav-icon{
+    width:34px!important;
+    min-width:34px!important;
+    height:34px!important;
+    border-radius:9px!important;
+    border:1px solid #d8e2e7!important;
+    background:#fff!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    color:#415565!important;
+    opacity:1!important;
+    visibility:visible!important;
+  }
+
+  #nav .nav-icon svg{
+    display:block!important;
+    width:19px!important;
+    height:19px!important;
+    min-width:19px!important;
+    min-height:19px!important;
+    fill:none!important;
+    stroke:currentColor!important;
+    stroke-width:1.9!important;
+    stroke-linecap:round!important;
+    stroke-linejoin:round!important;
+    opacity:1!important;
+    visibility:visible!important;
+  }
+
+  #nav button.active .nav-icon{
+    background:#f8fffd!important;
+    color:#087f73!important;
+    border-color:#a9d9d0!important;
+  }
+
+  #nav .nav-submenu{
+    margin:3px 0 5px 17px!important;
+    padding:3px 0 3px 11px!important;
+  }
+
+  #nav .nav-submenu .nav-icon{
+    width:30px!important;
+    min-width:30px!important;
+    height:30px!important;
+  }
+
+  #nav .nav-submenu .nav-icon svg{
+    width:17px!important;
+    height:17px!important;
+  }
+
+  #nav .nav-chevron{
+    font-size:14px!important;
+    min-width:18px;
+    text-align:center;
+  }
+
+  .brand-wrap .brand{
+    font-size:15px!important;
+    line-height:1.28!important;
+  }
+}
+
+@media(max-width:760px){
+  #nav button{
+    min-height:44px!important;
+    font-size:13.5px!important;
+  }
+
+  #nav .nav-icon{
+    width:30px!important;
+    min-width:30px!important;
+    height:30px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+  }
+
+  #nav .nav-icon svg{
+    width:17px!important;
+    height:17px!important;
+    display:block!important;
+    fill:none!important;
+    stroke:currentColor!important;
+    stroke-width:1.9!important;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -11491,7 +11656,7 @@ textarea::placeholder{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V238</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V240</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -19219,7 +19384,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:238,
+    version:240,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -24616,21 +24781,34 @@ let rtTimer;
 
 function menuIcon(name, sub=false){
   const cls=`nav-icon${sub?' sub':''}`;
+
   const icons={
     finance:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16"/><path d="M7 15l3-3 3 2 4-5"/></svg></span>`,
+
     manage:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span>`,
-    ingredients:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v8"/><path d="M12 4v8"/><path d="M10 12v8"/><path d="M16 4c2.2 2.2 2.2 5.8 0 8l-1 1"/><path d="M6 20h8"/></svg></span>`,
-    imports:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></span>`,
-    recipes:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h9a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-3 2V6a2 2 0 0 1 2-2h2"/></svg></span>`,
+
+    ingredients:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10"/><path d="M9 4v5l-4 7a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 16l-4-7V4"/><path d="M8 14h8"/></svg></span>`,
+
+    imports:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></span>`,
+
+    recipes:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z"/><path d="M8 8h8"/><path d="M8 12h6"/></svg></span>`,
+
     stocktake:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="m8 11 2.2 2.2L16 7.5"/><path d="M8 16h8"/></svg></span>`,
+
     employees:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="3"/><path d="M20 21v-2a4 4 0 0 0-3-3.87"/><path d="M16.5 4.2a3 3 0 0 1 0 5.6"/></svg></span>`,
-    sales:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.2 10.5a1 1 0 0 0 1 .8h9.8a1 1 0 0 0 1-.8L21 7H7"/></svg></span>`,
+
+    sales:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M3 4h2l2.2 10.5a1 1 0 0 0 1 .8h9.8a1 1 0 0 0 1-.8L21 7H7"/><path d="M9 10h8"/></svg></span>`,
+
     cashflow:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M17 7.5c0-1.7-2.2-3-5-3s-5 1.3-5 3 1.5 2.5 5 3 5 1.3 5 3-2.2 3-5 3-5-1.3-5-3"/></svg></span>`,
+
     warehouses:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9 20v-5h6v5"/></svg></span>`,
+
     history:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36"/><path d="M3 4v6h6"/><path d="M12 7v5l3 2"/></svg></span>`,
+
     settings:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V20h-3v-.09a1.7 1.7 0 0 0-1.03-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15.4a1.7 1.7 0 0 0-1.55-1.03H5v-3h.09A1.7 1.7 0 0 0 6.64 10.3a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.33 5V5h3v.09a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.55 1.03H21v3h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg></span>`
   };
-  return icons[name]||`<span class="${cls}"></span>`;
+
+  return icons[name]||`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg></span>`;
 }
 
 
@@ -24693,11 +24871,7 @@ function navInit(){
   if(!E.nav)return;
 
   E.nav.innerHTML=`
-    <div class="v238-nav-section-label">Chính</div>
-
-    <button onclick="showTab('dashboard',this)" data-panel="dashboard">
-      ${menuIcon('dashboard')}<span>Tổng quan</span>
-    </button>
+    <div class="v238-nav-section-label">Nghiệp vụ</div>
 
     <button onclick="showTab('sales',this)" data-panel="sales">
       ${menuIcon('sales')}<span>Bán hàng</span>
@@ -42149,7 +42323,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V238',
+    app_version:'V240',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -42458,7 +42632,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:238,
+    version:240,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -42640,13 +42814,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:238,
+    version:240,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V238',storage:'supabase-storage',
+      schema:185,app_version:'V240',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -43858,7 +44032,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:238,
+    version:240,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -46692,7 +46866,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V238',
+      app_version:'V240',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -46707,7 +46881,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:238,
+      version:240,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -46984,7 +47158,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v238-full-backup-'+
+    'lat-yen-v240-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -47033,6 +47207,785 @@ async function importBackupFile(input){
     );
   }finally{
     if(input)input.value='';
+  }
+}
+
+
+/* ===== V239 CLOUD CLEAN TAKEOVER ===== */
+const V239_RESET_REPORT_KEY='lat_yen_cloud_reset_v239';
+let v239ResetBusy=false;
+
+function v239SaveReport(report){
+  try{
+    localStorage.setItem(
+      V239_RESET_REPORT_KEY,
+      JSON.stringify({
+        at:new Date().toISOString(),
+        ...(report||{})
+      })
+    );
+  }catch(e){}
+}
+
+function v239LocalReadiness(){
+  const issues=[];
+
+  const uuid=(label,value)=>{
+    if(value&&!isUuidValue(value)){
+      issues.push(
+        `${label}: ${String(value).slice(0,28)}`
+      );
+    }
+  };
+
+  for(const row of db.warehouses||[]){
+    uuid('Kho',row.id);
+  }
+
+  for(const row of db.suppliers||[]){
+    uuid('NCC',row.id);
+  }
+
+  for(const row of db.ingredients||[]){
+    uuid('Nguyên liệu',row.id);
+  }
+
+  for(const row of db.products||[]){
+    uuid('Sản phẩm',row.id);
+  }
+
+  for(const row of db.inventory||[]){
+    uuid('Tồn kho/kho',row.warehouse_id);
+    uuid('Tồn kho/NL',row.ingredient_id);
+  }
+
+  for(const row of db.recipeItems||[]){
+    uuid('Công thức/id',row.id);
+    uuid('Công thức/món',row.product_id);
+    uuid('Công thức/NL',row.ingredient_id);
+  }
+
+  for(const row of db.preparedItems||[]){
+    uuid('Pha chế/id',row.id);
+    uuid('Pha chế/thành phẩm',row.prepared_ingredient_id);
+    uuid('Pha chế/NL nguồn',row.source_ingredient_id);
+  }
+
+  for(const row of db.sales||[]){
+    uuid('Phiếu bán',row.id);
+    uuid('Phiếu bán/kho',row.warehouse_id);
+  }
+
+  for(const row of db.saleItems||[]){
+    uuid('Chi tiết bán/id',row.id);
+    uuid('Chi tiết bán/phiếu',row.sale_id);
+    uuid('Chi tiết bán/món',row.product_id);
+  }
+
+  for(const row of db.movements||[]){
+    if(row?._stocktake_audit_only===true){
+      continue;
+    }
+
+    uuid('Biến động/id',row.id);
+    uuid('Biến động/kho',row.warehouse_id);
+    uuid('Biến động/NL',row.ingredient_id);
+
+    if(row.supplier_id){
+      uuid('Biến động/NCC',row.supplier_id);
+    }
+
+    if(row.reference_id){
+      uuid('Biến động/phiếu',row.reference_id);
+    }
+
+    if(!normalizeTransactionTypeV200(row.transaction_type)){
+      issues.push(
+        `Loại giao dịch: ${row.transaction_type||'(trống)'}`
+      );
+    }
+  }
+
+  return {
+    ok:issues.length===0,
+    issues,
+    counts:v204DbCounts(db),
+    total:v204TotalCoreRecords(db)
+  };
+}
+
+async function v239BuildCloudSeed(){
+  const now=new Date().toISOString();
+
+  const payload={
+    warehouses:[],
+    suppliers:[],
+    ingredients:[],
+    products:[],
+    inventory:[],
+    recipe_items:[],
+    prepared_ingredient_items:[],
+    sales:[],
+    sale_items:[],
+    stock_transactions:[]
+  };
+
+  for(const row of db.warehouses||[]){
+    payload.warehouses.push({
+      id:row.id,
+      name:row.name||'Kho',
+      address:row.address||'',
+      active:row.active!==false
+    });
+  }
+
+  for(const row of db.suppliers||[]){
+    payload.suppliers.push({
+      id:row.id,
+      name:row.name||'',
+      phone:row.phone||'',
+      address:row.address||'',
+      note:row.note||''
+    });
+  }
+
+  for(const row of db.ingredients||[]){
+    payload.ingredients.push({
+      id:row.id,
+      name:row.name||'Nguyên liệu',
+      unit:row.unit||'',
+      cost:Number(row.cost||0),
+      minimum_stock:Number(row.minimum_stock||0),
+      ingredient_type:row.ingredient_type||'purchased',
+      batch_output_qty:Number(row.batch_output_qty||1),
+      active:row.active!==false,
+      updated_at:row.updated_at||now
+    });
+  }
+
+  for(const row of db.products||[]){
+    payload.products.push({
+      id:row.id,
+      name:row.name||'Món',
+      sku:row.sku||null,
+      selling_price:Number(row.selling_price||0),
+      active:row.active!==false
+    });
+  }
+
+  for(const row of db.inventory||[]){
+    payload.inventory.push({
+      warehouse_id:row.warehouse_id,
+      ingredient_id:row.ingredient_id,
+      quantity:Number(row.quantity||0),
+      updated_at:row.updated_at||now
+    });
+  }
+
+  for(const row of db.recipeItems||[]){
+    payload.recipe_items.push({
+      id:row.id,
+      product_id:row.product_id,
+      ingredient_id:row.ingredient_id,
+      quantity:Number(row.quantity||0)
+    });
+  }
+
+  for(const row of db.preparedItems||[]){
+    payload.prepared_ingredient_items.push({
+      id:row.id,
+      prepared_ingredient_id:row.prepared_ingredient_id,
+      source_ingredient_id:row.source_ingredient_id,
+      quantity:Number(row.quantity||0)
+    });
+  }
+
+  for(const row of db.sales||[]){
+    payload.sales.push({
+      id:row.id,
+      warehouse_id:row.warehouse_id,
+      total_amount:Number(row.total_amount||0),
+      source:row.source||'manual',
+      sold_at:row.sold_at||row.created_at||now,
+      note:row.note||''
+    });
+  }
+
+  for(const row of db.saleItems||[]){
+    payload.sale_items.push({
+      id:row.id,
+      sale_id:row.sale_id,
+      product_id:row.product_id,
+      quantity:Number(row.quantity||0),
+      unit_price:Number(row.unit_price||0)
+    });
+  }
+
+  for(const row of db.movements||[]){
+    if(row?._stocktake_audit_only===true){
+      continue;
+    }
+
+    const type=normalizeTransactionTypeV200(
+      row.transaction_type
+    );
+
+    const out={
+      id:row.id,
+      warehouse_id:row.warehouse_id,
+      ingredient_id:row.ingredient_id,
+      transaction_type:type,
+      quantity:Number(row.quantity||0),
+      note:row.note||'',
+      reference_id:row.reference_id||null
+    };
+
+    if(row.created_at){
+      out.created_at=row.created_at;
+    }
+
+    if(row.unit_cost!=null){
+      out.unit_cost=Number(row.unit_cost||0);
+    }
+
+    if(row.total_cost!=null){
+      out.total_cost=Number(row.total_cost||0);
+    }
+
+    if(row.supplier_id){
+      out.supplier_id=row.supplier_id;
+    }
+
+    payload.stock_transactions.push(out);
+  }
+
+  return payload;
+}
+
+async function v239DeleteAllRows(table,column){
+  const r=await promiseWithTimeout(
+    sb.from(table)
+      .delete()
+      .not(column,'is',null),
+    25000,
+    `Xóa Cloud ${table}`
+  );
+
+  if(r.error){
+    throw new Error(
+      `${table}: ${r.error.message||String(r.error)}`
+    );
+  }
+}
+
+async function v239DeleteBusinessCloud(){
+  const phases=[
+    ['sale_items','id'],
+    ['sales','id'],
+    ['recipe_items','id'],
+    ['prepared_ingredient_items','id'],
+    ['stock_transactions','id'],
+    ['inventory','warehouse_id'],
+    ['products','id'],
+    ['ingredients','id'],
+    ['suppliers','id'],
+    ['warehouses','id']
+  ];
+
+  const deleted=[];
+
+  for(let i=0;i<phases.length;i++){
+    const [table,column]=phases[i];
+
+    updateSyncProgress(
+      8+Math.round(i/phases.length*27),
+      'Đang làm sạch Cloud',
+      `Xóa ${table}`
+    );
+
+    await v239DeleteAllRows(table,column);
+    deleted.push(table);
+  }
+
+  return deleted;
+}
+
+async function v239VerifyCloudEmpty(){
+  const tables=[
+    'sale_items',
+    'sales',
+    'recipe_items',
+    'prepared_ingredient_items',
+    'stock_transactions',
+    'inventory',
+    'products',
+    'ingredients',
+    'suppliers',
+    'warehouses'
+  ];
+
+  const nonEmpty={};
+
+  for(const table of tables){
+    const r=await promiseWithTimeout(
+      sb.from(table)
+        .select('*',{count:'exact',head:true}),
+      12000,
+      `Xác minh ${table}`
+    );
+
+    if(r.error){
+      throw r.error;
+    }
+
+    const count=Number(r.count||0);
+
+    if(count>0){
+      nonEmpty[table]=count;
+    }
+  }
+
+  return {
+    empty:Object.keys(nonEmpty).length===0,
+    nonEmpty
+  };
+}
+
+async function v239SeedCloudFromLocal(payload){
+  const zeroInventory=payload.inventory.map(row=>({
+    ...row,
+    quantity:0
+  }));
+
+  const phases=[
+    ['warehouses',payload.warehouses,'id','Kho'],
+    ['suppliers',payload.suppliers,'id','Nhà cung cấp'],
+    ['ingredients',payload.ingredients,'id','Nguyên liệu'],
+    ['products',payload.products,'id','Sản phẩm'],
+    ['inventory',zeroInventory,'warehouse_id,ingredient_id','Khung tồn kho'],
+    ['recipe_items',payload.recipe_items,'id','Công thức'],
+    ['prepared_ingredient_items',payload.prepared_ingredient_items,'id','Nguyên liệu pha chế'],
+    ['sales',payload.sales,'id','Phiếu bán'],
+    ['sale_items',payload.sale_items,'id','Chi tiết bán'],
+    ['stock_transactions',payload.stock_transactions,'id','Lịch sử kho'],
+    ['inventory',payload.inventory,'warehouse_id,ingredient_id','Tồn kho chính xác']
+  ];
+
+  const total=phases.reduce(
+    (sum,x)=>sum+x[1].length,
+    0
+  );
+
+  let done=0;
+
+  for(let i=0;i<phases.length;i++){
+    const [table,rows,conflict,label]=phases[i];
+
+    updateSyncProgress(
+      38+Math.round(i/phases.length*38),
+      'Đang nạp lại Cloud',
+      `${label} • ${rows.length} record`
+    );
+
+    const result=await v199UpsertBatches({
+      table,
+      rows,
+      onConflict:conflict,
+      phase:`Khởi tạo lại • ${label}`,
+      startDone:done,
+      total
+    });
+
+    done=Number(result?.done??done);
+  }
+
+  return {total,done};
+}
+
+async function v239ReplaceCanonicalFromLocal(){
+  const cred=autoSyncCredentials();
+
+  if(!cred.code||!cred.passphrase){
+    return {
+      skipped:true,
+      revision:0
+    };
+  }
+
+  const local=prepareConcurrentLocalState();
+
+  for(let attempt=1;attempt<=4;attempt++){
+    const remote=await v189FetchCanonical(
+      cred.code,
+      cred.passphrase
+    );
+
+    const commit=await v189CommitCanonical(
+      cred.code,
+      cred.passphrase,
+      remote.revision,
+      local
+    );
+
+    if(!commit.success){
+      await sleepMs(120*attempt);
+      continue;
+    }
+
+    const verify=await v189FetchCanonical(
+      cred.code,
+      cred.passphrase
+    );
+
+    if(
+      Number(verify.revision||0)!==
+      Number(commit.revision||0)
+    ){
+      continue;
+    }
+
+    if(
+      !verify.payload?.state ||
+      !v213CanonicalStatesEqual(
+        verify.payload.state,
+        local.state
+      )
+    ){
+      continue;
+    }
+
+    return {
+      skipped:false,
+      revision:Number(verify.revision||0)
+    };
+  }
+
+  throw new Error(
+    'Không thể thay canonical bằng dữ liệu của thiết bị hiện tại.'
+  );
+}
+
+async function v239ReplaceCloudBackup(){
+  const values=multiDeviceFormValues();
+
+  if(!values.code||!values.passphrase){
+    return {skipped:true};
+  }
+
+  const local=await currentLocalSnapshotAndHash();
+
+  const encrypted=await encryptBackupSnapshot(
+    local.snapshot,
+    values.passphrase
+  );
+
+  const backupKey=await backupLookupKey(
+    values.code
+  );
+
+  const updatedAt=new Date().toISOString();
+
+  const envelope={
+    version:240,
+    backup_key:backupKey,
+    ciphertext:encrypted.ciphertext,
+    iv:encrypted.iv,
+    salt:encrypted.salt,
+    meta:{
+      schema:MULTI_DEVICE_SCHEMA,
+      app_version:'V240',
+      storage:'supabase-storage',
+      bucket:MULTI_DEVICE_BUCKET,
+      content_hash:local.hash,
+      compression:encrypted.compression,
+      device_id:multiDeviceDeviceId(),
+      device_name:multiDeviceDeviceName(),
+      updated_at:updatedAt,
+      summary:backupSnapshotSummary(
+        local.snapshot
+      )
+    },
+    updated_at:updatedAt
+  };
+
+  await uploadCloudBackupEnvelope(
+    values.code,
+    envelope
+  );
+
+  saveMultiDeviceConfig({
+    code:values.code,
+    last_cloud_hash:local.hash,
+    last_cloud_at:updatedAt,
+    last_device_name:multiDeviceDeviceName()
+  });
+
+  return {
+    skipped:false,
+    hash:local.hash,
+    at:updatedAt
+  };
+}
+
+async function v239ResetCloudFromThisDevice(){
+  if(v239ResetBusy){
+    toastMsg('Đang đặt lại Cloud');
+    return;
+  }
+
+  if(!navigator.onLine){
+    alert(
+      'Thiết bị đang offline. Không thể đặt lại Cloud.'
+    );
+    return;
+  }
+
+  normalizeLegacyCacheV205();
+
+  const readiness=v239LocalReadiness();
+
+  if(!readiness.ok){
+    alert(
+      'Chưa thể Reset Cloud vì local còn ID/record chưa sẵn sàng.\n\n'+
+      readiness.issues.slice(0,12).join('\n')+
+      (
+        readiness.issues.length>12
+          ?`\n... và ${readiness.issues.length-12} lỗi khác`
+          :''
+      )+
+      '\n\nHãy chạy Chuẩn hóa/Migration trước.'
+    );
+    return;
+  }
+
+  const first=await appConfirm(
+    `Thiết bị hiện tại có ${readiness.total} record và sẽ trở thành NGUỒN DỮ LIỆU CHÍNH.\n\n`+
+    'Toàn bộ dữ liệu nghiệp vụ đang có trên Supabase sẽ bị xóa và nạp lại từ thiết bị này.\n\n'+
+    'Hãy đóng phần mềm trên tất cả thiết bị khác trước khi tiếp tục.',
+    'Đặt lại toàn bộ Cloud'
+  );
+
+  if(!first)return;
+
+  const second=await appConfirm(
+    'Xác nhận lần cuối:\n\n'+
+    '• KHÔNG xóa dữ liệu local trên thiết bị này.\n'+
+    '• Cloud sẽ bị làm sạch hoàn toàn.\n'+
+    '• Dữ liệu local hiện tại sẽ được nạp lại làm bản chuẩn.\n'+
+    '• Canonical và Backup Cloud cũ sẽ được thay bằng bản mới.\n\n'+
+    'Tiếp tục?',
+    'XÁC NHẬN RESET CLOUD'
+  );
+
+  if(!second)return;
+
+  v239ResetBusy=true;
+
+  const autoBefore=loadAutoSyncConfig();
+
+  const report={
+    started_at:new Date().toISOString(),
+    local_total:readiness.total,
+    deleted:[],
+    seeded:0,
+    canonical_revision:0,
+    backup_replaced:false,
+    success:false
+  };
+
+  beginSyncProgress();
+
+  try{
+    v204EmergencySnapshot(
+      'v239_before_cloud_reset'
+    );
+
+    stopAutoSyncLoop();
+
+    if(realtimeChannel){
+      try{
+        sb.removeChannel(realtimeChannel);
+      }catch(e){}
+
+      realtimeChannel=null;
+    }
+
+    try{
+      v235RealtimeQueue?.clear?.();
+    }catch(e){}
+
+    v235DeferredCanonicalMerge=null;
+    v235NeedFullReconcile=false;
+
+    updateSyncProgress(
+      5,
+      'Đã khóa đồng bộ nền',
+      'Local đã được snapshot • chuẩn bị làm sạch Cloud'
+    );
+
+    const payload=await v239BuildCloudSeed();
+
+    report.deleted=await v239DeleteBusinessCloud();
+
+    const empty=await v239VerifyCloudEmpty();
+
+    if(!empty.empty){
+      throw new Error(
+        'Cloud chưa xóa sạch: '+
+        Object.entries(empty.nonEmpty)
+          .map(([k,v])=>`${k}:${v}`)
+          .join(' • ')
+      );
+    }
+
+    updateSyncProgress(
+      36,
+      'Cloud đã sạch',
+      'Bắt đầu nạp dữ liệu từ thiết bị này'
+    );
+
+    const seeded=await v239SeedCloudFromLocal(
+      payload
+    );
+
+    report.seeded=seeded.done;
+
+    updateSyncProgress(
+      80,
+      'Đang thay trạng thái đồng bộ',
+      'Thiết bị hiện tại trở thành canonical mới'
+    );
+
+    const canonical=await v239ReplaceCanonicalFromLocal();
+
+    report.canonical_revision=
+      Number(canonical.revision||0);
+
+    saveFastSyncStateV202({
+      last_revision:report.canonical_revision,
+      last_pull_at:0
+    });
+
+    updateSyncProgress(
+      87,
+      'Đang tạo Backup Cloud mới',
+      'Thay bản backup cũ bằng dữ liệu chuẩn'
+    );
+
+    const backup=await v239ReplaceCloudBackup();
+
+    report.backup_replaced=!backup.skipped;
+
+    updateSyncProgress(
+      93,
+      'Đang xác minh Cloud',
+      'Pull lại toàn bộ dữ liệu vừa khởi tạo'
+    );
+
+    await loadCloudFastV202(true);
+
+    const coverage=v228Coverage();
+
+    if(
+      !coverage.proofAvailable ||
+      Number(coverage.localOnly||0)!==0
+    ){
+      throw new Error(
+        `Xác minh sau Reset còn ${Number(coverage.localOnly||0)} record chưa được Cloud xác nhận • ${v228CoverageBreakdownText(coverage)}`
+      );
+    }
+
+    setPendingSync([]);
+    repairFalsePendingLocalRowsV197();
+
+    const now=new Date().toISOString();
+
+    saveAutoSyncConfig({
+      enabled:autoBefore.enabled!==false,
+      code:autoBefore.code,
+      passphrase:autoBefore.passphrase,
+      last_sync_at:now,
+      last_result:'v239_clean_takeover',
+      cloud_revision:report.canonical_revision,
+      cloud_revision_token:String(
+        report.canonical_revision||0
+      )
+    });
+
+    finishSyncProgress({
+      success:true,
+      pending:0,
+      stage:'Cloud đã được đặt lại',
+      detail:
+        `Thiết bị này là nguồn chuẩn • Cloud xác nhận ${coverage.covered}/${coverage.total} record`
+    });
+
+    report.success=true;
+    report.finished_at=now;
+    v239SaveReport(report);
+
+    if(autoBefore.enabled!==false){
+      startAutoSyncLoop();
+    }
+
+    setupRealtime();
+    renderAll();
+
+    alert(
+      'Đã đặt lại Cloud thành công.\n\n'+
+      `Đã nạp lại ${report.seeded} lượt record.\n`+
+      `Canonical Revision: ${report.canonical_revision||'mới'}.\n\n`+
+      'Thiết bị hiện tại đã trở thành nguồn dữ liệu chuẩn.'
+    );
+
+  }catch(e){
+    console.error(
+      'V239 Cloud Reset',
+      e
+    );
+
+    report.error=e?.message||String(e);
+    report.finished_at=new Date().toISOString();
+    v239SaveReport(report);
+
+    finishSyncProgress({
+      success:false,
+      pending:v191PendingCount(),
+      stage:'Reset Cloud bị dừng',
+      detail:report.error,
+      error:report.error
+    });
+
+    try{
+      const payload=await v239BuildCloudSeed();
+      await v239SeedCloudFromLocal(payload);
+    }catch(recoveryError){
+      console.error(
+        'V239 emergency reseed',
+        recoveryError
+      );
+    }
+
+    if(autoBefore.enabled!==false){
+      startAutoSyncLoop();
+    }
+
+    try{
+      setupRealtime();
+    }catch(rtError){}
+
+    alert(
+      'Reset Cloud đã dừng để bảo vệ dữ liệu local.\n\n'+
+      report.error+
+      '\n\nDữ liệu trên thiết bị này vẫn được giữ nguyên. Nếu lỗi là quyền DELETE/RLS, cần sửa policy Supabase trước khi Reset lại.'
+    );
+
+  }finally{
+    v239ResetBusy=false;
+
+    if(activePanelId==='settings'){
+      renderSettings();
+    }
   }
 }
 
@@ -47340,6 +48293,14 @@ function renderSettings(){
                 <span>Dùng khi vừa có Cloud Pull lỗi và cần quay lại dữ liệu trước đó.</span>
               </div>
               <button class="secondary sm" onclick="restoreLocalSnapshotV204()">Khôi phục local</button>
+            </div>
+
+            <div class="sync-v237-maintenance-item v239-reset-item">
+              <div>
+                <b>Đặt lại toàn bộ Cloud</b>
+                <span>Xóa dữ liệu Cloud và lấy thiết bị này làm nguồn chuẩn. Chỉ dùng khi cần xử lý xung đột triệt để.</span>
+              </div>
+              <button class="danger sm" onclick="v239ResetCloudFromThisDevice()">Reset Cloud</button>
             </div>
           </div>
 

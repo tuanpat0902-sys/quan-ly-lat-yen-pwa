@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V238",
+  "name": "Quản Lý Lát Yên V240",
   "short_name": "Lát Yên",
-  "description": "Refined left navigation and system typography for clearer hierarchy, better readability and stable daily operation.",
+  "description": "Improved left menu readability with larger icons and text, restored visible SVG icons, and removed the Dashboard menu.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

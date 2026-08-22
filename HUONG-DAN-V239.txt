@@ -1,0 +1,30 @@
+V239 - CLOUD CLEAN TAKEOVER
+
+Mục đích:
+Xử lý xung đột bằng cách lấy dữ liệu của THIẾT BỊ HIỆN TẠI làm nguồn chuẩn.
+
+KHÔNG chỉ xóa Cloud rồi để trống.
+Nếu chỉ xóa, Auto Sync hoặc thiết bị khác có thể đẩy dữ liệu cũ trở lại ngay.
+
+Quy trình V239:
+1. Kiểm tra local đã có UUID Cloud hợp lệ.
+2. Tạo Emergency Snapshot local.
+3. Dừng Auto Sync + Realtime.
+4. Xóa dữ liệu nghiệp vụ Cloud theo thứ tự khóa ngoại.
+5. Xác minh các bảng thật sự rỗng.
+6. Nạp lại toàn bộ dữ liệu từ thiết bị hiện tại.
+7. Ghi tồn kho authoritative ở bước cuối.
+8. Thay Canonical bằng current local state, không merge state cũ.
+9. Thay Cloud Backup bằng snapshot mới.
+10. Pull lại Supabase và chỉ PASS khi Cloud xác nhận đủ.
+11. Bật lại Realtime/Auto Sync.
+
+RẤT QUAN TRỌNG:
+Trước khi Reset Cloud, đóng app trên các thiết bị khác.
+Dự án hiện không dùng Auth, nên thiết bị cũ vẫn có thể ghi vào cùng Supabase nếu đang mở.
+
+Vị trí:
+Cài đặt > Chẩn đoán & bảo trì > Đặt lại toàn bộ Cloud.
+
+Không xóa local.
+Không cần SQL mới nếu policy hiện tại cho phép DELETE.
