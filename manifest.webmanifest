@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V265",
+  "name": "Quản Lý Lát Yên V266",
   "short_name": "Lát Yên",
-  "description": "Single-admin Auth mode using admin@latyen.vn with persistent Supabase session and Cloud Data V2.",
+  "description": "Cloud-native product-to-warehouse ownership fixes recipe sync across devices.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

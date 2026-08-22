@@ -11571,7 +11571,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V265</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V266</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -17763,9 +17763,33 @@ function v254NewWarehouseAudit(warehouseId){
   };
 }
 
+
+function v266RepairProductWarehouseOwnership(){
+  let changed=false;
+  const map=getProductWarehouseMap();
+
+  for(const p of db.products||[]){
+    if(
+      p?.id &&
+      p?.warehouse_id &&
+      String(map[p.id]||'')!==String(p.warehouse_id)
+    ){
+      map[p.id]=p.warehouse_id;
+      changed=true;
+    }
+  }
+
+  if(changed){
+    saveProductWarehouseMap(map);
+  }
+
+  return changed;
+}
+
 function warehouseProducts(
   warehouseId=currentWarehouseId
 ){
+  v266RepairProductWarehouseOwnership();
   const map=ensureProductWarehouseOwnership();
 
   return (db.products||[])
@@ -26425,6 +26449,22 @@ function v207ApplyRealtimeRow(table,payload){
     }else{
       target.rows.unshift(clean);
     }
+
+    /*
+      V266: product ownership is now Cloud-native.
+      Mirror warehouse_id into the legacy local map so all existing
+      rendering/filtering code immediately works on every device.
+    */
+    if(
+      table==='products' &&
+      clean.id &&
+      clean.warehouse_id
+    ){
+      assignProductToWarehouse(
+        clean.id,
+        clean.warehouse_id
+      );
+    }
   }
 
   db[target.key]=target.rows;
@@ -33214,8 +33254,6 @@ async function syncRecipeOperation(op){
   );
 
   if(!recipeCanSyncCloud(productId,lines)){
-    // Công thức dùng dữ liệu Excel/local không thể ghi vào FK UUID của Supabase.
-    // Giữ local và không coi đây là lỗi đồng bộ.
     delete localProduct._sync_status;
     localProduct._recipe_local_only=true;
     localProduct._local_only=!!localProduct._local_only;
@@ -33230,11 +33268,24 @@ async function syncRecipeOperation(op){
     return;
   }
 
+  const warehouseId=
+    op.warehouse_id||
+    localProduct.warehouse_id||
+    currentWarehouseId||
+    null;
+
+  if(!warehouseId){
+    throw new Error(
+      'Công thức chưa xác định kho/chi nhánh'
+    );
+  }
+
   const payload={
     name:String(op.payload?.name||localProduct.name||'').trim(),
     sku:op.payload?.sku||null,
     selling_price:Number(op.payload?.selling_price||0),
     active:true,
+    warehouse_id:warehouseId,
     updated_at:new Date().toISOString()
   };
 
@@ -33290,19 +33341,20 @@ async function syncRecipeOperation(op){
   );
   if(ins.error)throw ins.error;
 
-  // Thay các dòng local bằng bản Cloud vừa lưu để tránh duplicate khi reload.
   db.recipeItems=(db.recipeItems||[]).filter(x=>x.product_id!==productId);
   db.recipeItems.push(...(ins.data||[]));
 
   Object.assign(localProduct,savedProduct.data||payload);
   localProduct.unit=op.unit||localProduct.unit||'ly';
+  localProduct.warehouse_id=warehouseId;
+
   delete localProduct._local_only;
   delete localProduct._recipe_local_only;
   delete localProduct._sync_status;
   delete localProduct._sync_error;
 
   saveProductUnit(productId,localProduct.unit);
-  assignProductToWarehouse(productId,op.warehouse_id||currentWarehouseId);
+  assignProductToWarehouse(productId,warehouseId);
   invalidateDataIndexes();
 }
 
@@ -33374,6 +33426,7 @@ async function saveRecipe(id){
         sku,
         selling_price:price,
         active:true,
+        warehouse_id:currentWarehouseId,
         updated_at:now,
         unit
       });
@@ -33385,6 +33438,7 @@ async function saveRecipe(id){
         selling_price:price,
         active:true,
         unit,
+        warehouse_id:currentWarehouseId,
         created_at:now,
         updated_at:now,
         _local_only:true
@@ -44542,7 +44596,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V265',
+    app_version:'V266',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -45194,7 +45248,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V265',storage:'supabase-storage',
+      schema:185,app_version:'V266',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -49524,7 +49578,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V265',
+      app_version:'V266',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -54089,7 +54143,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V265',
+      app_version:'V266',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -55695,7 +55749,7 @@ async function v263ResetOrganizationData(){
 }
 
 
-/* ===== V265 SINGLE ADMIN AUTH ===== */
+/* ===== V266 CLOUD RECIPE OWNERSHIP ===== */
 const V264_CLEAN_MODE_KEY='lat_yen_v264_clean_auth_mode';
 
 function v264CleanMode(){

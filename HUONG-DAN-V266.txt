@@ -1,0 +1,23 @@
+V266 - CLOUD RECIPE OWNERSHIP
+
+NGUYÊN NHÂN:
+Công thức gồm products + recipe_items nhưng product -> warehouse trước đây
+chỉ lưu localStorage trên từng thiết bị. Máy B nhận Cloud row nhưng không biết
+món thuộc kho nào nên giao diện không hiển thị.
+
+CÁCH SỬA:
+- products có warehouse_id trên Supabase.
+- Khi lưu công thức, warehouse_id được ghi cùng product.
+- Realtime/Smart Sync nhận product sẽ tự cập nhật ownership local.
+- Full load cũng tự repair ownership từ Cloud.
+
+CÁCH DEPLOY:
+1. Chạy SUPABASE-V266-CLOUD-RECIPE-OWNERSHIP.sql.
+2. Upload GitHub V266.
+3. Tạo lại 1 công thức mới trên máy A.
+4. Máy B đăng nhập cùng admin, chọn cùng kho.
+5. Công thức phải xuất hiện tự động.
+
+LƯU Ý:
+SQL V266 xóa các product/công thức test cũ không có warehouse_id vì chúng không
+thể suy ra kho chính xác. Kho/nguyên liệu không bị xóa.
