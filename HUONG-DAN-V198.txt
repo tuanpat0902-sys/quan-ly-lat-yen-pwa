@@ -1,0 +1,26 @@
+V198 - TRUE CLOUD MIGRATION
+
+V197 có thể báo 100% vì đã chuyển Excel/local pending thành local-only.
+Nhưng local-only không xuất hiện trên thiết bị khác.
+
+V198 sửa đúng bản chất:
+- Tạo UUID Cloud deterministic từ ID local/Excel.
+- Upsert warehouse, ingredient, supplier, product.
+- Upsert inventory baseline.
+- Remap recipe/prepared ingredient.
+- Upsert legacy stock movements với UUID mới.
+- Sau khi tất cả Cloud writes thành công mới remap local DB.
+- 100% chỉ khi:
+  pending = 0
+  VÀ Cloud Coverage = 100% (không còn ID local trong dữ liệu chính).
+
+CÁCH DÙNG:
+1. Chạy SUPABASE-V198-FULL-UPDATE-ALL-IN-ONE.sql nếu chưa chạy bản V197 đầy đủ.
+2. Deploy V198 lên thiết bị có dữ liệu đầy đủ nhất.
+3. Cài đặt -> Đồng bộ -> "Chuyển lên Cloud".
+4. Chờ hoàn tất.
+5. Trên các thiết bị còn lại reload V198 rồi bấm Đồng bộ ngay.
+
+QUAN TRỌNG:
+- Chỉ chạy migration đầu tiên trên thiết bị đang có bộ dữ liệu đầy đủ nhất.
+- Các thiết bị còn lại nên pull Cloud sau khi thiết bị nguồn hoàn tất.

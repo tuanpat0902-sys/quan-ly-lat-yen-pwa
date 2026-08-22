@@ -4123,7 +4123,7 @@ aside,
 }
 
 
-/* ===== V197 SYNC REPAIR ===== */
+/* ===== V198 CLOUD MIGRATION ===== */
 .ingredient-stock-summary{
   display:flex;
   align-items:center;
@@ -9739,6 +9739,52 @@ button{
   line-height:1.4;
 }
 
+
+/* ===== V198 CLOUD MIGRATION ===== */
+.sync-v198-migration-card{
+  margin-top:11px;
+  padding:10px;
+  border:1px solid #bfdbfe;
+  border-radius:10px;
+  background:#eff6ff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.sync-v198-migration-card>b,
+.sync-v198-migration-card>div>b{
+  display:block;
+  font-size:10px;
+  color:#1e3a8a;
+}
+
+.sync-v198-migration-card>div>span{
+  display:block;
+  margin-top:2px;
+  color:#475569;
+  font-size:8.7px;
+}
+
+.sync-v198-migration-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+
+@media(max-width:700px){
+  .sync-v198-migration-card{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .sync-v198-migration-actions{
+    justify-content:space-between;
+  }
+}
+
 </style>
 
 <meta name="theme-color" content="#0f766e">
@@ -11843,9 +11889,15 @@ function finishSyncProgress({
   detail='',
   error=''
 }={}){
+  const coverage=
+    typeof v198CloudCoverage==='function'
+      ?v198CloudCoverage()
+      :{localOnly:0};
+
   const clean=
     !!success &&
-    Number(pending||0)===0;
+    Number(pending||0)===0 &&
+    Number(coverage.localOnly||0)===0;
 
   return saveSyncProgress({
     running:false,
@@ -11855,14 +11907,22 @@ function finishSyncProgress({
       (
         clean
           ?'Đã đồng bộ hoàn toàn'
-          :'Chưa đồng bộ hết'
+          :(
+            Number(coverage.localOnly||0)>0
+              ?'Còn dữ liệu chỉ nằm trên thiết bị'
+              :'Chưa đồng bộ hết'
+          )
       ),
     detail:
       detail||
       (
         clean
           ?'Tất cả dữ liệu kiểm tra được đã khớp Cloud.'
-          :`Còn ${Number(pending||0)} mục chờ đồng bộ.`
+          :(
+            Number(coverage.localOnly||0)>0
+              ?`Còn ${Number(coverage.localOnly||0)} record chưa có UUID Cloud.`
+              :`Còn ${Number(pending||0)} mục chờ đồng bộ.`
+          )
       ),
     pending:Number(pending||0),
     finished_at:new Date().toISOString(),
@@ -12411,6 +12471,17 @@ async function runSyncDiagnostics(){
       pendingAfter.unique_total||0
     );
 
+  const coverage=
+    v198CloudCoverage();
+
+  add(
+    'Cloud Coverage = 100%',
+    coverage.localOnly===0,
+    coverage.localOnly===0
+      ?`Tất cả ${coverage.total} record chính đã có UUID Cloud`
+      :`${coverage.localOnly}/${coverage.total} record vẫn chỉ có ID local/Excel`
+  );
+
   add(
     'Pending = 0',
     totalPending===0,
@@ -12432,7 +12503,7 @@ async function runSyncDiagnostics(){
     results.length-passed;
 
   const final={
-    version:197,
+    version:198,
     started_at:started,
     finished_at:
       new Date().toISOString(),
@@ -13114,6 +13185,994 @@ async function repairAndRetrySyncV197(){
   return {
     repaired:repair.repaired,
     pending:v191PendingCount()
+  };
+}
+
+
+/* ===== V198 CLOUD ID MIGRATION ===== */
+const V198_MIGRATION_KEY='lat_yen_cloud_id_migration_v198';
+const V198_MIGRATION_NAMESPACE='lat-yen-v198-cloud-id';
+
+async function deterministicUuidV198(kind,oldId){
+  const src=
+    `${V198_MIGRATION_NAMESPACE}|${kind}|${String(oldId||'')}`;
+
+  const bytes=
+    new TextEncoder().encode(src);
+
+  const digest=
+    new Uint8Array(
+      await crypto.subtle.digest(
+        'SHA-256',
+        bytes
+      )
+    );
+
+  const b=digest.slice(0,16);
+
+  // RFC 4122 version 5 style bits, using SHA-256 digest as deterministic source.
+  b[6]=(b[6]&0x0f)|0x50;
+  b[8]=(b[8]&0x3f)|0x80;
+
+  const hex=
+    [...b]
+      .map(x=>x.toString(16).padStart(2,'0'))
+      .join('');
+
+  return [
+    hex.slice(0,8),
+    hex.slice(8,12),
+    hex.slice(12,16),
+    hex.slice(16,20),
+    hex.slice(20)
+  ].join('-');
+}
+
+function needsCloudIdMigrationV198(id){
+  const s=String(id||'');
+  return !!s && !isUuidValue(s);
+}
+
+function loadCloudIdMigrationV198(){
+  try{
+    return JSON.parse(
+      localStorage.getItem(V198_MIGRATION_KEY)||'{}'
+    );
+  }catch(e){
+    return {};
+  }
+}
+
+function saveCloudIdMigrationV198(state){
+  localStorage.setItem(
+    V198_MIGRATION_KEY,
+    JSON.stringify(state||{})
+  );
+}
+
+async function buildCloudIdMapV198(){
+  const map={
+    warehouses:{},
+    ingredients:{},
+    products:{},
+    suppliers:{},
+    references:{}
+  };
+
+  for(const row of db.warehouses||[]){
+    if(needsCloudIdMigrationV198(row.id)){
+      map.warehouses[row.id]=
+        await deterministicUuidV198(
+          'warehouse',
+          row.id
+        );
+    }
+  }
+
+  for(const row of db.ingredients||[]){
+    if(needsCloudIdMigrationV198(row.id)){
+      map.ingredients[row.id]=
+        await deterministicUuidV198(
+          'ingredient',
+          row.id
+        );
+    }
+  }
+
+  for(const row of db.products||[]){
+    if(needsCloudIdMigrationV198(row.id)){
+      map.products[row.id]=
+        await deterministicUuidV198(
+          'product',
+          row.id
+        );
+    }
+  }
+
+  for(const row of db.suppliers||[]){
+    if(needsCloudIdMigrationV198(row.id)){
+      map.suppliers[row.id]=
+        await deterministicUuidV198(
+          'supplier',
+          row.id
+        );
+    }
+  }
+
+  const refs=new Set();
+
+  for(const row of db.movements||[]){
+    if(
+      row.reference_id &&
+      needsCloudIdMigrationV198(
+        row.reference_id
+      )
+    ){
+      refs.add(
+        row.reference_id
+      );
+    }
+  }
+
+  for(const ref of refs){
+    map.references[ref]=
+      await deterministicUuidV198(
+        'reference',
+        ref
+      );
+  }
+
+  return map;
+}
+
+function v198MapId(map,group,value){
+  if(!value)return value;
+  return map?.[group]?.[value]||value;
+}
+
+async function migrateLocalDataToCloudV198(){
+  if(!navigator.onLine){
+    throw new Error(
+      'Thiết bị đang offline.'
+    );
+  }
+
+  const map=
+    await buildCloudIdMapV198();
+
+  const counts={
+    warehouses:0,
+    ingredients:0,
+    products:0,
+    suppliers:0,
+    inventory:0,
+    movements:0,
+    recipe_items:0,
+    prepared_items:0
+  };
+
+  // 1. Warehouses first.
+  for(const row of db.warehouses||[]){
+    const newId=
+      v198MapId(
+        map,
+        'warehouses',
+        row.id
+      );
+
+    if(newId===row.id)continue;
+
+    const payload={
+      id:newId,
+      name:row.name||'Kho',
+      address:row.address||'',
+      active:
+        row.active!==false
+    };
+
+    const r=
+      await sb.from('warehouses')
+        .upsert(
+          payload,
+          {onConflict:'id'}
+        );
+
+    if(r.error)throw r.error;
+    counts.warehouses++;
+  }
+
+  // 2. Ingredients.
+  for(const row of db.ingredients||[]){
+    const newId=
+      v198MapId(
+        map,
+        'ingredients',
+        row.id
+      );
+
+    if(newId===row.id)continue;
+
+    const payload={
+      id:newId,
+      name:row.name||'Nguyên liệu',
+      unit:row.unit||'',
+      cost:Number(row.cost||0),
+      minimum_stock:
+        Number(
+          row.minimum_stock||0
+        ),
+      active:
+        row.active!==false
+    };
+
+    const r=
+      await sb.from('ingredients')
+        .upsert(
+          payload,
+          {onConflict:'id'}
+        );
+
+    if(r.error)throw r.error;
+    counts.ingredients++;
+  }
+
+  // 3. Suppliers.
+  for(const row of db.suppliers||[]){
+    const newId=
+      v198MapId(
+        map,
+        'suppliers',
+        row.id
+      );
+
+    if(newId===row.id)continue;
+
+    const r=
+      await sb.from('suppliers')
+        .upsert(
+          {
+            id:newId,
+            name:row.name||'',
+            phone:row.phone||'',
+            address:row.address||'',
+            note:row.note||''
+          },
+          {onConflict:'id'}
+        );
+
+    if(r.error)throw r.error;
+    counts.suppliers++;
+  }
+
+  // 4. Products.
+  for(const row of db.products||[]){
+    const newId=
+      v198MapId(
+        map,
+        'products',
+        row.id
+      );
+
+    if(newId===row.id)continue;
+
+    const r=
+      await sb.from('products')
+        .upsert(
+          {
+            id:newId,
+            name:row.name||'Món',
+            sku:row.sku||null,
+            selling_price:
+              Number(
+                row.selling_price||0
+              ),
+            active:
+              row.active!==false
+          },
+          {onConflict:'id'}
+        );
+
+    if(r.error)throw r.error;
+    counts.products++;
+  }
+
+  // 5. Inventory baseline.
+  for(const row of db.inventory||[]){
+    const warehouseId=
+      v198MapId(
+        map,
+        'warehouses',
+        row.warehouse_id
+      );
+
+    const ingredientId=
+      v198MapId(
+        map,
+        'ingredients',
+        row.ingredient_id
+      );
+
+    if(
+      !isUuidValue(warehouseId) ||
+      !isUuidValue(ingredientId)
+    ){
+      continue;
+    }
+
+    const r=
+      await sb.from('inventory')
+        .upsert(
+          {
+            warehouse_id:
+              warehouseId,
+            ingredient_id:
+              ingredientId,
+            quantity:
+              Number(
+                row.quantity||0
+              ),
+            updated_at:
+              row.updated_at||
+              new Date().toISOString()
+          },
+          {
+            onConflict:
+              'warehouse_id,ingredient_id'
+          }
+        );
+
+    if(r.error)throw r.error;
+    counts.inventory++;
+  }
+
+  // 6. Recipes.
+  for(const row of db.recipeItems||[]){
+    const productId=
+      v198MapId(
+        map,
+        'products',
+        row.product_id
+      );
+
+    const ingredientId=
+      v198MapId(
+        map,
+        'ingredients',
+        row.ingredient_id
+      );
+
+    if(
+      !isUuidValue(productId) ||
+      !isUuidValue(ingredientId)
+    ){
+      continue;
+    }
+
+    const r=
+      await sb.from('recipe_items')
+        .upsert(
+          {
+            id:
+              isUuidValue(row.id)
+                ?row.id
+                :await deterministicUuidV198(
+                    'recipe_item',
+                    row.id||
+                    `${row.product_id}|${row.ingredient_id}`
+                  ),
+            product_id:
+              productId,
+            ingredient_id:
+              ingredientId,
+            quantity:
+              Number(
+                row.quantity||0
+              )
+          },
+          {onConflict:'id'}
+        );
+
+    if(r.error)throw r.error;
+    counts.recipe_items++;
+  }
+
+  // 7. Prepared ingredient definitions.
+  for(const row of db.preparedItems||[]){
+    const preparedId=
+      v198MapId(
+        map,
+        'ingredients',
+        row.prepared_ingredient_id
+      );
+
+    const sourceId=
+      v198MapId(
+        map,
+        'ingredients',
+        row.source_ingredient_id
+      );
+
+    if(
+      !isUuidValue(preparedId) ||
+      !isUuidValue(sourceId)
+    ){
+      continue;
+    }
+
+    const r=
+      await sb.from('prepared_ingredient_items')
+        .upsert(
+          {
+            id:
+              isUuidValue(row.id)
+                ?row.id
+                :await deterministicUuidV198(
+                    'prepared_item',
+                    row.id||
+                    `${row.prepared_ingredient_id}|${row.source_ingredient_id}`
+                  ),
+            prepared_ingredient_id:
+              preparedId,
+            source_ingredient_id:
+              sourceId,
+            quantity:
+              Number(
+                row.quantity||0
+              )
+          },
+          {onConflict:'id'}
+        );
+
+    if(r.error)throw r.error;
+    counts.prepared_items++;
+  }
+
+  // 8. Legacy movements.
+  for(const row of db.movements||[]){
+    const warehouseId=
+      v198MapId(
+        map,
+        'warehouses',
+        row.warehouse_id
+      );
+
+    const ingredientId=
+      v198MapId(
+        map,
+        'ingredients',
+        row.ingredient_id
+      );
+
+    const referenceId=
+      v198MapId(
+        map,
+        'references',
+        row.reference_id
+      );
+
+    if(
+      !isUuidValue(warehouseId) ||
+      !isUuidValue(ingredientId) ||
+      (
+        referenceId &&
+        !isUuidValue(referenceId)
+      )
+    ){
+      continue;
+    }
+
+    const movementId=
+      isUuidValue(row.id)
+        ?row.id
+        :await deterministicUuidV198(
+            'movement',
+            row.id||
+            `${row.transaction_type}|${row.reference_id}|${row.ingredient_id}|${row.created_at}`
+          );
+
+    const payload={
+      id:movementId,
+      warehouse_id:
+        warehouseId,
+      ingredient_id:
+        ingredientId,
+      transaction_type:
+        row.transaction_type,
+      quantity:
+        Number(
+          row.quantity||0
+        ),
+      note:
+        row.note||'',
+      reference_id:
+        referenceId||null
+    };
+
+    if(
+      Number.isFinite(
+        Number(row.unit_cost)
+      )
+    ){
+      payload.unit_cost=
+        Number(row.unit_cost||0);
+    }
+
+    if(
+      Number.isFinite(
+        Number(row.total_cost)
+      )
+    ){
+      payload.total_cost=
+        Number(row.total_cost||0);
+    }
+
+    const supplierId=
+      v198MapId(
+        map,
+        'suppliers',
+        row.supplier_id
+      );
+
+    if(
+      supplierId &&
+      isUuidValue(supplierId)
+    ){
+      payload.supplier_id=
+        supplierId;
+    }
+
+    const r=
+      await sb.from('stock_transactions')
+        .upsert(
+          payload,
+          {onConflict:'id'}
+        );
+
+    if(r.error)throw r.error;
+    counts.movements++;
+  }
+
+  // 9. Remap local DB only after Cloud writes all succeeded.
+  for(const row of db.warehouses||[]){
+    row.id=
+      v198MapId(
+        map,
+        'warehouses',
+        row.id
+      );
+  }
+
+  for(const row of db.ingredients||[]){
+    row.id=
+      v198MapId(
+        map,
+        'ingredients',
+        row.id
+      );
+
+    delete row._sync_status;
+    delete row._sync_error;
+    delete row._local_only;
+  }
+
+  for(const row of db.products||[]){
+    row.id=
+      v198MapId(
+        map,
+        'products',
+        row.id
+      );
+
+    delete row._sync_status;
+    delete row._sync_error;
+    delete row._local_only;
+    delete row._recipe_local_only;
+  }
+
+  for(const row of db.suppliers||[]){
+    row.id=
+      v198MapId(
+        map,
+        'suppliers',
+        row.id
+      );
+
+    delete row._sync_status;
+    delete row._sync_error;
+    delete row._local_only;
+  }
+
+  for(const row of db.inventory||[]){
+    row.warehouse_id=
+      v198MapId(
+        map,
+        'warehouses',
+        row.warehouse_id
+      );
+
+    row.ingredient_id=
+      v198MapId(
+        map,
+        'ingredients',
+        row.ingredient_id
+      );
+
+    if(needsCloudIdMigrationV198(row.id)){
+      row.id=
+        await deterministicUuidV198(
+          'inventory',
+          `${row.warehouse_id}|${row.ingredient_id}`
+        );
+    }
+
+    delete row._sync_status;
+    delete row._sync_error;
+    delete row._local_only;
+  }
+
+  for(const row of db.movements||[]){
+    row.warehouse_id=
+      v198MapId(
+        map,
+        'warehouses',
+        row.warehouse_id
+      );
+
+    row.ingredient_id=
+      v198MapId(
+        map,
+        'ingredients',
+        row.ingredient_id
+      );
+
+    row.reference_id=
+      v198MapId(
+        map,
+        'references',
+        row.reference_id
+      );
+
+    row.supplier_id=
+      v198MapId(
+        map,
+        'suppliers',
+        row.supplier_id
+      );
+
+    if(needsCloudIdMigrationV198(row.id)){
+      row.id=
+        await deterministicUuidV198(
+          'movement',
+          row.id||
+          `${row.transaction_type}|${row.reference_id}|${row.ingredient_id}|${row.created_at}`
+        );
+    }
+
+    delete row._sync_status;
+    delete row._sync_error;
+    delete row._local_only;
+  }
+
+  for(const row of db.recipeItems||[]){
+    row.product_id=
+      v198MapId(
+        map,
+        'products',
+        row.product_id
+      );
+
+    row.ingredient_id=
+      v198MapId(
+        map,
+        'ingredients',
+        row.ingredient_id
+      );
+
+    if(needsCloudIdMigrationV198(row.id)){
+      row.id=
+        await deterministicUuidV198(
+          'recipe_item',
+          row.id||
+          `${row.product_id}|${row.ingredient_id}`
+        );
+    }
+
+    delete row._sync_status;
+    delete row._local_only;
+    delete row._recipe_local_only;
+  }
+
+  for(const row of db.preparedItems||[]){
+    row.prepared_ingredient_id=
+      v198MapId(
+        map,
+        'ingredients',
+        row.prepared_ingredient_id
+      );
+
+    row.source_ingredient_id=
+      v198MapId(
+        map,
+        'ingredients',
+        row.source_ingredient_id
+      );
+
+    if(needsCloudIdMigrationV198(row.id)){
+      row.id=
+        await deterministicUuidV198(
+          'prepared_item',
+          row.id||
+          `${row.prepared_ingredient_id}|${row.source_ingredient_id}`
+        );
+    }
+
+    delete row._local_only;
+  }
+
+  if(
+    map.warehouses[
+      currentWarehouseId
+    ]
+  ){
+    currentWarehouseId=
+      map.warehouses[
+        currentWarehouseId
+      ];
+
+    localStorage.setItem(
+      'kho_v3_warehouse',
+      currentWarehouseId
+    );
+  }
+
+  // Product warehouse ownership map remap.
+  try{
+    const ownership=
+      getProductWarehouseMap();
+
+    const next={};
+
+    for(const [productId,warehouseId] of Object.entries(ownership||{})){
+      next[
+        v198MapId(
+          map,
+          'products',
+          productId
+        )
+      ]=
+        v198MapId(
+          map,
+          'warehouses',
+          warehouseId
+        );
+    }
+
+    saveProductWarehouseMap(
+      next
+    );
+  }catch(e){
+    console.warn(
+      'V198 ownership remap',
+      e
+    );
+  }
+
+  // Clear obsolete local-only sync queue after successful migration.
+  const queue=
+    getPendingSync()
+      .filter(op=>{
+        if(op?.kind==='save_ingredient'){
+          return !map.ingredients[
+            op.ingredient_id
+          ];
+        }
+
+        if(op?.kind==='save_recipe'){
+          return !map.products[
+            op.product_id
+          ];
+        }
+
+        return true;
+      });
+
+  setPendingSync(queue);
+
+  const result={
+    completed:true,
+    at:
+      new Date().toISOString(),
+    counts,
+    map
+  };
+
+  saveCloudIdMigrationV198(
+    result
+  );
+
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+  cacheSave();
+  flushCacheSave();
+
+  // Reload authoritative Cloud after remap.
+  await loadCloud();
+
+  return result;
+}
+
+function countLocalCloudMigrationRowsV198(){
+  const ids=new Set();
+
+  for(const row of db.warehouses||[]){
+    if(needsCloudIdMigrationV198(row.id)){
+      ids.add(`warehouse:${row.id}`);
+    }
+  }
+
+  for(const row of db.ingredients||[]){
+    if(needsCloudIdMigrationV198(row.id)){
+      ids.add(`ingredient:${row.id}`);
+    }
+  }
+
+  for(const row of db.products||[]){
+    if(needsCloudIdMigrationV198(row.id)){
+      ids.add(`product:${row.id}`);
+    }
+  }
+
+  for(const row of db.inventory||[]){
+    if(
+      needsCloudIdMigrationV198(row.warehouse_id) ||
+      needsCloudIdMigrationV198(row.ingredient_id)
+    ){
+      ids.add(
+        `inventory:${row.warehouse_id}:${row.ingredient_id}`
+      );
+    }
+  }
+
+  for(const row of db.movements||[]){
+    if(
+      needsCloudIdMigrationV198(row.warehouse_id) ||
+      needsCloudIdMigrationV198(row.ingredient_id) ||
+      (
+        row.reference_id &&
+        needsCloudIdMigrationV198(row.reference_id)
+      )
+    ){
+      ids.add(
+        `movement:${row.id}`
+      );
+    }
+  }
+
+  return ids.size;
+}
+
+async function migrateAndSyncV198(){
+  const count=
+    countLocalCloudMigrationRowsV198();
+
+  if(!count){
+    toastMsg(
+      'Không còn dữ liệu local cần chuyển sang Cloud.'
+    );
+    await syncNow();
+    return;
+  }
+
+  const ok=
+    await appConfirm(
+      `Phát hiện ${count} record đang dùng ID local/Excel.\n\n`+
+      `Để các thiết bị nhìn thấy cùng dữ liệu, hệ thống sẽ tạo UUID Cloud cố định, `+
+      `đưa dữ liệu lên Supabase và remap quan hệ trên thiết bị này.\n\n`+
+      `Nên thực hiện thao tác này trước tiên trên thiết bị đang có dữ liệu đầy đủ nhất.`,
+      'Chuyển dữ liệu local lên Cloud'
+    );
+
+  if(!ok)return;
+
+  const el=
+    $('cloudMigrationStatusV198');
+
+  try{
+    if(el){
+      el.textContent=
+        'Đang migrate dữ liệu local lên Cloud…';
+    }
+
+    const result=
+      await migrateLocalDataToCloudV198();
+
+    if(el){
+      el.textContent=
+        'Migration hoàn tất. Đang đồng bộ và xác minh…';
+    }
+
+    await syncNow();
+
+    if(el){
+      el.textContent=
+        `Đã migrate ${Object.values(result.counts).reduce((a,b)=>a+Number(b||0),0)} record lên Cloud.`;
+    }
+
+    renderAll();
+    renderPendingInspector();
+
+  }catch(e){
+    console.error(
+      'V198 migration',
+      e
+    );
+
+    if(el){
+      el.textContent=
+        'Migration lỗi: '+
+        (e?.message||String(e));
+    }
+
+    alert(
+      'Không thể chuyển dữ liệu lên Cloud:\n\n'+
+      (e?.message||String(e))
+    );
+  }
+}
+
+function v198CloudCoverage(){
+  let total=0;
+  let cloudReady=0;
+
+  const count=(ready)=>{
+    total++;
+    if(ready)cloudReady++;
+  };
+
+  for(const x of db.warehouses||[]){
+    count(isUuidValue(x.id));
+  }
+
+  for(const x of db.ingredients||[]){
+    count(isUuidValue(x.id));
+  }
+
+  for(const x of db.products||[]){
+    count(isUuidValue(x.id));
+  }
+
+  for(const x of db.inventory||[]){
+    count(
+      isUuidValue(x.warehouse_id) &&
+      isUuidValue(x.ingredient_id)
+    );
+  }
+
+  for(const x of db.movements||[]){
+    count(
+      isUuidValue(x.warehouse_id) &&
+      isUuidValue(x.ingredient_id) &&
+      (
+        !x.reference_id ||
+        isUuidValue(x.reference_id)
+      )
+    );
+  }
+
+  return {
+    total,
+    cloudReady,
+    localOnly:
+      Math.max(
+        0,
+        total-cloudReady
+      ),
+    percent:
+      total
+        ?Math.round(
+            cloudReady/total*100
+          )
+        :100
   };
 }
 
@@ -30557,7 +31616,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V197',
+    app_version:'V198',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -30866,7 +31925,7 @@ function pairingPayload(){
 
   return {
     type:'lat-yen-pairing',
-    version:197,
+    version:198,
     code,
     passphrase,
     bucket:MULTI_DEVICE_BUCKET
@@ -31048,13 +32107,13 @@ async function autoSyncUpload(code,passphrase,local){
   const updatedAt=new Date().toISOString();
   const backupKey=await backupLookupKey(code);
   const envelope={
-    version:197,
+    version:198,
     backup_key:backupKey,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V197',storage:'supabase-storage',
+      schema:185,app_version:'V198',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -32267,7 +33326,7 @@ async function v189CommitCanonical(
     );
 
   const envelope={
-    version:197,
+    version:198,
     ciphertext:encrypted.ciphertext,
     iv:encrypted.iv,
     salt:encrypted.salt,
@@ -33034,7 +34093,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V197',
+      app_version:'V198',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -33049,7 +34108,7 @@ async function backupToCloud(){
     };
 
     const envelope={
-      version:197,
+      version:198,
       backup_key:backupKey,
       ciphertext:encrypted.ciphertext,
       iv:encrypted.iv,
@@ -33326,7 +34385,7 @@ async function exportBackup(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=
-    'lat-yen-v197-full-backup-'+
+    'lat-yen-v198-full-backup-'+
     new Date().toISOString().slice(0,10)+
     '.json';
   a.click();
@@ -33552,6 +34611,31 @@ function renderSettings(){
       }
 
 
+
+
+      <div class="sync-v198-migration-card">
+        <div>
+          <b>Đưa dữ liệu local/Excel lên Cloud</b>
+          <span>
+            Chuyển ID local sang UUID Cloud thật để các thiết bị nhận cùng dữ liệu.
+          </span>
+        </div>
+
+        <div class="sync-v198-migration-actions">
+          <span id="cloudMigrationStatusV198" class="muted">
+            ${
+              countLocalCloudMigrationRowsV198()>0
+                ?`${countLocalCloudMigrationRowsV198()} record cần migrate`
+                :'Không còn record local cần migrate'
+            }
+          </span>
+
+          <button
+            class="sm"
+            onclick="migrateAndSyncV198()"
+          >Chuyển lên Cloud</button>
+        </div>
+      </div>
 
       <div class="sync-v195-pending-card">
         <div class="sync-v195-pending-head">

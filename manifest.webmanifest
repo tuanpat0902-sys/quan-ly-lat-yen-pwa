@@ -1,7 +1,7 @@
 {
-  "name": "Quản Lý Lát Yên V197",
+  "name": "Quản Lý Lát Yên V198",
   "short_name": "Lát Yên",
-  "description": "Fix pgcrypto RPC resolution and repair false pending Excel/local rows.",
+  "description": "Migrate local/Excel IDs to deterministic Cloud UUIDs; 100% means true cloud coverage.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
