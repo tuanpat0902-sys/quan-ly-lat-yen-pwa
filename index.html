@@ -11419,7 +11419,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V272</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V274</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -18291,7 +18291,9 @@ async function loadCloud(){
     No localStorage/IndexedDB data is read.
   */
   const sessionPending=
-    v272PendingBusinessRows();
+    v273MergePinnedIntoPending(
+      v272PendingBusinessRows()
+    );
 
   syncing=true;
   setCloudStatus('Đang tải Cloud…');
@@ -19046,7 +19048,11 @@ async function syncPendingSuppliersV191(){
 
 async function syncPendingImportReceiptsV191(){
   if(!navigator.onLine){
-    return {pending:v191PendingImportMovements().length,synced:0};
+    return {
+      pending:v191PendingImportMovements().length,
+      synced:0,
+      receipts:[]
+    };
   }
 
   const rows=
@@ -19059,7 +19065,10 @@ async function syncPendingImportReceiptsV191(){
     const ref=
       String(row.reference_id||'').trim();
 
-    if(!ref || !isUuidValue(ref)){
+    if(
+      !ref ||
+      !isUuidValue(ref)
+    ){
       continue;
     }
 
@@ -19072,11 +19081,20 @@ async function syncPendingImportReceiptsV191(){
 
   let synced=0;
   let pending=0;
+  const receipts=[];
 
   for(const [referenceId,movements] of groups){
     try{
       const warehouseId=
         movements[0]?.warehouse_id;
+
+      if(
+        !isUuidValue(warehouseId)
+      ){
+        throw new Error(
+          'Kho của phiếu nhập không hợp lệ'
+        );
+      }
 
       const payload=
         movements.map(row=>({
@@ -19104,24 +19122,34 @@ async function syncPendingImportReceiptsV191(){
             }
           ),
           18000,
-          'Đồng bộ phiếu nhập atomic'
+          'Lưu phiếu nhập lên Cloud'
         );
 
       if(r.error){
         throw r.error;
       }
 
+      /*
+        V274: RPC success is NOT enough.
+        Read the receipt back from Cloud by reference_id before ACK.
+      */
+      const verifiedRows=
+        await v274VerifyMovementReceipt(
+          referenceId,
+          'IMPORT',
+          movements.length
+        );
+
       const data=
         Array.isArray(r.data)
           ?r.data[0]
           :r.data;
 
-      const cloudMovements=
-        Array.isArray(data?.stock_transactions)
-          ?data.stock_transactions
+      const inventoryRows=
+        Array.isArray(data?.inventory)
+          ?data.inventory
           :[];
 
-      // Xóa các local pending row cùng reference rồi thay bằng Cloud authoritative.
       db.movements=
         (db.movements||[])
           .filter(x=>!(
@@ -19129,12 +19157,9 @@ async function syncPendingImportReceiptsV191(){
             String(x.reference_id||'')===referenceId
           ));
 
-      db.movements.unshift(...cloudMovements);
-
-      const inventoryRows=
-        Array.isArray(data?.inventory)
-          ?data.inventory
-          :[];
+      db.movements.unshift(
+        ...verifiedRows
+      );
 
       for(const cloudInv of inventoryRows){
         const idx=
@@ -19149,6 +19174,7 @@ async function syncPendingImportReceiptsV191(){
             ...db.inventory[idx],
             ...cloudInv
           };
+
           delete db.inventory[idx]._local_only;
           delete db.inventory[idx]._sync_status;
           delete db.inventory[idx]._sync_error;
@@ -19157,19 +19183,36 @@ async function syncPendingImportReceiptsV191(){
         }
       }
 
-      synced+=movements.length;
+      v273AckReceipt(referenceId);
+
+      synced+=verifiedRows.length;
+
+      receipts.push({
+        reference_id:referenceId,
+        ok:true,
+        rows:verifiedRows.length
+      });
 
     }catch(e){
+      const message=
+        e?.message||String(e);
+
       pending+=movements.length;
 
-      for(const row of movements){
-        row._sync_status='pending';
-        row._local_only=true;
-        row._sync_error=e?.message||String(e);
-      }
+      v274MarkReceiptRowsPending(
+        referenceId,
+        'IMPORT',
+        message
+      );
+
+      receipts.push({
+        reference_id:referenceId,
+        ok:false,
+        error:message
+      });
 
       console.warn(
-        'V191 import retry pending',
+        'V274 import commit not confirmed',
         referenceId,
         e
       );
@@ -19180,7 +19223,11 @@ async function syncPendingImportReceiptsV191(){
   invalidateDerivedCaches();
   cacheSave();
 
-  return {pending,synced};
+  return {
+    pending,
+    synced,
+    receipts
+  };
 }
 
 /* ===== V192 DELETION RETRY ===== */
@@ -29417,6 +29464,8 @@ function queueEditedExportReceiptCloudSync({
   inventoryUpdates,
   movementItems
 },receiptNo){
+  v273PinReceipt(newReferenceId,'EXPORT');
+
   setTimeout(()=>{
     syncExportReceiptAtomicV192(
       oldReferenceId,
@@ -29427,11 +29476,13 @@ function queueEditedExportReceiptCloudSync({
         console.warn(
           `Phiếu xuất sửa ${receiptNo}: còn ${result.pending} tác vụ Cloud`
         );
-      }else if(navigator.onLine){
-        setTimeout(()=>loadCloud(),120);
       }
+      return result;
     }).catch(e=>{
-      console.warn(`Cloud sync phiếu xuất sửa ${receiptNo}`,e);
+      console.warn(
+        `Cloud sync phiếu xuất sửa ${receiptNo}`,
+        e
+      );
     });
   },0);
 }
@@ -29515,6 +29566,8 @@ function stageExportMovementLocal({
     isUuidValue(referenceId) &&
     !isExcelLocalIngredient(ingredientId);
 
+  v273PinReceipt(referenceId,'EXPORT');
+
   return {
     localId:row.id,
     row,
@@ -29536,70 +29589,163 @@ async function syncExportReceiptAtomicV192(
   newReferenceId,
   items
 ){
-  const ref=String(newReferenceId||'').trim();
-  const oldRef=String(oldReferenceId||'').replace(/^ref:/,'').trim();
+  const ref=
+    String(newReferenceId||'').trim();
 
-  const active=(items||[]).filter(x=>
-    x.cloudEligible &&
-    isUuidValue(x.payload?.ingredient_id)
-  );
+  const oldRef=
+    String(oldReferenceId||'')
+      .replace(/^ref:/,'')
+      .trim();
 
-  if(!ref || !isUuidValue(ref)){
-    return {pending:active.length,synced:0};
+  const active=
+    (items||[]).filter(x=>
+      x.cloudEligible &&
+      isUuidValue(
+        x.payload?.ingredient_id
+      )
+    );
+
+  if(
+    !ref ||
+    !isUuidValue(ref)
+  ){
+    return {
+      pending:Math.max(active.length,1),
+      synced:0,
+      error:'Reference phiếu xuất không hợp lệ'
+    };
   }
 
+  v273PinReceipt(ref,'EXPORT');
+
   if(!navigator.onLine){
-    return {pending:active.length,synced:0};
+    v274MarkReceiptRowsPending(
+      ref,
+      'EXPORT',
+      'Thiết bị đang offline'
+    );
+
+    return {
+      pending:Math.max(active.length,1),
+      synced:0,
+      error:'Thiết bị đang offline'
+    };
+  }
+
+  if(!active.length){
+    v274MarkReceiptRowsPending(
+      ref,
+      'EXPORT',
+      'Phiếu xuất không có dòng đủ điều kiện Cloud'
+    );
+
+    return {
+      pending:1,
+      synced:0,
+      error:'Phiếu xuất không có dòng đủ điều kiện Cloud'
+    };
   }
 
   try{
-    const r=await promiseWithTimeout(
-      sb.rpc(
-        'commit_export_receipt_v192',
-        {
-          p_reference_id:ref,
-          p_old_reference_id:
-            isUuidValue(oldRef)?oldRef:null,
-          p_warehouse_id:
-            active[0]?.row?.warehouse_id||
-            active[0]?.payload?.warehouse_id||
-            currentWarehouseId,
-          p_movements:
-            active.map(x=>({
-              ingredient_id:x.payload.ingredient_id,
-              quantity:Number(x.payload.quantity||0),
-              note:String(x.payload.note||''),
-              unit_cost:Number(x.row?.unit_cost||0),
-              total_cost:Number(x.row?.total_cost||0)
-            })),
-          p_idempotency_key:`export:${ref}`
-        }
-      ),
-      18000,
-      'Đồng bộ phiếu xuất atomic'
-    );
+    const warehouseId=
+      active[0]?.row?.warehouse_id||
+      active[0]?.payload?.warehouse_id||
+      currentWarehouseId;
+
+    if(!isUuidValue(warehouseId)){
+      throw new Error(
+        'Kho của phiếu xuất không hợp lệ'
+      );
+    }
+
+    const r=
+      await promiseWithTimeout(
+        sb.rpc(
+          'commit_export_receipt_v192',
+          {
+            p_reference_id:ref,
+            p_old_reference_id:
+              isUuidValue(oldRef)
+                ?oldRef
+                :null,
+            p_warehouse_id:
+              warehouseId,
+            p_movements:
+              active.map(x=>({
+                ingredient_id:
+                  x.payload.ingredient_id,
+                quantity:
+                  Number(
+                    x.payload.quantity||0
+                  ),
+                note:
+                  String(
+                    x.payload.note||''
+                  ),
+                unit_cost:
+                  Number(
+                    x.row?.unit_cost||0
+                  ),
+                total_cost:
+                  Number(
+                    x.row?.total_cost||0
+                  )
+              })),
+            p_idempotency_key:
+              `export:${ref}`
+          }
+        ),
+        18000,
+        'Lưu phiếu xuất lên Cloud'
+      );
 
     if(r.error)throw r.error;
 
-    const data=Array.isArray(r.data)?r.data[0]:r.data;
-    const cloudMovements=Array.isArray(data?.stock_transactions)
-      ?data.stock_transactions:[];
-    const inventoryRows=Array.isArray(data?.inventory)
-      ?data.inventory:[];
+    /*
+      V274: confirm persistence via independent SELECT.
+    */
+    const verifiedRows=
+      await v274VerifyMovementReceipt(
+        ref,
+        'EXPORT',
+        active.length
+      );
 
-    db.movements=(db.movements||[]).filter(m=>!(
-      String(m.transaction_type||'').toUpperCase()==='EXPORT' &&
-      String(m.reference_id||'')===ref
-    ));
-    db.movements.unshift(...cloudMovements);
+    const data=
+      Array.isArray(r.data)
+        ?r.data[0]
+        :r.data;
+
+    const inventoryRows=
+      Array.isArray(data?.inventory)
+        ?data.inventory
+        :[];
+
+    db.movements=
+      (db.movements||[])
+        .filter(m=>!(
+          String(m.transaction_type||'').toUpperCase()==='EXPORT' &&
+          String(m.reference_id||'')===ref
+        ));
+
+    db.movements.unshift(
+      ...verifiedRows
+    );
 
     for(const cloudInv of inventoryRows){
-      const idx=(db.inventory||[]).findIndex(x=>
-        x.warehouse_id===cloudInv.warehouse_id &&
-        x.ingredient_id===cloudInv.ingredient_id
-      );
+      const idx=
+        (db.inventory||[])
+          .findIndex(x=>
+            x.warehouse_id===cloudInv.warehouse_id &&
+            x.ingredient_id===cloudInv.ingredient_id
+          );
+
       if(idx>=0){
-        db.inventory[idx]={...db.inventory[idx],...cloudInv};
+        db.inventory[idx]={
+          ...db.inventory[idx],
+          ...cloudInv
+        };
+
         delete db.inventory[idx]._local_only;
         delete db.inventory[idx]._sync_status;
         delete db.inventory[idx]._sync_error;
@@ -29608,27 +29754,45 @@ async function syncExportReceiptAtomicV192(
       }
     }
 
+    v273AckReceipt(ref);
+
     invalidateDataIndexes();
     invalidateDerivedCaches();
     cacheSave();
 
     return {
       pending:0,
-      synced:cloudMovements.length+inventoryRows.length,
+      synced:
+        verifiedRows.length+
+        inventoryRows.length,
+      verified:
+        verifiedRows.length,
       atomic:true
     };
+
   }catch(e){
-    for(const item of active){
-      const row=(db.movements||[]).find(x=>String(x.id)===String(item.localId));
-      if(row){
-        row._local_only=true;
-        row._sync_status='pending';
-        row._sync_error=e?.message||String(e);
-      }
-    }
+    const message=
+      e?.message||String(e);
+
+    v274MarkReceiptRowsPending(
+      ref,
+      'EXPORT',
+      message
+    );
+
     cacheSave();
-    console.warn('V192 export pending',ref,e);
-    return {pending:active.length,synced:0,error:e?.message||String(e)};
+
+    console.warn(
+      'V274 export commit not confirmed',
+      ref,
+      e
+    );
+
+    return {
+      pending:Math.max(active.length,1),
+      synced:0,
+      error:message
+    };
   }
 }
 
@@ -29693,11 +29857,13 @@ function queueExportReceiptCloudSync({
         console.warn(
           `Phiếu xuất ${receiptNo}: còn ${result.pending} tác vụ Cloud`
         );
-      }else if(navigator.onLine){
-        setTimeout(()=>loadCloud(),120);
       }
+      return result;
     }).catch(e=>{
-      console.warn(`Cloud sync phiếu xuất ${receiptNo}`,e);
+      console.warn(
+        `Cloud sync phiếu xuất ${receiptNo}`,
+        e
+      );
     });
   },0);
 }
@@ -29763,6 +29929,7 @@ async function saveExportReceipt(){
   }
 
   const referenceId=uid();
+  v273PinReceipt(referenceId,'EXPORT');
   const createdAt=new Date().toISOString();
 
   const inventoryUpdates=[];
@@ -29916,20 +30083,52 @@ async function saveExportReceipt(){
         :`Đã xuất phiếu ${receiptNo}${negativeRows.length?` • ${negativeRows.length} mặt hàng âm kho`:` • ${lines.length} mặt hàng`}`
     );
 
-    if(editReferenceId){
-      queueEditedExportReceiptCloudSync({
-        oldReferenceId:editReferenceId,
-        newReferenceId:referenceId,
-        inventoryUpdates,
-        movementItems
-      },receiptNo);
-    }else{
-      queueExportReceiptCloudSync({
+    /*
+      V274: phiếu xuất phải được Cloud xác nhận trước khi báo thành công.
+      Không còn fire-and-forget.
+    */
+    const cloudResult=
+      await syncExportReceiptAtomicV192(
+        editReferenceId||null,
         referenceId,
-        inventoryUpdates,
         movementItems
-      },receiptNo);
+      );
+
+    if(
+      Number(cloudResult?.pending||0)>0
+    ){
+      const message=
+        cloudResult?.error||
+        'Cloud chưa xác nhận phiếu xuất';
+
+      if(result){
+        result.innerHTML=
+          `<span style="color:#b45309"><b>Phiếu đang chờ Cloud</b><br>${esc(message)}<br>Phiếu vẫn được giữ trong phiên hiện tại và hệ thống sẽ tự thử lại.</span>`;
+      }
+
+      toastMsg(
+        `Phiếu xuất ${receiptNo} chưa được Cloud xác nhận`
+      );
+
+      v269RequestSync(
+        'export_unconfirmed'
+      );
+
+      return false;
     }
+
+    if(result){
+      result.innerHTML=
+        `<span style="color:#15803d"><b>✓ Cloud đã xác nhận phiếu xuất ${esc(receiptNo)}</b><br>${lines.length} mặt hàng • ${money(exportGrandTotal)}</span>`;
+    }
+
+    toastMsg(
+      `Đã lưu phiếu xuất ${receiptNo} lên Cloud`
+    );
+
+    renderIngredients();
+    renderDashboard();
+    renderImports();
 
     return true;
 
@@ -31748,6 +31947,7 @@ async function saveImportReceipt(){
   }
 
   const receiptRef=uid();
+  v273PinReceipt(receiptRef,'IMPORT');
   const createdAt=new Date().toISOString();
   let successCount=0;
   let grandTotal=0;
@@ -31840,9 +32040,31 @@ async function saveImportReceipt(){
     // 6. V191: sau khi toàn bộ dòng đã stage local, commit cả phiếu atomic.
     if(navigator.onLine){
       try{
-        const importSync=await syncPendingImportReceiptsV191();
-        if(Number(importSync.pending||0)>0)pending=true;
-        else pending=false;
+        const importSync=
+          await syncPendingImportReceiptsV191();
+
+        const currentReceipt=
+          (importSync.receipts||[])
+            .find(x=>
+              String(x.reference_id)===
+              String(receiptRef)
+            );
+
+        if(!currentReceipt?.ok){
+          pending=true;
+
+          const cloudMessage=
+            currentReceipt?.error||
+            'Cloud chưa xác nhận phiếu nhập';
+
+          v274MarkReceiptRowsPending(
+            receiptRef,
+            'IMPORT',
+            cloudMessage
+          );
+        }else{
+          pending=false;
+        }
       }catch(e){
         pending=true;
         console.warn('Atomic import commit pending:',e);
@@ -31884,21 +32106,18 @@ async function saveImportReceipt(){
     if(result){
       result.innerHTML=`<span style="color:#15803d"><b>✓ Đã lưu phiếu ${esc(receiptNo)}</b><br>
         ${successCount} mặt hàng • Tổng tiền ${money(grandTotal)}
-        ${pending?'<br><span style="color:#b7791f">Cloud chưa đồng bộ hết, dữ liệu đã được giữ trên máy.</span>':''}
+        ${pending?'<br><span style="color:#b7791f">Cloud chưa xác nhận phiếu. Phiếu chỉ được giữ trong phiên hiện tại và hệ thống sẽ tự thử lại.</span>':''}
       </span>`;
     }
 
     toastMsg(
       pending
-        ? `Đã lưu phiếu ${receiptNo} local • Cloud chờ đồng bộ`
+        ? `Phiếu nhập ${receiptNo} chưa được Cloud xác nhận`
         : `${editKey?'Đã sửa':'Đã nhập'} phiếu ${receiptNo} • ${successCount} mặt hàng`
     );
 
-    // Chỉ tải lại Cloud khi toàn bộ phiếu đã đồng bộ thành công.
-    // Nếu còn pending, không cho Cloud ghi đè dữ liệu local vừa tạo.
-    if(!pending){
-      setTimeout(()=>loadCloud(),900);
-    }
+    // V273: không full-pull ngay sau khi tạo phiếu.
+    // RPC ACK + Realtime sẽ hội tụ dữ liệu mà không làm phiếu nhấp nháy.
 
   }catch(e){
     const msg=e?.message||String(e);
@@ -34649,6 +34868,8 @@ function stageSaleMovementLocal({
 
   db.movements.unshift(row);
 
+  v273PinReceipt(referenceId,'SALE');
+
   return {
     localId,
     row,
@@ -34691,17 +34912,23 @@ async function syncSaleReceiptCloud({
 
   if(!canSyncSale){
     saleLocal._local_only=true;
-    delete saleLocal._sync_status;
+    saleLocal._sync_status='pending';
+    saleLocal._sync_error='Phiếu chưa đủ điều kiện ghi Cloud';
 
     for(const row of saleItemLocals||[]){
       row._local_only=true;
-      delete row._sync_status;
+      row._sync_status='pending';
+      row._sync_error='Phiếu chưa đủ điều kiện ghi Cloud';
     }
 
     return {
-      pending:0,
+      pending:
+        1+
+        (saleItemsPayload||[]).length+
+        activeMovements.length,
       synced:0,
-      localOnly:true
+      localOnly:false,
+      error:'Phiếu chưa đủ điều kiện ghi Cloud'
     };
   }
 
@@ -34912,6 +35139,8 @@ async function syncSaleReceiptCloud({
     invalidateDerivedCaches();
     cacheSave();
 
+    v273AckReceipt(salePayload.id);
+
     return {
       pending:0,
       synced:
@@ -35109,34 +35338,20 @@ async function syncSaleInventoryBatchCloud(inventoryUpdates){
 }
 
 function queueSaleCloudSyncSafely(syncData,receiptNo){
+  v273PinReceipt(
+    syncData?.salePayload?.id,
+    'SALE'
+  );
+
   setTimeout(()=>{
     try{
       finishSaleBackgroundSync(
         syncSaleReceiptCloud({
-          saleLocal:
-            syncData.saleLocal,
-          salePayload:
-            syncData.salePayload,
-          saleItemLocals:
-            syncData.saleItemLocals,
-          saleItemsPayload:
-            syncData.saleItemsPayload,
-          saleMovements:
-            syncData.saleMovements
-        }).then(result=>{
-          // Sau transaction thành công, pull lại Cloud để bắt kịp
-          // mọi thay đổi đồng thời từ thiết bị khác.
-          if(
-            Number(result?.pending||0)===0 &&
-            navigator.onLine
-          ){
-            setTimeout(
-              ()=>loadCloud(),
-              120
-            );
-          }
-
-          return result;
+          saleLocal:syncData.saleLocal,
+          salePayload:syncData.salePayload,
+          saleItemLocals:syncData.saleItemLocals,
+          saleItemsPayload:syncData.saleItemsPayload,
+          saleMovements:syncData.saleMovements
         }),
         receiptNo
       );
@@ -35342,6 +35557,8 @@ async function saveSaleReceipt(){
       isEditing
         ?editSaleId
         :uid();
+
+    v273PinReceipt(saleId,'SALE');
 
     const now=new Date();
 
@@ -35990,11 +36207,14 @@ function stageStocktakeMovementLocal({
   const localId=uid();
   const qty=Number(quantity||0);
 
+  /*
+    V273: even a 0-difference stocktake line is Cloud-eligible.
+    Otherwise a perfectly matched stocktake has no Cloud row and disappears.
+  */
   const cloudEligible=
-    !isAuditOnly &&
-    Math.abs(qty)>0.000001 &&
     isUuidValue(currentWarehouseId) &&
     isUuidValue(ingredientId) &&
+    isUuidValue(referenceId) &&
     !isExcelLocalIngredient(ingredientId);
 
   const row={
@@ -36010,9 +36230,13 @@ function stageStocktakeMovementLocal({
     _stocktake_audit_only:!!isAuditOnly
   };
 
-  if(cloudEligible)row._sync_status='pending';
+  if(cloudEligible){
+    row._sync_status='pending';
+  }
 
   db.movements.unshift(row);
+
+  v273PinReceipt(referenceId,'ADJUSTMENT');
 
   return {
     localId,
@@ -36046,18 +36270,29 @@ async function syncStocktakeAtomicV192(
   const oldRef=String(oldReferenceId||'').replace(/^ref:/,'').trim();
 
   if(!ref || !isUuidValue(ref)){
-    return {pending:0,synced:0};
+    return {pending:(movements||[]).length,synced:0};
   }
 
   const lines=[];
+
   for(const item of movements||[]){
     const row=item.row||{};
-    const ingredientId=item.payload?.ingredient_id||row.ingredient_id;
-    if(!isUuidValue(ingredientId)||isExcelLocalIngredient(ingredientId))continue;
+    const ingredientId=
+      item.payload?.ingredient_id||
+      row.ingredient_id;
 
-    const actual=v192StocktakeActualFromNote(
-      item.payload?.note||row.note
-    );
+    if(
+      !isUuidValue(ingredientId) ||
+      isExcelLocalIngredient(ingredientId)
+    ){
+      continue;
+    }
+
+    const actual=
+      v192StocktakeActualFromNote(
+        item.payload?.note||row.note
+      );
+
     if(actual===null)continue;
 
     lines.push({
@@ -36072,58 +36307,75 @@ async function syncStocktakeAtomicV192(
   }
 
   try{
-    const r=await promiseWithTimeout(
-      sb.rpc(
-        'commit_stocktake_receipt_v192',
-        {
-          p_reference_id:ref,
-          p_old_reference_id:isUuidValue(oldRef)?oldRef:null,
-          p_warehouse_id:
-            movements?.[0]?.row?.warehouse_id||
-            movements?.[0]?.payload?.warehouse_id||
-            currentWarehouseId,
-          p_lines:lines,
-          p_idempotency_key:`stocktake:${ref}`
-        }
-      ),
-      18000,
-      'Đồng bộ kiểm kê atomic'
-    );
+    const r=
+      await promiseWithTimeout(
+        sb.rpc(
+          'commit_stocktake_receipt_v192',
+          {
+            p_reference_id:ref,
+            p_old_reference_id:
+              isUuidValue(oldRef)
+                ?oldRef
+                :null,
+            p_warehouse_id:
+              movements?.[0]?.row?.warehouse_id||
+              movements?.[0]?.payload?.warehouse_id||
+              currentWarehouseId,
+            p_lines:lines,
+            p_idempotency_key:
+              `stocktake:${ref}`
+          }
+        ),
+        18000,
+        'Đồng bộ kiểm kê atomic'
+      );
 
     if(r.error)throw r.error;
 
-    const data=Array.isArray(r.data)?r.data[0]:r.data;
-    const cloudMovements=Array.isArray(data?.stock_transactions)
-      ?data.stock_transactions:[];
-    const inventoryRows=Array.isArray(data?.inventory)
-      ?data.inventory:[];
+    const data=
+      Array.isArray(r.data)
+        ?r.data[0]
+        :r.data;
 
-    // Giữ audit-only dòng khớp để lịch sử chi tiết không mất.
-    const auditOnly=(db.movements||[]).filter(m=>
-      String(m.transaction_type||'').toUpperCase()==='ADJUSTMENT' &&
-      String(m.reference_id||'')===ref &&
-      m._stocktake_audit_only===true
+    const cloudMovements=
+      Array.isArray(data?.stock_transactions)
+        ?data.stock_transactions
+        :[];
+
+    const inventoryRows=
+      Array.isArray(data?.inventory)
+        ?data.inventory
+        :[];
+
+    /*
+      V273 Cloud persists BOTH changed and zero-difference lines.
+      Therefore local audit-only placeholders are no longer retained.
+    */
+    db.movements=
+      (db.movements||[])
+        .filter(m=>!(
+          String(m.transaction_type||'').toUpperCase()==='ADJUSTMENT' &&
+          String(m.reference_id||'')===ref
+        ));
+
+    db.movements.unshift(
+      ...cloudMovements
     );
 
-    db.movements=(db.movements||[]).filter(m=>!(
-      String(m.transaction_type||'').toUpperCase()==='ADJUSTMENT' &&
-      String(m.reference_id||'')===ref
-    ));
-
-    for(const row of auditOnly){
-      delete row._sync_status;
-      delete row._sync_error;
-      db.movements.unshift(row);
-    }
-    db.movements.unshift(...cloudMovements);
-
     for(const cloudInv of inventoryRows){
-      const idx=(db.inventory||[]).findIndex(x=>
-        x.warehouse_id===cloudInv.warehouse_id &&
-        x.ingredient_id===cloudInv.ingredient_id
-      );
+      const idx=
+        (db.inventory||[])
+          .findIndex(x=>
+            x.warehouse_id===cloudInv.warehouse_id &&
+            x.ingredient_id===cloudInv.ingredient_id
+          );
+
       if(idx>=0){
-        db.inventory[idx]={...db.inventory[idx],...cloudInv};
+        db.inventory[idx]={
+          ...db.inventory[idx],
+          ...cloudInv
+        };
+
         delete db.inventory[idx]._local_only;
         delete db.inventory[idx]._sync_status;
         delete db.inventory[idx]._sync_error;
@@ -36132,27 +36384,50 @@ async function syncStocktakeAtomicV192(
       }
     }
 
+    v273AckReceipt(ref);
+
     invalidateDataIndexes();
     invalidateDerivedCaches();
     cacheSave();
 
     return {
       pending:0,
-      synced:cloudMovements.length+inventoryRows.length,
+      synced:
+        cloudMovements.length+
+        inventoryRows.length,
       atomic:true
     };
+
   }catch(e){
     for(const item of movements||[]){
-      if(!item.cloudEligible)continue;
-      const row=(db.movements||[]).find(x=>String(x.id)===String(item.localId));
+      const row=
+        (db.movements||[])
+          .find(x=>
+            String(x.id)===
+            String(item.localId)
+          );
+
       if(row){
         row._sync_status='pending';
-        row._sync_error=e?.message||String(e);
+        row._local_only=true;
+        row._sync_error=
+          e?.message||String(e);
       }
     }
+
     cacheSave();
-    console.warn('V192 stocktake pending',ref,e);
-    return {pending:lines.length,synced:0,error:e?.message||String(e)};
+
+    console.warn(
+      'V273 stocktake pending',
+      ref,
+      e
+    );
+
+    return {
+      pending:Math.max(lines.length,1),
+      synced:0,
+      error:e?.message||String(e)
+    };
   }
 }
 
@@ -36583,6 +36858,7 @@ async function saveEditedStocktakeReceipt(editKey,receiptNo,receiptDate,generalN
   }
 
   const sessionId=uid();
+  v273PinReceipt(sessionId,'ADJUSTMENT');
   const sessionTime=new Date().toISOString();
   unmarkStocktakeReceiptDeleted(`ref:${sessionId}`);
   const inventoryUpdates=[];
@@ -36672,8 +36948,8 @@ async function saveEditedStocktakeReceipt(editKey,receiptNo,receiptDate,generalN
       sessionId,
       movements
     ).then(result=>{
-      if(Number(result?.pending||0)===0 && navigator.onLine){
-        setTimeout(()=>loadCloud(),120);
+      if(Number(result?.pending||0)===0){
+        // V273: RPC ACK is authoritative; no forced full reload.
       }
       return result;
     }),
@@ -44071,7 +44347,7 @@ function localBackupKeys(){
 function buildFullBackupSnapshot(){
   return {
     schema:MULTI_DEVICE_SCHEMA,
-    app_version:'V272',
+    app_version:'V274',
     exported_at:new Date().toISOString(),
     warehouse_id:currentWarehouseId||'',
     db:JSON.parse(JSON.stringify(db||{})),
@@ -44721,7 +44997,7 @@ async function autoSyncUpload(code,passphrase,local){
     iv:encrypted.iv,
     salt:encrypted.salt,
     meta:{
-      schema:185,app_version:'V272',storage:'supabase-storage',
+      schema:185,app_version:'V274',storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,content_hash:local.hash,
       compression:encrypted.compression,device_id:multiDeviceDeviceId(),
       device_name:multiDeviceDeviceName(),updated_at:updatedAt,
@@ -48911,7 +49187,7 @@ async function backupToCloud(){
 
     const meta={
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V272',
+      app_version:'V274',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -53466,7 +53742,7 @@ async function v239ReplaceCloudBackup(){
     salt:encrypted.salt,
     meta:{
       schema:MULTI_DEVICE_SCHEMA,
-      app_version:'V272',
+      app_version:'V274',
       storage:'supabase-storage',
       bucket:MULTI_DEVICE_BUCKET,
       content_hash:local.hash,
@@ -54599,7 +54875,7 @@ function v262StartSmartSync(){
 }
 
 
-/* ===== V272 CLOUD-ONLY WITH SESSION PENDING ===== */
+/* ===== V274 CONFIRMED RECEIPT COMMIT ===== */
 const V269_SYNC_INTERVAL_MS=10000;
 const V269_PULL_INTERVAL_MS=20000;
 const V269_ACTION_DEBOUNCE_MS=250;
@@ -55375,6 +55651,170 @@ async function v263ResetOrganizationData(){
 
 
 
+
+
+
+/* ===== V274 CONFIRMED IMPORT/EXPORT COMMIT ===== */
+async function v274VerifyMovementReceipt(
+  referenceId,
+  transactionType,
+  expectedLines=1
+){
+  const ref=String(referenceId||'').trim();
+  const type=String(transactionType||'').toUpperCase();
+
+  if(
+    !isUuidValue(ref) ||
+    !type
+  ){
+    throw new Error(
+      'Reference phiếu không hợp lệ'
+    );
+  }
+
+  const {
+    data,
+    error
+  }=
+    await promiseWithTimeout(
+      sb.from('stock_transactions')
+        .select(
+          'id,warehouse_id,ingredient_id,transaction_type,quantity,note,reference_id,unit_cost,total_cost,supplier_id,organization_id,created_at,updated_at'
+        )
+        .eq('organization_id',v261OrganizationId)
+        .eq('reference_id',ref)
+        .eq('transaction_type',type)
+        .order('created_at',{ascending:true}),
+      10000,
+      `Xác minh phiếu ${type} trên Cloud`
+    );
+
+  if(error)throw error;
+
+  const rows=Array.isArray(data)?data:[];
+
+  if(
+    rows.length<
+    Math.max(
+      1,
+      Number(expectedLines||1)
+    )
+  ){
+    throw new Error(
+      `Cloud chưa xác nhận đủ dòng phiếu ${type}: ${rows.length}/${expectedLines}`
+    );
+  }
+
+  return rows;
+}
+
+function v274MarkReceiptRowsPending(
+  referenceId,
+  transactionType,
+  errorMessage=''
+){
+  const ref=String(referenceId||'').trim();
+  const type=String(transactionType||'').toUpperCase();
+
+  for(const row of db.movements||[]){
+    if(
+      String(row.reference_id||'')===ref &&
+      String(row.transaction_type||'').toUpperCase()===type
+    ){
+      row._local_only=true;
+      row._sync_status='pending';
+
+      if(errorMessage){
+        row._sync_error=errorMessage;
+      }
+    }
+  }
+
+  v273PinReceipt(ref,type);
+  invalidateDataIndexes();
+  invalidateDerivedCaches();
+}
+
+/* ===== V273 RECEIPT ACK PINNING ===== */
+const v273ReceiptPins=new Map();
+
+function v273PinReceipt(referenceId,type){
+  const ref=String(referenceId||'').replace(/^ref:/,'').trim();
+  if(!ref)return;
+
+  v273ReceiptPins.set(
+    ref,
+    {
+      reference_id:ref,
+      type:String(type||'').toUpperCase(),
+      created_at:Date.now()
+    }
+  );
+}
+
+function v273AckReceipt(referenceId){
+  const ref=String(referenceId||'').replace(/^ref:/,'').trim();
+  if(!ref)return;
+  v273ReceiptPins.delete(ref);
+}
+
+function v273IsPinned(referenceId){
+  const ref=String(referenceId||'').replace(/^ref:/,'').trim();
+  return !!ref && v273ReceiptPins.has(ref);
+}
+
+function v273PinnedRows(){
+  const pinnedRefs=new Set(v273ReceiptPins.keys());
+
+  const sales=(db.sales||[]).filter(x=>
+    pinnedRefs.has(String(x.id||''))
+  );
+
+  const saleIds=new Set(sales.map(x=>String(x.id)));
+
+  return {
+    warehouses:[],
+    suppliers:[],
+    ingredients:[],
+    inventory:(db.inventory||[]).filter(x=>
+      x?._sync_status==='pending' ||
+      x?._local_only===true
+    ),
+    products:[],
+    recipeItems:[],
+    preparedItems:[],
+    sales,
+    saleItems:(db.saleItems||[]).filter(x=>
+      saleIds.has(String(x.sale_id||''))
+    ),
+    movements:(db.movements||[]).filter(x=>
+      pinnedRefs.has(
+        String(x.reference_id||'').replace(/^ref:/,'')
+      )
+    )
+  };
+}
+
+function v273MergePinnedIntoPending(pending){
+  const pinned=v273PinnedRows();
+
+  const merge=(a,b)=>[
+    ...(a||[]),
+    ...(b||[]).filter(row=>
+      !(a||[]).some(x=>
+        String(x?.id||'')===String(row?.id||'')
+      )
+    )
+  ];
+
+  return {
+    ...pending,
+    inventory:merge(pending.inventory,pinned.inventory),
+    sales:merge(pending.sales,pinned.sales),
+    saleItems:merge(pending.saleItems,pinned.saleItems),
+    movements:merge(pending.movements,pinned.movements)
+  };
+}
 
 /* ===== V272 SESSION PENDING PROTECTION ===== */
 function v272PendingBusinessRows(){
