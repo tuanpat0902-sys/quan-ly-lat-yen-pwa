@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 if(window.__lyFreshCoreV2MasterDataTakeover)return;
-const VERSION='2026.08.23.4';
+const VERSION='2026.08.23.5';
 const SUPPRESS_MS=2000;
 const state={version:VERSION,enabled:false,calls:0,errors:0,suppressedFullReloads:0,legacySyncs:0,legacyRenders:0,lastOptimizedTable:'',lastError:''};
 let client,previousFrom,originalLoadCloud=null,suppressUntil=0;
@@ -12,18 +12,31 @@ const result=(data,error=null)=>({data:error?null:data,error,status:error?400:20
 function syncLegacySlices(){
  const core=getCore(),legacy=getLegacyDb(),snapshot=core?.store?.getState?.();
  if(!legacy||!snapshot)return false;
- if(Array.isArray(snapshot.warehouses))legacy.warehouses=snapshot.warehouses;
- if(Array.isArray(snapshot.suppliers))legacy.suppliers=snapshot.suppliers;
+ if(Array.isArray(snapshot.warehouses))legacy.warehouses=snapshot.warehouses.map(x=>({...x}));
+ if(Array.isArray(snapshot.suppliers))legacy.suppliers=snapshot.suppliers.map(x=>({...x}));
  const inventory=snapshot.inventoryData?.balances;
- if(Array.isArray(inventory))legacy.inventory=inventory;
+ if(Array.isArray(inventory))legacy.inventory=inventory.map(x=>({...x}));
  state.legacySyncs++;
+ return true;
+}
+function normalizeCurrentWarehouse(){
+ const legacy=getLegacyDb();if(!legacy?.warehouses?.length)return false;
+ try{
+  if(typeof currentWarehouseId!=='undefined'){
+   const exists=legacy.warehouses.some(w=>String(w.id)===String(currentWarehouseId||''));
+   if(!exists){currentWarehouseId=legacy.warehouses[0]?.id||'';try{localStorage.setItem('kho_v3_warehouse',currentWarehouseId);}catch(e){}}
+  }
+ }catch(e){}
  return true;
 }
 function refreshLegacyViews(){
  try{
+  normalizeCurrentWarehouse();
+  if(typeof globalThis.invalidateDataIndexes==='function')globalThis.invalidateDataIndexes();
   if(typeof globalThis.invalidateDerivedCaches==='function')globalThis.invalidateDerivedCaches();
-  if(typeof globalThis.renderIngredients==='function')globalThis.renderIngredients();
-  else if(typeof globalThis.renderAll==='function')globalThis.renderAll();
+  if(typeof globalThis.renderWarehouseSelect==='function')globalThis.renderWarehouseSelect();
+  if(typeof globalThis.renderAll==='function')globalThis.renderAll();
+  else if(typeof globalThis.renderIngredients==='function')globalThis.renderIngredients();
   if(typeof globalThis.updatePendingSyncBadge==='function')globalThis.updatePendingSyncBadge();
   state.legacyRenders++;return true;
  }catch(error){state.lastError=String(error?.message||error||'Legacy master-data render failed');return false;}
@@ -54,8 +67,10 @@ async function run(table,payload,operation='upsert'){
  try{
   const core=getCore();if(!core)throw new Error('Fresh Core V2 master data is not ready');
   let data;
-  if(table==='ly_warehouses'&&operation==='delete')data=await core.domains.masterData.removeWarehouse(payload?.id);
-  else if(table==='ly_warehouses')data=await core.domains.masterData.saveWarehouse(Array.isArray(payload)?payload[0]:payload);
+  if(table==='ly_warehouses'&&operation==='delete'){
+   data=await core.domains.masterData.removeWarehouse(payload?.id);
+   await core.domains.inventory?.refresh?.();
+  }else if(table==='ly_warehouses')data=await core.domains.masterData.saveWarehouse(Array.isArray(payload)?payload[0]:payload);
   else if(table==='ly_suppliers')data=await core.domains.masterData.saveSupplier(Array.isArray(payload)?payload[0]:payload);
   else if(table==='ly_inventory'){
    await core.domains.masterData.initializeInventory(payload);

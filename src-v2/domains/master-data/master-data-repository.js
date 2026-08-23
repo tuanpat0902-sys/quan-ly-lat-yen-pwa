@@ -15,8 +15,26 @@ export function createMasterDataRepository({ gateway }) {
     return rows[0] ?? warehouse;
   }
 
+  async function warehouseUsage(id) {
+    if (!id) throw new TypeError('warehouse id is required');
+    const [imports, exports, stocktakes, sales] = await Promise.all([
+      gateway.selectOrg('ly_import_receipts', 'id', q => q.eq('warehouse_id', id)),
+      gateway.selectOrg('ly_export_receipts', 'id', q => q.eq('warehouse_id', id)),
+      gateway.selectOrg('ly_stocktake_receipts', 'id', q => q.eq('warehouse_id', id)),
+      gateway.selectOrg('ly_sales', 'id', q => q.eq('warehouse_id', id))
+    ]);
+    return { imports: imports.length, exports: exports.length, stocktakes: stocktakes.length, sales: sales.length };
+  }
+
   async function removeWarehouse(id) {
     if (!id) throw new TypeError('warehouse id is required');
+    const usage = await warehouseUsage(id);
+    const blocked = Object.entries(usage).filter(([, count]) => count > 0);
+    if (blocked.length) {
+      const detail = blocked.map(([kind, count]) => `${kind}:${count}`).join(', ');
+      throw new Error(`Kho đang có phiếu liên quan (${detail}). Hãy xóa/chuyển các phiếu trước khi xóa kho.`);
+    }
+    await gateway.deleteOrg('ly_inventory', query => query.eq('warehouse_id', id));
     const rows = await gateway.deleteOrg('ly_warehouses', query => query.eq('id', id));
     return rows[0] ?? { id };
   }
@@ -33,5 +51,5 @@ export function createMasterDataRepository({ gateway }) {
     return rows[0] ?? supplier;
   }
 
-  return Object.freeze({ listWarehouses, listSuppliers, saveWarehouse, removeWarehouse, initializeInventory, saveSupplier });
+  return Object.freeze({ listWarehouses, listSuppliers, saveWarehouse, warehouseUsage, removeWarehouse, initializeInventory, saveSupplier });
 }
