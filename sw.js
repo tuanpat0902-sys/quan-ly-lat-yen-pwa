@@ -1,7 +1,8 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-9';
+const CACHE='lat-yen-legacy-ui-fresh-core-10';
 const NOTIFICATION_SCRIPT='./ly-data-notifications.js';
+const INAPP_SCRIPT='./ly-inapp-notifications.js';
 const SUPABASE_ORIGIN='https://isfotiyxufvsmlkqsgez.supabase.co';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg',NOTIFICATION_SCRIPT];
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg',NOTIFICATION_SCRIPT,INAPP_SCRIPT];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
@@ -27,9 +28,12 @@ async function navigationWithNotificationLayer(request){
   if(!type.includes('text/html'))return response;
   try{
     let html=await response.text();
-    if(!html.includes('ly-data-notifications.js')){
-      const script='<script src="./ly-data-notifications.js?v=20260823.3"></script>';
-      html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,script+'\n</body>'):html+'\n'+script;
+    const scripts=[];
+    if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.3"></script>');
+    if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.1"></script>');
+    if(scripts.length){
+      const block=scripts.join('\n');
+      html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,block+'\n</body>'):html+'\n'+block;
     }
     const headers=new Headers(response.headers);
     headers.delete('content-length');headers.delete('content-encoding');headers.delete('etag');headers.set('content-type','text/html; charset=utf-8');
@@ -89,7 +93,7 @@ async function handleSupabaseMutation(request,clientId){
   if(!response.ok)return response;
   const body=await bodyPromise,info=classifyMutation(request,url,body);if(!info)return response;
   const result=await showMutationNotification(info);
-  if(result.ok){await postToClient(clientId,{type:'LAT_YEN_LOCAL_MUTATION_SHOWN',entityTable:info.entityTable,at:Date.now()});}
+  if(result.ok){await postToClient(clientId,{type:'LAT_YEN_LOCAL_MUTATION_SHOWN',entityTable:info.entityTable,body:info.body,at:Date.now()});}
   else{await postToClient(clientId,{type:'LAT_YEN_NOTIFICATION_PERMISSION_REQUIRED',error:result.error,at:Date.now()});}
   return response;
 }
