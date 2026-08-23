@@ -1,0 +1,48 @@
+name: Apply Activity History Refactor
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/apply-activity-history-refactor.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "apply-activity-history-refactor"
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout refactor branch
+        uses: actions/checkout@v4
+        with:
+          ref: refactor/activity-history-module
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Extract Activity History UI
+        run: node scripts/extract-activity-history.mjs
+
+      - name: Validate refactored runtime
+        run: npm run validate
+
+      - name: Commit validated output to refactor branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html ly-activity-history.js refactor/activity-history-extraction-result.md
+          if git diff --cached --quiet; then
+            echo "No generated changes"
+            exit 0
+          fi
+          git commit -m "refactor: extract Activity History UI [activity-history-extracted]"
+          git push origin HEAD:refactor/activity-history-module
