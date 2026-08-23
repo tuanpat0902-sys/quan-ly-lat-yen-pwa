@@ -1,5 +1,6 @@
 name: Refactor Activity History
 
+# Revision 2: trigger guarded extraction on the refactor branch.
 on:
   push:
     branches: ["refactor/activity-history-module"]
