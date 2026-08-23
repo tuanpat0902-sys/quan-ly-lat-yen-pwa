@@ -1,45 +1,37 @@
 (()=>{
 'use strict';
 if(window.__lyAppVersion)return;
-const VERSION='2.0.2';
+const VERSION='2.0.3';
 const LABEL=`Ver ${VERSION}`;
 const DEFAULT_NAME='QUẢN LÝ LÁT YÊN';
 const STORAGE_KEY='lat_yen_last_seen_app_version';
 const state={version:VERSION,label:LABEL,badgeMounted:false,updateNoticeShown:false,targetMode:''};
 const text=v=>String(v??'').trim();
+const stripVersion=v=>text(v).replace(/\s*(?:·|-)\s*Ver\s+\d+\.\d+\.\d+\s*$/i,'').trim();
 
 function brandNameCandidates(){
   const names=new Set([DEFAULT_NAME.toLowerCase()]);
-  try{const live=text(window.__lyBrandingSync?.status?.().softwareName);if(live)names.add(live.toLowerCase());}catch(e){}
+  try{const live=stripVersion(window.__lyBrandingSync?.status?.().softwareName);if(live)names.add(live.toLowerCase());}catch(e){}
   return names;
 }
-function findBrandTarget(){
-  const direct=document.querySelector('.brand,[data-app-brand],[data-software-name],#appBrand,#app-brand');
-  if(direct){state.targetMode='direct';return direct;}
+function findBrandTextTarget(){
   const names=brandNameCandidates();
-  const roots=[document.querySelector('header'),document.getElementById('nav'),document.querySelector('aside'),document.querySelector('.sidebar')].filter(Boolean);
+  const roots=[document.querySelector('header'),document.getElementById('nav'),document.querySelector('aside'),document.querySelector('.sidebar'),document.body].filter(Boolean);
   for(const root of roots){
     const nodes=[...root.querySelectorAll('span,div,strong,b,h1,h2,h3,p')];
-    const exact=nodes.find(el=>!el.children.length&&names.has(text(el.textContent).toLowerCase()));
-    if(exact){state.targetMode='text';return exact;}
+    const exact=nodes.find(el=>!el.children.length&&names.has(stripVersion(el.textContent).toLowerCase()));
+    if(exact){state.targetMode=root===document.body?'body-text':'sidebar-text';return exact;}
   }
-  const all=[...document.querySelectorAll('header span,header div,header strong,header h1,header h2,aside span,aside div,.sidebar span,.sidebar div')];
-  const fuzzy=all.find(el=>!el.children.length&&/QUẢN\s*LÝ\s*LÁT\s*YÊN/i.test(text(el.textContent)));
-  if(fuzzy){state.targetMode='fuzzy';return fuzzy;}
   state.targetMode='none';return null;
 }
 function mountBadge(){
-  const target=findBrandTarget();
+  const target=findBrandTextTarget();
   if(!target)return false;
-  let badge=document.getElementById('lyAppVersionBadge');
-  if(!badge){
-    badge=document.createElement('span');badge.id='lyAppVersionBadge';badge.title=`Phiên bản phần mềm ${VERSION}`;
-    badge.style.cssText='display:inline-flex;align-items:center;margin-left:7px;padding:2px 6px;border-radius:999px;background:#eef4f3;color:#667085;border:1px solid #dbe7e5;font-size:10px;font-weight:750;line-height:1.35;vertical-align:middle;white-space:nowrap;letter-spacing:.01em';
-  }
-  badge.textContent=LABEL;
-  if(badge.previousElementSibling!==target){
-    try{target.style.display='inline-block';target.insertAdjacentElement('afterend',badge);}catch(e){target.parentNode?.insertBefore(badge,target.nextSibling);}
-  }
+  const base=stripVersion(target.textContent)||DEFAULT_NAME;
+  const wanted=`${base} · ${LABEL}`;
+  if(text(target.textContent)!==wanted)target.textContent=wanted;
+  document.getElementById('lyAppVersionBadge')?.remove();
+  target.setAttribute('data-ly-app-version',VERSION);
   state.badgeMounted=true;return true;
 }
 function previousVersion(){try{return localStorage.getItem(STORAGE_KEY)||'';}catch(e){return '';}}
@@ -54,7 +46,7 @@ function boot(){mountBadge();if(!showUpdateNotice())setTimeout(showUpdateNotice,
 window.__LY_APP_VERSION=VERSION;window.__LY_APP_VERSION_LABEL=LABEL;
 window.__lyAppVersion={version:VERSION,label:LABEL,mount:mountBadge,status:()=>({...state})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-[250,800,1800,3500].forEach(ms=>setTimeout(mountBadge,ms));
+[50,250,800,1800,3500,6000].forEach(ms=>setTimeout(mountBadge,ms));
 window.addEventListener('focus',mountBadge);
 window.addEventListener('latyen:branding-updated',()=>setTimeout(mountBadge,0));
 })();
