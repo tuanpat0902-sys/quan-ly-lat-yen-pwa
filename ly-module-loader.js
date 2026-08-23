@@ -2,11 +2,11 @@
   'use strict';
   if(window.__lyModuleLoaderV11)return;
   window.__lyModuleLoaderV11=true;
-  const VERSION='2026.08.24.5';
+  const VERSION='2026.08.24.6';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
-    appVersion:{src:'./ly-app-version.js?v=2.1.0',test:()=>window.__lyAppVersion?.version==='2.1.0'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.1',test:()=>window.__lyAppVersion?.version==='2.1.1'},
     finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.1',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.1'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.1',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.1'},
     settings:{src:'./ly-settings-enhancements.js?v=20260824.3',test:()=>window.__lyNotificationMaster?.version==='2026.08.24.3'},
