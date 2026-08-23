@@ -1,0 +1,1 @@
+Force a real GitHub merge event so Pages workflow persists Ver 2.1.0 and V2 warehouse-delete logic into index.html.
