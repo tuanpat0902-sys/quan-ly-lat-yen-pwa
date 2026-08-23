@@ -23,7 +23,8 @@ const context={console,navigator:{onLine:true},setTimeout(fn){fn();return 1;},cl
 context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(source,context,{filename:'ly-fresh-core-v2-realtime.js'});
-await Promise.resolve();await Promise.resolve();
+const flush=()=>new Promise(resolve=>setImmediate(resolve));
+await flush();
 
 const api=context.window.__lyFreshCoreV2Realtime;
 assert.equal(api.status().enabled,true);
@@ -46,7 +47,7 @@ for(const [table,expected] of [['ly_warehouses','masterData'],['ly_ingredients',
 statusHandler('CHANNEL_ERROR');
 assert.equal(api.status().connected,false);
 statusHandler('SUBSCRIBED');
-await Promise.resolve();await Promise.resolve();
+await flush();
 assert.equal(api.status().catchups,2,'reconnect must perform another full V2 catch-up');
 assert.equal(catchups,2);
 assert.ok(events.some(([type,payload])=>type==='realtime:catchup-complete'&&payload.reason==='reconnected'));
