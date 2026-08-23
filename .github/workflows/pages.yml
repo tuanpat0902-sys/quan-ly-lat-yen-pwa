@@ -28,12 +28,10 @@ jobs:
         with:
           ref: refactor/activity-history-module
           fetch-depth: 0
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Apply guarded extraction when still needed
         run: |
           if grep -Eq 'function[[:space:]]+renderHistory[[:space:]]*\(' index.html; then
@@ -41,10 +39,8 @@ jobs:
           else
             echo "Activity History UI already extracted"
           fi
-
       - name: Validate refactored runtime
         run: npm run check
-
       - name: Commit extracted output back to PR branch
         run: |
           git config user.name "github-actions[bot]"
@@ -64,12 +60,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Validate production runtime and stability
         run: npm run check
 
@@ -79,21 +73,18 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+      - name: Prepare exact Pages runtime artifact
+        run: node scripts/prepare-pages-artifact.mjs
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: .
-
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
