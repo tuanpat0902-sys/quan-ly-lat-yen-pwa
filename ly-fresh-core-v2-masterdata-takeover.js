@@ -1,9 +1,9 @@
 (()=>{
 'use strict';
 if(window.__lyFreshCoreV2MasterDataTakeover)return;
-const VERSION='2026.08.23.3';
+const VERSION='2026.08.23.4';
 const SUPPRESS_MS=2000;
-const state={version:VERSION,enabled:false,calls:0,errors:0,suppressedFullReloads:0,legacySyncs:0,lastOptimizedTable:'',lastError:''};
+const state={version:VERSION,enabled:false,calls:0,errors:0,suppressedFullReloads:0,legacySyncs:0,legacyRenders:0,lastOptimizedTable:'',lastError:''};
 let client,previousFrom,originalLoadCloud=null,suppressUntil=0;
 const getClient=()=>{try{return sb}catch(e){return window.sb}};
 const getCore=()=>window.__lyFreshCoreV2?.domains?.masterData?window.__lyFreshCoreV2:null;
@@ -19,6 +19,15 @@ function syncLegacySlices(){
  state.legacySyncs++;
  return true;
 }
+function refreshLegacyViews(){
+ try{
+  if(typeof globalThis.invalidateDerivedCaches==='function')globalThis.invalidateDerivedCaches();
+  if(typeof globalThis.renderIngredients==='function')globalThis.renderIngredients();
+  else if(typeof globalThis.renderAll==='function')globalThis.renderAll();
+  if(typeof globalThis.updatePendingSyncBadge==='function')globalThis.updatePendingSyncBadge();
+  state.legacyRenders++;return true;
+ }catch(error){state.lastError=String(error?.message||error||'Legacy master-data render failed');return false;}
+}
 function armFullReloadSuppression(table){suppressUntil=Date.now()+SUPPRESS_MS;state.lastOptimizedTable=table;}
 function installLoadCloudGuard(){
  if(originalLoadCloud)return true;
@@ -29,7 +38,7 @@ function installLoadCloudGuard(){
  originalLoadCloud=fn;
  const optimized=async function(...args){
   if(suppressUntil&&Date.now()<=suppressUntil){
-   suppressUntil=0;state.suppressedFullReloads++;syncLegacySlices();
+   suppressUntil=0;state.suppressedFullReloads++;syncLegacySlices();refreshLegacyViews();
    return {optimized:true,source:'v2-master-data'};
   }
   suppressUntil=0;
