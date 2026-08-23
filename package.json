@@ -12,7 +12,8 @@
     "v2:takeover:products": "node scripts/test-fresh-core-v2-products-takeover.mjs",
     "v2:takeover:documents": "node scripts/test-fresh-core-v2-documents-takeover.mjs",
     "v2:takeover:sales": "node scripts/test-fresh-core-v2-sales-takeover.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales"
+    "v2:takeover:cashflow": "node scripts/test-fresh-core-v2-cashflow-takeover.mjs",
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow"
   },
   "engines": {
     "node": ">=20"
