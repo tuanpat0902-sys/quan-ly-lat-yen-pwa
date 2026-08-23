@@ -15,6 +15,12 @@ export function createMasterDataRepository({ gateway }) {
     return rows[0] ?? warehouse;
   }
 
+  async function removeWarehouse(id) {
+    if (!id) throw new TypeError('warehouse id is required');
+    const rows = await gateway.deleteOrg('ly_warehouses', query => query.eq('id', id));
+    return rows[0] ?? { id };
+  }
+
   async function initializeInventory(rows) {
     const input = Array.isArray(rows) ? rows : [rows];
     if (!input.length) return [];
@@ -27,5 +33,5 @@ export function createMasterDataRepository({ gateway }) {
     return rows[0] ?? supplier;
   }
 
-  return Object.freeze({ listWarehouses, listSuppliers, saveWarehouse, initializeInventory, saveSupplier });
+  return Object.freeze({ listWarehouses, listSuppliers, saveWarehouse, removeWarehouse, initializeInventory, saveSupplier });
 }
