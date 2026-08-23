@@ -5,7 +5,7 @@ export function createIngredientsRepository({ gateway }) {
     return gateway.selectOrg('ly_ingredients', '*', query => query.order?.('name', { ascending: true }) ?? query);
   }
 
-  async function save({ ingredient, preparedItems = [] }) {
+  async function save(ingredient, preparedItems = []) {
     if (!ingredient || typeof ingredient !== 'object') throw new TypeError('ingredient is required');
     if (!Array.isArray(preparedItems)) throw new TypeError('preparedItems must be an array');
     return gateway.rpc('ly_save_ingredient', {
