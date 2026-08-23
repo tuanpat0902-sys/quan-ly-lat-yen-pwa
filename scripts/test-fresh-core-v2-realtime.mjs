@@ -11,7 +11,7 @@ const channel={
 };
 const client={channel(){return channel;},removeChannel(){}};
 const domains={};
-for(const name of ['ingredients','products','imports','exports','stocktake','sales','cashflow'])domains[name]={async refresh(){refreshes.push(name);}};
+for(const name of ['ingredients','products','imports','exports','stocktake','sales','cashflow','inventory'])domains[name]={async refresh(){refreshes.push(name);}};
 const storeState={connectivity:{online:true,realtime:false}};
 const context={
   console,
@@ -27,9 +27,10 @@ vm.runInContext(source,context,{filename:'ly-fresh-core-v2-realtime.js'});
 const api=context.window.__lyFreshCoreV2Realtime;
 assert.equal(api.status().enabled,true);
 assert.equal(api.status().connected,true);
-assert.equal(handlers.length,13,'must subscribe exactly to V2-owned domain tables');
+assert.equal(handlers.length,15,'must subscribe exactly to V2-owned domain tables');
 assert.ok(handlers.every(x=>x.filter.filter==='org_id=eq.org-1'));
-assert.equal(api.tableDomain().ly_inventory,undefined,'inventory remains Legacy-owned in phase 1');
+assert.equal(api.tableDomain().ly_inventory,'inventory');
+assert.equal(api.tableDomain().ly_stock_transactions,'inventory');
 
 const ingredient=handlers.find(x=>x.filter.table==='ly_ingredients');
 await ingredient.cb({});
@@ -38,6 +39,14 @@ assert.deepEqual(refreshes,['ingredients']);
 const saleItem=handlers.find(x=>x.filter.table==='ly_sale_items');
 await saleItem.cb({});
 assert.deepEqual(refreshes,['ingredients','sales']);
+
+const inventory=handlers.find(x=>x.filter.table==='ly_inventory');
+await inventory.cb({});
+assert.deepEqual(refreshes,['ingredients','sales','inventory']);
+
+const movement=handlers.find(x=>x.filter.table==='ly_stock_transactions');
+await movement.cb({});
+assert.deepEqual(refreshes,['ingredients','sales','inventory','inventory']);
 
 assert.equal(source.includes('loadCloud('),false,'V2 realtime must not trigger Legacy full reload');
 assert.equal(source.includes('.innerHTML'),false,'V2 realtime must not mutate DOM');
