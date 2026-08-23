@@ -1,13 +1,14 @@
+// Performance & Architecture Audit V2 — triggered after workflow installation.
 import fs from 'node:fs';
 const html=fs.readFileSync('index.html','utf8');
 const jsFiles=fs.readdirSync('.').filter(f=>f.endsWith('.js')).sort();
 const runtime=[html,...jsFiles.map(f=>fs.readFileSync(f,'utf8'))].join('\n');
 const count=(re,s=runtime)=>(s.match(re)||[]).length;
 const named=(re,s=html)=>[...s.matchAll(re)].map(m=>m[1]).filter(Boolean);
-const intervals=named(/setInterval\s*\(\s*(?:([A-Za-z_$][\w$]*)|\(?.*?=>)/g);
 const listeners=count(/addEventListener\s*\(/g);
 const observers=count(/new\s+MutationObserver\s*\(/g);
 const timeouts=count(/setTimeout\s*\(/g);
+const intervalCount=count(/setInterval\s*\(/g);
 const supabaseFrom=count(/\.from\s*\(\s*['"][^'"]+['"]\s*\)/g);
 const supabaseRpc=count(/\.rpc\s*\(\s*['"][^'"]+['"]/g);
 const innerHtml=count(/\.innerHTML\s*=/g);
@@ -21,7 +22,7 @@ report.push(`- index.html: ${Buffer.byteLength(html)} bytes`);
 report.push(`- root JS files: ${jsFiles.length}`);
 report.push(`- addEventListener calls: ${listeners}`);
 report.push(`- MutationObserver instances: ${observers}`);
-report.push(`- setInterval calls: ${count(/setInterval\s*\(/g)}`);
+report.push(`- setInterval calls: ${intervalCount}`);
 report.push(`- setTimeout calls: ${timeouts}`);
 report.push(`- Supabase .from() call sites: ${supabaseFrom}`);
 report.push(`- Supabase .rpc() call sites: ${supabaseRpc}`);
@@ -38,7 +39,7 @@ report.push('## Resident render functions');
 for(const x of renderFns)report.push(`- ${x}`);
 report.push('');
 report.push('## Root JS sizes');
-for(const f of jsFiles){report.push(`- ${f}: ${fs.statSync(f).size} bytes`)}
+for(const f of jsFiles)report.push(`- ${f}: ${fs.statSync(f).size} bytes`);
 fs.mkdirSync('audit',{recursive:true});
 fs.writeFileSync('audit/performance-architecture-v2.md',report.join('\n')+'\n');
 console.log(report.join('\n'));
