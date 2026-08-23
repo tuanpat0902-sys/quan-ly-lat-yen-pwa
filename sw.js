@@ -1,4 +1,4 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-35';
+const CACHE='lat-yen-legacy-ui-fresh-core-36';
 const INDEX_KEY='./index.html';
 const MODULE_LOADER='./ly-module-loader.js';
 const HISTORY_BRIDGE='./ly-history-bridge.js';
