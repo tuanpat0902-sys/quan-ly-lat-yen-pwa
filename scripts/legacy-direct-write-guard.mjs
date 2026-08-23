@@ -10,6 +10,7 @@ const baseline = new Map([
   ['ly_suppliers:insert', 1],
   ['ly_suppliers:upsert', 1],
   ['ly_warehouses:upsert', 1],
+  ['ly_warehouses:delete', 1],
   ['ly_inventory:upsert', 1],
   ['ly_ingredients:delete', 1],
   ['ly_products:delete', 1],
@@ -33,11 +34,7 @@ for (const [key, count] of found) {
 }
 for (const [key, allowed] of baseline) {
   const count = found.get(key) || 0;
-  if (count < allowed) {
-    // A reduction is migration progress, not a failure. Surface it so the
-    // baseline can be tightened in a follow-up without blocking deployment.
-    console.log(`Legacy direct-write reduced: ${key} ${allowed} -> ${count}`);
-  }
+  if (count < allowed) console.log(`Legacy direct-write reduced: ${key} ${allowed} -> ${count}`);
 }
 
 if (failures.length) {
