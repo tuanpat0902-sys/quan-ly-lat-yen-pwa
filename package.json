@@ -1,13 +1,14 @@
 {
   "name": "quan-ly-lat-yen-pwa",
   "private": true,
-  "version": "2.0.3",
+  "version": "2.0.4",
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "stability": "node scripts/stability-audit.mjs",
     "perf:budget": "node scripts/performance-budget.mjs",
     "legacy:write-guard": "node scripts/legacy-direct-write-guard.mjs",
     "version:check": "node scripts/test-app-version.mjs",
+    "pages:artifact:check": "node scripts/prepare-pages-artifact.mjs --check",
     "v2:test": "node scripts/test-fresh-core-v2.mjs",
     "v2:shadow": "node scripts/test-fresh-core-v2-shadow.mjs",
     "v2:takeover:ingredients": "node scripts/test-fresh-core-v2-ingredients-takeover.mjs",
@@ -23,7 +24,7 @@
     "v2:realtime": "node scripts/test-fresh-core-v2-realtime.mjs",
     "v2:realtime:phase2": "node scripts/test-fresh-core-v2-realtime-phase2.mjs",
     "v2:readiness": "node scripts/fresh-core-v2-test-readiness.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run legacy:write-guard && npm run version:check && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:takeover:reads && npm run v2:legacy-hydration && npm run v2:resume-refresh && npm run v2:manual-refresh && npm run v2:realtime && npm run v2:realtime:phase2 && npm run v2:readiness"
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run legacy:write-guard && npm run version:check && npm run pages:artifact:check && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:takeover:reads && npm run v2:legacy-hydration && npm run v2:resume-refresh && npm run v2:manual-refresh && npm run v2:realtime && npm run v2:realtime:phase2 && npm run v2:readiness"
   },
   "engines": { "node": ">=20" }
 }
