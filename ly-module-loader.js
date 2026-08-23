@@ -1,13 +1,15 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV11)return;
-  window.__lyModuleLoaderV11=true;
-  const VERSION='2026.08.24.6';
+  if(window.__lyModuleLoaderV12)return;
+  window.__lyModuleLoaderV12=true;
+  const VERSION='2026.08.24.7';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
-    appVersion:{src:'./ly-app-version.js?v=2.1.1',test:()=>window.__lyAppVersion?.version==='2.1.1'},
-    finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.1',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.1'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.6',test:()=>window.__lyAppVersion?.version==='2.1.6'},
+    hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260823.2',test:()=>!!window.__lyFreshCoreV2LegacyHydration},
+    shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260823.2',test:()=>!!window.__lyFreshCoreV2Shadow},
+    finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.2',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.2'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.1',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.1'},
     settings:{src:'./ly-settings-enhancements.js?v=20260824.3',test:()=>window.__lyNotificationMaster?.version==='2026.08.24.3'},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
@@ -20,11 +22,12 @@
     cashflowUI:{src:'./ly-cashflow.js?v=20260823.1',test:()=>!!window.__lyCashflowModule},
   };
   function load(name){const m=modules[name];if(!m)return Promise.resolve(false);if(m.test?.())return Promise.resolve(true);if(loaded.has(name))return loaded.get(name);const p=new Promise(resolve=>{const s=document.createElement('script');s.src=m.src;s.async=true;s.dataset.lyModule=name;s.onload=()=>resolve(true);s.onerror=()=>{loaded.delete(name);resolve(false)};(document.head||document.documentElement).appendChild(s);});loaded.set(name,p);return p;}
+  async function loadCore(){await load('hydration');await load('shadow');await load('finalOwnership');}
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
   function preparePanel(panel){if(panel==='settings'){load('settingsUI');load('settings');load('branding');}if(panel==='history')load('activityHistory');if(panel==='employees')load('employeesUI');if(panel==='finance')load('financeUI');if(panel==='reports')load('reportsUI');if(panel==='cashflow')load('cashflowUI');if(HEAVY.has(panel))load('heavyPanels');}
   document.addEventListener('pointerdown',e=>preparePanel(panelOf(e.target)),true);document.addEventListener('click',e=>preparePanel(panelOf(e.target)),true);window.addEventListener('latyen:panel',e=>preparePanel(e?.detail?.panel||''));
-  load('appVersion');load('finalOwnership');load('warehouseDeleteUX');
-  function idle(){load('branding');load('appVersion');load('finalOwnership');load('warehouseDeleteUX');}
+  load('appVersion');loadCore();load('warehouseDeleteUX');
+  function idle(){load('branding');load('appVersion');loadCore();load('warehouseDeleteUX');}
   if('requestIdleCallback' in window)requestIdleCallback(idle,{timeout:6500});else setTimeout(idle,4500);
-  window.__lyModuleLoader={version:VERSION,load,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
+  window.__lyModuleLoader={version:VERSION,load,loadCore,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
 })();
