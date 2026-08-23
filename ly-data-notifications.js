@@ -1,35 +1,34 @@
 (()=>{
   'use strict';
 
-  if(window.__lyDataActivityNotificationsV3)return;
-  window.__lyDataActivityNotificationsV3=true;
+  if(window.__lyDataActivityNotificationsV4)return;
+  window.__lyDataActivityNotificationsV4=true;
 
-  const VERSION='2026.08.23.3';
+  const VERSION='2026.08.23.4';
   const POLL_MS=2500;
   const BATCH_MS=900;
-  const SUPPRESS_MS=6000;
-  const CLIENT_KEY='lat_yen_notification_client_v3';
+  const CLIENT_KEY='lat_yen_notification_client_v4';
 
-  const LABELS={
-    ly_warehouses:'kho',
-    ly_suppliers:'nhà cung cấp',
-    ly_ingredients:'nguyên liệu / dụng cụ',
-    ly_products:'món / công thức',
-    ly_import_receipts:'phiếu nhập',
-    ly_export_receipts:'phiếu xuất',
-    ly_stocktake_receipts:'phiếu kiểm kê',
-    ly_sales:'phiếu bán hàng',
-    ly_cashflow_entries:'thu / chi'
+  const NOTICE_RULES={
+    ly_sales:{insert:'Có hóa đơn bán hàng mới',update:'Hóa đơn bán hàng vừa được cập nhật',delete:'Hóa đơn bán hàng đã được xóa'},
+    ly_import_receipts:{insert:'Có phiếu nhập kho mới',update:'Phiếu nhập kho vừa được cập nhật',delete:'Phiếu nhập kho đã được xóa'},
+    ly_export_receipts:{insert:'Có phiếu xuất kho mới',update:'Phiếu xuất kho vừa được cập nhật',delete:'Phiếu xuất kho đã được xóa'},
+    ly_stocktake_receipts:{insert:'Có phiếu kiểm kê kho mới',update:'Phiếu kiểm kê kho vừa được cập nhật',delete:'Phiếu kiểm kê kho đã được xóa'},
+    ly_ingredients:{insert:'Có nguyên liệu / dụng cụ mới',update:'Nguyên liệu / dụng cụ vừa được cập nhật',delete:'Nguyên liệu / dụng cụ đã được xóa'},
+    ly_products:{insert:'Có món / công thức mới',update:'Món / công thức vừa được cập nhật',delete:'Món / công thức đã được xóa'},
+    ly_prepared_items:{insert:'Có cấu hình sơ chế mới',update:'Cấu hình sơ chế vừa được cập nhật',delete:'Cấu hình sơ chế đã được xóa'},
+    ly_suppliers:{insert:'Có nhà cung cấp mới',update:'Nhà cung cấp vừa được cập nhật',delete:'Nhà cung cấp đã được xóa'},
+    ly_warehouses:{insert:'Có kho mới',update:'Thông tin kho vừa được cập nhật',delete:'Kho đã được xóa'},
+    ly_cashflow_entries:{insert:'Có khoản thu / chi mới',update:'Khoản thu / chi vừa được cập nhật',delete:'Khoản thu / chi đã được xóa'}
   };
 
   const state={
     orgId:'',channel:null,pollTimer:null,startTimer:null,queue:[],flushTimer:null,
-    localSuppress:new Map(),cursor:0,ready:false,busy:false,sequence:0,
-    clientId:'',userId:''
+    cursor:0,ready:false,busy:false,sequence:0,clientId:'',userId:''
   };
 
   function text(v){return String(v??'').trim();}
-  function makeId(){try{return crypto.randomUUID();}catch(e){} return `${Date.now()}-${Math.random().toString(36).slice(2,12)}`;}
+  function makeId(){try{return crypto.randomUUID();}catch(e){}return `${Date.now()}-${Math.random().toString(36).slice(2,12)}`;}
   function getClientId(){
     if(state.clientId)return state.clientId;
     try{
@@ -38,15 +37,17 @@
       state.clientId=id;return id;
     }catch(e){state.clientId=state.clientId||makeId();return state.clientId;}
   }
-  function cursorKey(){return `lat_yen_activity_cursor_v3:${state.orgId}`;}
+  function cursorKey(){return `lat_yen_activity_cursor_v4:${state.orgId}`;}
   function readCursor(){try{return Number(localStorage.getItem(cursorKey())||0)||0;}catch(e){return 0;}}
   function saveCursor(id){const n=Number(id)||0;if(n<=state.cursor)return;state.cursor=n;try{localStorage.setItem(cursorKey(),String(n));}catch(e){}}
-  function actionVi(type){if(type==='INSERT')return 'Tạo mới';if(type==='UPDATE')return 'Đã chỉnh sửa';if(type==='DELETE')return 'Đã xóa';return 'Dữ liệu thay đổi';}
   function money(value){const n=Number(value);if(!Number.isFinite(n)||!n)return '';try{return new Intl.NumberFormat('vi-VN').format(n)+' đ';}catch(e){return String(n)+' đ';}}
-  function buildItem(row){
-    const table=text(row?.entity_table),noun=LABELS[table]||'dữ liệu',type=text(row?.event_type).toUpperCase(),name=text(row?.entity_name),amount=money(row?.amount);
-    let body=`${actionVi(type)} ${noun}`;if(name)body+=`: ${name}`;if(amount)body+=` • ${amount}`;
-    return {title:'Quản Lý Lát Yên',body,table,type,id:Number(row?.id)||0};
+  function smartItem(row){
+    const table=text(row?.entity_table),type=text(row?.event_type).toLowerCase(),name=text(row?.entity_name),amount=money(row?.amount);
+    const rule=NOTICE_RULES[table]||{};
+    const title=rule[type]||(type==='insert'?'Có dữ liệu mới':type==='update'?'Dữ liệu vừa được cập nhật':type==='delete'?'Dữ liệu đã được xóa':'Dữ liệu vừa thay đổi');
+    const details=[];if(name)details.push(name);if(amount)details.push(amount);
+    const fallback=type==='insert'?'Đã thêm dữ liệu mới.':type==='update'?'Nội dung vừa được thay đổi.':type==='delete'?'Dữ liệu đã được xóa.':'Có thay đổi dữ liệu.';
+    return {title,body:details.join(' • ')||fallback,table,type,id:Number(row?.id)||0};
   }
   function getClient(){try{if(typeof sb!=='undefined'&&sb?.channel)return sb;}catch(e){}return null;}
   async function currentUserId(client){
@@ -79,7 +80,7 @@
     try{new Notification(item.title,options);await reportTelemetry('window_show_success','');return true;}
     catch(e){console.warn('[Lát Yên] notification failed',e);await reportTelemetry('window_show_error',e?.message||String(e));renderPermissionBanner(true);return false;}
   }
-  function permissionBanner(){return document.getElementById('lyNotifyPermissionBannerV3');}
+  function permissionBanner(){return document.getElementById('lyNotifyPermissionBannerV4');}
   function removePermissionBanner(){permissionBanner()?.remove();}
   async function requestPermission(){
     if(!('Notification' in window)){renderPermissionBanner(true);return;}
@@ -87,7 +88,7 @@
       const result=await Notification.requestPermission();await reportTelemetry(`permission_${result}`,'');
       if(result==='granted'){
         removePermissionBanner();
-        await showNotification({title:'Quản Lý Lát Yên',body:'Thông báo đã hoạt động. Mọi thay đổi dữ liệu sẽ được báo trên thiết bị này.',table:'',type:'READY'});
+        await showNotification({title:'Thông báo đã được bật',body:'Bạn sẽ nhận thông báo khi có thay đổi nghiệp vụ mới.',table:'',type:'ready'});
       }else renderPermissionBanner(true);
     }catch(e){await reportTelemetry('permission_request_error',e?.message||String(e));renderPermissionBanner(true);}
   }
@@ -96,30 +97,30 @@
     const supported='Notification' in window,permission=supported?Notification.permission:'unsupported';
     if(permission==='granted'&&!force){removePermissionBanner();return;}
     let box=permissionBanner();
-    if(!box){box=document.createElement('div');box.id='lyNotifyPermissionBannerV3';box.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:2147483647;max-width:680px;margin:auto;background:#7c2d12;color:#fff;padding:14px 16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.35);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;display:flex;gap:12px;align-items:center;justify-content:space-between';document.body.appendChild(box);}
+    if(!box){box=document.createElement('div');box.id='lyNotifyPermissionBannerV4';box.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:2147483647;max-width:680px;margin:auto;background:#7c2d12;color:#fff;padding:14px 16px;border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.35);font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;display:flex;gap:12px;align-items:center;justify-content:space-between';document.body.appendChild(box);}
     if(permission==='granted'){
-      box.style.background='#065f46';box.innerHTML='<span><b>Thông báo đã được Chrome cho phép.</b> Nếu Windows vẫn không hiện banner, hệ thống đang chặn ở cấp Windows/Edge. Tôi đã bật telemetry để kiểm tra tự động.</span><button id="lyNotifyCloseV3" type="button" style="border:0;border-radius:9px;padding:8px 11px;font-weight:700;cursor:pointer">Đóng</button>';
-      box.querySelector('#lyNotifyCloseV3')?.addEventListener('click',removePermissionBanner,{once:true});return;
+      box.style.background='#065f46';box.innerHTML='<span><b>Thông báo đã được trình duyệt cho phép.</b> Nếu Windows không hiện banner, thông báo trong app vẫn hoạt động bình thường.</span><button id="lyNotifyCloseV4" type="button" style="border:0;border-radius:9px;padding:8px 11px;font-weight:700;cursor:pointer">Đóng</button>';
+      box.querySelector('#lyNotifyCloseV4')?.addEventListener('click',removePermissionBanner,{once:true});return;
     }
     if(permission==='denied'){
-      box.style.background='#991b1b';box.innerHTML='<span><b>Chrome/Edge đang CHẶN thông báo.</b> Mở quyền của trang/app và đặt <b>Notifications = Allow</b>, sau đó mở lại app.</span>';return;
+      box.style.background='#991b1b';box.innerHTML='<span><b>Chrome/Edge đang chặn thông báo.</b> Mở quyền của trang/app và đặt <b>Notifications = Allow</b>, sau đó mở lại app.</span>';return;
     }
     if(permission==='unsupported'){
       box.style.background='#991b1b';box.innerHTML='<span>Thiết bị/trình duyệt này không hỗ trợ Notification API.</span>';return;
     }
-    box.style.background='#7c2d12';box.innerHTML='<span><b>Chưa cấp quyền thông báo.</b> Đây là lý do bạn không thấy thông báo hệ thống.</span><button id="lyNotifyPermissionButtonV3" type="button" style="border:0;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer;background:#fff;color:#7c2d12">Bật thông báo</button>';
-    box.querySelector('#lyNotifyPermissionButtonV3')?.addEventListener('click',requestPermission,{once:true});
+    box.style.background='#7c2d12';box.innerHTML='<span><b>Chưa cấp quyền thông báo.</b> Hãy bật để nhận thông báo hệ thống.</span><button id="lyNotifyPermissionButtonV4" type="button" style="border:0;border-radius:9px;padding:9px 13px;font-weight:800;cursor:pointer;background:#fff;color:#7c2d12">Bật thông báo</button>';
+    box.querySelector('#lyNotifyPermissionButtonV4')?.addEventListener('click',requestPermission,{once:true});
   }
-  function isLocallySuppressed(table){const until=Number(state.localSuppress.get(table)||0);if(until>Date.now())return true;state.localSuppress.delete(table);return false;}
   function enqueue(row){const id=Number(row?.id)||0;if(!id||id<=state.cursor)return;state.queue.push(row);clearTimeout(state.flushTimer);state.flushTimer=setTimeout(flush,BATCH_MS);}
   async function flush(){
     state.flushTimer=null;const rows=state.queue.splice(0).sort((a,b)=>(Number(a.id)||0)-(Number(b.id)||0));if(!rows.length)return;
-    const seen=new Set();const primaryTables=new Set(rows.map(r=>text(r.entity_table)).filter(t=>['ly_import_receipts','ly_export_receipts','ly_stocktake_receipts','ly_sales'].includes(t)));
+    const seen=new Set();
+    const primaryTables=new Set(rows.map(r=>text(r.entity_table)).filter(t=>['ly_import_receipts','ly_export_receipts','ly_stocktake_receipts','ly_sales'].includes(t)));
     for(const row of rows){
       const id=Number(row?.id)||0;if(id<=state.cursor)continue;const table=text(row?.entity_table);saveCursor(id);
-      if(isLocallySuppressed(table))continue;if(table==='ly_cashflow_entries'&&primaryTables.size)continue;
+      if(table==='ly_cashflow_entries'&&primaryTables.size)continue;
       const dedupe=`${table}:${text(row?.entity_id)}:${text(row?.event_type)}:${Math.floor(new Date(row?.created_at||0).getTime()/1500)}`;
-      if(seen.has(dedupe))continue;seen.add(dedupe);await showNotification(buildItem(row));
+      if(seen.has(dedupe))continue;seen.add(dedupe);await showNotification(smartItem(row));
     }
   }
   async function establishBaseline(client){
@@ -143,7 +144,7 @@
     stopChannel();state.orgId=org;state.ready=false;getClientId();
     try{await establishBaseline(client);await reportTelemetry();}
     catch(e){console.warn('[Lát Yên] activity baseline',e);clearTimeout(state.startTimer);state.startTimer=setTimeout(start,1200);return;}
-    let ch=client.channel(`latyen-activity-v3-${org}-${Math.random().toString(36).slice(2,8)}`);
+    let ch=client.channel(`latyen-activity-v4-${org}-${Math.random().toString(36).slice(2,8)}`);
     ch=ch.on('postgres_changes',{event:'INSERT',schema:'public',table:'ly_activity_events',filter:`org_id=eq.${org}`},payload=>enqueue(payload?.new||{}));
     state.channel=ch;
     ch.subscribe(status=>{
@@ -156,10 +157,7 @@
   }
   navigator.serviceWorker?.addEventListener('message',event=>{
     const data=event?.data||{};
-    if(data.type==='LAT_YEN_LOCAL_MUTATION_SHOWN'){
-      const table=text(data.entityTable);if(table)state.localSuppress.set(table,Date.now()+SUPPRESS_MS);reportTelemetry('local_sw_show_success','');return;
-    }
-    if(data.type==='LAT_YEN_NOTIFICATION_PERMISSION_REQUIRED'){reportTelemetry('local_permission_required',data.error||'');renderPermissionBanner(true);}
+    if(data.type==='LAT_YEN_NOTIFICATION_PERMISSION_REQUIRED'){reportTelemetry('permission_required',data.error||'');renderPermissionBanner(true);}
   });
   window.addEventListener('online',()=>{start();poll();});
   window.addEventListener('focus',()=>{reportTelemetry();renderPermissionBanner();});
