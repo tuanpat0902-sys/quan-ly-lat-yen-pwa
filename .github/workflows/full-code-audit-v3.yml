@@ -1,0 +1,22 @@
+name: Full Code Audit V3
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Stability gate
+        run: npm run check
+      - name: Full code architecture audit
+        run: node scripts/full-code-audit.mjs
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-code-audit-v3
+          path: artifacts/full-code-audit.*
