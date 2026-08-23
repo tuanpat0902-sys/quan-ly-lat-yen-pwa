@@ -1,3 +1,4 @@
+// trigger guarded Settings UI extraction after workflow creation
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 const indexPath='index.html';
