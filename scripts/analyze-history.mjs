@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Analyzer revision 3: isolate only the Activity History menu block.
+// Analyzer revision 4: isolate exact Activity History region, including interstitial declarations.
 const srcPath='index.html';
 const src=fs.readFileSync(srcPath,'utf8');
 const outDir='refactor';
@@ -56,23 +56,24 @@ const activityFns=[...ACTIVITY_NAMES].map(name=>{
   return f;
 }).sort((a,b)=>a.start-b.start);
 
-const render=activityFns.find(f=>f.name==='renderHistory');
 const first=activityFns[0],last=activityFns[activityFns.length-1];
-const interstitial=src.slice(first.start,last.end);
+const region=src.slice(first.start,last.end);
 const expectedJoined=activityFns.map(f=>f.code).join('');
-const strippedInterstitial=interstitial.replace(/\s+/g,'');
-const strippedExpected=expectedJoined.replace(/\s+/g,'');
-const hasUnexpectedInterstitial=strippedInterstitial!==strippedExpected;
+const hasUnexpectedInterstitial=region.replace(/\s+/g,'')!==expectedJoined.replace(/\s+/g,'');
 
 const moduleCandidate=`/* AUTO-GENERATED ACTIVITY HISTORY CANDIDATE — NOT LOADED BY PRODUCTION */\n${activityFns.map(f=>`// ${f.name}: index.html lines ${f.startLine}-${f.endLine}\n${f.code}`).join('\n\n')}\n`;
 fs.writeFileSync(path.join(outDir,'activity-history-block.js'),moduleCandidate);
+fs.writeFileSync(path.join(outDir,'activity-history-region.txt'),region);
 
 const bytes=activityFns.reduce((n,f)=>n+Buffer.byteLength(f.code),0);
+const regionBytes=Buffer.byteLength(region);
 const report=[
   '# Activity History extraction analysis','',
   `- index.html bytes: ${Buffer.byteLength(src)}`,
   `- target range: lines ${first.startLine}-${last.endLine}`,
   `- target function bytes: ${bytes}`,
+  `- exact region bytes: ${regionBytes}`,
+  `- interstitial bytes: ${regionBytes-bytes}`,
   `- target functions: ${activityFns.length}`,
   `- unexpected code/comments between target functions: ${hasUnexpectedInterstitial?'YES':'NO'}`,
   '', '## Exact target functions',
@@ -81,8 +82,8 @@ const report=[
   ...allNamed.filter(f=>!ACTIVITY_NAMES.has(f.name)).map(f=>`- \`${f.name}\`: line ${f.startLine}${f.error?' (parse warning)':''}`),
   '', '## Extraction gate','',
   hasUnexpectedInterstitial
-    ? 'BLOCKED: the target functions are not a contiguous clean block; review surrounding source before removal.'
-    : 'Candidate functions form a clean contiguous block after whitespace normalization. Dependency review is still required before removal.',
+    ? 'BLOCKED: inspect refactor/activity-history-region.txt to include required interstitial declarations before extraction.'
+    : 'Candidate functions form a clean contiguous block. Dependency review is still required before removal.',
   '', 'Production index.html is unchanged by this analysis.'
 ].join('\n');
 fs.writeFileSync(path.join(outDir,'history-analysis.md'),report);
