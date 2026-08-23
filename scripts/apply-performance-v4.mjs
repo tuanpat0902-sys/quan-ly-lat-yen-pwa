@@ -1,3 +1,4 @@
+// Trigger scoped table observer V4 validation after workflow installation.
 import fs from 'node:fs';
 const file='sw.js';let s=fs.readFileSync(file,'utf8');
 s=s.replace("lat-yen-legacy-ui-fresh-core-37","lat-yen-legacy-ui-fresh-core-38");
