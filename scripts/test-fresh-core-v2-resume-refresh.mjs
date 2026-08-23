@@ -30,7 +30,7 @@ assert.equal(loads,1,'Legacy load mapping must still run once');
 assert.deepEqual(order,['refresh','load'],'V2 refresh must finish before Legacy mapping');
 
 let release;context.window.__lyFreshCoreV2.refreshCoreDomains=()=>{refreshes++;order.push('refresh2');return new Promise(r=>{release=r;});};
-visibleListener();visibleListener();const pending=context.loadCloud();release();await pending;
+visibleListener();visibleListener();const pending=context.loadCloud();await Promise.resolve();assert.equal(typeof release,'function');release();await pending;
 assert.equal(refreshes,2,'repeated foreground must share the same pending refresh');assert.ok(api.status().foregroundCoalesced>=1);
 
 context.navigator.onLine=false;visibleListener();await context.loadCloud();assert.equal(refreshes,2);assert.equal(loads,3);
