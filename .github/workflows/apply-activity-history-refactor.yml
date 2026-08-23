@@ -1,6 +1,6 @@
 name: Apply Activity History Refactor
 
-# Revision 2: trigger runner from default branch while writing only to refactor branch.
+# Revision 3: rerun from latest refactor branch state.
 on:
   push:
     branches: ["main"]
