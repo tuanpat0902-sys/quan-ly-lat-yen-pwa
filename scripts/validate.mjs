@@ -7,7 +7,7 @@ const INDEX_MAX_BYTES = 1_500_000;
 const required = [
   'index.html','sw.js','manifest.webmanifest','icon.svg','ly-module-loader.js',
   'ly-history-bridge.js','ly-activity-history.js','ly-employees-bridge.js','ly-employees.js',
-  'ly-finance-bridge.js','ly-finance.js',
+  'ly-finance-bridge.js','ly-finance.js','ly-reports-bridge.js','ly-reports.js',
   'ly-data-notifications.js','ly-inapp-notifications.js','ly-notification-center.js',
   'ly-cloud-realtime.js','ly-menu-security.js','ly-performance-optimizer.js','ly-heavy-panels.js'
 ];
@@ -20,9 +20,9 @@ if(existsSync(join(ROOT,'index.html'))){
   const indexPath=join(ROOT,'index.html'),size=statSync(indexPath).size,html=readFileSync(indexPath,'utf8');
   console.log(`INFO: index.html ${(size/1024).toFixed(1)} KiB (${size} bytes)`);
   if(size>INDEX_MAX_BYTES)fail(`index.html exceeds ${(INDEX_MAX_BYTES/1024).toFixed(0)} KiB safety ceiling`);else ok('index.html is inside safety ceiling');
-  for(const fn of ['auditActionClass','auditFilterRows','renderHistory','renderEmployees','renderFinance','renderFinanceData'])if(new RegExp(`\\bfunction\\s+${fn}\\s*\\(`).test(html))fail(`index.html still contains extracted ${fn}()`);
-  for(const kept of ['compactAuditRows','loadAuditLog','saveAuditLog','auditLog','debouncedHistoryRender','loadEmployees','bindEmployeeActions','renderEmployeeAttendance','renderEmployeeSalaryReport','financeInventorySnapshot','financeInventoryPeriod','financeSalesInRange','financeSalaryCostInRange','financeCashflowInRange','drawFinanceTrend'])if(!new RegExp(`\\bfunction\\s+${kept}\\s*\\(`).test(html))fail(`index.html lost required core ${kept}()`);
-  if(!failed)ok('History, Employees and Finance UI are extracted while calculation/data cores stay resident');
+  for(const fn of ['auditActionClass','auditFilterRows','renderHistory','renderEmployees','renderFinance','renderFinanceData','renderReports'])if(new RegExp(`\\bfunction\\s+${fn}\\s*\\(`).test(html))fail(`index.html still contains extracted ${fn}()`);
+  for(const kept of ['compactAuditRows','loadAuditLog','saveAuditLog','auditLog','debouncedHistoryRender','loadEmployees','bindEmployeeActions','renderEmployeeAttendance','renderEmployeeSalaryReport','financeInventorySnapshot','financeInventoryPeriod','financeSalesInRange','financeSalaryCostInRange','financeCashflowInRange','drawFinanceTrend','drawReportCharts'])if(!new RegExp(`\\bfunction\\s+${kept}\\s*\\(`).test(html))fail(`index.html lost required core ${kept}()`);
+  if(!failed)ok('History, Employees, Finance and Reports UI are extracted while calculation/data cores stay resident');
 }
 
 const rootFiles=readdirSync(ROOT,{withFileTypes:true}).filter(e=>e.isFile()&&e.name.endsWith('.js')).map(e=>e.name).sort();
@@ -30,13 +30,13 @@ for(const file of rootFiles){const r=spawnSync(process.execPath,['--check',join(
 
 if(existsSync(join(ROOT,'ly-module-loader.js'))){
   const loader=readFileSync(join(ROOT,'ly-module-loader.js'),'utf8');
-  for(const marker of ['heavyPanels','finance','employees','history','activityHistory','employeesUI','financeUI','ly-activity-history.js','ly-employees.js','ly-finance.js'])if(!loader.includes(marker))fail(`module loader missing ${marker}`);
-  if(!failed)ok('module loader lazy History/Employees/Finance wiring');
+  for(const marker of ['heavyPanels','finance','employees','history','reports','activityHistory','employeesUI','financeUI','reportsUI','ly-activity-history.js','ly-employees.js','ly-finance.js','ly-reports.js'])if(!loader.includes(marker))fail(`module loader missing ${marker}`);
+  if(!failed)ok('module loader lazy History/Employees/Finance/Reports wiring');
 }
 if(existsSync(join(ROOT,'sw.js'))){
   const sw=readFileSync(join(ROOT,'sw.js'),'utf8');
-  for(const asset of ['ly-module-loader.js','ly-history-bridge.js','ly-activity-history.js','ly-employees-bridge.js','ly-employees.js','ly-finance-bridge.js','ly-finance.js','ly-heavy-panels.js','ly-menu-security.js','ly-performance-optimizer.js'])if(!sw.includes(asset))fail(`service worker does not reference ${asset}`);
-  for(const full of ['ly-activity-history.js','ly-employees.js','ly-finance.js'])if(new RegExp(`scripts\\.push\\([^\\n]*${full.replace('.','\\.')}`).test(sw))fail(`${full} must not be injected at startup`);
+  for(const asset of ['ly-module-loader.js','ly-history-bridge.js','ly-activity-history.js','ly-employees-bridge.js','ly-employees.js','ly-finance-bridge.js','ly-finance.js','ly-reports-bridge.js','ly-reports.js','ly-heavy-panels.js','ly-menu-security.js','ly-performance-optimizer.js'])if(!sw.includes(asset))fail(`service worker does not reference ${asset}`);
+  for(const full of ['ly-activity-history.js','ly-employees.js','ly-finance.js','ly-reports.js'])if(new RegExp(`scripts\\.push\\([^\\n]*${full.replace('.','\\.')}`).test(sw))fail(`${full} must not be injected at startup`);
   const cache=sw.match(/const CACHE='([^']+)'/)?.[1];if(!cache)fail('service worker cache version not found');else console.log(`INFO: service worker cache ${cache}`);
 }
 
