@@ -13,11 +13,16 @@ assert.equal(pkg.version,runtimeVersion,'package.json and runtime software versi
 assert.ok(versionSource.includes('lyAppVersionBadge'),'software version must render beside the app brand');
 assert.ok(versionSource.includes('Ver ${VERSION}'),'compact Ver label must be used');
 assert.ok(versionSource.includes('lat_yen_last_seen_app_version'),'runtime must remember the last seen version for update notices');
+assert.ok(versionSource.includes('findBrandTarget'),'version badge must resolve the real sidebar brand target');
+assert.ok(versionSource.includes("document.querySelector('header')"),'version badge must search the actual header/sidebar DOM');
+assert.ok(versionSource.includes('__lyBrandingSync?.status?.().softwareName'),'version badge must follow the live software name');
+assert.ok(versionSource.includes("insertAdjacentElement('afterend',badge)"),'badge must be mounted beside, not inside, the branding text');
+assert.ok(versionSource.includes('[250,800,1800,3500]'),'badge mounting must retry while the layered UI initializes');
 assert.ok(notifications.includes('__LY_APP_VERSION_LABEL'),'in-app notifications must use the centralized software version');
 assert.ok(notifications.includes('titleWithVersion'),'notification titles must include software version');
 assert.ok(notifications.includes(`ly-app-version.js?v=${runtimeVersion}`),'notification runtime must request the current app-version module');
 assert.ok(sw.includes("const APP_VERSION_SCRIPT='./ly-app-version.js'"),'service worker must precache the app-version runtime');
 assert.ok(sw.includes('APP_VERSION_SCRIPT,INAPP_SCRIPT'),'service worker asset list must include app-version before in-app notifications');
 assert.ok(sw.includes(`ly-app-version.js?v=${runtimeVersion}`),'service worker must inject the current app-version runtime');
-assert.ok(sw.includes("fresh-core-50"),'version rollout must bump the service worker cache');
+assert.ok(sw.includes('fresh-core-51'),'Ver 2.0.2 rollout must use Core-51');
 console.log(`App version contract: PASS (Ver ${runtimeVersion})`);
