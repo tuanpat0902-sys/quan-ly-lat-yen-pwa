@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.7",
-  "revision": "fresh-core-v2-authoritative-v8",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-60",
+  "appVersion": "2.1.8",
+  "revision": "fresh-core-v2-authoritative-v9",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-61",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "direct-session-and-org-context-bootstrap"
+  "bootstrapFix": "shadow-final-ownership-race-condition"
 }
