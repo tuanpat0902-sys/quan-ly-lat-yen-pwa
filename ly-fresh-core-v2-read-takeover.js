@@ -1,11 +1,12 @@
 (()=>{
 'use strict';
 if(window.__lyFreshCoreV2ReadTakeover)return;
-const VERSION='2026.08.23.1';
+const VERSION='2026.08.23.2';
 const MAX_WAIT_MS=60000;
 const STARTED_AT=Date.now();
-const state={version:VERSION,enabled:false,phase:'waiting',hits:0,fallbacks:0,lastTable:'',lastAt:0,lastError:''};
-let originalFetch=null;
+const RESUME_ARM_MS=3000;
+const state={version:VERSION,enabled:false,phase:'waiting',hits:0,fallbacks:0,lastTable:'',lastAt:0,lastError:'',foregrounds:0,foregroundRefreshes:0,foregroundCoalesced:0,foregroundErrors:0};
+let originalFetch=null,originalLoadCloud=null,resumeArmedUntil=0,pendingResumeRefresh=null;
 
 function coreReady(){
   const core=window.__lyFreshCoreV2;
@@ -70,22 +71,60 @@ async function routedFetch(table,orderColumn=null,ascending=true){
   }
 }
 
+function startResumeRefresh(){
+  const core=coreReady();
+  if(!core?.refreshCoreDomains)return null;
+  if(pendingResumeRefresh){state.foregroundCoalesced++;return pendingResumeRefresh;}
+  state.foregroundRefreshes++;
+  pendingResumeRefresh=Promise.resolve().then(()=>core.refreshCoreDomains()).catch(error=>{
+    state.foregroundErrors++;state.lastError=String(error?.message||error||'V2 foreground refresh failed');throw error;
+  }).finally(()=>{pendingResumeRefresh=null;});
+  return pendingResumeRefresh;
+}
+function onVisibilityCapture(){
+  if(typeof document==='undefined'||document.hidden||typeof navigator==='undefined'||!navigator.onLine||!coreReady())return;
+  state.foregrounds++;state.lastAt=Date.now();resumeArmedUntil=state.lastAt+RESUME_ARM_MS;startResumeRefresh();
+}
+function installLoadCloudCoordinator(){
+  if(originalLoadCloud)return true;
+  let current=null;try{if(typeof loadCloud==='function')current=loadCloud;}catch(e){}
+  if(!current&&typeof window.loadCloud==='function')current=window.loadCloud;
+  if(typeof current!=='function')return false;
+  originalLoadCloud=current;
+  const wrapped=async function(...args){
+    if(resumeArmedUntil&&Date.now()<=resumeArmedUntil){
+      resumeArmedUntil=0;
+      const pending=pendingResumeRefresh||startResumeRefresh();
+      if(pending){try{await pending;}catch(e){/* Legacy mapping/fallback continues below. */}}
+    }else if(resumeArmedUntil)resumeArmedUntil=0;
+    return originalLoadCloud.apply(this,args);
+  };
+  Object.defineProperty(wrapped,'__lyV2ReadResumeCoordinator',{value:true});
+  try{window.loadCloud=wrapped;}catch(e){}
+  try{loadCloud=wrapped;}catch(e){}
+  try{window.addEventListener('visibilitychange',onVisibilityCapture,true);}catch(e){}
+  return true;
+}
+
 function enable(){
   if(state.enabled)return true;
   let current=null;
   try{if(typeof lyFreshFetch==='function')current=lyFreshFetch;}catch(e){}
   if(!current&&typeof window.lyFreshFetch==='function')current=window.lyFreshFetch;
   if(typeof current!=='function')return false;
-  if(current.__lyV2ReadTakeover){state.enabled=true;state.phase='active';return true;}
+  if(current.__lyV2ReadTakeover){state.enabled=true;state.phase='active';installLoadCloudCoordinator();return true;}
   originalFetch=current;
   Object.defineProperty(routedFetch,'__lyV2ReadTakeover',{value:true});
   try{window.lyFreshFetch=routedFetch;}catch(e){}
   try{lyFreshFetch=routedFetch;}catch(e){}
+  installLoadCloudCoordinator();
   state.enabled=true;state.phase='active';return true;
 }
 function disable(){
   if(originalFetch){try{window.lyFreshFetch=originalFetch;}catch(e){}try{lyFreshFetch=originalFetch;}catch(e){}}
-  state.enabled=false;state.phase='disabled';
+  if(originalLoadCloud){try{window.loadCloud=originalLoadCloud;}catch(e){}try{loadCloud=originalLoadCloud;}catch(e){}}
+  try{window.removeEventListener('visibilitychange',onVisibilityCapture,true);}catch(e){}
+  resumeArmedUntil=0;pendingResumeRefresh=null;state.enabled=false;state.phase='disabled';
 }
 function boot(){if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
 window.__lyFreshCoreV2ReadTakeover={version:VERSION,enable,disable,status:()=>({...state})};
