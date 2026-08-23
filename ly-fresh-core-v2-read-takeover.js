@@ -1,0 +1,93 @@
+(()=>{
+'use strict';
+if(window.__lyFreshCoreV2ReadTakeover)return;
+const VERSION='2026.08.23.1';
+const MAX_WAIT_MS=60000;
+const STARTED_AT=Date.now();
+const state={version:VERSION,enabled:false,phase:'waiting',hits:0,fallbacks:0,lastTable:'',lastAt:0,lastError:''};
+let originalFetch=null;
+
+function coreReady(){
+  const core=window.__lyFreshCoreV2;
+  const shadow=window.__lyFreshCoreV2Shadow?.status?.();
+  const org=String(window.__lyFreshOrgId||'');
+  if(!core?.store?.getState||shadow?.phase!=='ready')return null;
+  if(org&&shadow?.orgId&&String(shadow.orgId)!==org)return null;
+  return core;
+}
+
+function rowsFor(table,s){
+  switch(String(table||'')){
+    case 'ly_warehouses': return s.warehouses;
+    case 'ly_suppliers': return s.suppliers;
+    case 'ly_ingredients': return s.ingredients;
+    case 'ly_prepared_items': return s.preparedItems;
+    case 'ly_products': return s.products;
+    case 'ly_recipe_items': return s.recipeItems;
+    case 'ly_inventory': return s.inventoryData?.balances;
+    case 'ly_import_receipts': return s.importsData?.receipts;
+    case 'ly_import_items': return s.importsData?.items;
+    case 'ly_export_receipts': return s.exportsData?.receipts;
+    case 'ly_export_items': return s.exportsData?.items;
+    case 'ly_stocktake_receipts': return s.stocktakeData?.receipts;
+    case 'ly_stocktake_items': return s.stocktakeData?.items;
+    case 'ly_sales': return s.salesData?.sales;
+    case 'ly_sale_items': return s.salesData?.items;
+    case 'ly_stock_transactions': return s.inventoryData?.transactions;
+    case 'ly_cashflow_entries': return s.cashflowEntries;
+    default:return null;
+  }
+}
+
+function compareValues(a,b){
+  if(a==null&&b==null)return 0;
+  if(a==null)return -1;
+  if(b==null)return 1;
+  const an=Number(a),bn=Number(b);
+  if(Number.isFinite(an)&&Number.isFinite(bn)&&String(a).trim()!==''&&String(b).trim()!=='')return an-bn;
+  return String(a).localeCompare(String(b));
+}
+function copyAndSort(rows,orderColumn,ascending=true){
+  const out=rows.map(row=>row&&typeof row==='object'?{...row}:row);
+  if(orderColumn){
+    const dir=ascending===false?-1:1;
+    out.sort((a,b)=>compareValues(a?.[orderColumn],b?.[orderColumn])*dir);
+  }
+  return out;
+}
+
+async function routedFetch(table,orderColumn=null,ascending=true){
+  const core=coreReady();
+  if(!core){state.fallbacks++;return originalFetch(table,orderColumn,ascending);}
+  try{
+    const rows=rowsFor(table,core.store.getState()||{});
+    if(!Array.isArray(rows)){state.fallbacks++;return originalFetch(table,orderColumn,ascending);}
+    state.hits++;state.lastTable=String(table||'');state.lastAt=Date.now();state.lastError='';
+    return copyAndSort(rows,orderColumn,ascending);
+  }catch(error){
+    state.fallbacks++;state.lastError=String(error?.message||error||'V2 read takeover failed');
+    return originalFetch(table,orderColumn,ascending);
+  }
+}
+
+function enable(){
+  if(state.enabled)return true;
+  let current=null;
+  try{if(typeof lyFreshFetch==='function')current=lyFreshFetch;}catch(e){}
+  if(!current&&typeof window.lyFreshFetch==='function')current=window.lyFreshFetch;
+  if(typeof current!=='function')return false;
+  if(current.__lyV2ReadTakeover){state.enabled=true;state.phase='active';return true;}
+  originalFetch=current;
+  Object.defineProperty(routedFetch,'__lyV2ReadTakeover',{value:true});
+  try{window.lyFreshFetch=routedFetch;}catch(e){}
+  try{lyFreshFetch=routedFetch;}catch(e){}
+  state.enabled=true;state.phase='active';return true;
+}
+function disable(){
+  if(originalFetch){try{window.lyFreshFetch=originalFetch;}catch(e){}try{lyFreshFetch=originalFetch;}catch(e){}}
+  state.enabled=false;state.phase='disabled';
+}
+function boot(){if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
+window.__lyFreshCoreV2ReadTakeover={version:VERSION,enable,disable,status:()=>({...state})};
+setTimeout(boot,0);
+})();
