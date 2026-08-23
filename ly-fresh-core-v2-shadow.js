@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lyFreshCoreV2ShadowV1)return;
-  window.__lyFreshCoreV2ShadowV1=true;
+  if(window.__lyFreshCoreV2ShadowV2)return;
+  window.__lyFreshCoreV2ShadowV2=true;
 
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.23.2';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const state={
@@ -38,6 +38,7 @@
     const s=core.store.getState();
     return {
       ingredients:Array.isArray(s.ingredients)?s.ingredients.length:0,
+      preparedItems:Array.isArray(s.preparedItems)?s.preparedItems.length:0,
       products:Array.isArray(s.products)?s.products.length:0,
       recipeItems:Array.isArray(s.recipeItems)?s.recipeItems.length:0,
       imports:Array.isArray(s.importsData?.receipts)?s.importsData.receipts.length:0,
@@ -66,7 +67,7 @@
     state.phase='loading';
     state.orgId=orgId;
     try{
-      const mod=await import('./src-v2/bootstrap.js?v=20260823.1');
+      const mod=await import('./src-v2/bootstrap.js?v=20260823.2');
       const core=mod.createFreshCoreV2({supabase:client,getOrgId:()=>legacyOrgId()});
       core.setOrg(orgId);
       const session=legacySession();
