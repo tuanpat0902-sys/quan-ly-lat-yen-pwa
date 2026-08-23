@@ -1,3 +1,4 @@
+// trigger analysis after workflow creation
 import fs from 'node:fs';
 const src=fs.readFileSync('index.html','utf8');
 const decl=/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g;
