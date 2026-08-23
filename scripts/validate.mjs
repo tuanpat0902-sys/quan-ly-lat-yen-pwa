@@ -8,7 +8,7 @@ const required = [
   'index.html','sw.js','manifest.webmanifest','icon.svg','ly-module-loader.js',
   'ly-history-bridge.js','ly-activity-history.js','ly-employees-bridge.js','ly-employees.js',
   'ly-finance-bridge.js','ly-finance.js','ly-reports-bridge.js','ly-reports.js','ly-settings-ui-bridge.js','ly-settings-ui.js',
-  'ly-cashflow-bridge.js','ly-cashflow.js','ly-special-reports-bridge.js','ly-special-reports.js','ly-employee-reports-bridge.js',
+  'ly-cashflow-bridge.js','ly-cashflow.js','ly-special-reports-bridge.js','ly-special-reports.js','ly-employee-reports-bridge.js','ly-employee-reports.js',
   'ly-data-notifications.js','ly-inapp-notifications.js','ly-notification-center.js',
   'ly-cloud-realtime.js','ly-menu-security.js','ly-performance-optimizer.js','ly-heavy-panels.js'
 ];
