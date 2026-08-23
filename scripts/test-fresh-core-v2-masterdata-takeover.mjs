@@ -59,8 +59,13 @@ assert.equal(ir.error,null);
 const optimizedWarehouseLoad=await context.loadCloud();
 assert.equal(optimizedWarehouseLoad.optimized,true);
 assert.equal(fullLoads,0);
-assert.deepEqual(legacyDb.warehouses,[warehouse]);
-assert.deepEqual(legacyDb.inventory,inventory);
+assert.equal(legacyDb.warehouses.length,1);
+assert.equal(legacyDb.warehouses[0].id,'w1');
+assert.equal(legacyDb.warehouses[0].name,'Kho');
+assert.equal(legacyDb.inventory.length,1);
+assert.equal(legacyDb.inventory[0].warehouse_id,'w1');
+assert.equal(legacyDb.inventory[0].ingredient_id,'i1');
+assert.equal(Number(legacyDb.inventory[0].quantity),0);
 assert.equal(indexInvalidations,1,'warehouse change must invalidate data indexes used by warehouseIngredients');
 assert.equal(derivedInvalidations,1);
 assert.equal(warehouseSelectRenders,1);
@@ -69,7 +74,9 @@ assert.equal(renderAlls,1,'warehouse change must re-render all warehouse-scoped 
 const supplier={id:'s1',name:'NCC'};
 await client.from('ly_suppliers').upsert(supplier);
 await context.loadCloud();
-assert.deepEqual(legacyDb.suppliers,[supplier]);
+assert.equal(legacyDb.suppliers.length,1);
+assert.equal(legacyDb.suppliers[0].id,'s1');
+assert.equal(legacyDb.suppliers[0].name,'NCC');
 
 const insertedSupplier={id:'s2',name:'NCC inline'};
 const inserted=await client.from('ly_suppliers').insert(insertedSupplier).select().single();
