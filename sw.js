@@ -1,7 +1,6 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-10';
+const CACHE='lat-yen-legacy-ui-fresh-core-11';
 const NOTIFICATION_SCRIPT='./ly-data-notifications.js';
 const INAPP_SCRIPT='./ly-inapp-notifications.js';
-const SUPABASE_ORIGIN='https://isfotiyxufvsmlkqsgez.supabase.co';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg',NOTIFICATION_SCRIPT,INAPP_SCRIPT];
 
 self.addEventListener('install',event=>{
@@ -29,8 +28,8 @@ async function navigationWithNotificationLayer(request){
   try{
     let html=await response.text();
     const scripts=[];
-    if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.3"></script>');
-    if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.1"></script>');
+    if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.4"></script>');
+    if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.2"></script>');
     if(scripts.length){
       const block=scripts.join('\n');
       html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,block+'\n</body>'):html+'\n'+block;
@@ -41,68 +40,8 @@ async function navigationWithNotificationLayer(request){
   }catch(e){console.warn('[Lát Yên] notification layer injection failed',e);return response;}
 }
 
-const RPC_MAP={
-  ly_save_import:{entityTable:'ly_import_receipts',body:'Đã lưu phiếu nhập lên Cloud.'},
-  ly_save_export:{entityTable:'ly_export_receipts',body:'Đã lưu phiếu xuất lên Cloud.'},
-  ly_save_stocktake:{entityTable:'ly_stocktake_receipts',body:'Đã lưu phiếu kiểm kê lên Cloud.'},
-  ly_save_sale:{entityTable:'ly_sales',body:'Đã lưu phiếu bán hàng lên Cloud.'},
-  ly_save_ingredient:{entityTable:'ly_ingredients',body:'Đã lưu nguyên liệu / dụng cụ lên Cloud.'},
-  ly_save_product:{entityTable:'ly_products',body:'Đã lưu món / công thức lên Cloud.'},
-  ly_delete_receipt:{entityTable:'receipt',body:'Đã xóa phiếu trên Cloud.'}
-};
-
-const TABLE_MAP={
-  ly_warehouses:'kho',ly_suppliers:'nhà cung cấp',ly_ingredients:'nguyên liệu / dụng cụ',ly_products:'món / công thức',
-  ly_import_receipts:'phiếu nhập',ly_export_receipts:'phiếu xuất',ly_stocktake_receipts:'phiếu kiểm kê',ly_sales:'phiếu bán hàng',ly_cashflow_entries:'thu / chi'
-};
-
-function classifyMutation(request,url,body){
-  const method=request.method.toUpperCase();
-  if(!['POST','PUT','PATCH','DELETE'].includes(method)||url.origin!==SUPABASE_ORIGIN||!url.pathname.startsWith('/rest/v1/'))return null;
-  const rpcMatch=url.pathname.match(/^\/rest\/v1\/rpc\/([^/]+)$/);
-  if(rpcMatch){
-    const rpc=rpcMatch[1],cfg=RPC_MAP[rpc];if(!cfg)return null;
-    if(rpc==='ly_delete_receipt'){
-      const kind=String(body?.p_kind||body?.kind||'').toLowerCase();
-      const entityTable=kind==='import'?'ly_import_receipts':kind==='export'?'ly_export_receipts':kind==='stocktake'?'ly_stocktake_receipts':kind==='sale'?'ly_sales':'receipt';
-      return {entityTable,body:'Đã xóa phiếu trên Cloud.'};
-    }
-    return cfg;
-  }
-  const table=url.pathname.replace('/rest/v1/','').split('/')[0],noun=TABLE_MAP[table];if(!noun)return null;
-  const action=method==='DELETE'?'Đã xóa':method==='PATCH'||method==='PUT'?'Đã chỉnh sửa':'Đã lưu';
-  return {entityTable:table,body:`${action} ${noun} trên Cloud.`};
-}
-
-async function readJsonSafe(request){try{const text=await request.clone().text();return text?JSON.parse(text):null;}catch(e){return null;}}
-
-async function showMutationNotification(info){
-  try{
-    await self.registration.showNotification('Quản Lý Lát Yên',{
-      body:info.body,tag:`ly-local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,renotify:true,silent:false,requireInteraction:true,
-      icon:'./icon.svg',badge:'./icon.svg',timestamp:Date.now(),data:{url:'./',source:'local-mutation',table:info.entityTable}
-    });
-    return {ok:true,error:''};
-  }catch(e){console.warn('[Lát Yên] local mutation notification failed',e);return {ok:false,error:e?.message||String(e)};}
-}
-
-async function postToClient(clientId,message){if(!clientId)return;try{const client=await self.clients.get(clientId);client?.postMessage(message);}catch(e){}}
-
-async function handleSupabaseMutation(request,clientId){
-  const url=new URL(request.url),bodyPromise=readJsonSafe(request),response=await fetch(request);
-  if(!response.ok)return response;
-  const body=await bodyPromise,info=classifyMutation(request,url,body);if(!info)return response;
-  const result=await showMutationNotification(info);
-  if(result.ok){await postToClient(clientId,{type:'LAT_YEN_LOCAL_MUTATION_SHOWN',entityTable:info.entityTable,body:info.body,at:Date.now()});}
-  else{await postToClient(clientId,{type:'LAT_YEN_NOTIFICATION_PERMISSION_REQUIRED',error:result.error,at:Date.now()});}
-  return response;
-}
-
 self.addEventListener('fetch',event=>{
   const request=event.request,url=new URL(request.url);
-  if(url.origin===SUPABASE_ORIGIN&&request.method!=='GET'&&request.method!=='HEAD'){
-    event.respondWith(handleSupabaseMutation(request,event.clientId));return;
-  }
   if(request.method!=='GET'||url.origin!==location.origin)return;
   const isNavigation=request.mode==='navigate'||url.pathname.endsWith('/index.html')||url.pathname.endsWith('/');
   event.respondWith(isNavigation?navigationWithNotificationLayer(request):networkFirst(request));
