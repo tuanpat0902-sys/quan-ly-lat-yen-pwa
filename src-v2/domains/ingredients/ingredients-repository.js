@@ -5,6 +5,10 @@ export function createIngredientsRepository({ gateway }) {
     return gateway.selectOrg('ly_ingredients', '*', query => query.order?.('name', { ascending: true }) ?? query);
   }
 
+  async function listPreparedItems() {
+    return gateway.selectOrg('ly_prepared_items', '*', query => query.order?.('source_ingredient_id', { ascending: true }) ?? query);
+  }
+
   async function save(ingredient, preparedItems = []) {
     if (!ingredient || typeof ingredient !== 'object') throw new TypeError('ingredient is required');
     if (!Array.isArray(preparedItems)) throw new TypeError('preparedItems must be an array');
@@ -14,5 +18,5 @@ export function createIngredientsRepository({ gateway }) {
     });
   }
 
-  return Object.freeze({ list, save });
+  return Object.freeze({ list, listPreparedItems, save });
 }
