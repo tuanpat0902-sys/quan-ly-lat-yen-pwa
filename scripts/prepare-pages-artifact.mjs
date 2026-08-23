@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.3';
-const REVISION='fresh-core-v2-authoritative-v4';
+const APP_VERSION='2.1.4';
+const REVISION='fresh-core-v2-authoritative-v5';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
-const RUNTIME_BLOCK=`\n<script src="./ly-app-version.js?v=${APP_VERSION}"></script>\n<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.2"></script>\n<script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>\n<script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>\n`;
+const RUNTIME_BLOCK=`\n<script src="./ly-app-version.js?v=${APP_VERSION}"></script>\n<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.2"></script>\n<script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>\n<script src="./ly-independent-bootstrap.js?v=20260824.1"></script>\n<script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>\n`;
 
 export function prepareHtml(source){
   let html=String(source||'');
@@ -14,7 +14,7 @@ export function prepareHtml(source){
     "navigator.serviceWorker.register('./sw.js').catch(console.warn);",
     "navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update?.()).catch(console.warn);"
   );
-  if(!html.includes('ly-ui-bootstrap-rescue.js?v=20260824.2')){
+  if(!html.includes('ly-independent-bootstrap.js?v=20260824.1')){
     html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,RUNTIME_BLOCK+'\n</body>'):html+RUNTIME_BLOCK;
   }
   return html;
@@ -22,9 +22,9 @@ export function prepareHtml(source){
 
 function prepareSw(source){
   let sw=String(source||'');
-  sw=sw.replace(/lat-yen-(?:legacy-ui-fresh-core|fresh-core-v2-authoritative)-\d+/g,'lat-yen-fresh-core-v2-authoritative-56');
+  sw=sw.replace(/lat-yen-(?:legacy-ui-fresh-core|fresh-core-v2-authoritative)-\d+/g,'lat-yen-fresh-core-v2-authoritative-57');
   sw=sw.replace(/ly-module-loader\.js\?v=[^'\"]+/g,'ly-module-loader.js?v=20260824.6');
-  sw=sw.replace(/ly-app-version\.js\?v=[^'\"]+/g,'ly-app-version.js?v=2.1.3');
+  sw=sw.replace(/ly-app-version\.js\?v=[^'\"]+/g,'ly-app-version.js?v=2.1.4');
   return sw;
 }
 
@@ -39,8 +39,9 @@ const checks=[
   ['version runtime injected',output.includes(`ly-app-version.js?v=${APP_VERSION}`)],
   ['final V2 ownership injected',output.includes('ly-fresh-core-v2-final-ownership.js?v=20260824.2')],
   ['UI bootstrap rescue injected',output.includes('ly-ui-bootstrap-rescue.js?v=20260824.2')],
+  ['independent bootstrap injected',output.includes('ly-independent-bootstrap.js?v=20260824.1')],
   ['warehouse UX injected',output.includes('ly-warehouse-delete-ux.js?v=20260824.1')],
-  ['authoritative SW cache',swOutput.includes('lat-yen-fresh-core-v2-authoritative-56')]
+  ['authoritative SW cache',swOutput.includes('lat-yen-fresh-core-v2-authoritative-57')]
 ];
 for(const [name,ok] of checks){if(!ok)throw new Error(`Pages artifact check failed: ${name}`);}
 if(process.argv.includes('--check')){
