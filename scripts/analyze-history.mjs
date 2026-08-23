@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Analyzer revision 4: isolate exact Activity History region, including interstitial declarations.
+// Analyzer revision 5: trigger validated Activity History extraction job.
 const srcPath='index.html';
 const src=fs.readFileSync(srcPath,'utf8');
 const outDir='refactor';
