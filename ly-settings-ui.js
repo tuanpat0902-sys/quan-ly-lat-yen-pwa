@@ -105,7 +105,6 @@
                 onclick="selectBackupImport()"
               >Khôi phục từ file</button>
             </div>
-  
             <input
               id="backupImportInput"
               type="file"
@@ -140,11 +139,7 @@
             </div>
           </div>
   
-          ${
-            brand.logo
-              ?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`
-              :''
-          }
+          ${brand.logo?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`:''}
         </div>
   
         <div class="brand-settings-grid">
@@ -152,43 +147,18 @@
             <label>Tên phần mềm</label>
   
             <div class="brand-name-actions">
-              <input
-                id="brandNameInput"
-                maxlength="80"
-                value="${esc(brand.name)}"
-              >
-  
-              <button
-                class="primary"
-                onclick="saveAppName()"
-              >Lưu tên</button>
+              <input id="brandNameInput" maxlength="80" value="${esc(brand.name)}">
+              <button class="primary" onclick="saveAppName()">Lưu tên</button>
             </div>
           </div>
   
           <div>
             <label>Logo phần mềm</label>
-  
-            <input
-              id="brandLogoInput"
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/gif"
-              style="display:none"
-              onchange="handleAppLogo(this)"
-            >
+            <input id="brandLogoInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="handleAppLogo(this)">
   
             <div class="brand-logo-actions">
-              <button
-                class="secondary"
-                onclick="selectAppLogo()"
-              >
-                ${brand.logo?'Thay logo':'Thêm logo'}
-              </button>
-  
-              ${
-                brand.logo
-                  ?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`
-                  :''
-              }
+              <button class="secondary" onclick="selectAppLogo()">${brand.logo?'Thay logo':'Thêm logo'}</button>
+              ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa logo</button>`:''}
             </div>
           </div>
         </div>
@@ -207,8 +177,6 @@
   
     setTimeout(v269RenderSyncStatus,0);
   }
-  
-  async
 
   window.__lySettingsUIModule.renderSettings=renderSettings;
 })();
