@@ -6,7 +6,8 @@
     "validate": "node scripts/validate.mjs",
     "stability": "node scripts/stability-audit.mjs",
     "perf:budget": "node scripts/performance-budget.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget"
+    "v2:test": "node scripts/test-fresh-core-v2.mjs",
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test"
   },
   "engines": {
     "node": ">=20"
