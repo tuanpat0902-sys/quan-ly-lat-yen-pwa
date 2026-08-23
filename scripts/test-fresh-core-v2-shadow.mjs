@@ -4,9 +4,10 @@ import fs from 'node:fs';
 const shadow=fs.readFileSync('ly-fresh-core-v2-shadow.js','utf8');
 const sw=fs.readFileSync('sw.js','utf8');
 
-assert.match(shadow,/__lyFreshCoreV2ShadowV1/);
-assert.match(shadow,/import\('\.\/src-v2\/bootstrap\.js\?v=20260823\.1'\)/);
+assert.match(shadow,/__lyFreshCoreV2ShadowV2/);
+assert.match(shadow,/import\('\.\/src-v2\/bootstrap\.js\?v=20260823\.2'\)/);
 assert.match(shadow,/refreshCoreDomains\(\)/);
+assert.match(shadow,/preparedItems/);
 assert.match(shadow,/requestIdleCallback/);
 assert.match(shadow,/document\.hidden/);
 assert.match(shadow,/navigator\.onLine/);
@@ -15,8 +16,9 @@ for(const forbidden of ['.innerHTML','appendChild(','insertOrg(','updateOrg(','d
   assert.equal(shadow.includes(forbidden),false,`Shadow runtime must stay read-only/non-DOM: ${forbidden}`);
 }
 
-assert.match(sw,/lat-yen-legacy-ui-fresh-core-39/);
-assert.match(sw,/ly-fresh-core-v2-shadow\.js\?v=20260823\.1/);
+assert.match(sw,/lat-yen-legacy-ui-fresh-core-40/);
+assert.match(sw,/ly-fresh-core-v2-shadow\.js\?v=20260823\.2/);
+assert.match(sw,/ly-fresh-core-v2-ingredients-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/V2_ASSETS/);
 assert.match(sw,/\.\/src-v2\/bootstrap\.js/);
 assert.match(sw,/p_type\|\|body\?\.p_kind/);
