@@ -1,4 +1,4 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-26';
+const CACHE='lat-yen-legacy-ui-fresh-core-27';
 const INDEX_KEY='./index.html';
 const MODULE_LOADER='./ly-module-loader.js';
 const SETTINGS_SCRIPT='./ly-settings-enhancements.js';
@@ -9,8 +9,9 @@ const UNIFIED_STATUS_SCRIPT='./ly-cloud-realtime.js';
 const MENU_SECURITY_SCRIPT='./ly-menu-security.js';
 const BRANDING_SCRIPT='./ly-branding-sync.js';
 const PERFORMANCE_SCRIPT='./ly-performance-optimizer.js';
+const HEAVY_SCRIPT='./ly-heavy-panels.js';
 const SUPABASE_ORIGIN='https://isfotiyxufvsmlkqsgez.supabase.co';
-const ASSETS=[INDEX_KEY,'./manifest.webmanifest','./icon.svg',MODULE_LOADER,SETTINGS_SCRIPT,NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT,BRANDING_SCRIPT,PERFORMANCE_SCRIPT];
+const ASSETS=[INDEX_KEY,'./manifest.webmanifest','./icon.svg',MODULE_LOADER,SETTINGS_SCRIPT,NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT,BRANDING_SCRIPT,PERFORMANCE_SCRIPT,HEAVY_SCRIPT];
 
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
@@ -24,7 +25,7 @@ async function navigationWithLayers(request){
   const response=await navigationSource(request);if(!response)return response;const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
   try{
     let html=await response.text();const scripts=[];
-    if(!html.includes('ly-module-loader.js'))scripts.push('<script src="./ly-module-loader.js?v=20260823.1"></script>');
+    if(!html.includes('ly-module-loader.js'))scripts.push('<script src="./ly-module-loader.js?v=20260823.2"></script>');
     if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.6"></script>');
     if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.5"></script>');
     if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.3"></script>');
