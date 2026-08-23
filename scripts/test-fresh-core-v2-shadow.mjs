@@ -16,11 +16,12 @@ for(const forbidden of ['.innerHTML','appendChild(','insertOrg(','updateOrg(','d
   assert.equal(shadow.includes(forbidden),false,`Shadow runtime must stay read-only/non-DOM: ${forbidden}`);
 }
 
-assert.match(sw,/lat-yen-legacy-ui-fresh-core-42/);
+assert.match(sw,/lat-yen-legacy-ui-fresh-core-43/);
 assert.match(sw,/ly-fresh-core-v2-shadow\.js\?v=20260823\.2/);
 assert.match(sw,/ly-fresh-core-v2-ingredients-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/ly-fresh-core-v2-products-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/ly-fresh-core-v2-documents-takeover\.js\?v=20260823\.1/);
+assert.match(sw,/ly-fresh-core-v2-sales-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/V2_ASSETS/);
 assert.match(sw,/\.\/src-v2\/bootstrap\.js/);
 assert.match(sw,/p_type\|\|body\?\.p_kind/);
