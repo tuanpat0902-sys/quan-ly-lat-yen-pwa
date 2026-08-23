@@ -1,0 +1,28 @@
+name: Analyze Next UI Module
+on:
+  push:
+    branches: ["refactor/next-ui-module"]
+    paths:
+      - "scripts/analyze-next-ui.mjs"
+      - ".github/workflows/analyze-next-ui.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node scripts/analyze-next-ui.mjs
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add refactor/next-ui-analysis.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore: record next UI analysis"
+          git push
