@@ -1,0 +1,1 @@
+Trigger authoritative source patch for Ver 2.1.1, version information card, V2 warehouse delete, and Core-54 service worker.
