@@ -39,7 +39,6 @@
   function injectStyles(){
     if(document.getElementById('lySettingsEnhancementsStyles'))return;
     const s=document.createElement('style');s.id='lySettingsEnhancementsStyles';s.textContent=`
-      html[data-ly-notifications-master="off"] #lyInAppNotificationHost{display:none!important}
       .ly-notify-master-btn{border:1px solid #d0d5dd!important;background:#fff!important;color:#344054!important}
       .ly-notify-master-btn.is-off{border-color:#fecaca!important;background:#fff7f7!important;color:#b42318!important}
       .ly-notify-master-hint{margin-top:9px;padding:9px 10px;border-radius:9px;background:#f8fafc;border:1px solid #e4e7ec;color:#667085;font-size:11.5px;line-height:1.4}
