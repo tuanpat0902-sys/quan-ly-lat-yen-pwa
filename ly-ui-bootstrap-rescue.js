@@ -1,12 +1,22 @@
 (()=>{
 'use strict';
 if(window.__lyUiBootstrapRescue)return;
-const VERSION='2026.08.24.1';
+const VERSION='2026.08.24.2';
 const state={version:VERSION,attempts:0,success:false,lastError:'',lastAt:0};
 function call(name,...args){try{const fn=window[name];if(typeof fn==='function'){fn(...args);return true;}}catch(e){state.lastError=String(e?.message||e);}return false;}
+function hydrateFromV2(){
+  try{
+    const core=window.__lyFreshCoreV2;
+    const hydration=window.__lyFreshCoreV2LegacyHydration;
+    const snapshot=core?.store?.getState?.();
+    if(snapshot&&typeof hydration?.hydrate==='function')return hydration.hydrate(snapshot)!==false;
+  }catch(e){state.lastError=String(e?.message||e);}
+  return false;
+}
 function rescue(){
   state.attempts++;state.lastAt=Date.now();
   try{
+    hydrateFromV2();
     call('applyAppBrand');
     call('navInit');
     call('restoreNavGroupStateV238');
