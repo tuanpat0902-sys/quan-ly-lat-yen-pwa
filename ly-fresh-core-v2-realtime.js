@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2RealtimeV1)return;
   window.__lyFreshCoreV2RealtimeV1=true;
 
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.23.2';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const DEBOUNCE_MS=180;
@@ -12,6 +12,8 @@
     ly_prepared_items:'ingredients',
     ly_products:'products',
     ly_recipe_items:'products',
+    ly_inventory:'inventory',
+    ly_stock_transactions:'inventory',
     ly_import_receipts:'imports',
     ly_import_items:'imports',
     ly_export_receipts:'exports',
