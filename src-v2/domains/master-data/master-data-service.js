@@ -15,6 +15,13 @@ export function createMasterDataService({ repository, store, events }) {
     return row;
   }
 
+  async function removeWarehouse(id) {
+    const row = await repository.removeWarehouse(id);
+    await refresh();
+    events.emit('warehouses:removed', { id });
+    return row;
+  }
+
   async function initializeInventory(rows) {
     const result = await repository.initializeInventory(rows);
     events.emit('inventory:initialized', { count: Array.isArray(rows) ? rows.length : 1 });
@@ -28,5 +35,5 @@ export function createMasterDataService({ repository, store, events }) {
     return row;
   }
 
-  return Object.freeze({ refresh, saveWarehouse, initializeInventory, saveSupplier });
+  return Object.freeze({ refresh, saveWarehouse, removeWarehouse, initializeInventory, saveSupplier });
 }
