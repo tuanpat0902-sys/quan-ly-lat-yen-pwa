@@ -1,17 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-// Analyzer revision 2: trigger full-source analysis on GitHub runner.
+// Analyzer revision 3: isolate only the Activity History menu block.
 const srcPath='index.html';
 const src=fs.readFileSync(srcPath,'utf8');
 const outDir='refactor';
 fs.mkdirSync(outDir,{recursive:true});
+const ACTIVITY_NAMES=new Set([
+  'compactAuditRows','loadAuditLog','saveAuditLog','auditLog',
+  'auditActionClass','auditFilterRows','renderHistory'
+]);
 
 function lineOf(pos){return src.slice(0,pos).split('\n').length;}
 function extractFunctionAt(start){
   const brace=src.indexOf('{',start);
   if(brace<0)throw new Error('Function opening brace not found');
-  let depth=0, quote='', escaped=false, lineComment=false, blockComment=false, templateDepth=0;
+  let depth=0,quote='',escaped=false,lineComment=false,blockComment=false,templateDepth=0;
   for(let i=brace;i<src.length;i++){
     const c=src[i],n=src[i+1];
     if(lineComment){if(c==='\n')lineComment=false;continue;}
@@ -20,7 +24,7 @@ function extractFunctionAt(start){
       if(escaped){escaped=false;continue;}
       if(c==='\\'){escaped=true;continue;}
       if(quote==='`'&&c==='$'&&n==='{'){templateDepth++;depth++;i++;continue;}
-      if(c===quote && !(quote==='`'&&templateDepth>0)){quote='';continue;}
+      if(c===quote&&!(quote==='`'&&templateDepth>0)){quote='';continue;}
       if(quote==='`'&&c==='}'&&templateDepth>0){templateDepth--;depth--;continue;}
       continue;
     }
@@ -28,69 +32,58 @@ function extractFunctionAt(start){
     if(c==='/'&&n==='*'){blockComment=true;i++;continue;}
     if(c==='"'||c==="'"||c==='`'){quote=c;continue;}
     if(c==='{')depth++;
-    else if(c==='}'){
-      depth--;
-      if(depth===0)return {start,end:i+1,code:src.slice(start,i+1)};
-    }
+    else if(c==='}'&&--depth===0)return {start,end:i+1,code:src.slice(start,i+1)};
   }
   throw new Error('Unbalanced function');
 }
 
 const declRe=/\b(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/g;
-const functions=[];
+const allNamed=[];
 let m;
 while((m=declRe.exec(src))){
   const name=m[1];
   if(!/(history|audit)/i.test(name))continue;
   try{
     const item=extractFunctionAt(m.index);
-    functions.push({name,...item,startLine:lineOf(item.start),endLine:lineOf(item.end)});
+    allNamed.push({name,...item,startLine:lineOf(item.start),endLine:lineOf(item.end)});
     declRe.lastIndex=item.end;
-  }catch(e){
-    functions.push({name,start:m.index,end:m.index,startLine:lineOf(m.index),endLine:lineOf(m.index),error:String(e)});
-  }
+  }catch(e){allNamed.push({name,error:String(e),start:m.index,startLine:lineOf(m.index)});}
 }
 
-const render=functions.find(f=>f.name==='renderHistory');
-if(!render)throw new Error('renderHistory() was not found; refusing to generate extraction candidate');
+const activityFns=[...ACTIVITY_NAMES].map(name=>{
+  const f=allNamed.find(x=>x.name===name&&!x.error);
+  if(!f)throw new Error(`Required Activity History function missing: ${name}`);
+  return f;
+}).sort((a,b)=>a.start-b.start);
 
-function identifiers(code){
-  const set=new Set();
-  for(const x of code.matchAll(/\b([A-Za-z_$][\w$]*)\b/g))set.add(x[1]);
-  const ignored=new Set(['function','const','let','var','if','else','for','while','return','true','false','null','undefined','new','this','typeof','instanceof','in','of','try','catch','finally','throw','async','await','class','switch','case','break','continue','default','delete','void','yield','document','window','Math','Date','JSON','Object','Array','String','Number','Boolean','Set','Map','Intl','console']);
-  return [...set].filter(x=>!ignored.has(x));
-}
+const render=activityFns.find(f=>f.name==='renderHistory');
+const first=activityFns[0],last=activityFns[activityFns.length-1];
+const interstitial=src.slice(first.start,last.end);
+const expectedJoined=activityFns.map(f=>f.code).join('');
+const strippedInterstitial=interstitial.replace(/\s+/g,'');
+const strippedExpected=expectedJoined.replace(/\s+/g,'');
+const hasUnexpectedInterstitial=strippedInterstitial!==strippedExpected;
 
-const declared=new Set(functions.map(f=>f.name));
-const refs=identifiers(render.code).filter(x=>!declared.has(x));
-const localDecl=new Set([...render.code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)/g)].map(x=>x[1]));
-const params=new Set((render.code.match(/^\s*(?:async\s+)?function\s+renderHistory\s*\(([^)]*)\)/)?.[1]||'').split(',').map(s=>s.trim()).filter(Boolean));
-const externalRefs=refs.filter(x=>!localDecl.has(x)&&!params.has(x)).sort();
+const moduleCandidate=`/* AUTO-GENERATED ACTIVITY HISTORY CANDIDATE — NOT LOADED BY PRODUCTION */\n${activityFns.map(f=>`// ${f.name}: index.html lines ${f.startLine}-${f.endLine}\n${f.code}`).join('\n\n')}\n`;
+fs.writeFileSync(path.join(outDir,'activity-history-block.js'),moduleCandidate);
 
-const candidateFns=functions.filter(f=>!f.error);
-const candidate=`/* AUTO-GENERATED ANALYSIS CANDIDATE — NOT LOADED BY PRODUCTION */\n(()=>{\n'use strict';\n\n${candidateFns.map(f=>`// ${f.name}: index.html lines ${f.startLine}-${f.endLine}\n${f.code}`).join('\n\n')}\n\n})();\n`;
-fs.writeFileSync(path.join(outDir,'history-candidate.js'),candidate);
-
-const bytes=candidateFns.reduce((n,f)=>n+Buffer.byteLength(f.code),0);
+const bytes=activityFns.reduce((n,f)=>n+Buffer.byteLength(f.code),0);
 const report=[
-  '# History extraction analysis',
-  '',
+  '# Activity History extraction analysis','',
   `- index.html bytes: ${Buffer.byteLength(src)}`,
-  `- renderHistory lines: ${render.startLine}-${render.endLine}`,
-  `- renderHistory bytes: ${Buffer.byteLength(render.code)}`,
-  `- history/audit named functions found: ${candidateFns.length}`,
-  `- combined candidate bytes: ${bytes}`,
-  '',
-  '## Candidate functions',
-  ...candidateFns.map(f=>`- \`${f.name}\`: lines ${f.startLine}-${f.endLine}, ${Buffer.byteLength(f.code)} bytes`),
-  '',
-  '## Possible external references used by renderHistory',
-  '',
-  externalRefs.map(x=>`\`${x}\``).join(', '),
-  '',
-  '## Safety',
-  '',
-  'This analysis does not modify index.html. Production extraction must only proceed after reviewing this report/candidate and passing npm run validate.'
+  `- target range: lines ${first.startLine}-${last.endLine}`,
+  `- target function bytes: ${bytes}`,
+  `- target functions: ${activityFns.length}`,
+  `- unexpected code/comments between target functions: ${hasUnexpectedInterstitial?'YES':'NO'}`,
+  '', '## Exact target functions',
+  ...activityFns.map(f=>`- \`${f.name}\`: lines ${f.startLine}-${f.endLine}, ${Buffer.byteLength(f.code)} bytes`),
+  '', '## Other history/audit functions intentionally excluded',
+  ...allNamed.filter(f=>!ACTIVITY_NAMES.has(f.name)).map(f=>`- \`${f.name}\`: line ${f.startLine}${f.error?' (parse warning)':''}`),
+  '', '## Extraction gate','',
+  hasUnexpectedInterstitial
+    ? 'BLOCKED: the target functions are not a contiguous clean block; review surrounding source before removal.'
+    : 'Candidate functions form a clean contiguous block after whitespace normalization. Dependency review is still required before removal.',
+  '', 'Production index.html is unchanged by this analysis.'
 ].join('\n');
 fs.writeFileSync(path.join(outDir,'history-analysis.md'),report);
 console.log(report);
