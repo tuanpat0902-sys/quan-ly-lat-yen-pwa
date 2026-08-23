@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2RealtimePhase2V1)return;
   window.__lyFreshCoreV2RealtimePhase2V1=true;
 
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.23.2';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const state={version:VERSION,phase:'waiting',enabled:false,v2Connected:false,retired:0,restored:0,suppressedSetupCalls:0,lastAt:0,lastError:''};
@@ -13,6 +13,15 @@
   function client(){try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;}
   function v2(){return window.__lyFreshCoreV2Realtime||null;}
   function core(){return window.__lyFreshCoreV2||null;}
+
+  function loadMasterDataTakeover(){
+    if(window.__lyFreshCoreV2MasterDataTakeover||!document?.createElement||document.getElementById?.('lyV2MasterDataTakeoverScript'))return;
+    const script=document.createElement('script');
+    script.id='lyV2MasterDataTakeoverScript';
+    script.src='./ly-fresh-core-v2-masterdata-takeover.js?v=20260823.1';
+    script.async=true;
+    (document.head||document.documentElement)?.appendChild?.(script);
+  }
 
   function removeLegacyFreshChannel(){
     const c=client();
@@ -31,14 +40,8 @@
     if(window.setupRealtime?.__lyV2RealtimePhase2)return true;
     const guarded=function(...args){
       const status=v2()?.status?.()||{};
-      if(status.connected){
-        state.suppressedSetupCalls++;
-        state.v2Connected=true;
-        removeLegacyFreshChannel();
-        return v2()?.enable?.();
-      }
-      state.v2Connected=false;
-      return originalSetupRealtime.apply(this,args);
+      if(status.connected){state.suppressedSetupCalls++;state.v2Connected=true;removeLegacyFreshChannel();return v2()?.enable?.();}
+      state.v2Connected=false;return originalSetupRealtime.apply(this,args);
     };
     Object.defineProperty(guarded,'__lyV2RealtimePhase2',{value:true});
     window.setupRealtime=guarded;
@@ -54,14 +57,8 @@
   function applyStatus(payload){
     const connected=payload?.connected===true||v2()?.status?.().connected===true;
     state.v2Connected=connected;
-    if(connected){
-      removeLegacyFreshChannel();
-      state.phase='active-v2';
-      state.lastError='';
-    }else{
-      state.phase='fallback-legacy';
-      restoreLegacyFreshChannel();
-    }
+    if(connected){removeLegacyFreshChannel();state.phase='active-v2';state.lastError='';}
+    else{state.phase='fallback-legacy';restoreLegacyFreshChannel();}
   }
 
   function enable(){
@@ -72,22 +69,18 @@
     offStatus=c.events.on('realtime:status',applyStatus);
     state.enabled=true;
     applyStatus(rt.status());
+    loadMasterDataTakeover();
     return true;
   }
 
   function disable(){
     offStatus?.();offStatus=null;
     if(originalSetupRealtime&&window.setupRealtime?.__lyV2RealtimePhase2)window.setupRealtime=originalSetupRealtime;
-    state.enabled=false;
-    state.phase='disabled';
+    state.enabled=false;state.phase='disabled';
     if(!window.__lyFreshRealtime)restoreLegacyFreshChannel();
   }
 
-  function boot(){
-    if(enable())return;
-    if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}
-    setTimeout(boot,500);
-  }
+  function boot(){if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
 
   window.__lyFreshCoreV2RealtimePhase2={version:VERSION,enable,disable,status:()=>({...state})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
