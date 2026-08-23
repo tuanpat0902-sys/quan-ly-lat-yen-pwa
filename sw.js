@@ -1,4 +1,4 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-22';
+const CACHE='lat-yen-legacy-ui-fresh-core-23';
 const INDEX_KEY='./index.html';
 const SETTINGS_SCRIPT='./ly-settings-enhancements.js';
 const NOTIFICATION_SCRIPT='./ly-data-notifications.js';
@@ -7,8 +7,9 @@ const CENTER_SCRIPT='./ly-notification-center.js';
 const UNIFIED_STATUS_SCRIPT='./ly-cloud-realtime.js';
 const MENU_SECURITY_SCRIPT='./ly-menu-security.js';
 const BRANDING_SCRIPT='./ly-branding-sync.js';
+const PERFORMANCE_SCRIPT='./ly-performance-optimizer.js';
 const SUPABASE_ORIGIN='https://isfotiyxufvsmlkqsgez.supabase.co';
-const ASSETS=[INDEX_KEY,'./manifest.webmanifest','./icon.svg',SETTINGS_SCRIPT,NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT,BRANDING_SCRIPT];
+const ASSETS=[INDEX_KEY,'./manifest.webmanifest','./icon.svg',SETTINGS_SCRIPT,NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT,BRANDING_SCRIPT,PERFORMANCE_SCRIPT];
 
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
@@ -29,6 +30,7 @@ async function navigationWithLayers(request){
     if(!html.includes('ly-cloud-realtime.js'))scripts.push('<script src="./ly-cloud-realtime.js?v=20260823.4"></script>');
     if(!html.includes('ly-menu-security.js'))scripts.push('<script src="./ly-menu-security.js?v=20260823.1.4"></script>');
     if(!html.includes('ly-branding-sync.js'))scripts.push('<script src="./ly-branding-sync.js?v=20260823.2"></script>');
+    if(!html.includes('ly-performance-optimizer.js'))scripts.push('<script src="./ly-performance-optimizer.js?v=20260823.1"></script>');
     if(scripts.length){const block=scripts.join('\n');html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,block+'\n</body>'):html+'\n'+block;}
     const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('content-encoding');headers.delete('etag');headers.set('content-type','text/html; charset=utf-8');return new Response(html,{status:response.status,statusText:response.statusText,headers});
   }catch(e){return response;}
