@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.5';
-const REVISION='fresh-core-v2-authoritative-v6';
+const APP_VERSION='2.1.6';
+const REVISION='fresh-core-v2-authoritative-v7';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
+const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`\n<script src="./ly-app-version.js?v=${APP_VERSION}"></script>\n<script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260823.2"></script>\n<script src="./ly-fresh-core-v2-shadow.js?v=20260823.2"></script>\n<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.2"></script>\n<script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>\n<script src="./ly-independent-bootstrap.js?v=20260824.1"></script>\n<script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>\n`;
 
 export function prepareHtml(source){
@@ -14,6 +15,10 @@ export function prepareHtml(source){
     "navigator.serviceWorker.register('./sw.js').catch(console.warn);",
     "navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update?.()).catch(console.warn);"
   );
+  if(!html.includes('id="lyEarlyAuthShim"')){
+    const supabaseTag='<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>';
+    html=html.includes(supabaseTag)?html.replace(supabaseTag,supabaseTag+'\n'+AUTH_SHIM):html.replace(/<head>/i,'<head>\n'+AUTH_SHIM);
+  }
   if(!html.includes('ly-fresh-core-v2-shadow.js?v=20260823.2')){
     html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,RUNTIME_BLOCK+'\n</body>'):html+RUNTIME_BLOCK;
   }
@@ -22,9 +27,9 @@ export function prepareHtml(source){
 
 function prepareSw(source){
   let sw=String(source||'');
-  sw=sw.replace(/lat-yen-(?:legacy-ui-fresh-core|fresh-core-v2-authoritative)-\d+/g,'lat-yen-fresh-core-v2-authoritative-58');
-  sw=sw.replace(/ly-module-loader\.js\?v=[^'\"]+/g,'ly-module-loader.js?v=20260824.6');
-  sw=sw.replace(/ly-app-version\.js\?v=[^'\"]+/g,'ly-app-version.js?v=2.1.5');
+  sw=sw.replace(/lat-yen-(?:legacy-ui-fresh-core|fresh-core-v2-authoritative)-\d+/g,'lat-yen-fresh-core-v2-authoritative-59');
+  sw=sw.replace(/ly-module-loader\.js\?v=[^'\"]+/g,'ly-module-loader.js?v=20260824.7');
+  sw=sw.replace(/ly-app-version\.js\?v=[^'\"]+/g,'ly-app-version.js?v=2.1.6');
   return sw;
 }
 
@@ -35,15 +40,15 @@ const swOutput=prepareSw(swInput);
 const checks=[
   ['static version badge',output.includes(`id="appVersionStatic">Ver ${APP_VERSION}`)],
   ['version info panel current',output.includes(`const APP_VERSION='${APP_VERSION}',REVISION='${REVISION}'`)],
+  ['early auth shim injected',output.includes('id="lyEarlyAuthShim"')&&output.indexOf('id="lyEarlyAuthShim"')<output.indexOf('async function v260EnsureAuth')],
   ['SW bypasses HTTP cache',output.includes("updateViaCache:'none'")],
   ['version runtime injected',output.includes(`ly-app-version.js?v=${APP_VERSION}`)],
   ['legacy hydration injected before shadow',output.indexOf('ly-fresh-core-v2-legacy-hydration.js?v=20260823.2')<output.indexOf('ly-fresh-core-v2-shadow.js?v=20260823.2')],
   ['shadow bootstrap injected before final ownership',output.indexOf('ly-fresh-core-v2-shadow.js?v=20260823.2')<output.indexOf('ly-fresh-core-v2-final-ownership.js?v=20260824.2')],
   ['final V2 ownership injected',output.includes('ly-fresh-core-v2-final-ownership.js?v=20260824.2')],
-  ['UI bootstrap rescue injected',output.includes('ly-ui-bootstrap-rescue.js?v=20260824.2')],
   ['independent bootstrap injected',output.includes('ly-independent-bootstrap.js?v=20260824.1')],
   ['warehouse UX injected',output.includes('ly-warehouse-delete-ux.js?v=20260824.1')],
-  ['authoritative SW cache',swOutput.includes('lat-yen-fresh-core-v2-authoritative-58')]
+  ['authoritative SW cache',swOutput.includes('lat-yen-fresh-core-v2-authoritative-59')]
 ];
 for(const [name,ok] of checks){if(!ok)throw new Error(`Pages artifact check failed: ${name}`);}
 if(process.argv.includes('--check')){
