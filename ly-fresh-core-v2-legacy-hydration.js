@@ -23,5 +23,5 @@ function hydrate(input){
 }
 function requestManualRefresh(){if(window.__lyFreshCoreV2ManualRefresh)return;try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-fresh-core-v2-manual-refresh.js?v=20260823.1';script.async=true;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}}
 window.__lyFreshCoreV2LegacyHydration={version:VERSION,hydrate,status:()=>({...state})};
-setTimeout(requestManualRefresh,0);
+if(typeof setTimeout==='function')setTimeout(requestManualRefresh,0);else requestManualRefresh();
 })();
