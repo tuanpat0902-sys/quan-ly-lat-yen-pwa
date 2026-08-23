@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+// Trigger 2026-08-23: map current Legacy ingredient entry points.
 const s=fs.readFileSync('index.html','utf8');
 const needle='ly_save_ingredient';
 let at=-1,count=0;
