@@ -2,14 +2,14 @@
   'use strict';
   if(window.__lyInAppNotificationsV5)return;
   window.__lyInAppNotificationsV5=true;
-  const VERSION='2026.08.23.7';
+  const VERSION='2026.08.23.8';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const activityEnabled=()=>{try{return localStorage.getItem(MASTER_KEY)!=='0';}catch(e){return true;}};
-  const appVersionLabel=()=>window.__LY_APP_VERSION_LABEL||`Ver ${window.__LY_APP_VERSION||'2.0.0'}`;
+  const appVersionLabel=()=>window.__LY_APP_VERSION_LABEL||`Ver ${window.__LY_APP_VERSION||'2.0.1'}`;
   const titleWithVersion=title=>{const value=String(title||'Quản Lý Lát Yên');const ver=appVersionLabel();return value.includes(ver)?value:`${value} · ${ver}`;};
   function requestAppVersion(){
     if(window.__lyAppVersion)return;
-    try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-app-version.js?v=2.0.0';script.async=false;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}
+    try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-app-version.js?v=2.0.1';script.async=false;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}
   }
 
   function host(){
@@ -27,6 +27,6 @@
     requestAnimationFrame(()=>{card.style.opacity='1';card.style.transform='translateY(0)';});if(!persistent)setTimeout(()=>{card.style.opacity='0';card.style.transform='translateY(-6px)';setTimeout(()=>card.remove(),220);},7200);
   }
   window.addEventListener('latyen:activity',event=>{const item=event?.detail||{};if(!activityEnabled()||document.hidden||!item.popup||item.local)return;showToast(item.body,item.title,false,item.icon||'🔔');});
-  window.__lyInAppNotifications={version:VERSION,show:showToast,status:()=>({version:VERSION,appVersion:window.__LY_APP_VERSION||'2.0.0',activityEnabled:activityEnabled()})};
+  window.__lyInAppNotifications={version:VERSION,show:showToast,status:()=>({version:VERSION,appVersion:window.__LY_APP_VERSION||'2.0.1',activityEnabled:activityEnabled()})};
   requestAppVersion();
 })();
