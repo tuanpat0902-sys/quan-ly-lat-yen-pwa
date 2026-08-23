@@ -1,4 +1,4 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-25';
+const CACHE='lat-yen-legacy-ui-fresh-core-26';
 const INDEX_KEY='./index.html';
 const MODULE_LOADER='./ly-module-loader.js';
 const SETTINGS_SCRIPT='./ly-settings-enhancements.js';
@@ -27,7 +27,7 @@ async function navigationWithLayers(request){
     if(!html.includes('ly-module-loader.js'))scripts.push('<script src="./ly-module-loader.js?v=20260823.1"></script>');
     if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.6"></script>');
     if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.5"></script>');
-    if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.2"></script>');
+    if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.3"></script>');
     if(!html.includes('ly-cloud-realtime.js'))scripts.push('<script src="./ly-cloud-realtime.js?v=20260823.4"></script>');
     if(!html.includes('ly-menu-security.js'))scripts.push('<script src="./ly-menu-security.js?v=20260823.1.4"></script>');
     if(!html.includes('ly-performance-optimizer.js'))scripts.push('<script src="./ly-performance-optimizer.js?v=20260823.2"></script>');
