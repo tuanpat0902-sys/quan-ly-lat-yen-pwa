@@ -57558,6 +57558,77 @@ deleteCashflowEntry=async function(id){
 };
 </script>
 
+
+<script id="fresh-sales-time-fix">
+function lyFreshLocalDateISO(value){
+  if(!value)return '';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '';
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function lyFreshSaleTimestamp(selectedDate,editId=''){
+  const date=String(selectedDate||todayLocalISO()).trim();
+  const oldSale=editId
+    ?(db.sales||[]).find(x=>String(x.id)===String(editId))
+    :null;
+
+  /* If editing without changing the sale date, preserve the original timestamp. */
+  if(
+    oldSale?.sold_at &&
+    lyFreshLocalDateISO(oldSale.sold_at)===date
+  ){
+    return oldSale.sold_at;
+  }
+
+  /*
+    New receipt or changed date:
+    combine the selected local date with the CURRENT local clock,
+    then serialize to UTC ISO for timestamptz storage.
+  */
+  const now=new Date();
+  const match=date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if(!match){
+    return now.toISOString();
+  }
+
+  const local=new Date(
+    Number(match[1]),
+    Number(match[2])-1,
+    Number(match[3]),
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+    now.getMilliseconds()
+  );
+
+  return local.toISOString();
+}
+
+/* Explicit local-time formatter for sales history. */
+function lyFreshSaleHistoryTime(value){
+  if(!value)return '—';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return '—';
+
+  return new Intl.DateTimeFormat(
+    'vi-VN',
+    {
+      day:'2-digit',
+      month:'2-digit',
+      year:'numeric',
+      hour:'2-digit',
+      minute:'2-digit',
+      second:'2-digit',
+      hour12:false
+    }
+  ).format(d);
+}
+</script>
 <script id="fresh-sales-history-cloud-fix">
 /* Fresh Cloud sales history:
    read structured columns directly; no parsing legacy note metadata. */
@@ -57677,7 +57748,7 @@ saleReceiptHistoryTable=function(){
 
           return `
             <tr>
-              <td>${dt(s.sold_at||s.created_at)}</td>
+              <td>${lyFreshSaleHistoryTime(s.sold_at||s.created_at)}</td>
               <td><b>${esc(saleReceiptNumber(s))}</b></td>
               <td><span class="badge">${esc(s.source||'manual')}</span></td>
               <td class="right">${num(qty)}</td>
@@ -57742,10 +57813,10 @@ saveSaleReceipt=async function(){
     return false;
   }
 
-  let soldAt=new Date().toISOString();
-  if(/^\d{4}-\d{2}-\d{2}$/.test(saleDate)){
-    soldAt=new Date(`${saleDate}T12:00:00`).toISOString();
-  }
+  const soldAt=lyFreshSaleTimestamp(
+    saleDate,
+    editId
+  );
 
   const btn=$('saleReceiptSubmitBtn');
   const result=$('saleReceiptResult');
