@@ -1,91 +1,14 @@
 (()=>{
 'use strict';
-if(window.__lyFreshCoreV2FinalOwnership)return;
-const VERSION='2026.08.24.2';
-const state={version:VERSION,phase:'waiting',active:false,refreshes:0,initialHydrates:0,retries:0,legacyFallbacks:0,lastAt:0,lastError:''};
-let originalLoadCloud=null;
-let originalAutoSyncNow=null;
-let retryTimer=null;
-
-function core(){return window.__lyFreshCoreV2||null;}
-function hydration(){return window.__lyFreshCoreV2LegacyHydration||null;}
-function renderLegacyShell(){
-  try{window.invalidateDataIndexes?.();}catch(e){}
-  try{window.invalidateDerivedCaches?.();}catch(e){}
-  try{window.renderWarehouseSelect?.();}catch(e){}
-  if(typeof window.renderAll==='function')window.renderAll();
-  else{
-    ['renderDashboard','renderIngredients','renderProducts','renderInventory','renderWarehouses','renderSales','renderCashflow','renderSettings'].forEach(name=>{try{window[name]?.();}catch(e){}});
-  }
-  try{window.updateCloudStatus?.();}catch(e){}
-}
-function hydrateCurrentState(){
-  const c=core();const h=hydration();
-  if(!c||typeof h?.hydrate!=='function'||typeof c.store?.getState!=='function')throw new Error('Fresh Core V2 hydration runtime not ready');
-  if(h.hydrate(c.store.getState())!==true)throw new Error('Fresh Core V2 hydration failed');
-  renderLegacyShell();
-  state.initialHydrates++;state.lastAt=Date.now();state.lastError='';
-  return true;
-}
-async function refreshFromV2(){
-  const c=core();const h=hydration();
-  if(!c||typeof c.refreshCoreDomains!=='function'||typeof h?.hydrate!=='function')throw new Error('Fresh Core V2 runtime not ready');
-  await c.refreshCoreDomains();
-  if(h.hydrate(c.store.getState())!==true)throw new Error('Fresh Core V2 hydration failed');
-  renderLegacyShell();
-  state.refreshes++;state.lastAt=Date.now();state.lastError='';
-  return true;
-}
-function scheduleRecovery(){
-  if(retryTimer)return;
-  retryTimer=setTimeout(async()=>{
-    retryTimer=null;state.retries++;
-    try{await refreshFromV2();state.phase='active';}
-    catch(error){state.lastError=String(error?.message||error);state.phase='recovering';scheduleRecovery();}
-  },1200);
-}
-function retireLegacyRealtime(){
-  try{window.__lyFreshCoreV2RealtimePhase2?.enable?.();}catch(e){}
-  try{if(window.__lyFreshRealtime&&window.sb?.removeChannel)window.sb.removeChannel(window.__lyFreshRealtime);}catch(e){}
-  window.__lyFreshRealtime=null;
-  if(window.__lyFreshReloadTimer){try{clearTimeout(window.__lyFreshReloadTimer);}catch(e){}window.__lyFreshReloadTimer=null;}
-}
-function install(){
-  if(state.active)return true;
-  const c=core(),h=hydration();
-  if(!c||typeof c.refreshCoreDomains!=='function'||typeof h?.hydrate!=='function'||typeof c.store?.getState!=='function')return false;
-  if(!originalLoadCloud&&typeof window.loadCloud==='function')originalLoadCloud=window.loadCloud;
-  if(!originalAutoSyncNow&&typeof window.autoSyncNow==='function')originalAutoSyncNow=window.autoSyncNow;
-  const authoritative=async function(){
-    try{return await refreshFromV2();}
-    catch(error){state.lastError=String(error?.message||error);state.legacyFallbacks++;scheduleRecovery();throw error;}
-  };
-  Object.defineProperty(authoritative,'__lyFreshCoreV2Authoritative',{value:true});
-  window.loadCloud=authoritative;
-  window.autoSyncNow=authoritative;
-  window.__lyFreshCoreMode='fresh-core-v2-only';
-  window.__lyLegacyDataRuntimeRetired=true;
-  retireLegacyRealtime();
-  state.phase='hydrating';
-  state.active=true;
-  try{hydrateCurrentState();state.phase='active';}
-  catch(error){state.lastError=String(error?.message||error);state.phase='recovering';scheduleRecovery();}
-  state.lastAt=Date.now();
-  window.dispatchEvent?.(new CustomEvent('latyen:fresh-core-v2-authoritative',{detail:{version:VERSION,mode:window.__lyFreshCoreMode}}));
-  return true;
-}
-function boot(){
-  if(install())return;
-  state.phase='waiting';
-  setTimeout(boot,300);
-}
-window.__lyFreshCoreV2FinalOwnership={
-  version:VERSION,
-  install,
-  refresh:refreshFromV2,
-  hydrate:hydrateCurrentState,
-  status:()=>({...state,mode:window.__lyFreshCoreMode||''})
-};
-window.addEventListener?.('latyen:v2-shadow-ready',()=>setTimeout(boot,0));
-if(document.readyState==='loading')document.addEventListener?.('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
+if(window.__lyFreshCoreV2FinalOwnershipV3)return;window.__lyFreshCoreV2FinalOwnershipV3=true;
+const VERSION='2026.08.24.3';const state={version:VERSION,phase:'waiting',active:false,refreshes:0,initialHydrates:0,retries:0,lastAt:0,lastError:''};let retryTimer=null;
+function core(){return window.__lyFreshCoreV2||null;}function hydration(){return window.__lyFreshCoreV2LegacyHydration||null;}
+function renderLegacyShell(){try{window.invalidateDataIndexes?.();}catch(e){}try{window.invalidateDerivedCaches?.();}catch(e){}try{window.renderWarehouseSelect?.();}catch(e){}if(typeof window.renderAll==='function'){try{window.renderAll();}catch(e){state.lastError=String(e?.message||e);}}else ['renderDashboard','renderIngredients','renderProducts','renderInventory','renderWarehouses','renderSales','renderCashflow','renderSettings'].forEach(name=>{try{window[name]?.();}catch(e){}});try{window.updateCloudStatus?.();}catch(e){}}
+function hydrateCurrentState(){const c=core(),h=hydration();if(!c||typeof h?.hydrate!=='function'||typeof c.store?.getState!=='function')return false;if(h.hydrate(c.store.getState())!==true)return false;renderLegacyShell();state.initialHydrates++;state.lastAt=Date.now();state.lastError='';return true;}
+async function waitForCore(timeout=15000){const start=Date.now();while(Date.now()-start<timeout){const c=core(),h=hydration();if(c&&typeof c.refreshCoreDomains==='function'&&typeof h?.hydrate==='function')return c;try{window.__lyFreshCoreV2Shadow?.refresh?.();}catch(e){}await new Promise(r=>setTimeout(r,250));}return null;}
+async function refreshFromV2(){state.phase='waiting-core';const c=await waitForCore();const h=hydration();if(!c||typeof h?.hydrate!=='function'){state.phase='waiting';state.lastError='';return false;}state.phase='refreshing';await c.refreshCoreDomains();if(h.hydrate(c.store.getState())!==true){state.phase='recovering';state.lastError='Fresh Core V2 hydration failed';return false;}renderLegacyShell();state.refreshes++;state.lastAt=Date.now();state.lastError='';state.phase='active';return true;}
+function scheduleRecovery(){if(retryTimer)return;retryTimer=setTimeout(async()=>{retryTimer=null;state.retries++;try{const ok=await refreshFromV2();if(!ok)scheduleRecovery();}catch(error){state.lastError=String(error?.message||error);state.phase='recovering';scheduleRecovery();}},800);}
+function install(){if(state.active)return true;const c=core(),h=hydration();if(!c||typeof c.refreshCoreDomains!=='function'||typeof h?.hydrate!=='function'||typeof c.store?.getState!=='function')return false;const authoritative=async()=>{try{return await refreshFromV2();}catch(error){state.lastError=String(error?.message||error);scheduleRecovery();return false;}};Object.defineProperty(authoritative,'__lyFreshCoreV2Authoritative',{value:true});window.loadCloud=authoritative;window.autoSyncNow=authoritative;window.__lyFreshCoreMode='fresh-core-v2-only';window.__lyLegacyDataRuntimeRetired=true;state.active=true;state.phase='hydrating';if(hydrateCurrentState())state.phase='active';else{state.phase='recovering';scheduleRecovery();}state.lastAt=Date.now();window.dispatchEvent?.(new CustomEvent('latyen:fresh-core-v2-authoritative',{detail:{version:VERSION,mode:window.__lyFreshCoreMode}}));return true;}
+function boot(){if(install())return;state.phase='waiting-shadow';try{window.__lyFreshCoreV2Shadow?.refresh?.();}catch(e){}setTimeout(boot,250);}
+window.__lyFreshCoreV2FinalOwnership={version:VERSION,install,refresh:refreshFromV2,hydrate:hydrateCurrentState,status:()=>({...state,mode:window.__lyFreshCoreMode||''})};window.addEventListener?.('latyen:v2-shadow-ready',()=>setTimeout(boot,0));if(document.readyState==='loading')document.addEventListener?.('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 })();
