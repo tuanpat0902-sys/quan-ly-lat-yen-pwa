@@ -11621,7 +11621,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge">V274</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.0</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -54504,10 +54504,27 @@ deleteSaleReceipt=async function(id){return lyFreshDeleteReceipt('SALE',id)};
 
 deleteWarehouse=async function(id){
   if(db.warehouses.length<=1)return alert('Phải giữ ít nhất một kho.');
-  if(!confirm('Xóa kho này? Chỉ thực hiện được khi kho chưa có phiếu liên quan.'))return;
-  const {error}=await sb.from('ly_warehouses').delete().eq('id',id).eq('org_id',window.__lyFreshOrgId);
-  if(error)return alert('Không thể xóa kho: '+error.message);
-  await loadCloud();toastMsg('Đã xóa kho');
+  if(!confirm('Xóa kho này? Kho đã có lịch sử nhập/xuất/kiểm kê/bán hàng sẽ được giữ lại để bảo toàn dữ liệu.'))return;
+  try{
+    const core=window.__lyFreshCoreV2;
+    if(!core?.domains?.masterData?.removeWarehouse){
+      return alert('Fresh Core V2 chưa sẵn sàng. Vui lòng thử lại sau vài giây.');
+    }
+    await core.domains.masterData.removeWarehouse(id);
+    await core.domains.inventory?.refresh?.();
+    window.__lyFreshCoreV2LegacyHydration?.hydrate?.();
+    if(typeof invalidateDataIndexes==='function')invalidateDataIndexes();
+    if(typeof invalidateDerivedCaches==='function')invalidateDerivedCaches();
+    if(typeof renderWarehouseSelect==='function')renderWarehouseSelect();
+    if(typeof renderAll==='function')renderAll();
+    toastMsg('Đã xóa kho');
+  }catch(error){
+    const message=String(error?.message||error||'Không xác định');
+    if(/phiếu liên quan|foreign key|still referenced|23503/i.test(message)){
+      return alert('Không thể xóa kho này vì đã có lịch sử nhập/xuất/kiểm kê/bán hàng. Hệ thống giữ kho để bảo toàn lịch sử dữ liệu.');
+    }
+    alert('Không thể xóa kho: '+message);
+  }
 };
 confirmDeleteWarehouse=deleteWarehouse;
 
