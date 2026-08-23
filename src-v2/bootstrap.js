@@ -19,6 +19,7 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
     stocktakeData: { receipts: [], items: [] },
     salesData: { sales: [], items: [] },
     cashflowEntries: [],
+    inventoryData: { balances: [], transactions: [] },
     ...initialState
   });
 
@@ -49,14 +50,15 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
       domains.exports.refresh(),
       domains.stocktake.refresh(),
       domains.sales.refresh(),
-      domains.cashflow.refresh()
+      domains.cashflow.refresh(),
+      domains.inventory.refresh()
     ]);
     events.emit('core:refreshed', { at: Date.now() });
     return results;
   }
 
   return Object.freeze({
-    version: '2.2.0-ingredients-takeover-ready',
+    version: '2.3.0-inventory-read-domain',
     events,
     store,
     data,
