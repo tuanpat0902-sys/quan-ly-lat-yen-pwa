@@ -7,6 +7,7 @@ import { createIngredientsRepository } from '../src-v2/domains/ingredients/ingre
 import { createProductsRepository } from '../src-v2/domains/products/products-repository.js';
 import { createDocumentRepository } from '../src-v2/domains/documents/document-repository.js';
 import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.js';
+import { createInventoryRepository } from '../src-v2/domains/inventory/inventory-repository.js';
 
 {
   const bus = new EventBus();
@@ -36,7 +37,6 @@ import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.
     rpc(name,params){ calls.push(['rpc', name, params]); return Promise.resolve({ data:{ok:true}, error:null }); }
   };
   const gateway = createSupabaseGateway({ client, getOrgId:()=> 'org-1' });
-  // Mutating the legacy client after gateway creation must not affect the V2 path.
   client.rpc=()=>{throw new Error('patched legacy rpc must not be used by V2 gateway');};
   const rows = await gateway.selectOrg('ly_ingredients');
   assert.equal(rows.length,1);
@@ -50,7 +50,12 @@ import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.
   const rpcCalls = [];
   const selected=[];
   const gateway = {
-    selectOrg: async table => {selected.push(table);return table==='ly_prepared_items'?[{id:'pi1'}]:[];},
+    selectOrg: async (table,columns='*',configure) => {
+      selected.push(table);
+      const query={order(){return query;}};
+      configure?.(query);
+      return table==='ly_prepared_items'?[{id:'pi1'}]:[];
+    },
     rpc: async (name, params) => { rpcCalls.push([name, params]); return 'id-1'; }
   };
   const ingredients = createIngredientsRepository({ gateway });
@@ -73,6 +78,12 @@ import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.
   const sales = createSalesRepository({ gateway });
   await sales.save({ code:'S1' }, [{ qty:1 }], [{ ingredient_id:'i1', qty:1 }]);
   assert.deepEqual(rpcCalls.pop(), ['ly_save_sale', { p_header:{code:'S1'}, p_sale_items:[{qty:1}], p_stock_lines:[{ingredient_id:'i1',qty:1}] }]);
+
+  selected.length=0;
+  const inventory = createInventoryRepository({ gateway });
+  await inventory.listBalances();
+  await inventory.listTransactions();
+  assert.deepEqual(selected,['ly_inventory','ly_stock_transactions']);
 }
 
 {
@@ -83,9 +94,10 @@ import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.
   assert.equal(core.store.getState().orgId,'org-1');
   assert.equal(core.store.getState().activePanel,'sales');
   assert.deepEqual(core.store.getState().preparedItems,[]);
+  assert.deepEqual(core.store.getState().inventoryData,{balances:[],transactions:[]});
   assert.equal(panel,'sales');
-  assert.equal(core.version,'2.2.0-ingredients-takeover-ready');
-  assert.ok(core.domains.ingredients && core.domains.products && core.domains.imports && core.domains.exports && core.domains.stocktake && core.domains.sales && core.domains.cashflow);
+  assert.equal(core.version,'2.3.0-inventory-read-domain');
+  assert.ok(core.domains.ingredients && core.domains.products && core.domains.imports && core.domains.exports && core.domains.stocktake && core.domains.sales && core.domains.cashflow && core.domains.inventory);
 }
 
 console.log('Fresh Core V2 domain contracts: PASS');
