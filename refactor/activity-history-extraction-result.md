@@ -21,3 +21,5 @@
 - `debouncedHistoryRender`
 
 Module syntax check: PASS.
+
+Validation retrigger: connector-authored commit after generated extraction output.
