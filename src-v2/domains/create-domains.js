@@ -7,6 +7,8 @@ import { createSalesRepository } from './sales/sales-repository.js';
 import { createSalesService } from './sales/sales-service.js';
 import { createCashflowRepository } from './cashflow/cashflow-repository.js';
 import { createCashflowService } from './cashflow/cashflow-service.js';
+import { createInventoryRepository } from './inventory/inventory-repository.js';
+import { createInventoryService } from './inventory/inventory-service.js';
 
 export function createDomains({ gateway, store, events }) {
   const ingredientsRepository = createIngredientsRepository({ gateway });
@@ -34,6 +36,7 @@ export function createDomains({ gateway, store, events }) {
   });
   const salesRepository = createSalesRepository({ gateway });
   const cashflowRepository = createCashflowRepository({ gateway });
+  const inventoryRepository = createInventoryRepository({ gateway });
 
   return Object.freeze({
     ingredients: createIngredientsService({ repository: ingredientsRepository, store, events }),
@@ -42,6 +45,7 @@ export function createDomains({ gateway, store, events }) {
     exports: createDocumentService({ repository: exportsRepository, store, events, stateKey: 'exportsData', eventPrefix: 'exports' }),
     stocktake: createDocumentService({ repository: stocktakeRepository, store, events, stateKey: 'stocktakeData', eventPrefix: 'stocktake' }),
     sales: createSalesService({ repository: salesRepository, store, events }),
-    cashflow: createCashflowService({ repository: cashflowRepository, store, events })
+    cashflow: createCashflowService({ repository: cashflowRepository, store, events }),
+    inventory: createInventoryService({ repository: inventoryRepository, store, events })
   });
 }
