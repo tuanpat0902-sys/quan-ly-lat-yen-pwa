@@ -14,3 +14,5 @@ Fresh Core V2 is the replacement application core built behind the existing Lát
 ## Current domain coverage
 
 Ingredients, Products/Recipes, Import, Export, Stocktake, Sales and Cashflow are represented in V2 repositories/services with production RPC contracts covered by tests.
+
+Foundation/domain contracts are ready for the Shadow Mode migration phase.
