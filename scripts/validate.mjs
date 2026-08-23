@@ -10,6 +10,8 @@ const required = [
   'manifest.webmanifest',
   'icon.svg',
   'ly-module-loader.js',
+  'ly-history-bridge.js',
+  'ly-activity-history.js',
   'ly-data-notifications.js',
   'ly-inapp-notifications.js',
   'ly-notification-center.js',
@@ -30,10 +32,19 @@ for (const file of required) {
 }
 
 if (existsSync(join(ROOT, 'index.html'))) {
-  const size = statSync(join(ROOT, 'index.html')).size;
+  const indexPath=join(ROOT,'index.html');
+  const size = statSync(indexPath).size;
+  const html=readFileSync(indexPath,'utf8');
   console.log(`INFO: index.html ${(size / 1024).toFixed(1)} KiB (${size} bytes)`);
   if (size > INDEX_MAX_BYTES) fail(`index.html exceeds ${(INDEX_MAX_BYTES / 1024).toFixed(0)} KiB safety ceiling`);
   else ok('index.html is inside safety ceiling');
+  for(const fn of ['auditActionClass','auditFilterRows','renderHistory']){
+    if(new RegExp(`\\bfunction\\s+${fn}\\s*\\(`).test(html))fail(`index.html still contains extracted ${fn}()`);
+  }
+  for(const kept of ['compactAuditRows','loadAuditLog','saveAuditLog','auditLog','debouncedHistoryRender']){
+    if(!new RegExp(`\\bfunction\\s+${kept}\\s*\\(`).test(html))fail(`index.html lost required core ${kept}()`);
+  }
+  if(!failed)ok('Activity History UI is extracted while audit core stays resident');
 }
 
 const rootFiles = readdirSync(ROOT, { withFileTypes: true })
@@ -53,17 +64,18 @@ for (const file of rootFiles) {
 
 if (existsSync(join(ROOT, 'ly-module-loader.js'))) {
   const loader = readFileSync(join(ROOT, 'ly-module-loader.js'), 'utf8');
-  for (const marker of ['heavyPanels', 'finance', 'employees', 'history']) {
+  for (const marker of ['heavyPanels', 'finance', 'employees', 'history','activityHistory','ly-activity-history.js']) {
     if (!loader.includes(marker)) fail(`module loader missing ${marker}`);
   }
-  if (!failed) ok('module loader heavy-panel wiring');
+  if (!failed) ok('module loader lazy Activity History wiring');
 }
 
 if (existsSync(join(ROOT, 'sw.js'))) {
   const sw = readFileSync(join(ROOT, 'sw.js'), 'utf8');
-  for (const asset of ['ly-module-loader.js', 'ly-heavy-panels.js', 'ly-menu-security.js', 'ly-performance-optimizer.js']) {
+  for (const asset of ['ly-module-loader.js','ly-history-bridge.js','ly-activity-history.js','ly-heavy-panels.js','ly-menu-security.js','ly-performance-optimizer.js']) {
     if (!sw.includes(asset)) fail(`service worker does not reference ${asset}`);
   }
+  if(/scripts\.push\([^\n]*ly-activity-history\.js/.test(sw))fail('Activity History full module must not be injected at startup');
   const cache = sw.match(/const CACHE='([^']+)'/)?.[1];
   if (!cache) fail('service worker cache version not found');
   else console.log(`INFO: service worker cache ${cache}`);
