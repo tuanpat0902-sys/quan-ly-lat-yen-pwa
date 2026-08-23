@@ -1,0 +1,66 @@
+(()=>{
+'use strict';
+if(window.__lyIndependentBootstrap)return;
+const VERSION='2.1.4';
+const REVISION='fresh-core-v2-authoritative-v5';
+const state={version:VERSION,revision:REVISION,startedAt:Date.now(),attempts:0,ready:false,lastError:'',firstError:'',lastAt:0};
+function text(v){return String(v??'');}
+function recordError(err){const msg=text(err?.message||err||'Unknown startup error');if(!state.firstError)state.firstError=msg;state.lastError=msg;state.lastAt=Date.now();renderDiagnostic();}
+window.addEventListener?.('error',e=>recordError(e?.error||e?.message));
+window.addEventListener?.('unhandledrejection',e=>recordError(e?.reason));
+function ensureDiagnosticHost(){
+  let host=document.getElementById('lyIndependentBootstrapStatus');
+  if(host)return host;
+  host=document.createElement('div');host.id='lyIndependentBootstrapStatus';
+  host.style.cssText='margin:14px;padding:14px;border:1px solid #d0d5dd;border-radius:14px;background:#fff;color:#17202a;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 6px 18px rgba(16,24,40,.06)';
+  const main=document.querySelector('main')||document.body;main.prepend(host);return host;
+}
+function runtimeStatus(){
+  const shadow=window.__lyFreshCoreV2Shadow?.status?.()||{};
+  const final=window.__lyFreshCoreV2FinalOwnership?.status?.()||{};
+  const rescue=window.__lyUiBootstrapRescue?.status?.()||{};
+  return {shadow,final,rescue,hasCore:!!window.__lyFreshCoreV2,hasHydration:!!window.__lyFreshCoreV2LegacyHydration,hasNavInit:typeof window.navInit==='function',hasRenderAll:typeof window.renderAll==='function'};
+}
+function renderDiagnostic(){
+  if(state.ready)return;
+  const host=ensureDiagnosticHost();const s=runtimeStatus();
+  host.innerHTML=`<div style="font-weight:800;font-size:17px;margin-bottom:6px">QUẢN LÝ LÁT YÊN · Ver ${VERSION}</div><div style="color:#667085;margin-bottom:10px">Đang khởi động Fresh Core V2…</div><div style="display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:12px"><b>Core</b><span>${s.hasCore?'đã tải':'chưa tải'}</span><b>Hydration</b><span>${s.hasHydration?'đã tải':'chưa tải'}</span><b>Shadow</b><span>${text(s.shadow.phase||'chưa khởi tạo')}</span><b>Final ownership</b><span>${text(s.final.phase||'chưa khởi tạo')}</span><b>Legacy shell</b><span>${s.hasNavInit&&s.hasRenderAll?'sẵn sàng':'chưa sẵn sàng'}</span>${state.firstError?`<b>Lỗi đầu tiên</b><span style="color:#b42318;word-break:break-word">${state.firstError.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}</span>`:''}</div><button id="lyBootstrapRetryBtn" style="margin-top:12px;padding:8px 11px;border:1px solid #0f766e;border-radius:9px;background:#0f766e;color:#fff">Thử khởi động lại</button>`;
+  host.querySelector('#lyBootstrapRetryBtn')?.addEventListener('click',()=>attempt(true));
+}
+function minimalNav(){
+  const nav=document.getElementById('nav');if(!nav||nav.children.length)return;
+  const items=[['ingredients','Nguyên liệu'],['sales','Bán hàng'],['imports','Nhập / xuất kho'],['stocktake','Kiểm kê'],['warehouses','Kho / Chi nhánh'],['settings','Cài đặt']];
+  nav.innerHTML=items.map(([id,label])=>`<button type="button" data-ly-independent-panel="${id}">${label}</button>`).join('');
+  nav.addEventListener('click',e=>{const b=e.target.closest?.('[data-ly-independent-panel]');if(!b)return;const id=b.dataset.lyIndependentPanel;if(typeof window.showTab==='function'){try{window.showTab(id,b);return;}catch(err){recordError(err);}}document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));});
+}
+function tryLegacyShell(){
+  try{window.applyAppBrand?.();}catch(e){recordError(e);}
+  try{window.navInit?.();}catch(e){recordError(e);}
+  minimalNav();
+  try{window.restoreNavGroupStateV238?.();}catch(e){recordError(e);}
+  try{window.__lyFreshCoreV2LegacyHydration?.hydrate?.(window.__lyFreshCoreV2?.store?.getState?.());}catch(e){recordError(e);}
+  try{window.invalidateDataIndexes?.();window.invalidateDerivedCaches?.();}catch(e){recordError(e);}
+  try{window.renderWarehouseSelect?.();}catch(e){recordError(e);}
+  try{if(typeof window.renderAll==='function')window.renderAll();else window.renderPanel?.('ingredients');}catch(e){recordError(e);}
+}
+async function attempt(force=false){
+  state.attempts++;state.lastAt=Date.now();
+  tryLegacyShell();
+  const nav=document.getElementById('nav');const panel=document.querySelector('.panel.active');
+  if(nav?.children?.length&&panel?.innerHTML?.trim()){
+    state.ready=true;state.lastError='';document.getElementById('lyIndependentBootstrapStatus')?.remove();document.documentElement.setAttribute('data-ly-independent-ready','1');return true;
+  }
+  if(force||window.__lyFreshCoreV2){
+    try{await window.__lyFreshCoreV2FinalOwnership?.refresh?.();}catch(e){recordError(e);}
+    tryLegacyShell();
+  }
+  const ok=!!(nav?.children?.length&&document.querySelector('.panel.active')?.innerHTML?.trim());
+  if(ok){state.ready=true;document.getElementById('lyIndependentBootstrapStatus')?.remove();return true;}
+  renderDiagnostic();return false;
+}
+function boot(){renderDiagnostic();[0,200,600,1200,2500,5000,9000,15000].forEach(ms=>setTimeout(()=>{if(!state.ready)attempt(false);},ms));}
+window.__lyIndependentBootstrap={version:VERSION,revision:REVISION,attempt,status:()=>({...state,...runtimeStatus()})};
+window.addEventListener?.('latyen:v2-shadow-ready',()=>setTimeout(()=>attempt(true),0));
+window.addEventListener?.('latyen:fresh-core-v2-authoritative',()=>setTimeout(()=>attempt(true),0));
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+})();
