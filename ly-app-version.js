@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 if(window.__lyAppVersion)return;
-const VERSION='2.0.0';
+const VERSION='2.0.1';
 const LABEL=`Ver ${VERSION}`;
 const STORAGE_KEY='lat_yen_last_seen_app_version';
 const state={version:VERSION,label:LABEL,badgeMounted:false,updateNoticeShown:false};
@@ -37,10 +37,7 @@ function showUpdateNotice(){
   state.updateNoticeShown=true;
   return true;
 }
-function boot(){
-  mountBadge();
-  if(!showUpdateNotice())setTimeout(showUpdateNotice,600);
-}
+function boot(){mountBadge();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
 window.__LY_APP_VERSION=VERSION;
 window.__LY_APP_VERSION_LABEL=LABEL;
 window.__lyAppVersion={version:VERSION,label:LABEL,mount:mountBadge,status:()=>({...state})};

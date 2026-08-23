@@ -16,14 +16,14 @@ for(const forbidden of ['.innerHTML','appendChild(','insertOrg(','updateOrg(','d
   assert.equal(shadow.includes(forbidden),false,`Shadow runtime must stay read-only/non-DOM: ${forbidden}`);
 }
 
-assert.match(sw,/lat-yen-legacy-ui-fresh-core-49/);
+assert.match(sw,/lat-yen-legacy-ui-fresh-core-50/);
 assert.match(sw,/ly-fresh-core-v2-shadow\.js\?v=20260823\.2/);
 assert.match(sw,/ly-fresh-core-v2-ingredients-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/ly-fresh-core-v2-products-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/ly-fresh-core-v2-documents-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/ly-fresh-core-v2-sales-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/ly-fresh-core-v2-cashflow-takeover\.js\?v=20260823\.1/);
-assert.match(sw,/ly-fresh-core-v2-masterdata-takeover\.js\?v=20260823\.2/);
+assert.match(sw,/ly-fresh-core-v2-masterdata-takeover\.js\?v=20260823\.5/);
 assert.match(sw,/ly-fresh-core-v2-read-takeover\.js\?v=20260823\.1/);
 assert.match(sw,/ly-fresh-core-v2-realtime\.js\?v=20260823\.4/);
 assert.match(sw,/ly-fresh-core-v2-realtime-phase2\.js\?v=20260823\.1/);
@@ -34,7 +34,7 @@ for(const asset of [
   './src-v2/domains/inventory/inventory-service.js',
   './src-v2/domains/master-data/master-data-repository.js',
   './src-v2/domains/master-data/master-data-service.js'
-])assert.ok(sw.includes(`'${asset}'`),`Core-49 must precache ${asset}`);
+])assert.ok(sw.includes(`'${asset}'`),`Core-50 must precache ${asset}`);
 assert.match(sw,/V2_MASTERDATA_TAKEOVER_SCRIPT/);
 assert.match(sw,/V2_READ_TAKEOVER_SCRIPT/);
 assert.match(sw,/p_type\|\|body\?\.p_kind/);
