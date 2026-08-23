@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.2",
-  "revision": "fresh-core-v2-authoritative-v3",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-55",
+  "appVersion": "2.1.3",
+  "revision": "fresh-core-v2-authoritative-v4",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-56",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "hydrate-and-render-on-takeover"
+  "bootstrapFix": "ui-bootstrap-rescue"
 }
