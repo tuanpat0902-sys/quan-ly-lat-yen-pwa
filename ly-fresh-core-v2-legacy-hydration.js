@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 if(window.__lyFreshCoreV2LegacyHydration)return;
-const VERSION='2026.08.23.1';
+const VERSION='2026.08.23.2';
 const state={version:VERSION,hydrates:0,errors:0,lastAt:0,lastError:''};
 const cloneRows=rows=>Array.isArray(rows)?rows.map(row=>row&&typeof row==='object'?{...row}:row):[];
 function legacyDb(){try{if(typeof db!=='undefined'&&db)return db;}catch(e){}return window.db||null;}
@@ -21,5 +21,7 @@ function hydrate(input){
   state.hydrates++;state.lastAt=Date.now();state.lastError='';return true;
  }catch(error){state.errors++;state.lastError=String(error?.message||error||'Legacy hydration failed');return false;}
 }
+function requestManualRefresh(){if(window.__lyFreshCoreV2ManualRefresh)return;try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-fresh-core-v2-manual-refresh.js?v=20260823.1';script.async=true;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}}
 window.__lyFreshCoreV2LegacyHydration={version:VERSION,hydrate,status:()=>({...state})};
+if(typeof setTimeout==='function')setTimeout(requestManualRefresh,0);else requestManualRefresh();
 })();
