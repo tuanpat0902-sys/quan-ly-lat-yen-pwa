@@ -1,11 +1,10 @@
 name: Apply Activity History Refactor
 
-# Revision 3: rerun from latest refactor branch state.
 on:
   push:
     branches: ["main"]
     paths:
-      - ".github/workflows/apply-activity-history-refactor.yml"
+      - "scripts/activity-history-refactor.trigger"
   workflow_dispatch:
 
 permissions:
