@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 const source=await fs.readFile(new URL('../ly-fresh-core-v2-masterdata-takeover.js',import.meta.url),'utf8');
 const rawCalls=[];
 const v2Calls=[];
-let fullLoads=0;
+let fullLoads=0,ingredientRenders=0,invalidations=0;
 const rawTable={
   upsert(payload){rawCalls.push(['upsert',payload]);return Promise.resolve({data:null,error:null});},
   insert(payload){rawCalls.push(['insert',payload]);return {select(){return this;},single(){return Promise.resolve({data:payload,error:null});}};},
@@ -37,6 +37,8 @@ const context={
   Date,
   db:legacyDb,
   loadCloud:rawLoadCloud,
+  invalidateDerivedCaches(){invalidations++;},
+  renderIngredients(){ingredientRenders++;},
   setTimeout(fn){fn();return 1;},
   window:{sb:client,loadCloud:rawLoadCloud,__lyFreshCoreV2:{domains:{masterData,inventory:inventoryDomain},store:{getState(){return storeState;}}}}
 };
@@ -61,6 +63,8 @@ assert.equal(optimizedWarehouseLoad.optimized,true,'warehouse save must skip the
 assert.equal(fullLoads,0);
 assert.deepEqual(legacyDb.warehouses,[warehouse]);
 assert.deepEqual(legacyDb.inventory,inventory);
+assert.equal(ingredientRenders,1,'creating a warehouse must re-render Ingredients for the newly selected warehouse');
+assert.equal(invalidations,1,'creating a warehouse must invalidate derived inventory caches before render');
 
 const supplier={id:'s1',name:'NCC'};
 const sr=await client.from('ly_suppliers').upsert(supplier);
@@ -92,6 +96,7 @@ assert.equal(fullLoads,2,'manual/subsequent loadCloud must remain available as f
 const status=api.status();
 assert.equal(status.suppressedFullReloads,3);
 assert.ok(status.legacySyncs>=4);
+assert.ok(status.legacyRenders>=3);
 
 const rawMutationCalls=rawCalls.filter(([name])=>name==='upsert'||name==='insert'||name==='delete');
 assert.equal(rawMutationCalls.length,0,'master-data mutations must not double-write through Legacy raw table');
