@@ -2,14 +2,14 @@
   'use strict';
   if(window.__lyInAppNotificationsV5)return;
   window.__lyInAppNotificationsV5=true;
-  const VERSION='2026.08.24.1';
+  const VERSION='2026.08.24.2';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const activityEnabled=()=>{try{return localStorage.getItem(MASTER_KEY)!=='0';}catch(e){return true;}};
-  const appVersionLabel=()=>window.__LY_APP_VERSION_LABEL||`Ver ${window.__LY_APP_VERSION||'2.0.2'}`;
+  const appVersionLabel=()=>window.__LY_APP_VERSION_LABEL||`Ver ${window.__LY_APP_VERSION||'2.0.3'}`;
   const titleWithVersion=title=>{const value=String(title||'Quản Lý Lát Yên');const ver=appVersionLabel();return value.includes(ver)?value:`${value} · ${ver}`;};
   function requestAppVersion(){
     if(window.__lyAppVersion)return;
-    try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-app-version.js?v=2.0.2';script.async=false;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}
+    try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-app-version.js?v=2.0.3';script.async=false;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}
   }
   function host(){let el=document.getElementById('lyInAppNotificationHost');if(el)return el;el=document.createElement('div');el.id='lyInAppNotificationHost';el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;top:14px;right:14px;z-index:2147483646;width:min(405px,calc(100vw - 28px));display:flex;flex-direction:column;gap:10px;pointer-events:none;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif';document.body.appendChild(el);return el;}
   function showToast(body,title='Quản Lý Lát Yên',persistent=false,emoji='🔔'){
@@ -21,5 +21,5 @@
     requestAnimationFrame(()=>{card.style.opacity='1';card.style.transform='translateY(0)';});if(!persistent)setTimeout(()=>{card.style.opacity='0';card.style.transform='translateY(-6px)';setTimeout(()=>card.remove(),220);},7200);
   }
   window.addEventListener('latyen:activity',event=>{const item=event?.detail||{};if(!activityEnabled()||document.hidden||!item.popup||item.local)return;showToast(item.body,item.title,false,item.icon||'🔔');});
-  window.__lyInAppNotifications={version:VERSION,show:showToast,status:()=>({version:VERSION,appVersion:window.__LY_APP_VERSION||'2.0.2',activityEnabled:activityEnabled()})};requestAppVersion();
+  window.__lyInAppNotifications={version:VERSION,show:showToast,status:()=>({version:VERSION,appVersion:window.__LY_APP_VERSION||'2.0.3',activityEnabled:activityEnabled()})};requestAppVersion();
 })();
