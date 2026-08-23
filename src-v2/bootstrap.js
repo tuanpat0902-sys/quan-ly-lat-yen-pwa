@@ -11,6 +11,7 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
     activePanel: 'ingredients',
     connectivity: { online: true, realtime: false },
     ingredients: [],
+    preparedItems: [],
     products: [],
     recipeItems: [],
     importsData: { receipts: [], items: [] },
@@ -55,7 +56,7 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
   }
 
   return Object.freeze({
-    version: '2.1.0-domain-core',
+    version: '2.2.0-ingredients-takeover-ready',
     events,
     store,
     data,
