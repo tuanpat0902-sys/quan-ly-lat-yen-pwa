@@ -1,12 +1,13 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV6)return;
-  window.__lyModuleLoaderV6=true;
-  const VERSION='2026.08.23.6';
+  if(window.__lyModuleLoaderV7)return;
+  window.__lyModuleLoaderV7=true;
+  const VERSION='2026.08.23.7';
   const loaded=new Map();
-  const HEAVY=new Set(['finance','employees','history','reports']);
+  const HEAVY=new Set(['finance','employees','history','reports','settings']);
   const modules={
     settings:{src:'./ly-settings-enhancements.js?v=20260823.2',test:()=>!!window.__lyNotificationMaster},
+    settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
     activityHistory:{src:'./ly-activity-history.js?v=20260823.1',test:()=>!!window.__lyActivityHistoryModule},
@@ -23,7 +24,7 @@
   }
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
   function preparePanel(panel){
-    if(panel==='settings'){load('settings');load('branding');}
+    if(panel==='settings'){load('settingsUI');load('settings');load('branding');}
     if(panel==='history')load('activityHistory');
     if(panel==='employees')load('employeesUI');
     if(panel==='finance')load('financeUI');
