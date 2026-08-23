@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 const APP_VERSION='2.1.3';
 const REVISION='fresh-core-v2-authoritative-v4';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
-const RUNTIME_BLOCK=`\n<script src="./ly-app-version.js?v=${APP_VERSION}"></script>\n<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.2"></script>\n<script src="./ly-ui-bootstrap-rescue.js?v=20260824.1"></script>\n<script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>\n`;
+const RUNTIME_BLOCK=`\n<script src="./ly-app-version.js?v=${APP_VERSION}"></script>\n<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.2"></script>\n<script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>\n<script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>\n`;
 
 export function prepareHtml(source){
   let html=String(source||'');
@@ -14,7 +14,7 @@ export function prepareHtml(source){
     "navigator.serviceWorker.register('./sw.js').catch(console.warn);",
     "navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update?.()).catch(console.warn);"
   );
-  if(!html.includes('ly-ui-bootstrap-rescue.js?v=20260824.1')){
+  if(!html.includes('ly-ui-bootstrap-rescue.js?v=20260824.2')){
     html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,RUNTIME_BLOCK+'\n</body>'):html+RUNTIME_BLOCK;
   }
   return html;
@@ -38,7 +38,7 @@ const checks=[
   ['SW bypasses HTTP cache',output.includes("updateViaCache:'none'")],
   ['version runtime injected',output.includes(`ly-app-version.js?v=${APP_VERSION}`)],
   ['final V2 ownership injected',output.includes('ly-fresh-core-v2-final-ownership.js?v=20260824.2')],
-  ['UI bootstrap rescue injected',output.includes('ly-ui-bootstrap-rescue.js?v=20260824.1')],
+  ['UI bootstrap rescue injected',output.includes('ly-ui-bootstrap-rescue.js?v=20260824.2')],
   ['warehouse UX injected',output.includes('ly-warehouse-delete-ux.js?v=20260824.1')],
   ['authoritative SW cache',swOutput.includes('lat-yen-fresh-core-v2-authoritative-56')]
 ];
