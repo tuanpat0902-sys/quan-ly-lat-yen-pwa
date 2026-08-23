@@ -1,4 +1,4 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-18';
+const CACHE='lat-yen-legacy-ui-fresh-core-19';
 const SETTINGS_SCRIPT='./ly-settings-enhancements.js';
 const NOTIFICATION_SCRIPT='./ly-data-notifications.js';
 const INAPP_SCRIPT='./ly-inapp-notifications.js';
@@ -22,7 +22,7 @@ async function navigationWithLayers(request){
     if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.5"></script>');
     if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.2"></script>');
     if(!html.includes('ly-cloud-realtime.js'))scripts.push('<script src="./ly-cloud-realtime.js?v=20260823.3"></script>');
-    if(!html.includes('ly-menu-security.js'))scripts.push('<script src="./ly-menu-security.js?v=20260823.1.2"></script>');
+    if(!html.includes('ly-menu-security.js'))scripts.push('<script src="./ly-menu-security.js?v=20260823.1.3"></script>');
     if(!html.includes('ly-branding-sync.js'))scripts.push('<script src="./ly-branding-sync.js?v=20260823.1"></script>');
     if(scripts.length){const block=scripts.join('\n');html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,block+'\n</body>'):html+'\n'+block;}
     const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('content-encoding');headers.delete('etag');headers.set('content-type','text/html; charset=utf-8');return new Response(html,{status:response.status,statusText:response.statusText,headers});
