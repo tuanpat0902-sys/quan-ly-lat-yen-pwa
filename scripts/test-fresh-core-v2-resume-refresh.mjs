@@ -34,6 +34,7 @@ assert.deepEqual(order,['refresh','hydrate','invalidate','cache','flush','render
 let release;context.window.__lyFreshCoreV2.refreshCoreDomains=()=>{refreshes++;order.push('refresh2');return new Promise(r=>{release=r;});};
 visibleListener();visibleListener();const pending=context.loadCloud();await Promise.resolve();assert.equal(typeof release,'function');release();await pending;
 assert.equal(refreshes,2,'repeated foreground must share one pending refresh');assert.equal(hydrations,2);assert.equal(loads,0);assert.ok(api.status().foregroundCoalesced>=1);
+context.window.__lyFreshCoreV2.refreshCoreDomains=async()=>{refreshes++;order.push('refresh3');return true;};
 
 context.navigator.onLine=false;visibleListener();await context.loadCloud();assert.equal(loads,1,'offline must keep Legacy fallback');
 context.navigator.onLine=true;phase='loading';visibleListener();await context.loadCloud();assert.equal(loads,2,'not-ready V2 must keep Legacy fallback');
