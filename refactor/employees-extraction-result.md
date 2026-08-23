@@ -9,3 +9,4 @@
 
 Employee data, attendance, payroll calculations and persistence remain in Legacy core.
 Module syntax check: PASS.
+Final PR validation trigger: connector commit after generated extraction.
