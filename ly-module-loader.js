@@ -1,8 +1,8 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV3)return;
-  window.__lyModuleLoaderV3=true;
-  const VERSION='2026.08.23.3';
+  if(window.__lyModuleLoaderV4)return;
+  window.__lyModuleLoaderV4=true;
+  const VERSION='2026.08.23.4';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history']);
   const modules={
@@ -10,6 +10,7 @@
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
     activityHistory:{src:'./ly-activity-history.js?v=20260823.1',test:()=>!!window.__lyActivityHistoryModule},
+    employeesUI:{src:'./ly-employees.js?v=20260823.1',test:()=>!!window.__lyEmployeesModule},
   };
   function load(name){
     const m=modules[name];if(!m)return Promise.resolve(false);if(m.test?.())return Promise.resolve(true);if(loaded.has(name))return loaded.get(name);
@@ -22,6 +23,7 @@
   function preparePanel(panel){
     if(panel==='settings'){load('settings');load('branding');}
     if(panel==='history')load('activityHistory');
+    if(panel==='employees')load('employeesUI');
     if(HEAVY.has(panel))load('heavyPanels');
   }
   document.addEventListener('pointerdown',e=>preparePanel(panelOf(e.target)),true);
