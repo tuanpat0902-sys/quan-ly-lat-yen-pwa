@@ -1,5 +1,5 @@
 /* Lát Yên — Activity History UI V1
-   UI-only module. Audit persistence stays in the Legacy core so logging works before this module is loaded. */
+   Extracted from Legacy index.html. Audit persistence remains in Legacy core. */
 (()=>{
   'use strict';
   if(window.__lyActivityHistoryUIV1)return;
@@ -19,7 +19,7 @@
     const query=($('historySearch')?.value||'').trim().toLowerCase();
     const start=$('historyFrom')?.value||'';
     const end=$('historyTo')?.value||'';
-
+  
     return loadAuditLog().filter(x=>{
       if(x.warehouse_id && x.warehouse_id!==currentWarehouseId)return false;
       if(module!=='all'&&x.module!==module)return false;
@@ -36,7 +36,7 @@
 
   function renderHistory(){
     if(!E.history)return;
-
+  
     const allAuditRows=auditFilterRows();
     const auditRows=allAuditRows.slice(0,300);
     const modules=[...new Set(loadAuditLog()
@@ -44,11 +44,11 @@
       .map(x=>x.module)
       .filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,'vi'));
-
+  
     const legacyMovements=(db.movements||[])
       .filter(m=>m.warehouse_id===currentWarehouseId)
       .slice(0,300);
-
+  
     E.history.innerHTML=`
       <div class="history-head">
         <div>
@@ -57,7 +57,7 @@
         </div>
         <div class="history-count">${num(allAuditRows.length)} hoạt động</div>
       </div>
-
+  
       <div class="card section-gap">
         <div class="history-filter-grid">
           <div>
@@ -81,7 +81,7 @@
           </div>
         </div>
       </div>
-
+  
       <div class="card section-gap">
         <h3>Nhật ký thay đổi</h3>
         ${auditRows.length?`
@@ -108,7 +108,7 @@
           </div>
         `:'<div class="empty">Chưa có hoạt động được ghi nhận. Các thay đổi mới từ phiên bản này sẽ xuất hiện tại đây.</div>'}
       </div>
-
+  
       <div class="card section-gap">
         <details>
           <summary><b>Biến động kho trước đây</b> <span class="muted">(${num(legacyMovements.length)} dòng)</span></summary>
