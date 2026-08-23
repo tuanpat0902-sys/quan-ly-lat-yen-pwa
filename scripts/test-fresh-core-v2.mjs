@@ -3,6 +3,8 @@ import { EventBus } from '../src-v2/core/event-bus.js';
 import { createStore } from '../src-v2/core/store.js';
 import { createSupabaseGateway } from '../src-v2/data/supabase-gateway.js';
 import { createFreshCoreV2 } from '../src-v2/bootstrap.js';
+import { createIngredientsRepository } from '../src-v2/domains/ingredients/ingredients-repository.js';
+import { createIngredientsService } from '../src-v2/domains/ingredients/ingredients-service.js';
 
 {
   const bus = new EventBus();
@@ -49,4 +51,22 @@ import { createFreshCoreV2 } from '../src-v2/bootstrap.js';
   assert.equal(panel,'sales');
 }
 
-console.log('Fresh Core V2 foundation contracts: PASS');
+{
+  const rpcCalls=[];
+  const repository=createIngredientsRepository({
+    gateway:{
+      selectOrg:async()=>[{id:'i1',name:'A'}],
+      rpc:async(name,payload)=>{rpcCalls.push([name,payload]);return 'i1';}
+    }
+  });
+  const store=createStore({ingredients:[]});
+  const events=new EventBus();
+  let changed=[];events.on('ingredients:changed',rows=>{changed=rows;});
+  const service=createIngredientsService({repository,store,events});
+  await service.save({ingredient:{id:'i1',name:'A'},preparedItems:[{name:'Pack'}]});
+  assert.deepEqual(rpcCalls,[['ly_save_ingredient',{p_ingredient:{id:'i1',name:'A'},p_prepared_items:[{name:'Pack'}]}]]);
+  assert.equal(store.getState().ingredients.length,1);
+  assert.equal(changed[0].id,'i1');
+}
+
+console.log('Fresh Core V2 foundation + Ingredients contracts: PASS');
