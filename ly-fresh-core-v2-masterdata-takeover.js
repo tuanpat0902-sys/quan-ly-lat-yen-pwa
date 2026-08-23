@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
 if(window.__lyFreshCoreV2MasterDataTakeover)return;
-const VERSION='2026.08.23.2';
+const VERSION='2026.08.23.3';
 const SUPPRESS_MS=2000;
 const state={version:VERSION,enabled:false,calls:0,errors:0,suppressedFullReloads:0,legacySyncs:0,lastOptimizedTable:'',lastError:''};
 let client,previousFrom,originalLoadCloud=null,suppressUntil=0;
@@ -45,7 +45,8 @@ async function run(table,payload,operation='upsert'){
  try{
   const core=getCore();if(!core)throw new Error('Fresh Core V2 master data is not ready');
   let data;
-  if(table==='ly_warehouses')data=await core.domains.masterData.saveWarehouse(Array.isArray(payload)?payload[0]:payload);
+  if(table==='ly_warehouses'&&operation==='delete')data=await core.domains.masterData.removeWarehouse(payload?.id);
+  else if(table==='ly_warehouses')data=await core.domains.masterData.saveWarehouse(Array.isArray(payload)?payload[0]:payload);
   else if(table==='ly_suppliers')data=await core.domains.masterData.saveSupplier(Array.isArray(payload)?payload[0]:payload);
   else if(table==='ly_inventory'){
    await core.domains.masterData.initializeInventory(payload);
@@ -53,7 +54,7 @@ async function run(table,payload,operation='upsert'){
    data=Array.isArray(payload)?payload:[payload];
   }
   syncLegacySlices();
-  if(operation==='upsert'&&(table==='ly_warehouses'||table==='ly_suppliers'))armFullReloadSuppression(table);
+  if((operation==='upsert'&&(table==='ly_warehouses'||table==='ly_suppliers'))||(operation==='delete'&&table==='ly_warehouses'))armFullReloadSuppression(table);
   state.lastError='';
   return result(data);
  }catch(error){state.errors++;state.lastError=String(error?.message||error);return result(null,error);}
@@ -64,10 +65,27 @@ function insert(table,payload){
  const b={select(){return b},async single(){const r=await exec();return r.error?r:{...r,data:Array.isArray(r.data)?r.data[0]??null:r.data}},then(a,z){return exec().then(a,z)},catch(z){return exec().catch(z)},finally(f){return exec().finally(f)}};
  return b;
 }
-function wrap(raw,table){return new Proxy(raw,{get(target,key){if(key==='upsert')return payload=>run(table,payload,'upsert');if(key==='insert')return payload=>insert(table,payload);const value=target[key];return typeof value==='function'?value.bind(target):value;}})}
+function removeWarehouse(){
+ let id='',promise;
+ const exec=()=>promise||(promise=id?run('ly_warehouses',{id},'delete'):Promise.resolve(result(null,new Error('warehouse id is required'))));
+ const b={
+  eq(column,value){if(column==='id')id=value;return b;},
+  select(){return b;},
+  then(a,z){return exec().then(a,z)},
+  catch(z){return exec().catch(z)},
+  finally(f){return exec().finally(f)}
+ };
+ return b;
+}
+function wrap(raw,table){return new Proxy(raw,{get(target,key){
+ if(key==='upsert')return payload=>run(table,payload,'upsert');
+ if(key==='insert')return payload=>insert(table,payload);
+ if(key==='delete'&&table==='ly_warehouses')return ()=>removeWarehouse();
+ const value=target[key];return typeof value==='function'?value.bind(target):value;
+}})}
 function enable(){
  if(state.enabled)return true;
- client=getClient();const core=getCore();if(!client||!core||typeof client.from!=='function')return false;
+ client=getClient();const core=getCore();if(!client||!core||typeof client.from!=='function'||typeof core.domains.masterData.removeWarehouse!=='function')return false;
  previousFrom=client.from.bind(client);
  client.from=function(name,...args){const raw=previousFrom(name,...args);return ['ly_warehouses','ly_suppliers','ly_inventory'].includes(String(name))?wrap(raw,String(name)):raw};
  installLoadCloudGuard();

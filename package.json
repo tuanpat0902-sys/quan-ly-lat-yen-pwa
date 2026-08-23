@@ -6,6 +6,7 @@
     "validate": "node scripts/validate.mjs",
     "stability": "node scripts/stability-audit.mjs",
     "perf:budget": "node scripts/performance-budget.mjs",
+    "legacy:write-guard": "node scripts/legacy-direct-write-guard.mjs",
     "v2:test": "node scripts/test-fresh-core-v2.mjs",
     "v2:shadow": "node scripts/test-fresh-core-v2-shadow.mjs",
     "v2:takeover:ingredients": "node scripts/test-fresh-core-v2-ingredients-takeover.mjs",
@@ -16,7 +17,7 @@
     "v2:takeover:masterdata": "node scripts/test-fresh-core-v2-masterdata-takeover.mjs",
     "v2:realtime": "node scripts/test-fresh-core-v2-realtime.mjs",
     "v2:realtime:phase2": "node scripts/test-fresh-core-v2-realtime-phase2.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:realtime && npm run v2:realtime:phase2"
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run legacy:write-guard && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:realtime && npm run v2:realtime:phase2"
   },
   "engines": { "node": ">=20" }
 }

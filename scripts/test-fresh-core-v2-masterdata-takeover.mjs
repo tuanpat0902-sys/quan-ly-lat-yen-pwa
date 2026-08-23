@@ -6,11 +6,18 @@ const source=await fs.readFile(new URL('../ly-fresh-core-v2-masterdata-takeover.
 const rawCalls=[];
 const v2Calls=[];
 let fullLoads=0;
-const rawTable={upsert(payload){rawCalls.push(['upsert',payload]);return Promise.resolve({data:null,error:null});},insert(payload){rawCalls.push(['insert',payload]);return {select(){return this;},single(){return Promise.resolve({data:payload,error:null});}};}};
+const rawTable={
+  upsert(payload){rawCalls.push(['upsert',payload]);return Promise.resolve({data:null,error:null});},
+  insert(payload){rawCalls.push(['insert',payload]);return {select(){return this;},single(){return Promise.resolve({data:payload,error:null});}};},
+  delete(){rawCalls.push(['delete']);return this;},
+  eq(){return this;},
+  then(resolve){return Promise.resolve({data:null,error:null}).then(resolve);}
+};
 const client={from(name){rawCalls.push(['from',name]);return rawTable;}};
 const storeState={warehouses:[],suppliers:[],inventoryData:{balances:[],transactions:[]}};
 const masterData={
   async saveWarehouse(row){v2Calls.push(['warehouse',row]);storeState.warehouses=[row];return row;},
+  async removeWarehouse(id){v2Calls.push(['warehouse-remove',id]);storeState.warehouses=storeState.warehouses.filter(x=>x.id!==id);return {id};},
   async saveSupplier(row){v2Calls.push(['supplier',row]);storeState.suppliers=[row];return row;},
   async initializeInventory(rows){v2Calls.push(['inventory',rows]);return rows;}
 };
@@ -71,14 +78,22 @@ assert.deepEqual(v2Calls.at(-1),['supplier',insertedSupplier]);
 await context.loadCloud();
 assert.equal(fullLoads,1,'supplier insert helper must not suppress a later unrelated full load');
 
+const deleted=await client.from('ly_warehouses').delete().eq('id','w1').eq('org_id','org-1');
+assert.equal(deleted.error,null);
+assert.deepEqual(v2Calls.at(-1),['warehouse-remove','w1']);
+assert.equal(legacyDb.warehouses.length,0,'warehouse delete must hydrate Legacy state');
+const optimizedDeleteLoad=await context.loadCloud();
+assert.equal(optimizedDeleteLoad.optimized,true,'warehouse delete must skip immediate Legacy full reload');
+assert.equal(fullLoads,1);
+
 await context.loadCloud();
 assert.equal(fullLoads,2,'manual/subsequent loadCloud must remain available as fallback');
 
 const status=api.status();
-assert.equal(status.suppressedFullReloads,2);
-assert.ok(status.legacySyncs>=3);
+assert.equal(status.suppressedFullReloads,3);
+assert.ok(status.legacySyncs>=4);
 
-const rawMutationCalls=rawCalls.filter(([name])=>name==='upsert'||name==='insert');
+const rawMutationCalls=rawCalls.filter(([name])=>name==='upsert'||name==='insert'||name==='delete');
 assert.equal(rawMutationCalls.length,0,'master-data mutations must not double-write through Legacy raw table');
 client.from('ly_products');
 assert.ok(rawCalls.some(x=>x[0]==='from'&&x[1]==='ly_products'),'non-master tables must pass through');
