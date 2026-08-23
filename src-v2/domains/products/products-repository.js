@@ -18,5 +18,11 @@ export function createProductsRepository({ gateway }) {
     });
   }
 
-  return Object.freeze({ list, listRecipeItems, save });
+  async function remove(id) {
+    if (!id) throw new TypeError('id is required');
+    const rows = await gateway.deleteOrg('ly_products', query => query.eq('id', id));
+    return rows[0] ?? null;
+  }
+
+  return Object.freeze({ list, listRecipeItems, save, remove });
 }
