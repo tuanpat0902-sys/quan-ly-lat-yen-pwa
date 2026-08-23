@@ -19,20 +19,20 @@ for(const required of ['function auditLog(','function loadAuditLog(','function s
   if(!src.includes(required))throw new Error(`Safety dependency missing before extraction: ${required}`);
 }
 
-const starts={
-  auditActionClass:uniquePos('function auditActionClass('),
-  auditFilterRows:uniquePos('function auditFilterRows('),
-  renderHistory:uniquePos('function renderHistory('),
-  debouncedHistoryRender:uniquePos('function debouncedHistoryRender(')
-};
-if(!(starts.auditActionClass<starts.auditFilterRows&&starts.auditFilterRows<starts.renderHistory&&starts.renderHistory<starts.debouncedHistoryRender)){
-  throw new Error('Unexpected Activity History function order');
-}
+const startAction=uniquePos('function auditActionClass(');
+const startFilter=uniquePos('function auditFilterRows(');
+const startRender=uniquePos('function renderHistory(');
+if(!(startAction<startFilter&&startFilter<startRender))throw new Error('Unexpected Activity History function order');
+
+const renderTail="          `:'<div class=\"empty\">Chưa có biến động kho.</div>'}\n        </div>\n      </details>\n    </div>\n  `;\n}";
+const renderTailPos=uniquePos(renderTail);
+const endRender=renderTailPos+renderTail.length;
+if(endRender<=startRender)throw new Error('renderHistory tail occurs before its declaration');
 
 const blocks=[
-  {name:'auditActionClass',start:starts.auditActionClass,end:starts.auditFilterRows},
-  {name:'auditFilterRows',start:starts.auditFilterRows,end:starts.renderHistory},
-  {name:'renderHistory',start:starts.renderHistory,end:starts.debouncedHistoryRender}
+  {name:'auditActionClass',start:startAction,end:startFilter},
+  {name:'auditFilterRows',start:startFilter,end:startRender},
+  {name:'renderHistory',start:startRender,end:endRender}
 ].map(b=>({...b,code:src.slice(b.start,b.end).trimEnd()}));
 
 for(const b of blocks){
