@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.8",
-  "revision": "fresh-core-v2-authoritative-v9",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-61",
+  "appVersion": "2.1.9",
+  "revision": "fresh-core-v2-authoritative-v10",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-62",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "shadow-final-ownership-race-condition"
+  "bootstrapFix": "single-runtime-no-sw-injection"
 }
