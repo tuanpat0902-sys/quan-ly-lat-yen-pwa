@@ -8,11 +8,11 @@ export function createIngredientsService({ repository, store, events }) {
     return rows;
   }
 
-  async function save(rpcPayload) {
-    const result = await repository.save(rpcPayload);
+  async function save(ingredient, preparedItems = []) {
+    const id = await repository.save(ingredient, preparedItems);
     await refresh({ reason: 'save' });
-    events.emit('ingredients:saved', result);
-    return result;
+    events.emit('ingredients:saved', { id });
+    return id;
   }
 
   return Object.freeze({ refresh, save });
