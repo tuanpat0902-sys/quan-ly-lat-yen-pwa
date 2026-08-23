@@ -1,0 +1,11 @@
+{
+  "name": "quan-ly-lat-yen-pwa",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "validate": "node scripts/validate.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
