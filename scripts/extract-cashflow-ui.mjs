@@ -1,4 +1,4 @@
-// Trigger Cashflow UI extraction after workflow install.
+// Trigger Cashflow UI extraction after workflow install. Retry 2.
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 const indexPath='index.html';
