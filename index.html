@@ -56706,6 +56706,7 @@ loadCloud=async function(){
 
     const mappedSales=(sales||[]).map(s=>({
       ...s,
+      _fresh_note:s.note||'',
       note:`Phiếu:${s.receipt_no} | ${s.note||''}`
     }));
 
@@ -57553,6 +57554,293 @@ deleteCashflowEntry=async function(id){
   }catch(e){
     console.error('Fresh cashflow delete',e);
     alert('Lỗi xóa Thu/Chi: '+(e?.message||e));
+  }
+};
+</script>
+
+<script id="fresh-sales-history-cloud-fix">
+/* Fresh Cloud sales history:
+   read structured columns directly; no parsing legacy note metadata. */
+
+saleReceiptNumber=function(sale){
+  return String(sale?.receipt_no||'').trim() ||
+    String(sale?.note||'').match(/Phiếu:([^|]+)/i)?.[1]?.trim() ||
+    sale?.id || '';
+};
+
+saleReceiptGeneralNote=function(sale){
+  if(sale?._fresh_note!=null)return String(sale._fresh_note||'');
+  const n=String(sale?.note||'');
+  return n.replace(/^Phiếu:[^|]+\|\s*/i,'').trim();
+};
+
+saleReceiptDiscountMeta=function(sale){
+  const freshType=['none','percent','amount'].includes(sale?.discount_type)
+    ?sale.discount_type
+    :'none';
+
+  const hasFresh=
+    sale?.discount_type!=null ||
+    sale?.discount_value!=null ||
+    sale?.receipt_discount!=null ||
+    sale?.item_discount_total!=null;
+
+  if(hasFresh){
+    return {
+      itemDiscountTotal:Math.max(0,Number(sale?.item_discount_total||0)),
+      type:freshType,
+      value:Math.max(0,Number(sale?.discount_value||0)),
+      discount:Math.max(0,Number(sale?.receipt_discount||0))
+    };
+  }
+
+  /* Compatibility for rows created before this migration. */
+  const totalDiscount=Math.max(0,Number(sale?.discount||0));
+  return {
+    itemDiscountTotal:0,
+    type:totalDiscount>0?'amount':'none',
+    value:totalDiscount,
+    discount:totalDiscount
+  };
+};
+
+saleEditDiscountLines=function(sale,items){
+  return (items||[]).map(item=>{
+    if(
+      item?.item_discount_type!=null ||
+      item?.item_discount_value!=null ||
+      item?.item_discount!=null
+    ){
+      return {
+        type:['none','percent','amount'].includes(item.item_discount_type)
+          ?item.item_discount_type
+          :'none',
+        value:Math.max(0,Number(item.item_discount_value||0))
+      };
+    }
+
+    return {type:'none',value:0};
+  });
+};
+
+saleReceiptHistoryTable=function(){
+  const indexes=getDataIndexes();
+  const sales=[...(indexes.salesByWarehouse.get(currentWarehouseId)||[])]
+    .sort((a,b)=>new Date(b.sold_at||b.created_at)-new Date(a.sold_at||a.created_at))
+    .slice(0,50);
+
+  if(!sales.length){
+    return '<div class="empty">Chưa có phiếu bán hàng</div>';
+  }
+
+  return `
+    <div class="scroll">
+      <table>
+        <tr>
+          <th>Ngày/giờ</th>
+          <th>Số phiếu</th>
+          <th>Nguồn</th>
+          <th class="right">Số lượng</th>
+          <th class="right">Tạm tính</th>
+          <th class="right">Giảm giá</th>
+          <th class="right">Thanh toán</th>
+          <th></th>
+        </tr>
+        ${sales.map(s=>{
+          const items=indexes.saleItemsBySale.get(s.id)||[];
+          const qty=items.reduce((sum,x)=>sum+Number(x.quantity||0),0);
+
+          const itemDiscount=
+            s.item_discount_total!=null
+              ?Math.max(0,Number(s.item_discount_total||0))
+              :items.reduce((sum,x)=>sum+Math.max(0,Number(x.item_discount||0)),0);
+
+          const receiptDiscount=
+            s.receipt_discount!=null
+              ?Math.max(0,Number(s.receipt_discount||0))
+              :Math.max(0,Number(s.discount||0)-itemDiscount);
+
+          const discountTotal=itemDiscount+receiptDiscount;
+
+          const subtotal=
+            s.subtotal!=null
+              ?Math.max(0,Number(s.subtotal||0))
+              :items.reduce((sum,x)=>
+                  sum+Math.max(
+                    0,
+                    Number(
+                      x.line_subtotal ??
+                      (Number(x.quantity||0)*Number(x.unit_price||0))
+                    )
+                  ),
+                0);
+
+          return `
+            <tr>
+              <td>${dt(s.sold_at||s.created_at)}</td>
+              <td><b>${esc(saleReceiptNumber(s))}</b></td>
+              <td><span class="badge">${esc(s.source||'manual')}</span></td>
+              <td class="right">${num(qty)}</td>
+              <td class="right">${money(subtotal)}</td>
+              <td class="right">${discountTotal>0?'− '+money(discountTotal):money(0)}</td>
+              <td class="right"><b>${money(s.total_amount||0)}</b></td>
+              <td class="right">
+                <div class="sale-history-actions">
+                  <button type="button" class="secondary sm" onclick="editSaleReceipt('${s.id}')">Sửa</button>
+                  <button type="button" class="danger sm" onclick="deleteSaleReceipt('${s.id}')">Xóa</button>
+                </div>
+              </td>
+            </tr>`;
+        }).join('')}
+      </table>
+    </div>`;
+};
+
+/* Replace Fresh save so discount metadata is persisted in structured Cloud columns. */
+saveSaleReceipt=async function(){
+  if(!lyFreshRequireOnline())return false;
+
+  const form=$('inlineSaleReceiptForm');
+  const editId=form?.dataset.editSaleId||'';
+  const receiptNo=($('saleReceiptNo')?.value||'').trim();
+  const saleDate=($('saleReceiptDate')?.value||lyFreshToday()).trim();
+  const source=typeof resolvedSaleSource==='function'
+    ?resolvedSaleSource()
+    :($('saleReceiptSource')?.value||'manual');
+  const note=($('saleReceiptNote')?.value||'').trim();
+  const lines=getSaleReceiptLines?.()||[];
+
+  if(!receiptNo||!lines.length){
+    alert('Nhập số phiếu và ít nhất 1 món.');
+    return false;
+  }
+
+  const subtotal=lines.reduce(
+    (s,x)=>s+Math.max(0,Number(x.line_subtotal ?? (x.quantity*x.unit_price) ?? 0)),
+    0
+  );
+
+  const itemDiscountTotal=lines.reduce(
+    (s,x)=>s+Math.max(0,Number(x.item_discount||0)),
+    0
+  );
+
+  const afterItem=Math.max(0,subtotal-itemDiscountTotal);
+  const disc=getSaleDiscount(afterItem);
+  const total=Math.max(0,Number(disc.total??afterItem));
+
+  const needs={};
+  try{
+    for(const line of lines){
+      const expanded=lyFreshProductNeeds(line.product_id,Number(line.quantity||0));
+      for(const [iid,q] of Object.entries(expanded)){
+        needs[iid]=(needs[iid]||0)+q;
+      }
+    }
+  }catch(e){
+    alert(e.message);
+    return false;
+  }
+
+  let soldAt=new Date().toISOString();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(saleDate)){
+    soldAt=new Date(`${saleDate}T12:00:00`).toISOString();
+  }
+
+  const btn=$('saleReceiptSubmitBtn');
+  const result=$('saleReceiptResult');
+
+  try{
+    if(btn){
+      btn.disabled=true;
+      btn.textContent='Đang ghi Cloud…';
+    }
+
+    const saleItems=lines.map(x=>({
+      product_id:x.product_id,
+      quantity:Number(x.quantity||0),
+      unit_price:Number(x.unit_price||0),
+      line_subtotal:Math.max(
+        0,
+        Number(x.line_subtotal ?? (x.quantity*x.unit_price) ?? 0)
+      ),
+      item_discount_type:['none','percent','amount'].includes(x.item_discount_type)
+        ?x.item_discount_type
+        :'none',
+      item_discount_value:Math.max(0,Number(x.item_discount_value||0)),
+      item_discount:Math.max(0,Number(x.item_discount||0)),
+      line_total:Math.max(0,Number(x.line_total||0))
+    }));
+
+    const stockLines=Object.entries(needs).map(
+      ([ingredient_id,q])=>({
+        ingredient_id,
+        quantity:-Number(q||0)
+      })
+    );
+
+    const {data,error}=await sb.rpc('ly_save_sale',{
+      p_header:{
+        id:editId||null,
+        warehouse_id:currentWarehouseId,
+        receipt_no:receiptNo,
+        sold_at:soldAt,
+        source,
+        note,
+        subtotal,
+        discount_type:disc.type||'none',
+        discount_value:Number(disc.value||0),
+        receipt_discount:Number(disc.discount||0),
+        item_discount_total:itemDiscountTotal,
+        discount:Number(disc.discount||0)+itemDiscountTotal,
+        total_amount:total
+      },
+      p_sale_items:saleItems,
+      p_stock_lines:stockLines
+    });
+
+    if(error)throw error;
+
+    const {data:verify,error:ve}=await sb
+      .from('ly_sales')
+      .select('id,receipt_no,total_amount,subtotal,discount')
+      .eq('id',data)
+      .eq('org_id',window.__lyFreshOrgId)
+      .single();
+
+    if(ve||!verify){
+      throw ve||new Error('Cloud chưa xác nhận phiếu bán.');
+    }
+
+    await loadCloud();
+
+    renderSales?.();
+    renderIngredients?.();
+    renderDashboard?.();
+
+    if(result){
+      result.innerHTML=
+        `<span style="color:#15803d"><b>✓ Cloud đã xác nhận phiếu ${esc(receiptNo)}</b></span>`;
+    }
+
+    toastMsg(`Đã lưu phiếu bán ${receiptNo}`);
+    toggleSaleReceiptForm?.(false);
+    return true;
+
+  }catch(e){
+    console.error('Fresh sale save',e);
+    if(result){
+      result.innerHTML=
+        `<span style="color:#b91c1c"><b>Lỗi:</b> ${esc(e?.message||e)}</span>`;
+    }
+    alert('Lỗi bán hàng: '+(e?.message||e));
+    return false;
+
+  }finally{
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=editId?'Lưu thay đổi phiếu':'Xác nhận bán & trừ kho';
+    }
   }
 };
 </script>
