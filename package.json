@@ -5,7 +5,8 @@
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "stability": "node scripts/stability-audit.mjs",
-    "check": "npm run validate && npm run stability"
+    "perf:budget": "node scripts/performance-budget.mjs",
+    "check": "npm run validate && npm run stability && npm run perf:budget"
   },
   "engines": {
     "node": ">=20"
