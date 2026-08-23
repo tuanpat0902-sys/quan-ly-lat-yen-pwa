@@ -1,0 +1,2 @@
+Force GitHub Pages rebuild for Fresh Core V2 authoritative Ver 2.1.0.
+Triggered: 2026-08-24
