@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+// Analyzer revision 2: trigger full-source analysis on GitHub runner.
 const srcPath='index.html';
 const src=fs.readFileSync(srcPath,'utf8');
 const outDir='refactor';
