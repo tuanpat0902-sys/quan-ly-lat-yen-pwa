@@ -5,6 +5,8 @@ const pkg=JSON.parse(await fs.readFile(new URL('../package.json',import.meta.url
 const versionSource=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const branding=await fs.readFile(new URL('../ly-branding-sync.js',import.meta.url),'utf8');
 const notifications=await fs.readFile(new URL('../ly-inapp-notifications.js',import.meta.url),'utf8');
+const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
+const warehouseDeleteUx=await fs.readFile(new URL('../ly-warehouse-delete-ux.js',import.meta.url),'utf8');
 const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 
 const match=versionSource.match(/const VERSION='([^']+)'/);
@@ -14,10 +16,16 @@ assert.equal(pkg.version,runtimeVersion,'package.json and runtime software versi
 assert.ok(versionSource.includes('Ver ${VERSION}'),'compact Ver label must be used');
 assert.ok(versionSource.includes('lat_yen_last_seen_app_version'),'runtime must remember the last seen version for update notices');
 assert.ok(versionSource.includes('findBrandTextTarget'),'version runtime must resolve the actual branding text node');
-assert.ok(versionSource.includes("document.querySelector('aside')"),'version runtime must search sidebar DOM');
+assert.ok(versionSource.includes("document.querySelector?.('.brand"),'version runtime must directly support the real .brand container');
+assert.ok(versionSource.includes('data-ly-brand-label'),'brand text must be isolated from child elements such as <small>');
+assert.ok(versionSource.includes('n.nodeType===3'),'runtime must safely handle the direct brand text node');
 assert.ok(versionSource.includes('target.textContent=wanted'),'version must be rendered in the visible software-name text node');
-assert.ok(versionSource.includes("setAttribute('data-ly-app-version',VERSION)"),'visible brand target must be marked with the running version');
-assert.ok(versionSource.includes('[50,250,800,1800,3500,6000]'),'mounting must retry through layered UI startup');
+assert.ok(versionSource.includes("setAttribute?.('data-ly-app-version',VERSION)"),'visible brand target must be marked with the running version');
+assert.ok(versionSource.includes('[0,50,250,800,1800,3500,6000]'),'mounting must retry through layered UI startup');
+assert.ok(loader.includes("appVersion:{src:'./ly-app-version.js?v=2.0.3-hotfix2'"),'module loader must bootstrap the version hotfix independently of service-worker freshness');
+assert.ok(loader.includes("warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.1'"),'module loader must bootstrap warehouse-delete UX independently of service-worker freshness');
+assert.ok(warehouseDeleteUx.includes("code==='23503'"),'warehouse UX must sanitize foreign-key deletion failures');
+assert.ok(warehouseDeleteUx.includes('Không thể xóa'),'warehouse UX must expose a user-facing Vietnamese explanation');
 assert.ok(branding.includes('remountAppVersion'),'branding runtime must own version remount after software-name updates');
 assert.ok(branding.includes("new CustomEvent('latyen:branding-updated'"),'branding updates must notify the version runtime');
 assert.ok(branding.includes(`ly-app-version.js?v=${runtimeVersion}`),'branding fallback must request current software version');

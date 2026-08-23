@@ -1,11 +1,13 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV8)return;
-  window.__lyModuleLoaderV8=true;
-  const VERSION='2026.08.23.8';
+  if(window.__lyModuleLoaderV9)return;
+  window.__lyModuleLoaderV9=true;
+  const VERSION='2026.08.24.2';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
+    appVersion:{src:'./ly-app-version.js?v=2.0.3-hotfix2',test:()=>window.__lyAppVersion?.revision==='brand-text-v2'},
+    warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.1',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.1'},
     settings:{src:'./ly-settings-enhancements.js?v=20260823.2',test:()=>!!window.__lyNotificationMaster},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
@@ -36,7 +38,8 @@
   document.addEventListener('pointerdown',e=>preparePanel(panelOf(e.target)),true);
   document.addEventListener('click',e=>preparePanel(panelOf(e.target)),true);
   window.addEventListener('latyen:panel',e=>preparePanel(e?.detail?.panel||''));
-  function idle(){load('branding');}
+  load('appVersion');load('warehouseDeleteUX');
+  function idle(){load('branding');load('appVersion');load('warehouseDeleteUX');}
   if('requestIdleCallback' in window)requestIdleCallback(idle,{timeout:6500});else setTimeout(idle,4500);
   window.__lyModuleLoader={version:VERSION,load,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
 })();
