@@ -21,7 +21,8 @@
     "v2:manual-refresh": "node scripts/test-fresh-core-v2-manual-refresh.mjs",
     "v2:realtime": "node scripts/test-fresh-core-v2-realtime.mjs",
     "v2:realtime:phase2": "node scripts/test-fresh-core-v2-realtime-phase2.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run legacy:write-guard && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:takeover:reads && npm run v2:legacy-hydration && npm run v2:resume-refresh && npm run v2:manual-refresh && npm run v2:realtime && npm run v2:realtime:phase2"
+    "v2:readiness": "node scripts/fresh-core-v2-test-readiness.mjs",
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run legacy:write-guard && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:takeover:reads && npm run v2:legacy-hydration && npm run v2:resume-refresh && npm run v2:manual-refresh && npm run v2:realtime && npm run v2:realtime:phase2 && npm run v2:readiness"
   },
   "engines": { "node": ">=20" }
 }
