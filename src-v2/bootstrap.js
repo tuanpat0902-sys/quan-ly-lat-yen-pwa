@@ -35,22 +35,16 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
 
   async function refreshCoreDomains() {
     const results = await Promise.all([
-      domains.masterData.refresh(),
-      domains.ingredients.refresh(),
-      domains.products.refresh(),
-      domains.imports.refresh(),
-      domains.exports.refresh(),
-      domains.stocktake.refresh(),
-      domains.sales.refresh(),
-      domains.cashflow.refresh(),
-      domains.inventory.refresh()
+      domains.masterData.refresh(), domains.ingredients.refresh(), domains.products.refresh(),
+      domains.imports.refresh(), domains.exports.refresh(), domains.stocktake.refresh(),
+      domains.sales.refresh(), domains.cashflow.refresh(), domains.inventory.refresh()
     ]);
-    events.emit('core:refreshed', { at: Date.now() });
+    events.emit('core:refreshed', { at: Date.now(), authoritative: true });
     return results;
   }
 
   return Object.freeze({
-    version: '2.4.0-master-data-takeover-ready',
+    version: '2.5.0-authoritative', mode: 'fresh-core-v2-only', authoritative: true,
     events, store, data, domains, setSession, setOrg, setPanel, refreshCoreDomains
   });
 }
