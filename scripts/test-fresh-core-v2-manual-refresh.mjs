@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import fs from 'node:fs/promises';
+const source=await fs.readFile(new URL('../ly-fresh-core-v2-manual-refresh.js',import.meta.url),'utf8');
+let legacyCalls=0,refreshes=0,hydrates=0,renders=0;let phase='ready',orgId='org-1';
+const order=[];
+const context={console,Date,navigator:{onLine:true},setTimeout(fn){fn();return 1;},clearTimeout(){},autoSyncNow:async(...args)=>{legacyCalls++;order.push('legacy');return {legacy:true,args};},renderAll(){renders++;order.push('render');},invalidateDerivedCaches(){order.push('invalidate');},cacheSave(){order.push('cache');},flushCacheSave(){order.push('flush');},updatePendingSyncBadge(){order.push('badge');},CustomEvent:class{constructor(type,init){this.type=type;this.detail=init?.detail;}},window:{__lyFreshOrgId:'org-1',__lyFreshCoreV2:{store:{getState(){return {}; }},async refreshCoreDomains(){refreshes++;order.push('refresh');return true;}},__lyFreshCoreV2ReadTakeover:{hydrate(){hydrates++;order.push('hydrate');return true;}},__lyFreshCoreV2Shadow:{status(){return {phase,orgId};}},dispatchEvent(){}}};
+context.window.autoSyncNow=context.autoSyncNow;context.globalThis=context;
+vm.createContext(context);vm.runInContext(source,context,{filename:'ly-fresh-core-v2-manual-refresh.js'});
+const api=context.window.__lyFreshCoreV2ManualRefresh;assert.equal(api.status().enabled,true);
+const result=await context.autoSyncNow();assert.equal(result.fastPath,'manual-refresh');assert.equal(refreshes,1);assert.equal(hydrates,1);assert.equal(renders,1);assert.equal(legacyCalls,0);assert.deepEqual(order,['refresh','hydrate','invalidate','cache','flush','render','badge']);
+await context.autoSyncNow('diagnostic');assert.equal(legacyCalls,1,'nonstandard/manual diagnostic args must keep Legacy path');
+phase='loading';await context.autoSyncNow();assert.equal(legacyCalls,2,'V2 not ready must fallback');phase='ready';
+orgId='other';await context.autoSyncNow();assert.equal(legacyCalls,3,'org mismatch must fallback');orgId='org-1';
+context.navigator.onLine=false;await context.autoSyncNow();assert.equal(legacyCalls,4,'offline must fallback');context.navigator.onLine=true;
+context.window.__lyFreshCoreV2ReadTakeover.hydrate=()=>false;await context.autoSyncNow();assert.equal(legacyCalls,5,'hydration failure must fallback');
+api.disable();await context.autoSyncNow();assert.equal(legacyCalls,6,'disable must restore Legacy function');
+console.log('Fresh Core V2 manual refresh fast-path: PASS');
