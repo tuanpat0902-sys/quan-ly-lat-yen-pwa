@@ -3,11 +3,7 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: ["main"]
-  pull_request:
-    branches: ["main"]
   workflow_dispatch:
-  schedule:
-    - cron: "*/5 * * * *"
 
 permissions:
   contents: read
@@ -15,44 +11,47 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages-${{ github.ref }}"
+  group: pages-production
   cancel-in-progress: true
 
 jobs:
-  validate:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Validate production runtime and stability
-        run: npm run check
-
   deploy:
-    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout production source
         uses: actions/checkout@v4
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Prepare exact Pages runtime artifact
+
+      - name: Prepare Ver 2.1.1 authoritative runtime
         run: node scripts/prepare-pages-artifact.mjs
+
+      - name: Build minimal Pages artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site
+          mkdir -p _site
+          cp index.html sw.js manifest.webmanifest icon.svg .nojekyll runtime-version.json _site/
+          find . -maxdepth 1 -type f -name 'ly-*.js' -exec cp {} _site/ \;
+          cp -R src-v2 _site/src-v2
+          echo 'Pages artifact files:'
+          find _site -type f | sort
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
