@@ -1,7 +1,7 @@
 {
   "name": "quan-ly-lat-yen-pwa",
   "private": true,
-  "version": "2.1.0",
+  "version": "2.1.1",
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "stability": "node scripts/stability-audit.mjs",
