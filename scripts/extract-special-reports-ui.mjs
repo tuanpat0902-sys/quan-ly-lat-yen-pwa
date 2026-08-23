@@ -1,4 +1,4 @@
-// Trigger validated Special Reports extraction after workflow installation.
+// Trigger final validation for extracted Special Reports UI.
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 const indexPath='index.html';
