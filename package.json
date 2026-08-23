@@ -10,7 +10,8 @@
     "v2:shadow": "node scripts/test-fresh-core-v2-shadow.mjs",
     "v2:takeover:ingredients": "node scripts/test-fresh-core-v2-ingredients-takeover.mjs",
     "v2:takeover:products": "node scripts/test-fresh-core-v2-products-takeover.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products"
+    "v2:takeover:documents": "node scripts/test-fresh-core-v2-documents-takeover.mjs",
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents"
   },
   "engines": {
     "node": ">=20"
