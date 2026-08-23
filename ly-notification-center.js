@@ -4,11 +4,14 @@
   window.__lyNotificationCenterV1=true;
   const VERSION='2026.08.23.1';
   const LIMIT=60;
-  const state={orgId:'',items:[],readCursor:0,latestId:0,ready:false,startTimer:null};
+  const state={orgId:'',items:[],readCursor:0,latestId:0,ready:false,startTimer:null,localIds:new Set()};
   const text=v=>String(v??'').trim();
   const getClient=()=>{try{if(typeof sb!=='undefined'&&sb?.from)return sb;}catch(e){}return null;};
   const readKey=()=>`lat_yen_notification_read_v1:${state.orgId}`;
   const initializedKey=()=>`lat_yen_notification_initialized_v1:${state.orgId}`;
+  const localIdsKey=()=>`lat_yen_notification_local_ids_v1:${state.orgId}`;
+  function loadLocalIds(){try{state.localIds=new Set(JSON.parse(localStorage.getItem(localIdsKey())||'[]').map(Number).filter(Boolean));}catch(e){state.localIds=new Set();}}
+  function rememberLocalId(id){const n=Number(id)||0;if(!n)return;state.localIds.add(n);const ids=[...state.localIds].sort((a,b)=>b-a).slice(0,80);state.localIds=new Set(ids);try{localStorage.setItem(localIdsKey(),JSON.stringify(ids));}catch(e){}}
   function getRead(){try{return Number(localStorage.getItem(readKey())||0)||0;}catch(e){return 0;}}
   function setRead(id){state.readCursor=Math.max(state.readCursor,Number(id)||0);try{localStorage.setItem(readKey(),String(state.readCursor));}catch(e){}updateBadge();renderList();}
   function money(value){const n=Number(value);if(!Number.isFinite(n)||!n)return '';try{return new Intl.NumberFormat('vi-VN').format(n)+' đ';}catch(e){return String(n)+' đ';}}
@@ -16,7 +19,7 @@
   function formatRow(row){
     const table=text(row?.entity_table),type=text(row?.event_type).toLowerCase(),r=rule(table),name=text(row?.entity_name),amount=money(row?.amount),details=[];if(name)details.push(name);if(amount)details.push(amount);
     const title=r[type]||(type==='insert'?'Có dữ liệu mới':type==='update'?'Dữ liệu vừa được cập nhật':type==='delete'?'Dữ liệu đã được xóa':'Có thay đổi dữ liệu');
-    return {id:Number(row?.id)||0,table,type,entityId:text(row?.entity_id),title,body:details.join(' • ')||(type==='update'?'Nội dung vừa được thay đổi.':type==='delete'?'Dữ liệu đã được xóa.':'Đã thêm dữ liệu mới.'),icon:r.icon||'🔔',panel:r.panel||'',createdAt:row?.created_at||new Date().toISOString(),local:false};
+    const id=Number(row?.id)||0;return {id,table,type,entityId:text(row?.entity_id),title,body:details.join(' • ')||(type==='update'?'Nội dung vừa được thay đổi.':type==='delete'?'Dữ liệu đã được xóa.':'Đã thêm dữ liệu mới.'),icon:r.icon||'🔔',panel:r.panel||'',createdAt:row?.created_at||new Date().toISOString(),local:state.localIds.has(id)};
   }
   function dedupe(items){
     const out=[],seen=new Map();
@@ -47,8 +50,8 @@
     let btn=document.getElementById('lyNotificationButton');if(!btn){btn=document.createElement('button');btn.type='button';btn.id='lyNotificationButton';btn.className='ly-notification-btn';btn.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg><span id="lyNotificationBadge" class="ly-notification-badge" hidden>0</span>';btn.onclick=openCenter;cluster.appendChild(btn);}decorateCloud();updateBadge();return true;
   }
   function decorateCloud(){
-    const el=document.getElementById('cloudStatus');if(!el)return;const title=text(el.title||el.textContent).toLowerCase();let mode='synced';if(el.classList.contains('offline')||/gián đoạn|offline|tạm dừng|lỗi/.test(title))mode='offline';else if(/đang|tải|đồng bộ|syncing|gửi thay đổi/.test(title))mode='syncing';else if(/chờ|pending|còn .* mục/.test(title))mode='pending';
-    const key=`${mode}:${title}`;if(el.dataset.lyCloudKey===key)return;el.dataset.lyCloudKey=key;el.classList.add('ly-cloud-dynamic');el.classList.remove('ly-syncing','ly-synced','ly-pending','ly-offline');el.classList.add(mode==='syncing'?'ly-syncing':mode==='pending'?'ly-pending':mode==='offline'?'ly-offline':'ly-synced');
+    const el=document.getElementById('cloudStatus');if(!el)return;const title=text(el.title||el.textContent).toLowerCase();let mode='synced';if(/gián đoạn|offline|tạm dừng|lỗi/.test(title))mode='offline';else if(/chờ|pending|còn .* mục/.test(title))mode='pending';else if(/đang|tải|đồng bộ|syncing|gửi thay đổi/.test(title))mode='syncing';else if(el.classList.contains('offline'))mode='offline';
+    const key=`${mode}:${title}`;if(el.dataset.lyCloudKey===key&&el.querySelector('.ly-cloud-glyph'))return;el.dataset.lyCloudKey=key;el.classList.add('ly-cloud-dynamic');el.classList.remove('ly-syncing','ly-synced','ly-pending','ly-offline');el.classList.add(mode==='syncing'?'ly-syncing':mode==='pending'?'ly-pending':mode==='offline'?'ly-offline':'ly-synced');
     el.innerHTML=`<span class="ly-cloud-glyph"><span class="ly-cloud-ring"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .4-7.98A5.5 5.5 0 0 0 6.7 8.4 4.5 4.5 0 0 0 7 18Z"></path>${mode==='synced'?'<path d="m9.5 13 1.6 1.6 3.5-3.6"></path>':mode==='offline'?'<path d="M8 8l8 8"></path>':mode==='pending'?'<path d="M12 10v3l2 1"></path>':'<path d="M12 9v6"></path>'}</svg></span>`;
   }
   function observeCloud(){const el=document.getElementById('cloudStatus');if(!el)return;const obs=new MutationObserver(()=>{queueMicrotask(decorateCloud);});obs.observe(el,{attributes:true,childList:true,subtree:true,characterData:true,attributeFilter:['class','title']});setInterval(decorateCloud,1200);}
@@ -67,11 +70,11 @@
   function openCenter(){ensureOverlay().classList.add('open');renderList();requestAnimationFrame(()=>setRead(state.latestId));}
   function closeCenter(){document.getElementById('lyNotificationOverlay')?.classList.remove('open');}
   function addItem(item){
-    if(!item?.id)return;state.latestId=Math.max(state.latestId,item.id);const idx=state.items.findIndex(x=>x.id===item.id);if(idx>=0)state.items[idx]={...state.items[idx],...item};else state.items.unshift(item);state.items=dedupe(state.items).slice(0,LIMIT);if(document.getElementById('lyNotificationOverlay')?.classList.contains('open'))setRead(state.latestId);else{updateBadge();renderList();}
+    if(!item?.id)return;if(item.local)rememberLocalId(item.id);state.latestId=Math.max(state.latestId,item.id);const idx=state.items.findIndex(x=>x.id===item.id);if(idx>=0)state.items[idx]={...state.items[idx],...item};else state.items.unshift(item);state.items=dedupe(state.items).slice(0,LIMIT);if(document.getElementById('lyNotificationOverlay')?.classList.contains('open'))setRead(state.latestId);else{updateBadge();renderList();}
   }
   async function loadHistory(client){
     const {data,error}=await client.from('ly_activity_events').select('id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at').eq('org_id',state.orgId).order('id',{ascending:false}).limit(80);if(error)throw error;
-    const raw=(data||[]).map(formatRow);state.items=dedupe(raw);state.latestId=state.items.reduce((m,x)=>Math.max(m,x.id),0);
+    loadLocalIds();const rows=data||[];const primaryTimes=rows.filter(r=>['ly_sales','ly_import_receipts','ly_export_receipts','ly_stocktake_receipts'].includes(text(r.entity_table))).map(r=>new Date(r.created_at||0).getTime()).filter(Number.isFinite);const filtered=rows.filter(r=>{if(text(r.entity_table)!=='ly_cashflow_entries')return true;const t=new Date(r.created_at||0).getTime();return !primaryTimes.some(p=>Math.abs(p-t)<=5000);});const raw=filtered.map(formatRow);state.items=dedupe(raw);state.latestId=state.items.reduce((m,x)=>Math.max(m,x.id),0);
     let initialized=false;try{initialized=localStorage.getItem(initializedKey())==='1';}catch(e){}
     state.readCursor=getRead();if(!initialized){state.readCursor=state.latestId;try{localStorage.setItem(readKey(),String(state.readCursor));localStorage.setItem(initializedKey(),'1');}catch(e){}}
     updateBadge();renderList();
