@@ -2,20 +2,23 @@ export function createMasterDataService({ repository, store, events }) {
   if (!repository || !store || !events) throw new Error('repository, store and events are required');
 
   async function refresh() {
-    const [warehouses, suppliers] = await Promise.all([
-      repository.listWarehouses(),
-      repository.listSuppliers()
-    ]);
+    const [warehouses, suppliers] = await Promise.all([repository.listWarehouses(), repository.listSuppliers()]);
     store.patch({ warehouses, suppliers }, { source: 'master-data:refresh' });
     events.emit('master-data:changed', { warehouses, suppliers });
     return { warehouses, suppliers };
   }
 
-  async function saveWarehouse(warehouse, purchasedIngredientIds = []) {
-    const row = await repository.saveWarehouse(warehouse, purchasedIngredientIds);
+  async function saveWarehouse(warehouse) {
+    const row = await repository.saveWarehouse(warehouse);
     await refresh();
     events.emit('warehouses:saved', row);
     return row;
+  }
+
+  async function initializeInventory(rows) {
+    const result = await repository.initializeInventory(rows);
+    events.emit('inventory:initialized', { count: Array.isArray(rows) ? rows.length : 1 });
+    return result;
   }
 
   async function saveSupplier(supplier) {
@@ -25,11 +28,5 @@ export function createMasterDataService({ repository, store, events }) {
     return row;
   }
 
-  async function ensureSupplierByName(name) {
-    const row = await repository.ensureSupplierByName(name);
-    await refresh();
-    return row;
-  }
-
-  return Object.freeze({ refresh, saveWarehouse, saveSupplier, ensureSupplierByName });
+  return Object.freeze({ refresh, saveWarehouse, initializeInventory, saveSupplier });
 }
