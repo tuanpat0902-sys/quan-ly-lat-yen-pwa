@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.6",
-  "revision": "fresh-core-v2-authoritative-v7",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-59",
+  "appVersion": "2.1.7",
+  "revision": "fresh-core-v2-authoritative-v8",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-60",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "early-auth-shim-before-legacy-init"
+  "bootstrapFix": "direct-session-and-org-context-bootstrap"
 }
