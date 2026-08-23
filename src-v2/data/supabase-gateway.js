@@ -17,30 +17,13 @@ export function createSupabaseGateway({ client, getOrgId, tables = DEFAULT_TABLE
   if (typeof getOrgId !== 'function') throw new Error('getOrgId is required');
   if (typeof client.from !== 'function' || typeof client.rpc !== 'function') throw new Error('Invalid Supabase client');
 
-  // Capture the original methods once. This lets a strangler/takeover layer wrap
-  // the legacy client later without causing V2 repository calls to recurse back
-  // through the legacy adapter.
   const fromClient = client.from.bind(client);
   const rpcClient = client.rpc.bind(client);
 
-  function assertTable(table) {
-    if (!tables.has(table)) throw new Error(`Table not allowed: ${table}`);
-  }
-
-  function assertRpc(name) {
-    if (!rpcs.has(name)) throw new Error(`RPC not allowed: ${name}`);
-  }
-
-  function orgId() {
-    const value = getOrgId();
-    if (!value) throw new Error('Organization is not ready');
-    return value;
-  }
-
-  function table(name) {
-    assertTable(name);
-    return fromClient(name);
-  }
+  function assertTable(table) { if (!tables.has(table)) throw new Error(`Table not allowed: ${table}`); }
+  function assertRpc(name) { if (!rpcs.has(name)) throw new Error(`RPC not allowed: ${name}`); }
+  function orgId() { const value = getOrgId(); if (!value) throw new Error('Organization is not ready'); return value; }
+  function table(name) { assertTable(name); return fromClient(name); }
 
   async function rpc(name, params = {}) {
     assertRpc(name);
@@ -71,6 +54,19 @@ export function createSupabaseGateway({ client, getOrgId, tables = DEFAULT_TABLE
     return data ?? [];
   }
 
+  async function upsertOrg(name, rowOrRows, options = {}) {
+    assertTable(name);
+    const id = orgId();
+    const input = Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows];
+    if (!input.length) return [];
+    const rows = input.map(row => ({ ...row, org_id: id }));
+    let query = fromClient(name).upsert(rows, options.onConflict ? { onConflict: options.onConflict } : undefined);
+    if (options.select !== false) query = query.select(options.columns || '*');
+    const { data, error } = await query;
+    if (error) throw error;
+    return data ?? [];
+  }
+
   async function updateOrg(name, patch, configure) {
     assertTable(name);
     let query = fromClient(name).update(patch).eq('org_id', orgId());
@@ -89,5 +85,5 @@ export function createSupabaseGateway({ client, getOrgId, tables = DEFAULT_TABLE
     return data ?? [];
   }
 
-  return Object.freeze({ table, rpc, selectOrg, insertOrg, updateOrg, deleteOrg });
+  return Object.freeze({ table, rpc, selectOrg, insertOrg, upsertOrg, updateOrg, deleteOrg });
 }
