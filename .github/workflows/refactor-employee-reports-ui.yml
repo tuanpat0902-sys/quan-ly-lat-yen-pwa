@@ -1,0 +1,44 @@
+name: Refactor Employee Reports UI
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "scripts/extract-employee-reports-ui.mjs"
+      - ".github/workflows/refactor-employee-reports-ui.yml"
+      - "ly-employee-reports-bridge.js"
+      - "sw.js"
+      - "scripts/validate.mjs"
+  push:
+    branches: ["refactor/employee-reports-module"]
+    paths:
+      - "scripts/extract-employee-reports-ui.mjs"
+      - ".github/workflows/refactor-employee-reports-ui.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract_employee_reports:
+    if: ${{ !contains(github.event.head_commit.message, '[employee-reports-extracted]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout refactor branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Extract Employee Reports UI when needed
+        run: node scripts/extract-employee-reports-ui.mjs
+      - name: Validate refactored runtime
+        run: npm run validate
+      - name: Commit validated extraction
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html ly-employee-reports.js refactor/employee-reports-extraction-result.md
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "refactor: extract Employee Reports UI [employee-reports-extracted]"
+          git push
