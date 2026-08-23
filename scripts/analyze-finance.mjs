@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+// Trigger revision 2: run after workflow exists.
 const src=fs.readFileSync('index.html','utf8');
 const targets=['renderFinance','renderFinanceData'];
 const decl=/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g;
