@@ -3,10 +3,11 @@
   if(window.__lyBrandingSyncV2)return;
   window.__lyBrandingSyncV2=true;
 
-  const VERSION='2026.08.23.2';
+  const VERSION='2026.08.24.1';
   const DEFAULT_NAME='QUẢN LÝ LÁT YÊN';
   const state={orgId:'',row:null,channel:null,startTimer:null,saving:false,applying:false,seedAttempted:false};
   const text=v=>String(v??'').trim();
+  const stripVersion=v=>text(v).replace(/\s*(?:·|-)\s*Ver\s+\d+\.\d+\.\d+\s*$/i,'').trim();
   const getClient=()=>{try{if(typeof sb!=='undefined'&&sb?.from&&sb?.channel)return sb;}catch(e){}return null;};
 
   function findBrandingCard(){
@@ -39,19 +40,28 @@
     document.querySelectorAll('img[id*="logo" i],img[class*="logo" i],img[alt*="logo" i]').forEach(img=>{if(!card?.contains(img))targets.add(img);});return [...targets];
   }
   function nameTargets(oldName){
-    const roots=[document.querySelector('header'),document.getElementById('nav'),document.querySelector('aside'),document.querySelector('.sidebar')].filter(Boolean),names=new Set([text(oldName),DEFAULT_NAME].filter(Boolean).map(x=>x.toLowerCase())),out=[];
-    roots.forEach(root=>root.querySelectorAll('span,div,strong,b,h1,h2,h3,p').forEach(el=>{if(el.children.length)return;const value=text(el.textContent);if(value&&names.has(value.toLowerCase()))out.push(el);}));return out;
+    const roots=[document.querySelector('header'),document.getElementById('nav'),document.querySelector('aside'),document.querySelector('.sidebar')].filter(Boolean),names=new Set([stripVersion(oldName),DEFAULT_NAME].filter(Boolean).map(x=>x.toLowerCase())),out=[];
+    roots.forEach(root=>root.querySelectorAll('span,div,strong,b,h1,h2,h3,p').forEach(el=>{if(el.children.length)return;const value=stripVersion(el.textContent);if(value&&names.has(value.toLowerCase()))out.push(el);}));return out;
+  }
+  function remountAppVersion(){
+    try{
+      if(window.__lyAppVersion?.mount){window.__lyAppVersion.mount();return;}
+      if(document.querySelector('script[data-ly-app-version-loader]'))return;
+      const s=document.createElement('script');s.src='./ly-app-version.js?v=2.0.3';s.async=false;s.dataset.lyAppVersionLoader='1';s.onload=()=>window.__lyAppVersion?.mount?.();(document.head||document.documentElement||document.body)?.appendChild(s);
+    }catch(e){}
   }
 
   function applyBranding(row){
-    if(!row)return;const name=text(row.software_name)||DEFAULT_NAME,logo=text(row.logo_data),parts=cardParts(),oldName=text(state.row?.software_name)||text(parts.nameInput?.value)||DEFAULT_NAME;state.applying=true;
+    if(!row)return;const name=text(row.software_name)||DEFAULT_NAME,logo=text(row.logo_data),parts=cardParts(),oldName=stripVersion(state.row?.software_name)||stripVersion(parts.nameInput?.value)||DEFAULT_NAME;state.applying=true;
     try{
       if(parts.nameInput&&parts.nameInput.value!==name)parts.nameInput.value=name;
       if(parts.preview){const current=parts.preview.getAttribute('src')||'';if(logo&&current!==logo){parts.preview.src=logo;parts.preview.style.display='';}if(!logo&&current){parts.preview.removeAttribute('src');parts.preview.style.display='none';}}
-      nameTargets(oldName).forEach(el=>{if(text(el.textContent)!==name)el.textContent=name;});
+      nameTargets(oldName).forEach(el=>{if(stripVersion(el.textContent)!==name||text(el.textContent)!==name)el.textContent=name;});
       logoTargets(parts.card).forEach(img=>{const current=img.getAttribute('src')||'';if(logo&&current!==logo){img.src=logo;img.style.display='';}if(!logo&&current)img.removeAttribute('src');});
-      if(document.title&&[oldName,DEFAULT_NAME].map(x=>x.toLowerCase()).includes(text(document.title).toLowerCase()))document.title=name;
+      if(document.title&&[oldName,DEFAULT_NAME].map(x=>x.toLowerCase()).includes(stripVersion(document.title).toLowerCase()))document.title=name;
       state.row={...row,software_name:name,logo_data:logo||null};
+      try{window.dispatchEvent(new CustomEvent('latyen:branding-updated',{detail:{softwareName:name}}));}catch(e){}
+      setTimeout(remountAppVersion,0);
     }finally{state.applying=false;}
   }
 
@@ -73,7 +83,7 @@
   function ensureChannel(){
     const client=getClient();if(!client||!state.orgId||state.channel)return;let ch=client.channel(`latyen-branding-v2-${state.orgId}-${Math.random().toString(36).slice(2,7)}`);ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'ly_org_branding',filter:`org_id=eq.${state.orgId}`},payload=>{if(payload.eventType==='DELETE'){state.row=null;return;}applyBranding(payload.new||{});});state.channel=ch;ch.subscribe();
   }
-  async function start(){await load();ensureChannel();if(state.row)applyBranding(state.row);}
+  async function start(){await load();ensureChannel();if(state.row)applyBranding(state.row);else remountAppVersion();}
 
   function isInsideBranding(target){const card=findBrandingCard();return !!(card&&target&&card.contains(target));}
   function isSettingsButton(target){const b=target?.closest?.('#nav button[data-panel],button[data-panel]');if(!b)return false;const id=text(b.dataset.panel).toLowerCase(),label=text(b.textContent).toLowerCase();return id==='settings'||label.includes('cài đặt');}
@@ -83,9 +93,9 @@
       if(!isInsideBranding(e.target))return;const button=e.target.closest('button');if(!button)return;const label=text(button.textContent);if(/^Lưu$/i.test(label))setTimeout(()=>persist(undefined),80);else if(/^Xóa$/i.test(label))setTimeout(()=>persist(null),80);
     },true);
     document.addEventListener('change',e=>{if(!isInsideBranding(e.target))return;const input=e.target;if(input?.matches?.('input[type="file"]'))setTimeout(()=>persist(undefined),250);},true);
-    window.addEventListener('focus',()=>{if(state.row)applyBranding(state.row);});
+    window.addEventListener('focus',()=>{if(state.row)applyBranding(state.row);else remountAppVersion();});
   }
-  function boot(){installEvents();start();}
+  function boot(){installEvents();start();setTimeout(remountAppVersion,300);}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
   window.__lyBrandingSync={version:VERSION,refresh:start,save:()=>persist(undefined),status:()=>({version:VERSION,orgId:state.orgId,hasCloudRow:!!state.row,softwareName:state.row?.software_name||''})};
 })();
