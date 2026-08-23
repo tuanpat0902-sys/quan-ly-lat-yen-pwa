@@ -1,10 +1,10 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV5)return;
-  window.__lyModuleLoaderV5=true;
-  const VERSION='2026.08.23.5';
+  if(window.__lyModuleLoaderV6)return;
+  window.__lyModuleLoaderV6=true;
+  const VERSION='2026.08.23.6';
   const loaded=new Map();
-  const HEAVY=new Set(['finance','employees','history']);
+  const HEAVY=new Set(['finance','employees','history','reports']);
   const modules={
     settings:{src:'./ly-settings-enhancements.js?v=20260823.2',test:()=>!!window.__lyNotificationMaster},
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
@@ -12,6 +12,7 @@
     activityHistory:{src:'./ly-activity-history.js?v=20260823.1',test:()=>!!window.__lyActivityHistoryModule},
     employeesUI:{src:'./ly-employees.js?v=20260823.1',test:()=>!!window.__lyEmployeesModule},
     financeUI:{src:'./ly-finance.js?v=20260823.1',test:()=>!!window.__lyFinanceModule},
+    reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
   };
   function load(name){
     const m=modules[name];if(!m)return Promise.resolve(false);if(m.test?.())return Promise.resolve(true);if(loaded.has(name))return loaded.get(name);
@@ -26,6 +27,7 @@
     if(panel==='history')load('activityHistory');
     if(panel==='employees')load('employeesUI');
     if(panel==='finance')load('financeUI');
+    if(panel==='reports')load('reportsUI');
     if(HEAVY.has(panel))load('heavyPanels');
   }
   document.addEventListener('pointerdown',e=>preparePanel(panelOf(e.target)),true);
