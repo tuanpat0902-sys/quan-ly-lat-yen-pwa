@@ -3,10 +3,11 @@ import vm from 'node:vm';
 import fs from 'node:fs/promises';
 
 const source=await fs.readFile(new URL('../ly-fresh-core-v2-read-takeover.js',import.meta.url),'utf8');
-let refreshes=0,loads=0,visibleListener=null;
+let refreshes=0,loads=0,hydrations=0,visibleListener=null;
 let phase='ready',orgId='org-1';
 const order=[];
 const legacyFetch=async()=>[];
+const snapshot={products:[]};
 const context={
  console,Date,
  navigator:{onLine:true},document:{hidden:false},
@@ -15,7 +16,8 @@ const context={
  loadCloud:async()=>{order.push('load');loads++;return {ok:true};},
  window:{
    __lyFreshOrgId:'org-1',lyFreshFetch:legacyFetch,
-   __lyFreshCoreV2:{store:{getState(){return {products:[]};}},async refreshCoreDomains(){order.push('refresh');refreshes++;await Promise.resolve();return true;}},
+   __lyFreshCoreV2:{store:{getState(){return snapshot;}},async refreshCoreDomains(){order.push('refresh');refreshes++;await Promise.resolve();return true;}},
+   __lyFreshCoreV2LegacyHydration:{hydrate(input){assert.equal(input,snapshot);order.push('hydrate');hydrations++;return true;}},
    __lyFreshCoreV2Shadow:{status(){return {phase,orgId};}},
    addEventListener(type,fn,capture){if(type==='visibilitychange'&&capture)visibleListener=fn;},removeEventListener(){},
  }
@@ -26,15 +28,17 @@ const api=context.window.__lyFreshCoreV2ReadTakeover;
 assert.equal(api.status().enabled,true);assert.equal(typeof visibleListener,'function');
 visibleListener();await context.loadCloud();
 assert.equal(refreshes,1,'foreground must run one authoritative V2 refresh');
-assert.equal(loads,1,'Legacy load mapping must still run once');
-assert.deepEqual(order,['refresh','load'],'V2 refresh must finish before Legacy mapping');
+assert.equal(hydrations,1,'fresh V2 state must hydrate Legacy projections before mapping/render');
+assert.equal(loads,1,'Legacy load mapping must still run once in this phase');
+assert.deepEqual(order,['refresh','hydrate','load'],'V2 refresh and hydration must finish before Legacy mapping');
+assert.equal(api.status().hydrations,1);
 
 let release;context.window.__lyFreshCoreV2.refreshCoreDomains=()=>{refreshes++;order.push('refresh2');return new Promise(r=>{release=r;});};
 visibleListener();visibleListener();const pending=context.loadCloud();await Promise.resolve();assert.equal(typeof release,'function');release();await pending;
-assert.equal(refreshes,2,'repeated foreground must share the same pending refresh');assert.ok(api.status().foregroundCoalesced>=1);
+assert.equal(refreshes,2,'repeated foreground must share the same pending refresh');assert.equal(hydrations,2);assert.ok(api.status().foregroundCoalesced>=1);
 
-context.navigator.onLine=false;visibleListener();await context.loadCloud();assert.equal(refreshes,2);assert.equal(loads,3);
+context.navigator.onLine=false;visibleListener();await context.loadCloud();assert.equal(refreshes,2);assert.equal(hydrations,2);assert.equal(loads,3);
 context.navigator.onLine=true;phase='loading';visibleListener();await context.loadCloud();assert.equal(refreshes,2);assert.equal(loads,4);
 phase='ready';orgId='other-org';visibleListener();await context.loadCloud();assert.equal(refreshes,2);assert.equal(loads,5);
 api.disable();await context.loadCloud();assert.equal(loads,6,'disable must restore prior loadCloud');
-console.log('Fresh Core V2 resume refresh: PASS');
+console.log('Fresh Core V2 resume refresh + hydration runtime: PASS');
