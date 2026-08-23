@@ -1,8 +1,10 @@
 (()=>{
   'use strict';
-  if(window.__lyInAppNotificationsV4)return;
-  window.__lyInAppNotificationsV4=true;
-  const VERSION='2026.08.23.4';
+  if(window.__lyInAppNotificationsV5)return;
+  window.__lyInAppNotificationsV5=true;
+  const VERSION='2026.08.23.5';
+  const MASTER_KEY='lat_yen_notifications_master_v1';
+  const activityEnabled=()=>{try{return localStorage.getItem(MASTER_KEY)!=='0';}catch(e){return true;}};
 
   function host(){
     let el=document.getElementById('lyInAppNotificationHost');if(el)return el;
@@ -18,6 +20,6 @@
     const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Đóng');close.style.cssText='border:0;background:transparent;color:#667085;font-size:22px;line-height:22px;cursor:pointer;padding:0;border-radius:7px';close.onclick=()=>card.remove();card.append(icon,content,close);root.appendChild(card);
     requestAnimationFrame(()=>{card.style.opacity='1';card.style.transform='translateY(0)';});if(!persistent)setTimeout(()=>{card.style.opacity='0';card.style.transform='translateY(-6px)';setTimeout(()=>card.remove(),220);},7200);
   }
-  window.addEventListener('latyen:activity',event=>{const item=event?.detail||{};if(document.hidden||!item.popup||item.local)return;showToast(item.body,item.title,false,item.icon||'🔔');});
-  window.__lyInAppNotifications={version:VERSION,show:showToast,status:()=>({version:VERSION})};
+  window.addEventListener('latyen:activity',event=>{const item=event?.detail||{};if(!activityEnabled()||document.hidden||!item.popup||item.local)return;showToast(item.body,item.title,false,item.icon||'🔔');});
+  window.__lyInAppNotifications={version:VERSION,show:showToast,status:()=>({version:VERSION,activityEnabled:activityEnabled()})};
 })();
