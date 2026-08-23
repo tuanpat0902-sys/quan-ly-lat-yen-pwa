@@ -3,6 +3,8 @@
 - index.html bytes: 1387243
 - target range: lines 43955-44175
 - target function bytes: 6597
+- exact region bytes: 8319
+- interstitial bytes: 1722
 - target functions: 7
 - unexpected code/comments between target functions: YES
 
@@ -34,6 +36,6 @@
 
 ## Extraction gate
 
-BLOCKED: the target functions are not a contiguous clean block; review surrounding source before removal.
+BLOCKED: inspect refactor/activity-history-region.txt to include required interstitial declarations before extraction.
 
 Production index.html is unchanged by this analysis.
