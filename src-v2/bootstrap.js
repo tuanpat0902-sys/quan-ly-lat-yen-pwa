@@ -10,6 +10,8 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
     orgId: null,
     activePanel: 'ingredients',
     connectivity: { online: true, realtime: false },
+    warehouses: [],
+    suppliers: [],
     ingredients: [],
     preparedItems: [],
     products: [],
@@ -27,23 +29,13 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
   const data = createSupabaseGateway({ client: supabase, getOrgId: resolveOrgId });
   const domains = createDomains({ gateway: data, store, events });
 
-  function setSession(session) {
-    store.patch({ session }, { source: 'auth' });
-    events.emit('auth:session', session);
-  }
-
-  function setOrg(orgId) {
-    store.patch({ orgId }, { source: 'organization' });
-    events.emit('org:changed', orgId);
-  }
-
-  function setPanel(activePanel) {
-    store.patch({ activePanel }, { source: 'navigation' });
-    events.emit('panel:changed', activePanel);
-  }
+  function setSession(session) { store.patch({ session }, { source: 'auth' }); events.emit('auth:session', session); }
+  function setOrg(orgId) { store.patch({ orgId }, { source: 'organization' }); events.emit('org:changed', orgId); }
+  function setPanel(activePanel) { store.patch({ activePanel }, { source: 'navigation' }); events.emit('panel:changed', activePanel); }
 
   async function refreshCoreDomains() {
     const results = await Promise.all([
+      domains.masterData.refresh(),
       domains.ingredients.refresh(),
       domains.products.refresh(),
       domains.imports.refresh(),
@@ -58,14 +50,7 @@ export function createFreshCoreV2({ supabase, initialState = {}, getOrgId }) {
   }
 
   return Object.freeze({
-    version: '2.3.0-inventory-read-domain',
-    events,
-    store,
-    data,
-    domains,
-    setSession,
-    setOrg,
-    setPanel,
-    refreshCoreDomains
+    version: '2.4.0-master-data-takeover-ready',
+    events, store, data, domains, setSession, setOrg, setPanel, refreshCoreDomains
   });
 }
