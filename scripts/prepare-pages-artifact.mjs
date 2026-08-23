@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.0';
+const APP_VERSION='2.1.1';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const RUNTIME_BLOCK=`\n<script src="./ly-app-version.js?v=${APP_VERSION}"></script>\n<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.1"></script>\n<script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>\n`;
 
@@ -20,8 +20,9 @@ export function prepareHtml(source){
 
 function prepareSw(source){
   let sw=String(source||'');
-  sw=sw.replace(/lat-yen-legacy-ui-fresh-core-\d+/g,'lat-yen-fresh-core-v2-authoritative-53');
-  sw=sw.replace(/ly-app-version\.js\?v=[^'\"]+/g,'ly-app-version.js?v=2.1.0');
+  sw=sw.replace(/lat-yen-(?:legacy-ui-fresh-core|fresh-core-v2-authoritative)-\d+/g,'lat-yen-fresh-core-v2-authoritative-54');
+  sw=sw.replace(/ly-module-loader\.js\?v=[^'\"]+/g,'ly-module-loader.js?v=20260824.6');
+  sw=sw.replace(/ly-app-version\.js\?v=[^'\"]+/g,'ly-app-version.js?v=2.1.1');
   if(!sw.includes("const V2_FINAL_OWNERSHIP_SCRIPT='./ly-fresh-core-v2-final-ownership.js'")){
     sw=sw.replace("const V2_REALTIME_PHASE2_SCRIPT='./ly-fresh-core-v2-realtime-phase2.js';","const V2_REALTIME_PHASE2_SCRIPT='./ly-fresh-core-v2-realtime-phase2.js';\nconst V2_FINAL_OWNERSHIP_SCRIPT='./ly-fresh-core-v2-final-ownership.js';");
     sw=sw.replace('V2_REALTIME_PHASE2_SCRIPT,...V2_ASSETS','V2_REALTIME_PHASE2_SCRIPT,V2_FINAL_OWNERSHIP_SCRIPT,...V2_ASSETS');
@@ -43,7 +44,7 @@ const checks=[
   ['version runtime injected',output.includes(`ly-app-version.js?v=${APP_VERSION}`)],
   ['final V2 ownership injected',output.includes('ly-fresh-core-v2-final-ownership.js?v=20260824.1')],
   ['warehouse UX injected',output.includes('ly-warehouse-delete-ux.js?v=20260824.1')],
-  ['authoritative SW cache',swOutput.includes('lat-yen-fresh-core-v2-authoritative-53')],
+  ['authoritative SW cache',swOutput.includes('lat-yen-fresh-core-v2-authoritative-54')],
   ['final V2 ownership cached',swOutput.includes('V2_FINAL_OWNERSHIP_SCRIPT')]
 ];
 for(const [name,ok] of checks){if(!ok)throw new Error(`Pages artifact check failed: ${name}`);}
