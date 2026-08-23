@@ -1,4 +1,4 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-30';
+const CACHE='lat-yen-legacy-ui-fresh-core-31';
 const INDEX_KEY='./index.html';
 const MODULE_LOADER='./ly-module-loader.js';
 const HISTORY_BRIDGE='./ly-history-bridge.js';
@@ -7,6 +7,8 @@ const EMPLOYEES_BRIDGE='./ly-employees-bridge.js';
 const EMPLOYEES_SCRIPT='./ly-employees.js';
 const FINANCE_BRIDGE='./ly-finance-bridge.js';
 const FINANCE_SCRIPT='./ly-finance.js';
+const REPORTS_BRIDGE='./ly-reports-bridge.js';
+const REPORTS_SCRIPT='./ly-reports.js';
 const SETTINGS_SCRIPT='./ly-settings-enhancements.js';
 const NOTIFICATION_SCRIPT='./ly-data-notifications.js';
 const INAPP_SCRIPT='./ly-inapp-notifications.js';
@@ -17,7 +19,7 @@ const BRANDING_SCRIPT='./ly-branding-sync.js';
 const PERFORMANCE_SCRIPT='./ly-performance-optimizer.js';
 const HEAVY_SCRIPT='./ly-heavy-panels.js';
 const SUPABASE_ORIGIN='https://isfotiyxufvsmlkqsgez.supabase.co';
-const ASSETS=[INDEX_KEY,'./manifest.webmanifest','./icon.svg',MODULE_LOADER,HISTORY_BRIDGE,ACTIVITY_HISTORY_SCRIPT,EMPLOYEES_BRIDGE,EMPLOYEES_SCRIPT,FINANCE_BRIDGE,FINANCE_SCRIPT,SETTINGS_SCRIPT,NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT,BRANDING_SCRIPT,PERFORMANCE_SCRIPT,HEAVY_SCRIPT];
+const ASSETS=[INDEX_KEY,'./manifest.webmanifest','./icon.svg',MODULE_LOADER,HISTORY_BRIDGE,ACTIVITY_HISTORY_SCRIPT,EMPLOYEES_BRIDGE,EMPLOYEES_SCRIPT,FINANCE_BRIDGE,FINANCE_SCRIPT,REPORTS_BRIDGE,REPORTS_SCRIPT,SETTINGS_SCRIPT,NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT,BRANDING_SCRIPT,PERFORMANCE_SCRIPT,HEAVY_SCRIPT];
 
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
@@ -31,10 +33,11 @@ async function navigationWithLayers(request){
   const response=await navigationSource(request);if(!response)return response;const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
   try{
     let html=await response.text();const scripts=[];
-    if(!html.includes('ly-module-loader.js'))scripts.push('<script src="./ly-module-loader.js?v=20260823.5"></script>');
+    if(!html.includes('ly-module-loader.js'))scripts.push('<script src="./ly-module-loader.js?v=20260823.6"></script>');
     if(!html.includes('ly-history-bridge.js'))scripts.push('<script src="./ly-history-bridge.js?v=20260823.1"></script>');
     if(!html.includes('ly-employees-bridge.js'))scripts.push('<script src="./ly-employees-bridge.js?v=20260823.1"></script>');
     if(!html.includes('ly-finance-bridge.js'))scripts.push('<script src="./ly-finance-bridge.js?v=20260823.1"></script>');
+    if(!html.includes('ly-reports-bridge.js'))scripts.push('<script src="./ly-reports-bridge.js?v=20260823.1"></script>');
     if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.6"></script>');
     if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.5"></script>');
     if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.3"></script>');
