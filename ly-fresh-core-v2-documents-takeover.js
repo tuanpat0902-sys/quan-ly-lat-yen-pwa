@@ -11,7 +11,7 @@
     ly_save_export:'exports',
     ly_save_stocktake:'stocktake'
   };
-  const DELETE_ROUTES=new Set(['import','export','stocktake']);
+  const DELETE_ROUTES={import:'imports',export:'exports',stocktake:'stocktake'};
   const state={version:VERSION,phase:'waiting',enabled:false,calls:0,success:0,errors:0,fallbacks:0,lastRpc:'',lastAt:0,lastError:''};
   let client=null;
   let previousRpc=null;
@@ -29,8 +29,8 @@
   async function routedRpc(name,params,...rest){
     const domainName=SAVE_ROUTES[name];
     const deleteType=name==='ly_delete_receipt'?String(params?.p_type||'').toLowerCase():'';
-    const isDelete=DELETE_ROUTES.has(deleteType);
-    if(!domainName&&!isDelete)return previousRpc(name,params,...rest);
+    const deleteDomain=DELETE_ROUTES[deleteType];
+    if(!domainName&&!deleteDomain)return previousRpc(name,params,...rest);
 
     state.calls++;
     state.lastRpc=name;
@@ -45,11 +45,11 @@
         const items=Array.isArray(params?.p_items)?params.p_items:[];
         data=await core.domains[domainName].save(header,items);
       }else{
-        data=await core.domains[deleteType==='stocktake'?'stocktake':deleteType].remove(params?.p_id);
+        data=await core.domains[deleteDomain].remove(params?.p_id);
       }
       state.success++;
       state.lastError='';
-      window.dispatchEvent(new CustomEvent('latyen:v2-document-mutated',{detail:{rpc:name,type:domainName||deleteType,id:data||params?.p_id||'',at:state.lastAt}}));
+      window.dispatchEvent(new CustomEvent('latyen:v2-document-mutated',{detail:{rpc:name,type:domainName||deleteDomain,id:data||params?.p_id||'',at:state.lastAt}}));
       return {data,error:null,status:200,statusText:'OK'};
     }catch(error){
       state.errors++;
