@@ -9,18 +9,16 @@ export function createMasterDataRepository({ gateway }) {
     return gateway.selectOrg('ly_suppliers', '*', query => query.order?.('name', { ascending: true }) ?? query);
   }
 
-  async function saveWarehouse(warehouse, purchasedIngredientIds = []) {
+  async function saveWarehouse(warehouse) {
     if (!warehouse || typeof warehouse !== 'object') throw new TypeError('warehouse is required');
     const rows = await gateway.upsertOrg('ly_warehouses', warehouse);
-    const saved = rows[0] ?? warehouse;
-    if (purchasedIngredientIds.length) {
-      await gateway.upsertOrg(
-        'ly_inventory',
-        purchasedIngredientIds.map(ingredientId => ({ warehouse_id: warehouse.id, ingredient_id: ingredientId, quantity: 0 })),
-        { onConflict: 'org_id,warehouse_id,ingredient_id', select: false }
-      );
-    }
-    return saved;
+    return rows[0] ?? warehouse;
+  }
+
+  async function initializeInventory(rows) {
+    const input = Array.isArray(rows) ? rows : [rows];
+    if (!input.length) return [];
+    return gateway.upsertOrg('ly_inventory', input, { onConflict: 'org_id,warehouse_id,ingredient_id', select: false });
   }
 
   async function saveSupplier(supplier) {
@@ -29,16 +27,5 @@ export function createMasterDataRepository({ gateway }) {
     return rows[0] ?? supplier;
   }
 
-  async function ensureSupplierByName(name) {
-    const clean = String(name || '').trim();
-    if (!clean) return null;
-    const suppliers = await listSuppliers();
-    const existing = suppliers.find(x => String(x.name || '').trim().toLowerCase() === clean.toLowerCase());
-    if (existing) return existing;
-    const id = globalThis.crypto?.randomUUID?.();
-    if (!id) throw new Error('randomUUID is unavailable');
-    return saveSupplier({ id, name: clean, phone: '', address: '', note: '' });
-  }
-
-  return Object.freeze({ listWarehouses, listSuppliers, saveWarehouse, saveSupplier, ensureSupplierByName });
+  return Object.freeze({ listWarehouses, listSuppliers, saveWarehouse, initializeInventory, saveSupplier });
 }
