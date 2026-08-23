@@ -1,3 +1,4 @@
+// Trigger Adaptive Leader V3 workflow after workflow installation.
 import fs from 'node:fs';
 const file='sw.js';
 let s=fs.readFileSync(file,'utf8');
