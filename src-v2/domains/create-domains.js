@@ -9,34 +9,19 @@ import { createCashflowRepository } from './cashflow/cashflow-repository.js';
 import { createCashflowService } from './cashflow/cashflow-service.js';
 import { createInventoryRepository } from './inventory/inventory-repository.js';
 import { createInventoryService } from './inventory/inventory-service.js';
+import { createMasterDataRepository } from './master-data/master-data-repository.js';
+import { createMasterDataService } from './master-data/master-data-service.js';
 
 export function createDomains({ gateway, store, events }) {
   const ingredientsRepository = createIngredientsRepository({ gateway });
   const productsRepository = createProductsRepository({ gateway });
-  const importsRepository = createDocumentRepository({
-    gateway,
-    receiptTable: 'ly_import_receipts',
-    itemTable: 'ly_import_items',
-    rpcName: 'ly_save_import',
-    deleteType: 'import'
-  });
-  const exportsRepository = createDocumentRepository({
-    gateway,
-    receiptTable: 'ly_export_receipts',
-    itemTable: 'ly_export_items',
-    rpcName: 'ly_save_export',
-    deleteType: 'export'
-  });
-  const stocktakeRepository = createDocumentRepository({
-    gateway,
-    receiptTable: 'ly_stocktake_receipts',
-    itemTable: 'ly_stocktake_items',
-    rpcName: 'ly_save_stocktake',
-    deleteType: 'stocktake'
-  });
+  const importsRepository = createDocumentRepository({ gateway, receiptTable: 'ly_import_receipts', itemTable: 'ly_import_items', rpcName: 'ly_save_import', deleteType: 'import' });
+  const exportsRepository = createDocumentRepository({ gateway, receiptTable: 'ly_export_receipts', itemTable: 'ly_export_items', rpcName: 'ly_save_export', deleteType: 'export' });
+  const stocktakeRepository = createDocumentRepository({ gateway, receiptTable: 'ly_stocktake_receipts', itemTable: 'ly_stocktake_items', rpcName: 'ly_save_stocktake', deleteType: 'stocktake' });
   const salesRepository = createSalesRepository({ gateway });
   const cashflowRepository = createCashflowRepository({ gateway });
   const inventoryRepository = createInventoryRepository({ gateway });
+  const masterDataRepository = createMasterDataRepository({ gateway });
 
   return Object.freeze({
     ingredients: createIngredientsService({ repository: ingredientsRepository, store, events }),
@@ -46,6 +31,7 @@ export function createDomains({ gateway, store, events }) {
     stocktake: createDocumentService({ repository: stocktakeRepository, store, events, stateKey: 'stocktakeData', eventPrefix: 'stocktake' }),
     sales: createSalesService({ repository: salesRepository, store, events }),
     cashflow: createCashflowService({ repository: cashflowRepository, store, events }),
-    inventory: createInventoryService({ repository: inventoryRepository, store, events })
+    inventory: createInventoryService({ repository: inventoryRepository, store, events }),
+    masterData: createMasterDataService({ repository: masterDataRepository, store, events })
   });
 }
