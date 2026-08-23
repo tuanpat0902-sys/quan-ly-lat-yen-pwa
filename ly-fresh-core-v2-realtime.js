@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2RealtimeV1)return;
   window.__lyFreshCoreV2RealtimeV1=true;
 
-  const VERSION='2026.08.23.3';
+  const VERSION='2026.08.23.4';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const DEBOUNCE_MS=180;
@@ -27,8 +27,9 @@
     ly_cashflow_entries:'cashflow'
   };
 
-  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,refreshes:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastError:''};
+  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,refreshes:0,catchups:0,catchupErrors:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastCatchupAt:0,lastError:''};
   let channel=null;
+  let catchupPromise=null;
   const timers=new Map();
 
   function legacySupabase(){try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;}
@@ -47,6 +48,29 @@
     },DEBOUNCE_MS));
   }
 
+  async function catchUp(reason='subscribed'){
+    if(catchupPromise)return catchupPromise;
+    const c=core();
+    if(typeof c?.refreshCoreDomains!=='function')return null;
+    catchupPromise=(async()=>{
+      try{
+        await c.refreshCoreDomains();
+        state.catchups++;
+        state.lastCatchupAt=Date.now();
+        state.lastError='';
+        c.events?.emit?.('realtime:catchup-complete',{reason,at:state.lastCatchupAt});
+        return true;
+      }catch(error){
+        state.catchupErrors++;
+        state.lastError=String(error?.message||error||'Realtime catch-up failed');
+        console.warn('[Lát Yên] V2 realtime catch-up',error);
+        c.events?.emit?.('realtime:catchup-error',{reason,error:state.lastError,at:Date.now()});
+        return false;
+      }finally{catchupPromise=null;}
+    })();
+    return catchupPromise;
+  }
+
   function enable(){
     if(state.enabled)return true;
     const client=legacySupabase(),id=orgId(),c=core();
@@ -54,9 +78,11 @@
     let ch=client.channel(`latyen-v2-domain-${id}`);
     for(const [table,domain] of Object.entries(TABLE_DOMAIN))ch=ch.on('postgres_changes',{event:'*',schema:'public',table,filter:`org_id=eq.${id}`},()=>schedule(domain,table));
     channel=ch.subscribe(status=>{
+      const wasConnected=state.connected;
       state.connected=status==='SUBSCRIBED';state.phase=state.connected?'active':String(status||'connecting').toLowerCase();
       c.store?.patch?.({connectivity:{...(c.store.getState()?.connectivity||{}),online:navigator.onLine,realtime:state.connected}},{source:'realtime'});
       c.events?.emit?.('realtime:status',{status,connected:state.connected});
+      if(state.connected&&!wasConnected)catchUp(state.catchups?'reconnected':'initial-subscribed');
     });
     state.enabled=true;state.phase='connecting';return true;
   }
@@ -64,6 +90,6 @@
   function disable(){for(const timer of timers.values())clearTimeout(timer);timers.clear();const client=legacySupabase();if(client&&channel)try{client.removeChannel(channel);}catch(e){}channel=null;state.enabled=false;state.connected=false;state.phase='disabled';}
   function boot(){if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
 
-  window.__lyFreshCoreV2Realtime={version:VERSION,enable,disable,status:()=>({...state}),tableDomain:()=>({...TABLE_DOMAIN})};
+  window.__lyFreshCoreV2Realtime={version:VERSION,enable,disable,catchUp,status:()=>({...state}),tableDomain:()=>({...TABLE_DOMAIN})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 })();
