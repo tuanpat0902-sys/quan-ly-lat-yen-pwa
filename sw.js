@@ -1,11 +1,13 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-16';
+const CACHE='lat-yen-legacy-ui-fresh-core-17';
+const SETTINGS_SCRIPT='./ly-settings-enhancements.js';
 const NOTIFICATION_SCRIPT='./ly-data-notifications.js';
 const INAPP_SCRIPT='./ly-inapp-notifications.js';
 const CENTER_SCRIPT='./ly-notification-center.js';
 const UNIFIED_STATUS_SCRIPT='./ly-cloud-realtime.js';
 const MENU_SECURITY_SCRIPT='./ly-menu-security.js';
+const BRANDING_SCRIPT='./ly-branding-sync.js';
 const SUPABASE_ORIGIN='https://isfotiyxufvsmlkqsgez.supabase.co';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg',NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT];
+const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.svg',SETTINGS_SCRIPT,NOTIFICATION_SCRIPT,INAPP_SCRIPT,CENTER_SCRIPT,UNIFIED_STATUS_SCRIPT,MENU_SECURITY_SCRIPT,BRANDING_SCRIPT];
 
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()));});
@@ -13,7 +15,18 @@ self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys
 async function networkFirst(request){try{const response=await fetch(request);const cache=await caches.open(CACHE);cache.put(request,response.clone()).catch(()=>{});return response;}catch(e){return caches.match(request);}}
 async function navigationWithLayers(request){
   const response=await networkFirst(request);if(!response)return response;const type=response.headers.get('content-type')||'';if(!type.includes('text/html'))return response;
-  try{let html=await response.text();const scripts=[];if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.5"></script>');if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.4"></script>');if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.2"></script>');if(!html.includes('ly-cloud-realtime.js'))scripts.push('<script src="./ly-cloud-realtime.js?v=20260823.3"></script>');if(!html.includes('ly-menu-security.js'))scripts.push('<script src="./ly-menu-security.js?v=20260823.1.1"></script>');if(scripts.length){const block=scripts.join('\n');html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,block+'\n</body>'):html+'\n'+block;}const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('content-encoding');headers.delete('etag');headers.set('content-type','text/html; charset=utf-8');return new Response(html,{status:response.status,statusText:response.statusText,headers});}catch(e){return response;}
+  try{
+    let html=await response.text();const scripts=[];
+    if(!html.includes('ly-settings-enhancements.js'))scripts.push('<script src="./ly-settings-enhancements.js?v=20260823.1"></script>');
+    if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.5"></script>');
+    if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.4"></script>');
+    if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.2"></script>');
+    if(!html.includes('ly-cloud-realtime.js'))scripts.push('<script src="./ly-cloud-realtime.js?v=20260823.3"></script>');
+    if(!html.includes('ly-menu-security.js'))scripts.push('<script src="./ly-menu-security.js?v=20260823.1.2"></script>');
+    if(!html.includes('ly-branding-sync.js'))scripts.push('<script src="./ly-branding-sync.js?v=20260823.1"></script>');
+    if(scripts.length){const block=scripts.join('\n');html=/<\/body>/i.test(html)?html.replace(/<\/body>/i,block+'\n</body>'):html+'\n'+block;}
+    const headers=new Headers(response.headers);headers.delete('content-length');headers.delete('content-encoding');headers.delete('etag');headers.set('content-type','text/html; charset=utf-8');return new Response(html,{status:response.status,statusText:response.statusText,headers});
+  }catch(e){return response;}
 }
 
 const RPC_TABLE={ly_save_import:'ly_import_receipts',ly_save_export:'ly_export_receipts',ly_save_stocktake:'ly_stocktake_receipts',ly_save_sale:'ly_sales',ly_save_ingredient:'ly_ingredients',ly_save_product:'ly_products'};
