@@ -1,0 +1,121 @@
+(()=>{
+  'use strict';
+  if(window.__lyFreshCoreV2ShadowV1)return;
+  window.__lyFreshCoreV2ShadowV1=true;
+
+  const VERSION='2026.08.23.1';
+  const MAX_WAIT_MS=60000;
+  const STARTED_AT=Date.now();
+  const state={
+    version:VERSION,
+    phase:'waiting',
+    startedAt:STARTED_AT,
+    readyAt:0,
+    refreshAt:0,
+    error:'',
+    orgId:'',
+    counts:{},
+    coreVersion:'',
+    attempts:0
+  };
+
+  function legacySupabase(){
+    try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}
+    return window.sb||null;
+  }
+
+  function legacyOrgId(){
+    try{if(typeof v261OrganizationId!=='undefined'&&v261OrganizationId)return String(v261OrganizationId);}catch(e){}
+    return String(window.__lyFreshOrgId||'');
+  }
+
+  function legacySession(){
+    try{if(typeof v260Session!=='undefined'&&v260Session)return v260Session;}catch(e){}
+    return null;
+  }
+
+  function summarize(core){
+    const s=core.store.getState();
+    return {
+      ingredients:Array.isArray(s.ingredients)?s.ingredients.length:0,
+      products:Array.isArray(s.products)?s.products.length:0,
+      recipeItems:Array.isArray(s.recipeItems)?s.recipeItems.length:0,
+      imports:Array.isArray(s.importsData?.receipts)?s.importsData.receipts.length:0,
+      importItems:Array.isArray(s.importsData?.items)?s.importsData.items.length:0,
+      exports:Array.isArray(s.exportsData?.receipts)?s.exportsData.receipts.length:0,
+      exportItems:Array.isArray(s.exportsData?.items)?s.exportsData.items.length:0,
+      stocktakes:Array.isArray(s.stocktakeData?.receipts)?s.stocktakeData.receipts.length:0,
+      stocktakeItems:Array.isArray(s.stocktakeData?.items)?s.stocktakeData.items.length:0,
+      sales:Array.isArray(s.salesData?.sales)?s.salesData.sales.length:0,
+      saleItems:Array.isArray(s.salesData?.items)?s.salesData.items.length:0,
+      cashflow:Array.isArray(s.cashflowEntries)?s.cashflowEntries.length:0
+    };
+  }
+
+  async function boot(){
+    state.attempts++;
+    if(document.hidden||!navigator.onLine){schedule(3000);return;}
+    const client=legacySupabase();
+    const orgId=legacyOrgId();
+    if(!client||!orgId){
+      if(Date.now()-STARTED_AT<MAX_WAIT_MS)schedule(1200);
+      else{state.phase='idle-no-context';state.error='Legacy Supabase/org context not ready';}
+      return;
+    }
+
+    state.phase='loading';
+    state.orgId=orgId;
+    try{
+      const mod=await import('./src-v2/bootstrap.js?v=20260823.1');
+      const core=mod.createFreshCoreV2({supabase:client,getOrgId:()=>legacyOrgId()});
+      core.setOrg(orgId);
+      const session=legacySession();
+      if(session)core.setSession(session);
+      window.__lyFreshCoreV2=core;
+      state.coreVersion=core.version;
+      state.readyAt=Date.now();
+      state.phase='refreshing';
+      await core.refreshCoreDomains();
+      state.counts=summarize(core);
+      state.refreshAt=Date.now();
+      state.phase='ready';
+      state.error='';
+      window.dispatchEvent(new CustomEvent('latyen:v2-shadow-ready',{detail:{version:VERSION,coreVersion:core.version,orgId,counts:{...state.counts}}}));
+    }catch(error){
+      state.phase='error';
+      state.error=String(error?.message||error||'Unknown shadow error');
+      console.warn('[Lát Yên] Fresh Core V2 shadow',error);
+    }
+  }
+
+  function schedule(delay=1200){
+    setTimeout(boot,Math.max(250,Number(delay)||1200));
+  }
+
+  function start(){
+    const task=()=>boot();
+    if('requestIdleCallback' in window)requestIdleCallback(task,{timeout:5000});
+    else setTimeout(task,1800);
+  }
+
+  window.__lyFreshCoreV2Shadow={
+    version:VERSION,
+    refresh:async()=>{
+      const core=window.__lyFreshCoreV2;
+      if(!core)return boot();
+      state.phase='refreshing';
+      try{
+        await core.refreshCoreDomains();
+        state.counts=summarize(core);
+        state.refreshAt=Date.now();
+        state.phase='ready';
+        state.error='';
+      }catch(error){state.phase='error';state.error=String(error?.message||error);throw error;}
+      return {...state.counts};
+    },
+    status:()=>({...state,counts:{...state.counts}})
+  };
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
+})();

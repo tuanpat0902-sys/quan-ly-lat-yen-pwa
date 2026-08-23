@@ -44,26 +44,30 @@ ctx.requestIdleCallback=()=>0;
 ctx.cancelIdleCallback=()=>{};
 ctx.addEventListener=()=>{};
 ctx.window.addEventListener=()=>{};
-const runFile=(file)=>vm.runInContext(fs.readFileSync(path.join(ROOT,file),'utf8'),context,{filename:file});
 const scriptNodes=[];
+let context;
+const runFile=(file)=>vm.runInContext(fs.readFileSync(path.join(ROOT,file),'utf8'),context,{filename:file});
 ctx.document={
   addEventListener:()=>{},
   querySelector:()=>null,
   createElement:(tag)=>({tagName:String(tag).toUpperCase(),dataset:{},addEventListener:()=>{}}),
   head:{appendChild:(s)=>{
     scriptNodes.push(s);
+    const rel=String(s.src||'').replace(/^\.\//,'').split('?')[0];
     try{
-      const rel=String(s.src||'').replace(/^\.\//,'').split('?')[0];
       if(!rel)throw new Error('dynamic script has no src');
       runFile(rel);
       queueMicrotask(()=>s.onload?.());
-    }catch(e){console.error(e);queueMicrotask(()=>s.onerror?.(e));}
+    }catch(e){
+      fail(`dynamic lazy script ${rel||'<unknown>'} crashed: ${e.stack||e}`);
+      queueMicrotask(()=>s.onerror?.(e));
+    }
     return s;
   }},
   documentElement:null
 };
 ctx.document.documentElement=ctx.document.head;
-const context=vm.createContext(ctx);
+context=vm.createContext(ctx);
 
 try{
   runFile('ly-module-loader.js');

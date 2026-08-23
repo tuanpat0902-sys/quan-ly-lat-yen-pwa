@@ -7,7 +7,8 @@
     "stability": "node scripts/stability-audit.mjs",
     "perf:budget": "node scripts/performance-budget.mjs",
     "v2:test": "node scripts/test-fresh-core-v2.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test"
+    "v2:shadow": "node scripts/test-fresh-core-v2-shadow.mjs",
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow"
   },
   "engines": {
     "node": ">=20"

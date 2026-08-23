@@ -11,13 +11,14 @@ const indexBytes=Buffer.byteLength(index);
 const intervals=(runtime.match(/setInterval\s*\(/g)||[]).length;
 const observers=(runtime.match(/new\s+MutationObserver\s*\(/g)||[]).length;
 const innerHtml=(runtime.match(/\.innerHTML\s*=/g)||[]).length;
-console.log(`INFO: index=${indexBytes} bytes intervals=${intervals} observers=${observers} innerHTML=${innerHtml}`);
+const coreNumber=Number(sw.match(/fresh-core-(\d+)/)?.[1]||0);
+console.log(`INFO: index=${indexBytes} bytes intervals=${intervals} observers=${observers} innerHTML=${innerHtml} core=${coreNumber}`);
 if(indexBytes>1_320_000)fail('index.html exceeded 1.32 MB performance budget');else pass('index.html performance budget');
 if(intervals>8)fail(`setInterval call sites increased above budget: ${intervals}`);else pass('timer call-site budget');
 if(observers>3)fail(`MutationObserver call sites increased above budget: ${observers}`);else pass('observer call-site budget');
 if(innerHtml>170)fail(`innerHTML assignments increased above budget: ${innerHtml}`);else pass('DOM assignment budget');
 for(const marker of ['__lyPerformanceOptimizerV4','LEADER_VISIBLE_MS=4500','rebindTableObserver','tableMutationBatch'])if(!perf.includes(marker))fail(`Performance V4 marker missing: ${marker}`);
-if(!/fresh-core-38/.test(sw))fail('Service Worker is below Core-38 performance baseline');else pass('Core-38+ cache baseline');
+if(coreNumber<38)fail(`Service Worker is below Core-38 performance baseline: ${coreNumber}`);else pass(`Core-${coreNumber} cache baseline`);
 if(!sw.includes('ly-performance-optimizer.js?v=20260823.4'))fail('Service Worker is not loading Performance V4');else pass('Performance V4 SW wiring');
 if(/setInterval\s*\(\s*schedule\s*,\s*700/.test(runtime))fail('700ms cloud render interval regression detected');
 if(failed){console.error('\nPerformance budget failed. Deployment must stop.');process.exit(1)}
