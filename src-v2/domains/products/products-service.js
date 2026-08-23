@@ -18,5 +18,12 @@ export function createProductsService({ repository, store, events }) {
     return id;
   }
 
-  return Object.freeze({ refresh, save });
+  async function remove(id) {
+    const result = await repository.remove(id);
+    await refresh();
+    events.emit('products:removed', { id });
+    return result;
+  }
+
+  return Object.freeze({ refresh, save, remove });
 }
