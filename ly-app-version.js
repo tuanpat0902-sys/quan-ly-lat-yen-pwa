@@ -1,7 +1,7 @@
 (()=>{
 'use strict';
-const VERSION='2.1.0';
-const REVISION='fresh-core-v2-authoritative-v1';
+const VERSION='2.1.1';
+const REVISION='fresh-core-v2-authoritative-v2';
 if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
 const LABEL=`Ver ${VERSION}`;
 const STORAGE_KEY='lat_yen_last_seen_app_version';
