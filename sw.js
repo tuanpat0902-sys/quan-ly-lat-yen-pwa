@@ -1,4 +1,4 @@
-const CACHE='lat-yen-legacy-ui-fresh-core-21';
+const CACHE='lat-yen-legacy-ui-fresh-core-22';
 const INDEX_KEY='./index.html';
 const SETTINGS_SCRIPT='./ly-settings-enhancements.js';
 const NOTIFICATION_SCRIPT='./ly-data-notifications.js';
@@ -23,7 +23,7 @@ async function navigationWithLayers(request){
   try{
     let html=await response.text();const scripts=[];
     if(!html.includes('ly-settings-enhancements.js'))scripts.push('<script src="./ly-settings-enhancements.js?v=20260823.2"></script>');
-    if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.5"></script>');
+    if(!html.includes('ly-data-notifications.js'))scripts.push('<script src="./ly-data-notifications.js?v=20260823.6"></script>');
     if(!html.includes('ly-inapp-notifications.js'))scripts.push('<script src="./ly-inapp-notifications.js?v=20260823.5"></script>');
     if(!html.includes('ly-notification-center.js'))scripts.push('<script src="./ly-notification-center.js?v=20260823.2"></script>');
     if(!html.includes('ly-cloud-realtime.js'))scripts.push('<script src="./ly-cloud-realtime.js?v=20260823.4"></script>');
