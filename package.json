@@ -8,7 +8,9 @@
     "perf:budget": "node scripts/performance-budget.mjs",
     "v2:test": "node scripts/test-fresh-core-v2.mjs",
     "v2:shadow": "node scripts/test-fresh-core-v2-shadow.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow"
+    "v2:takeover:ingredients": "node scripts/test-fresh-core-v2-ingredients-takeover.mjs",
+    "v2:map:ingredients": "node scripts/map-legacy-ingredients.mjs",
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:map:ingredients"
   },
   "engines": {
     "node": ">=20"

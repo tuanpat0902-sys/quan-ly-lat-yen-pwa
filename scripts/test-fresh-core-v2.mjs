@@ -36,6 +36,8 @@ import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.
     rpc(name,params){ calls.push(['rpc', name, params]); return Promise.resolve({ data:{ok:true}, error:null }); }
   };
   const gateway = createSupabaseGateway({ client, getOrgId:()=> 'org-1' });
+  // Mutating the legacy client after gateway creation must not affect the V2 path.
+  client.rpc=()=>{throw new Error('patched legacy rpc must not be used by V2 gateway');};
   const rows = await gateway.selectOrg('ly_ingredients');
   assert.equal(rows.length,1);
   assert.deepEqual(calls.slice(0,3),[['from','ly_ingredients'],['select','*'],['eq','org_id','org-1']]);
@@ -46,11 +48,15 @@ import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.
 
 {
   const rpcCalls = [];
+  const selected=[];
   const gateway = {
-    selectOrg: async () => [],
+    selectOrg: async table => {selected.push(table);return table==='ly_prepared_items'?[{id:'pi1'}]:[];},
     rpc: async (name, params) => { rpcCalls.push([name, params]); return 'id-1'; }
   };
   const ingredients = createIngredientsRepository({ gateway });
+  await ingredients.list();
+  await ingredients.listPreparedItems();
+  assert.deepEqual(selected,['ly_ingredients','ly_prepared_items']);
   await ingredients.save({ name:'A' }, [{ name:'B' }]);
   assert.deepEqual(rpcCalls.pop(), ['ly_save_ingredient', { p_ingredient:{name:'A'}, p_prepared_items:[{name:'B'}] }]);
 
@@ -76,8 +82,9 @@ import { createSalesRepository } from '../src-v2/domains/sales/sales-repository.
   core.setOrg('org-1'); core.setPanel('sales');
   assert.equal(core.store.getState().orgId,'org-1');
   assert.equal(core.store.getState().activePanel,'sales');
+  assert.deepEqual(core.store.getState().preparedItems,[]);
   assert.equal(panel,'sales');
-  assert.equal(core.version,'2.1.0-domain-core');
+  assert.equal(core.version,'2.2.0-ingredients-takeover-ready');
   assert.ok(core.domains.ingredients && core.domains.products && core.domains.imports && core.domains.exports && core.domains.stocktake && core.domains.sales && core.domains.cashflow);
 }
 
