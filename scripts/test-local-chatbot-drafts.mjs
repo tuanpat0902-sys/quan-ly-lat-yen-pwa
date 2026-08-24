@@ -14,16 +14,21 @@ assert.ok(!source.includes('data-assistant-voice'),'the unused voice button must
 assert.ok(source.includes('ly-assistant-send'),'send control must have an animated visual');
 assert.ok(source.includes('@keyframes ly-assistant-send'),'send icon animation must be defined');
 assert.ok(!source.includes('data-suggestion-message'),'suggestions must never be copied back into the chat input');
+assert.ok(source.includes('const answer=await askAi(content,reply.content,reply)'),'every response, including draft clarification, must be conversationally rewritten through the authenticated ChatGPT API');
+assert.ok(source.includes("mode:'business_draft'"),'ChatGPT must receive safe structured draft context without owning the transaction');
 assert.ok(source.includes("await retireDrafts();await addMessage"),'a new command must retire links to older drafts');
 assert.ok(source.includes("message.draft=null;message.draft_retired_at=now()"),'an opened form must retire its draft link while retaining the chat message');
 for(const forbidden of ['MediaRecorder','getUserMedia'])assert.ok(!source.includes(forbidden),`assistant must not capture or retain raw audio: ${forbidden}`);
 
 let formOpen=false;
-const form={classList:{contains(name){return name==='open'&&formOpen;}},querySelector(){return null;},scrollIntoView(){}};
+function makeForm(){formOpen=false;return {classList:{contains(name){return name==='open'&&formOpen;}},querySelector(){return null;},scrollIntoView(){}};}
+let form=makeForm();
 const input={value:'',dispatchEvent(){},focus(){},setSelectionRange(){}};
-const elements=new Map([['imports',{}],['inlineImportReceiptForm',form],['toggleImportReceiptBtn',{click(){formOpen=true;opened.push(['toggle']);}}],['receiptNote',{value:''}],['receiptNo',{value:''}],['receiptDate',{value:''}],['lyAssistantInput',input]]);
+const importsPanel={classList:{active:false,contains(name){return name==='active'&&this.active;}}};
+const elements=new Map([['imports',importsPanel],['inlineImportReceiptForm',form],['toggleImportReceiptBtn',{click(){formOpen=true;opened.push(['toggle']);}}],['receiptNote',{value:''}],['receiptNo',{value:''}],['receiptDate',{value:''}],['lyAssistantInput',input]]);
 const opened=[];
-const navButton={click(){opened.push(['panel','imports']);}};
+let renderForm=true;
+const navButton={click(){opened.push(['panel','imports']);importsPanel.classList.active=true;if(renderForm){form=makeForm();elements.set('inlineImportReceiptForm',form);}}};
 const document={
   readyState:'loading',addEventListener(){},querySelector(selector){if(selector.includes('data-panel="imports"'))return navButton;return null;},
   getElementById(id){return elements.get(id)||null;},
@@ -50,6 +55,11 @@ assert.match(assistant.reportReply('Báo cáo tuần trước').content,/tuần 
 assert.match(assistant.reportReply('Báo cáo tháng trước').content,/tháng trước, từ \d{2}\/\d{2}\/\d{4} đến \d{2}\/\d{2}\/\d{4}/);
 assert.match(assistant.reportReply('Báo cáo quý này').content,/quý này, từ/);
 assert.match(assistant.reportReply('Báo cáo năm trước').content,/năm trước, từ/);
+assert.match(assistant.reportReply('Báo cáo từ đầu tháng đến nay').content,/từ đầu tháng \(\d{2}\/\d{2}\/\d{4}\) đến nay/);
+assert.match(assistant.reportReply('Báo cáo 3 tuần vừa qua').content,/3 tuần gần nhất, từ/);
+assert.match(assistant.reportReply('Báo cáo 2 tháng gần đây').content,/2 tháng gần nhất, từ/);
+assert.match(assistant.reportReply('Báo cáo cuối tháng trước').content,/cuối tháng trước \(\d{2}\/\d{2}\/\d{4}\)/);
+assert.match(assistant.reportReply('Báo cáo tuần sau').content,/tuần sau, từ/);
 assert.equal(assistant.parseDraft('Báo cáo doanh thu hôm nay'),null,'reports must remain read-only and never become a business draft');
 
 const create=assistant.parseDraft('Tạo phiếu nhập 10 kg Đường');
@@ -65,11 +75,13 @@ const withHeader=assistant.parseDraft('Tạo phiếu nhập số PN-100 ngày 18
 assert.equal(withHeader.receipt_code,'PN-100');assert.equal(withHeader.receipt_date,'2026-08-18');
 const yesterdayDraft=assistant.parseDraft('Tạo phiếu nhập hôm qua 2 kg Đường');
 const expectedYesterday=new Date();expectedYesterday.setDate(expectedYesterday.getDate()-1);assert.equal(yesterdayDraft.receipt_date,`${expectedYesterday.getFullYear()}-${String(expectedYesterday.getMonth()+1).padStart(2,'0')}-${String(expectedYesterday.getDate()).padStart(2,'0')}`);
+const dayAfterTomorrowDraft=assistant.parseDraft('Tạo phiếu nhập ngày kia 2 kg Đường');const expectedDayAfterTomorrow=new Date();expectedDayAfterTomorrow.setDate(expectedDayAfterTomorrow.getDate()+2);assert.equal(dayAfterTomorrowDraft.receipt_date,`${expectedDayAfterTomorrow.getFullYear()}-${String(expectedDayAfterTomorrow.getMonth()+1).padStart(2,'0')}-${String(expectedDayAfterTomorrow.getDate()).padStart(2,'0')}`,'“ngày kia” must mean two days in the future, unlike “hôm kia”');
 const openOnly=assistant.parseDraft('Tạo phiếu nhập');await assert.rejects(()=>assistant.executeDraft(openOnly),/cần chọn đúng mặt hàng/,'an empty receipt must not open an empty business form');
 await assistant.executeDraft(withHeader);assert.equal(elements.get('receiptNo').value,'PN-100');assert.equal(elements.get('receiptDate').value,'2026-08-18');
 elements.delete('inlineImportReceiptForm');
+renderForm=false;
 const missingForm=assistant.parseDraft('Tạo phiếu nhập 1 kg Đường');
-await assert.rejects(()=>assistant.executeDraft(missingForm),/Không tìm thấy form phiếu/);
+await assert.rejects(()=>assistant.executeDraft(missingForm),/Form nghiệp vụ chưa dựng xong/);
 assert.equal(missingForm.status,'pending','failed navigation must remain retryable');
 const remove=assistant.parseDraft('Xóa phiếu kiểm kê số KK-001');
 assert.equal(remove.action,'delete');assert.equal(remove.kind,'stocktake');assert.equal(remove.receipt_code,'KK-001');

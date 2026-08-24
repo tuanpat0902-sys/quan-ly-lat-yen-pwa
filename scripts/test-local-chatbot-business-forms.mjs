@@ -11,20 +11,24 @@ const kinds={
   sale:{panel:'sales',formId:'inlineSaleReceiptForm',toggleId:'toggleSaleReceiptBtn',holderId:'saleReceiptLines',rowSelector:'.sale-receipt-line',select:'.srProduct',quantity:'.srQty',noteId:'saleReceiptNote'}
 };
 const elements=new Map(),rows={import:[],export:[],stocktake:[],sale:[]};
+const panelNodes=new Map(['imports','stocktake','sales'].map(id=>[id,{classList:{active:false,contains(name){return name==='active'&&this.active;}}}]));
 function control(){return {value:'',dispatchEvent(){}};}
 function makeRow(kind,id=''){
   const spec=kinds[kind],select=spec.select?control():null,quantity=control(),row={dataset:kind==='stocktake'?{ingredientId:id}:{},querySelector(selector){if(selector===spec.select)return select;if(selector===spec.quantity)return quantity;return null;},remove(){const at=rows[kind].indexOf(row);if(at>=0)rows[kind].splice(at,1);}};return row;
 }
-for(const [kind,spec] of Object.entries(kinds)){
+function mountKind(kind){
+  const spec=kinds[kind];rows[kind]=[];
   const classList={open:false,contains(name){return name==='open'&&this.open;}};
   const add={click(){rows[kind].push(makeRow(kind));}};
   const form={classList,querySelector(selector){return selector.includes('addImportReceiptLine')||selector.includes('addExportReceiptLine')||selector.includes('addSaleReceiptLine')?add:null;},scrollIntoView(){}};
   const holder={querySelectorAll(selector){return selector===spec.rowSelector?rows[kind]:[];}};
   const toggle={click(){classList.open=true;opened.push(kind);if(kind==='stocktake'&&!rows[kind].length){rows[kind].push(makeRow(kind,'i1'),makeRow(kind,'i2'));}else if(kind!=='stocktake'&&!rows[kind].length)add.click();}};
-  elements.set(spec.panel,{});elements.set(spec.formId,form);elements.set(spec.toggleId,toggle);elements.set(spec.holderId,holder);elements.set(spec.noteId,control());
+  elements.set(spec.formId,form);elements.set(spec.toggleId,toggle);elements.set(spec.holderId,holder);elements.set(spec.noteId,control());
 }
+for(const [id,panel] of panelNodes)elements.set(id,panel);
+for(const kind of Object.keys(kinds))mountKind(kind);
 for(const id of ['receiptNo','receiptDate','exportReceiptNo','exportReceiptDate','stocktakeReceiptNo','stocktakeReceiptDate','saleReceiptNo','saleReceiptDate'])elements.set(id,control());
-const document={readyState:'loading',addEventListener(){},getElementById(id){return elements.get(id)||null;},querySelector(selector){const panel=selector.match(/data-panel="([^"]+)"/)?.[1];return panel?{click(){opened.push(`panel:${panel}`);}}:null;},createElement(){return {};}};
+const document={readyState:'loading',addEventListener(){},getElementById(id){return elements.get(id)||null;},querySelector(selector){const panel=selector.match(/data-panel="([^"]+)"/)?.[1];return panel?{click(){opened.push(`panel:${panel}`);for(const [id,node] of panelNodes)node.classList.active=id===panel;for(const [kind,spec] of Object.entries(kinds))if(spec.panel===panel)mountKind(kind);}}:null;},createElement(){return {};}};
 const context={console,Date,Math,Promise,Intl,Event:class Event{},setTimeout(fn){fn();return 1;},document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đường',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Sữa',unit:'lít',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Cà phê sữa',unit:'ly'},{id:'p2',warehouse_id:'w1',name:'Cà phê đen',unit:'ly'}],recipeItems:[{product_id:'p1',ingredient_id:'i1'},{product_id:'p2',ingredient_id:'i1'}]}},globalThis:null};
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);
@@ -57,7 +61,7 @@ assert.ok(wrongSale.draft);assert.match(wrongSale.content,/không cần gửi l�
 const missingSaleQuantity=assistant.assistantReply('Bán Cà phê sữa');
 assert.ok(missingSaleQuantity.draft);assert.match(missingSaleQuantity.content,/chưa rõ số lượng/);const quantityChoice=missingSaleQuantity.draft.clarifications.find(row=>row.type==='quantity');assert.deepEqual(Array.from(quantityChoice.options,row=>row.label),['1 ly','5 ly','10 ly']);assert.equal(assistant.answerDraftClarification(missingSaleQuantity.draft,quantityChoice.id,'5'),true);assert.equal(missingSaleQuantity.draft.items[0].quantity,5);assert.equal(assistant.draftReady(missingSaleQuantity.draft),true);
 const wrongExport=assistant.assistantReply('Xuất 3 kg Bột cacao');
-assert.ok(wrongExport.draft);assert.match(wrongExport.content,/chưa tìm thấy chính xác nguyên liệu/);assert.ok(wrongExport.draft.clarifications[0].options.length>0);
+assert.equal(wrongExport.draft,undefined);assert.equal(wrongExport.localOnly,true);assert.match(wrongExport.content,/chưa tìm thấy nguyên liệu/i);assert.ok(!wrongExport.suggestions,'zero-relevance ingredients must never be suggested');
 assert.equal(assistant.parseDraft('Xuất 3 kg Sữa').kind,'export');assert.equal(assistant.parseDraft('Bán 2 Cà phê sữa').kind,'sale');assert.equal(assistant.parseDraft('Kiểm kho 4 kg Đường').kind,'stocktake');
 assert.ok(opened.includes('import')&&opened.includes('export')&&opened.includes('stocktake')&&opened.includes('sale'));
 assert.ok(!source.includes('data-suggestion-message'),'all suggestion choices must update the draft immediately instead of refilling chat input');

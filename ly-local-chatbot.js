@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.2';
+const VERSION='2026.08.25.3';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:''};
@@ -145,15 +145,30 @@ function displayRequestedTerm(message,normalizedTerm){
   const known=[...(legacyDb().ingredients||[]),...(legacyDb().products||[])].find(item=>normalize(item.name)===normalizedTerm);
   return known?.name||matched||normalizedTerm;
 }
+function editDistance(left,right){
+  const a=normalize(left),b=normalize(right),row=Array(b.length+1).fill(0).map((_,index)=>index);
+  for(let i=1;i<=a.length;i++){let previous=row[0];row[0]=i;for(let j=1;j<=b.length;j++){const current=row[j];row[j]=Math.min(row[j]+1,row[j-1]+1,previous+(a[i-1]===b[j-1]?0:1));previous=current;}}
+  return row[b.length];
+}
+function candidateScore(item,tokens){
+  const name=normalize(item.name),words=name.split(' ');let score=0;
+  for(const token of tokens){
+    if(words.includes(token))score+=6;
+    else if(words.some(word=>word.startsWith(token)||token.startsWith(word)))score+=token.length>=3?4:1;
+    else if(token.length>=4&&words.some(word=>Math.abs(word.length-token.length)<=1&&editDistance(word,token)<=1))score+=3;
+  }
+  return score;
+}
 function suggestionCandidates(message,draft){
   const legacy=legacyDb(),term=requestedTerm(message),source=normalize(message),catalog=collectionFor(draft.kind),tokens=term.split(' ').filter(token=>token.length>1);
+  if(!tokens.length)return [];
   let candidates=[];
   if(draft.kind==='sale'){
-    const ingredientIds=new Set((legacy.ingredients||[]).filter(item=>containsPhrase(source,normalize(item.name))||tokens.some(token=>normalize(item.name).includes(token))).map(item=>String(item.id)));
+    const ingredientIds=new Set((legacy.ingredients||[]).filter(item=>containsPhrase(source,normalize(item.name))||candidateScore(item,tokens)>=3).map(item=>String(item.id)));
     const relatedIds=new Set((legacy.recipeItems||[]).filter(row=>ingredientIds.has(String(row.ingredient_id))).map(row=>String(row.product_id)));
     candidates=catalog.filter(item=>relatedIds.has(String(item.id)));
   }
-  if(!candidates.length)candidates=catalog.map(item=>({item,score:tokens.reduce((score,token)=>score+(normalize(item.name).includes(token)?3:normalize(item.name).split(' ').some(word=>word.startsWith(token)||token.startsWith(word))?1:0),0)})).sort((a,b)=>b.score-a.score||normalize(a.item.name).localeCompare(normalize(b.item.name))).map(row=>row.item);
+  if(!candidates.length)candidates=catalog.map(item=>({item,score:candidateScore(item,tokens)})).filter(row=>row.score>=3).sort((a,b)=>b.score-a.score||normalize(a.item.name).localeCompare(normalize(b.item.name))).map(row=>row.item);
   return [...new Map(candidates.map(item=>[String(item.id),item])).values()].slice(0,4);
 }
 function clarificationReply(message,draft){
@@ -188,8 +203,12 @@ function parseReportDate(value){const parts=text(value).split(/[\/-]/).map(Numbe
 function displayDate(date){return new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date);}
 function naturalSingleDate(source,base=new Date()){
   const value=normalize(source),date=new Date(base);date.setHours(0,0,0,0);
-  if(/\b(hom kia|ngay kia)\b/.test(value))date.setDate(date.getDate()-2);
+  if(/\bhom kia\b/.test(value))date.setDate(date.getDate()-2);
   else if(/\b(hom qua|ngay hom truoc|hom truoc)\b/.test(value))date.setDate(date.getDate()-1);
+  else if(/\bngay kia\b/.test(value))date.setDate(date.getDate()+2);
+  else if(/\b(ngay mai|hom sau)\b/.test(value))date.setDate(date.getDate()+1);
+  else if(/\b(dau|cuoi) tuan(?: (truoc|sau|nay))?\b/.test(value)){const match=value.match(/\b(dau|cuoi) tuan(?: (truoc|sau|nay))?\b/),day=(date.getDay()+6)%7,shift=match[2]==='truoc'?-7:match[2]==='sau'?7:0;date.setDate(date.getDate()-day+shift+(match[1]==='cuoi'?6:0));}
+  else if(/\b(dau|cuoi) thang(?: (truoc|sau|nay))?\b/.test(value)){const match=value.match(/\b(dau|cuoi) thang(?: (truoc|sau|nay))?\b/),shift=match[2]==='truoc'?-1:match[2]==='sau'?1:0;date.setDate(1);date.setMonth(date.getMonth()+shift+(match[1]==='cuoi'?1:0));if(match[1]==='cuoi')date.setDate(0);}
   else{const ago=value.match(/\b(\d+)\s*ngay truoc\b/);if(ago)date.setDate(date.getDate()-Math.max(0,Number(ago[1])));else if(!/\b(hom nay|ngay nay)\b/.test(value))return null;}
   return date;
 }
@@ -200,16 +219,26 @@ function reportPeriod(source){
   const tokens=value.match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/g)||[],from=parseReportDate(tokens[0]),to=parseReportDate(tokens[1]);
   if(from&&to){const first=from<=to?from:to,last=from<=to?to:from;start.setTime(first.getTime());end.setTime(last.getTime());start.setHours(0,0,0,0);end.setHours(23,59,59,999);label=`từ ${displayDate(start)} đến ${displayDate(end)}`;}
   else if(from){start.setTime(from.getTime());end.setTime(from.getTime());start.setHours(0,0,0,0);end.setHours(23,59,59,999);label=`ngày ${displayDate(start)}`;}
-  else if(/\b(hom kia|ngay kia)\b/.test(value)){start.setDate(start.getDate()-2);end.setTime(start.getTime());return periodResult(start,end,`hôm kia (${displayDate(start)})`);}
+  else if(/\bhom kia\b/.test(value)){start.setDate(start.getDate()-2);end.setTime(start.getTime());return periodResult(start,end,`hôm kia (${displayDate(start)})`);}
   else if(/\b(hom qua|ngay hom truoc|hom truoc)\b/.test(value)){start.setDate(start.getDate()-1);end.setTime(start.getTime());return periodResult(start,end,`hôm qua (${displayDate(start)})`);}
   else if(/\b(hom nay|ngay nay)\b/.test(value)){return periodResult(start,end,`hôm nay (${displayDate(start)})`);}
+  else if(/\bngay kia\b/.test(value)){start.setDate(start.getDate()+2);end.setTime(start.getTime());return periodResult(start,end,`ngày kia (${displayDate(start)})`);}
+  else if(/\b(ngay mai|hom sau)\b/.test(value)){start.setDate(start.getDate()+1);end.setTime(start.getTime());return periodResult(start,end,`ngày mai (${displayDate(start)})`);}
+  else if(/\btu dau tuan(?: nay)? den nay\b/.test(value)){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day);return periodResult(start,end,`từ đầu tuần (${displayDate(start)}) đến nay (${displayDate(end)})`);}
+  else if(/\btu dau thang(?: nay)? den nay\b/.test(value)){start.setDate(1);return periodResult(start,end,`từ đầu tháng (${displayDate(start)}) đến nay (${displayDate(end)})`);}
+  else if(/\btu dau quy(?: nay)? den nay\b/.test(value)){start.setMonth(Math.floor(start.getMonth()/3)*3,1);return periodResult(start,end,`từ đầu quý (${displayDate(start)}) đến nay (${displayDate(end)})`);}
+  else if(/\btu dau nam(?: nay)? den nay\b/.test(value)){start.setMonth(0,1);return periodResult(start,end,`từ đầu năm (${displayDate(start)}) đến nay (${displayDate(end)})`);}
+  else if(/\b(dau|cuoi) tuan(?: (truoc|sau|nay))?\b/.test(value)){const match=value.match(/\b(dau|cuoi) tuan(?: (truoc|sau|nay))?\b/),day=(start.getDay()+6)%7,shift=match[2]==='truoc'?-7:match[2]==='sau'?7:0,relative=({truoc:'trước',sau:'sau',nay:'này'})[match[2]]||'này';start.setDate(start.getDate()-day+shift+(match[1]==='cuoi'?6:0));end.setTime(start.getTime());return periodResult(start,end,`${match[1]==='cuoi'?'cuối':'đầu'} tuần ${relative} (${displayDate(start)})`);}
+  else if(/\b(dau|cuoi) thang(?: (truoc|sau|nay))?\b/.test(value)){const match=value.match(/\b(dau|cuoi) thang(?: (truoc|sau|nay))?\b/),shift=match[2]==='truoc'?-1:match[2]==='sau'?1:0,relative=({truoc:'trước',sau:'sau',nay:'này'})[match[2]]||'này';start.setDate(1);start.setMonth(start.getMonth()+shift+(match[1]==='cuoi'?1:0));if(match[1]==='cuoi')start.setDate(0);end.setTime(start.getTime());return periodResult(start,end,`${match[1]==='cuoi'?'cuối':'đầu'} tháng ${relative} (${displayDate(start)})`);}
   else if(/\btuan truoc\b/.test(value)){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day-7);end.setTime(start.getTime());end.setDate(end.getDate()+6);return periodResult(start,end,`tuần trước, từ ${displayDate(start)} đến ${displayDate(end)}`);}
   else if(/\btuan nay\b/.test(value)){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day);return periodResult(start,end,`tuần này, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else if(/\btuan sau\b/.test(value)){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day+7);end.setTime(start.getTime());end.setDate(end.getDate()+6);return periodResult(start,end,`tuần sau, từ ${displayDate(start)} đến ${displayDate(end)}`);}
   else if(/\bthang truoc\b/.test(value)){start.setDate(1);start.setMonth(start.getMonth()-1);end.setTime(start.getTime());end.setMonth(end.getMonth()+1);end.setDate(0);return periodResult(start,end,`tháng trước, từ ${displayDate(start)} đến ${displayDate(end)}`);}
   else if(/\bthang nay\b/.test(value)){start.setDate(1);return periodResult(start,end,`tháng này, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else if(/\bthang sau\b/.test(value)){start.setDate(1);start.setMonth(start.getMonth()+1);end.setTime(start.getTime());end.setMonth(end.getMonth()+1);end.setDate(0);return periodResult(start,end,`tháng sau, từ ${displayDate(start)} đến ${displayDate(end)}`);}
   else if(/\bquy (nay|truoc)\b/.test(value)){const previous=/\bquy truoc\b/.test(value),quarter=Math.floor(start.getMonth()/3)-(previous?1:0);start.setMonth(quarter*3,1);end.setTime(start.getTime());end.setMonth(end.getMonth()+3);end.setDate(0);if(!previous&&end>new Date())end.setTime(new Date().getTime());return periodResult(start,end,`${previous?'quý trước':'quý này'}, từ ${displayDate(start)} đến ${displayDate(end)}`);}
   else if(/\bnam (nay|truoc)\b/.test(value)){const previous=/\bnam truoc\b/.test(value),year=start.getFullYear()-(previous?1:0);start.setFullYear(year,0,1);end.setFullYear(year,11,31);if(!previous)end.setTime(new Date().getTime());return periodResult(start,end,`${previous?'năm trước':'năm nay'}, từ ${displayDate(start)} đến ${displayDate(end)}`);}
-  else{const exactAgo=value.match(/\b(\d+)\s*ngay truoc\b/);if(exactAgo){start.setDate(start.getDate()-Number(exactAgo[1]));end.setTime(start.getTime());return periodResult(start,end,`ngày ${displayDate(start)}`);}const matched=value.match(/(\d+)\s*ngay/),days=Math.max(1,Number(matched?.[1]||30));start.setHours(0,0,0,0);start.setDate(start.getDate()-days+1);label=matched?`${days} ngày gần nhất`:label;}
+  else{const exactAgo=value.match(/\b(\d+)\s*ngay truoc\b/);if(exactAgo){start.setDate(start.getDate()-Number(exactAgo[1]));end.setTime(start.getTime());return periodResult(start,end,`ngày ${displayDate(start)}`);}const rolling=value.match(/\b(\d+)\s*(ngay|tuan|thang)\s*(?:qua|gan day|gan nhat|vua qua)\b/);if(rolling){const count=Math.max(1,Number(rolling[1])),unit=rolling[2];if(unit==='thang')start.setMonth(start.getMonth()-count);else start.setDate(start.getDate()-(unit==='tuan'?count*7:count)+1);return periodResult(start,end,`${count} ${unit==='thang'?'tháng':unit==='tuan'?'tuần':'ngày'} gần nhất, từ ${displayDate(start)} đến ${displayDate(end)}`);}const matched=value.match(/(\d+)\s*ngay/),days=Math.max(1,Number(matched?.[1]||30));start.setHours(0,0,0,0);start.setDate(start.getDate()-days+1);label=matched?`${days} ngày gần nhất`:label;}
   return {start,end,label};
 }
 function rowDate(row){const value=row?.sold_at||row?.entry_date||row?.receipt_date||row?.date||row?.created_at;const date=value?new Date(value):null;return date&&!Number.isNaN(date.getTime())?date:null;}
@@ -250,20 +279,21 @@ function assistantReply(message){
 }
 
 function supabaseClient(){try{return typeof sb!=='undefined'?sb:window.sb||null;}catch(_){return window.sb||null;}}
-function aiContext(localReply){
+function aiContext(localReply,reply={}){
   const data=reportState(),warehouseId=text(window.currentWarehouseId),warehouse=data.warehouses.find(row=>String(row.id)===warehouseId);
-  return JSON.stringify({warehouse:warehouse?.name||'Kho đang chọn',available_data:{ingredients:data.ingredients.length,products:data.products.length,inventory_rows:data.inventory.length,sales:data.sales.length,imports:data.imports.length,exports:data.exports.length,cashflow_entries:data.cashflow.length},verified_local_answer:text(localReply).slice(0,3000)});
+  const draft=reply.draft,interaction=draft?{mode:'business_draft',action:draft.action,receipt_kind:draft.kind,ready:draftReady(draft),summary:draftSummary(draft),choices:(draft.clarifications||[]).filter(row=>!row.resolved).map(row=>({question:row.type==='quantity'?`Số lượng ${row.item_name}`:row.query,options:row.options.map(option=>option.label||option.name)}))}:reply.report?{mode:'read_only_report'}:{mode:'conversation'};
+  return JSON.stringify({warehouse:warehouse?.name||'Kho đang chọn',available_data:{ingredients:data.ingredients.length,products:data.products.length,inventory_rows:data.inventory.length,sales:data.sales.length,imports:data.imports.length,exports:data.exports.length,cashflow_entries:data.cashflow.length},verified_local_answer:text(localReply).slice(0,3000),interaction});
 }
 function recentConversation(currentMessage){
   const rows=state.messages.filter(row=>!row.draft&&['user','assistant'].includes(row.role)).slice(-7);
   if(rows.at(-1)?.role==='user'&&text(rows.at(-1)?.content)===text(currentMessage))rows.pop();
   return rows.slice(-6).map(row=>({role:row.role,content:text(row.content).slice(0,700)}));
 }
-async function askAi(message,localReply){
+async function askAi(message,localReply,reply={}){
   const client=supabaseClient();
   if(!client?.functions?.invoke)return localReply;
   try{
-    const request=client.functions.invoke('lat-yen-chat',{body:{message:text(message).slice(0,2000),recent_context:recentConversation(message),local_context:aiContext(localReply),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name).slice(0,200)}});
+    const request=client.functions.invoke('lat-yen-chat',{body:{message:text(message).slice(0,2000),recent_context:recentConversation(message),local_context:aiContext(localReply,reply),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name).slice(0,200)}});
     const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('AI_TIMEOUT')),15000));
     const {data,error}=await Promise.race([request,timeout]);
     if(error||!text(data?.answer))throw error||new Error('AI_EMPTY_RESPONSE');
@@ -272,14 +302,18 @@ async function askAi(message,localReply){
 }
 
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitFor(read,attempts=16){for(let i=0;i<attempts;i++){const value=read();if(value)return value;await delay(50);}return null;}
-async function navigate(panel){
+async function waitFor(read,attempts=60){for(let i=0;i<attempts;i++){const value=read();if(value)return value;await delay(50);}return null;}
+async function navigate(panel,formId){
+  const previousForm=formId?document.getElementById?.(formId):null;
   const button=document.querySelector?.(`#nav button[data-panel="${panel}"]`);
   if(!button)throw new Error('Không tìm thấy mục nghiệp vụ cần mở.');
   button.click();
-  const target=await waitFor(()=>document.getElementById?.(panel));
+  const target=await waitFor(()=>{const node=document.getElementById?.(panel);return node?.classList?.contains?.('active')?node:null;});
   if(!target)throw new Error('Màn hình nghiệp vụ chưa sẵn sàng.');
-  return target;
+  if(!formId)return target;
+  const currentForm=await waitFor(()=>{const form=document.getElementById?.(formId);return form&&form!==previousForm?form:null;});
+  if(!currentForm)throw new Error('Form nghiệp vụ chưa dựng xong. Vui lòng thử lại.');
+  return currentForm;
 }
 function setValue(id,value){const element=document.getElementById?.(id);if(element&&value!==undefined)element.value=String(value);}
 function signal(element,type){try{element?.dispatchEvent?.(new Event(type,{bubbles:true}));}catch(_){}}
@@ -303,12 +337,11 @@ function fillDraftItems(draft,contract,form){
   draft.items.forEach((item,index)=>{const row=rows[index];if(!row)return;const select=row.querySelector(contract.select),quantity=row.querySelector(contract.quantity);if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=item.quantity===null?'':String(item.quantity);signal(quantity,'input');}});
 }
 async function openCreateDraft(draft){
-  const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports';await navigate(panel);
-  const contract=formContract(draft.kind),form=await waitFor(()=>document.getElementById?.(contract.form));
+  const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports',contract=formContract(draft.kind),form=await navigate(panel,contract.form);
   if(!form)throw new Error('Không tìm thấy form phiếu trên màn hình nghiệp vụ.');
   if(!form.classList.contains('open')){
-    const toggleButton=document.getElementById?.(contract.toggle);if(!toggleButton)throw new Error('Không tìm thấy nút mở form phiếu.');
-    toggleButton.click();
+    const owner=({import:'toggleImportReceiptForm',export:'toggleExportReceiptForm',stocktake:'toggleStocktakeForm',sale:'toggleSaleReceiptForm'})[draft.kind],open=window[owner];
+    if(typeof open==='function')open(true);else{const toggleButton=document.getElementById?.(contract.toggle);if(!toggleButton)throw new Error('Không tìm thấy nút mở form phiếu.');toggleButton.click();}
   }
   const opened=await waitFor(()=>form.classList.contains('open')&&form);
   if(!opened)throw new Error('Form nghiệp vụ chưa mở được. Vui lòng thử lại.');
@@ -379,8 +412,7 @@ async function submit(){
   const input=document.getElementById?.('lyAssistantInput'),content=text(input?.value);if(!content)return;
   input.value='';await retireDrafts();await addMessage({id:uid(),role:'user',content,created_at:now()});
   const reply=assistantReply(content);
-  if(reply.draft||reply.localOnly){await addMessage({id:uid(),role:'assistant',content:reply.content,draft:reply.draft||null,created_at:now()});return;}
-  state.thinking=true;renderMessages();const answer=await askAi(content,reply.content);state.thinking=false;await addMessage({id:uid(),role:'assistant',content:answer,created_at:now()});
+  state.thinking=true;renderMessages();const answer=await askAi(content,reply.content,reply);state.thinking=false;await addMessage({id:uid(),role:'assistant',content:answer,draft:reply.draft||null,created_at:now()});
 }
 function toggle(force){state.open=force===undefined?!state.open:Boolean(force);document.getElementById?.('lyAssistantDrawer')?.classList.toggle('is-open',state.open);}
 function installUi(){
