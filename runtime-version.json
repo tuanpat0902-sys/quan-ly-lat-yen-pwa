@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.26",
-  "revision": "fresh-core-v2-authoritative-v27",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-79",
+  "appVersion": "2.1.27",
+  "revision": "fresh-core-v2-authoritative-v28",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-80",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "inline-syntax-and-authoritative-runtime-loader"
+  "bootstrapFix": "single-auth-owner-and-runtime-dedup"
 }

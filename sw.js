@@ -1,7 +1,7 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-79';
+const CACHE='lat-yen-fresh-core-v2-authoritative-80';
 const INDEX_KEY='./index.html';
 const CORE_ASSETS=[
-  INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js','./ly-auth-gate.js',
+  INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',
   './ly-fresh-core-v2-legacy-hydration.js','./ly-fresh-core-v2-shadow.js','./ly-fresh-core-v2-final-ownership.js',
   './ly-fresh-core-v2-ingredients-takeover.js','./ly-fresh-core-v2-products-takeover.js','./ly-fresh-core-v2-documents-takeover.js',
   './ly-fresh-core-v2-sales-takeover.js','./ly-fresh-core-v2-cashflow-takeover.js','./ly-fresh-core-v2-masterdata-takeover.js',
