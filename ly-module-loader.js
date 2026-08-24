@@ -1,14 +1,15 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV40)return;
-  window.__lyModuleLoaderV40=true;
+  if(window.__lyModuleLoaderV42)return;
+  window.__lyModuleLoaderV42=true;
 
-  const VERSION='2026.08.24.40';
+  const VERSION='2026.08.24.42';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
-    appVersion:{src:'./ly-app-version.js?v=2.1.41',test:()=>window.__lyAppVersion?.version==='2.1.41'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.42',test:()=>window.__lyAppVersion?.version==='2.1.42'},
+    localAssistant:{src:'./ly-local-chatbot.js?v=20260824.1',test:()=>window.__lyLocalAssistant?.version==='2026.08.24.1'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
@@ -107,8 +108,9 @@
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
   load('runtimeErrorBoundary');
   load('appVersion');
+  load('localAssistant');
   loadCore();
   load('warehouseDeleteUX');
-  setTimeout(()=>{load('runtimeErrorBoundary');load('branding');load('appVersion');loadCore();load('warehouseDeleteUX');},500);
+  setTimeout(()=>{load('runtimeErrorBoundary');load('branding');load('appVersion');load('localAssistant');loadCore();load('warehouseDeleteUX');},500);
   window.__lyModuleLoader={version:VERSION,load,loadCore,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
 })();

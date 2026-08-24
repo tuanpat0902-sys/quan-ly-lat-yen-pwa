@@ -6,6 +6,7 @@ const versionSource=await fs.readFile(new URL('../ly-app-version.js',import.meta
 const notifications=await fs.readFile(new URL('../ly-inapp-notifications.js',import.meta.url),'utf8');
 const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
 const warehouseDeleteUx=await fs.readFile(new URL('../ly-warehouse-delete-ux.js',import.meta.url),'utf8');
+const localAssistant=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url),'utf8');
 const pagesPrep=await fs.readFile(new URL('./prepare-pages-artifact.mjs',import.meta.url),'utf8');
 
 const match=versionSource.match(/const VERSION='([^']+)'/);
@@ -18,6 +19,8 @@ assert.ok(versionSource.includes('Ver ${VERSION}'),'compact Ver label must be us
 assert.ok(versionSource.includes('lat_yen_last_seen_app_version'),'update notice must remember last seen version');
 assert.ok(loader.includes(`ly-app-version.js?v=${runtimeVersion}`),'module loader must bootstrap current version independently of SW freshness');
 assert.ok(loader.includes('ly-warehouse-delete-ux.js?v=20260824.3'),'module loader must bootstrap current warehouse security UX');
+assert.ok(loader.includes('ly-local-chatbot.js?v=20260824.1'),'module loader must bootstrap the device-only assistant');
+assert.ok(localAssistant.includes("storage:'indexeddb-device-only'"),'assistant must advertise device-only storage');
 assert.ok(warehouseDeleteUx.includes("ly_delete_warehouse_secure"),'warehouse deletion must use the transactional secure RPC');
 assert.ok(warehouseDeleteUx.includes('Nhập chính xác tên kho'),'warehouse UX must require an explicit destructive confirmation');
 assert.ok(notifications.includes('__LY_APP_VERSION_LABEL'),'notifications must use centralized runtime version label');
