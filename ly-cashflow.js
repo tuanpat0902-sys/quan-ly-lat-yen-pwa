@@ -430,6 +430,22 @@
     `;
   }
   
+  function projectFreshState(core=window.__lyFreshCoreV2){
+    const entries=core?.store?.getState?.()?.cashflowEntries;
+    if(!Array.isArray(entries))return false;
+    window.__lyFreshCashflow=entries.map(x=>({
+      id:x.id,warehouse_id:x.warehouse_id,type:x.entry_type??x.type,
+      date:x.entry_date??x.date,category:x.category,amount:Number(x.amount||0),
+      note:x.note||'',finance_scope:x.finance_scope||undefined,
+      created_at:x.created_at,updated_at:x.updated_at
+    }));
+    invalidateDataIndexes?.();
+    invalidateDerivedCaches?.();
+    if(activePanelId==='cashflow')renderCashflow();
+    return true;
+  }
+
   window.__lyCashflowModule.renderCashflow=renderCashflow;
   window.__lyCashflowModule.renderCashflowReport=renderCashflowReport;
+  window.__lyCashflowModule.projectFreshState=projectFreshState;
 })();

@@ -28,7 +28,7 @@ const context={
   document,
   setTimeout(callback){timers.push(callback);return timers.length;},
   window:{
-    __LY_APP_VERSION:'2.1.35',
+    __LY_APP_VERSION:'2.1.36',
     __lyFreshCoreV2:core,
     __lyFreshCoreV2Shadow:{status(){return {phase:'ready'};}},
     __lyFreshCoreV2FinalOwnership:{async install(){installs++;return true;},status(){return {phase:'active',active:true};}},
@@ -53,7 +53,6 @@ assert.equal(hydrations,0,'bootstrap must not re-hydrate an already healthy shel
 assert.equal(installs,1);
 assert.equal(host,null,'startup diagnostic must be removed after readiness');
 assert.ok(source.includes("querySelector('button[data-panel]')"),'navigation repair must be conditional');
-assert.ok(indexSource.includes("button.dataset.panel===selectedPanel"),'navigation rebuild must restore the active menu button');
-assert.ok(indexSource.includes("document.querySelector('.panel.active')?.id"),'navigation rebuild must preserve the visible panel');
-assert.ok(indexSource.includes("selectedSubmenu.classList.add('open')"),'the active menu group must remain visible');
+assert.match(indexSource,/showTab\(\s*selectedPanel,/,'navigation rebuild must restore the active menu and panel');
+assert.ok(indexSource.includes('ACTIVE_PANEL_STORAGE_KEY'),'navigation rebuild must use persisted panel state');
 console.log('Independent bootstrap active-menu stability: PASS');

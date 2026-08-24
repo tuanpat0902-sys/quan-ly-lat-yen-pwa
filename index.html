@@ -8438,7 +8438,7 @@ table.app-aligned-table td > .muted{
   }
 }
 
-/* ===== V2.1.35 FINANCE + SETTINGS WORKSPACE ===== */
+/* ===== V2.1.36 CASHFLOW + ACTIVE PANEL STABILITY ===== */
 #finance{
   max-width:1480px;
   margin:0 auto;
@@ -11773,7 +11773,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.35</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.36</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11805,7 +11805,7 @@ html.v257-device-locked body{
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260824.36"></script>
+<script src="./ly-module-loader.js?v=20260824.37"></script>
 <script src="./ly-history-bridge.js?v=20260823.1"></script>
 <script src="./ly-employees-bridge.js?v=20260823.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -26753,9 +26753,7 @@ function navInit(){
   if(!E.nav)return;
 
   const selectedPanel=
-    activePanelId||
-    document.querySelector('.panel.active')?.id||
-    'ingredients';
+    normalizeActivePanelId(activePanelId);
 
   E.nav.innerHTML=`
     <div class="v238-nav-section-label">Nghiệp vụ</div>
@@ -26854,31 +26852,10 @@ function navInit(){
     </button>
   `;
 
-  E.nav
-    .querySelectorAll('button[data-panel]')
-    .forEach(button=>
-      button.classList.toggle(
-        'active',
-        button.dataset.panel===selectedPanel
-      )
-    );
-
-  const selectedSubmenu=
-    E.nav
-      .querySelector(
-        `button[data-panel="${selectedPanel}"]`
-      )
-      ?.closest(
-        '.nav-submenu'
-      );
-
-  if(selectedSubmenu){
-    selectedSubmenu.classList.add('open');
-    selectedSubmenu.previousElementSibling?.classList.add('open');
-    const selectedChevron=
-      selectedSubmenu.previousElementSibling?.querySelector('.nav-chevron');
-    if(selectedChevron)selectedChevron.textContent='▾';
-  }
+  showTab(
+    selectedPanel,
+    E.nav.querySelector(`button[data-panel="${selectedPanel}"]`)
+  );
 }
 function toggleManageMenu(btn){
   toggleNavGroupV238(
@@ -26926,7 +26903,15 @@ function toggleNavGroupV238(
   }catch(e){}
 }
 
-let activePanelId='ingredients';
+const ACTIVE_PANEL_STORAGE_KEY='lat_yen_active_panel_v1';
+const ACTIVE_PANEL_IDS=new Set('dashboard ingredients imports recipes sales stocktake finance cashflow employees warehouses history settings'.split(' '));
+
+function normalizeActivePanelId(id){
+  const value=String(id||'');
+  return ACTIVE_PANEL_IDS.has(value)?value:'ingredients';
+}
+
+let activePanelId=(()=>{try{return normalizeActivePanelId(localStorage.getItem(ACTIVE_PANEL_STORAGE_KEY))}catch(e){return 'ingredients'}})();
 const renderQueue=new Map();
 let deferredRenderKeys=new Map();
 
@@ -27015,8 +27000,9 @@ function debouncedHistoryRender(){
 
 function showTab(id,btn){
   activePanelId=
-    id||
-    'ingredients';
+    normalizeActivePanelId(id);
+
+  try{localStorage.setItem(ACTIVE_PANEL_STORAGE_KEY,activePanelId)}catch(e){}
 
   document
     .querySelectorAll(
@@ -27093,6 +27079,7 @@ function showTab(id,btn){
   renderPanel(
     activePanelId
   );
+
 }
 function renderWarehouseSelect(){
   if(!E.warehouseSelect)return;
@@ -55226,8 +55213,9 @@ addCashflowEntry=async function(){
     cashflowEditId='';
     cashflowFormOpen=false;
 
-    lyFreshProjectCoreState?.();
-    renderCashflow?.();
+    if(!window.__lyCashflowModule?.projectFreshState?.(core)){
+      lyFreshProjectCoreState?.();renderCashflow?.();
+    }
     if(document.getElementById('financeReportArea'))renderFinanceData?.();
 
     toastMsg(
@@ -55268,8 +55256,9 @@ deleteCashflowEntry=async function(id){
       cashflowFormOpen=false;
     }
 
-    lyFreshProjectCoreState?.();
-    renderCashflow?.();
+    if(!window.__lyCashflowModule?.projectFreshState?.(core)){
+      lyFreshProjectCoreState?.();renderCashflow?.();
+    }
     if(document.getElementById('financeReportArea'))renderFinanceData?.();
 
     toastMsg('Đã xóa phiếu Thu/Chi');
@@ -55642,14 +55631,14 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.35',REVISION='fresh-core-v2-authoritative-v36';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.36',REVISION='fresh-core-v2-authoritative-v37';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
 
 
 
 
 
-<script src="./ly-app-version.js?v=2.1.35"></script>
+<script src="./ly-app-version.js?v=2.1.36"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
 <script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
