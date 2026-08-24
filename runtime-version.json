@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.19",
-  "revision": "fresh-core-v2-authoritative-v20",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-72",
+  "appVersion": "2.1.20",
+  "revision": "fresh-core-v2-authoritative-v21",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-73",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "broad-legacy-model-compatibility-shim"
+  "bootstrapFix": "callable-hybrid-legacy-model-accessors"
 }
