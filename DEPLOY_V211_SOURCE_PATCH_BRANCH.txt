@@ -1,1 +1,0 @@
-Trigger authoritative source patch for Ver 2.1.1.

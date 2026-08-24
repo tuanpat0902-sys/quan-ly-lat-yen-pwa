@@ -1,9 +1,0 @@
-V263 AUTH-FIRST CUTOVER
-1. Chỉ triển khai sau khi V260-V262 đã PASS trên dữ liệu thật.
-2. Chạy SUPABASE-V263-MIGRATION.sql.
-3. Deploy V263.
-4. QR/mã ghép không còn dùng. Thiết bị mới chỉ cần đăng nhập cùng tài khoản.
-5. Canonical timer legacy bị tắt trong Auth V2.
-6. Nút xóa Cloud dùng reset_my_organization_v263() chạy transaction phía server.
-7. Đăng xuất xóa local/cache nhưng không xóa Cloud.
-Khuyến nghị giữ backup V259/V262 trong vài ngày để rollback nếu cần.

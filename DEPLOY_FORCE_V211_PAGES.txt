@@ -1,1 +1,0 @@
-Force GitHub Pages deployment from current Ver 2.1.1 source.

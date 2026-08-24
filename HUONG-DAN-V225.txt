@@ -1,6 +1,0 @@
-V225 - HEADER CLEANUP
-
-- Đã bỏ nút tìm kiếm nhanh nhỏ trên header.
-- Ctrl/Cmd + K vẫn mở Tìm nhanh.
-- Không thay đổi các chức năng tìm kiếm, in, sync, zoom lock.
-- Không cần SQL mới.

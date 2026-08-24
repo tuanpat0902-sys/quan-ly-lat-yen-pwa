@@ -1,1 +1,0 @@
-Trigger authoritative source index patch for Ver 2.1.0 and Fresh Core V2 warehouse deletion.
