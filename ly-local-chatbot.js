@@ -1,9 +1,9 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.1';
+const VERSION='2026.08.25.2';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
-const state={messages:[],open:false,memory:[],ready:false,thinking:false,voiceConsent:false,voiceRecognition:null,lastAiError:''};
+const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:''};
 const text=value=>String(value??'').trim();
 const esc=value=>text(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const normalize=value=>text(value).toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/\-\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -49,6 +49,10 @@ function collectionFor(kind){
   return rows.filter(item=>item?.active!==false&&(!warehouseId||!item?.warehouse_id||String(item.warehouse_id)===warehouseId)&&(kind==='sale'||(item.ingredient_type||'purchased')==='purchased'));
 }
 function parsedQuantity(value){const token=normalize(value),words={khong:0,mot:1,hai:2,ba:3,bon:4,tu:4,nam:5,sau:6,bay:7,tam:8,chin:9,muoi:10};if(token in words)return words[token];const number=Number(token.replace(',','.'));return Number.isFinite(number)?number:null;}
+function firstQuantity(message){
+  const match=normalize(message).match(/(?:^|\s)(\d+(?:[.,]\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)\s*(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?(?:\s|$)/);
+  return match?{quantity:parsedQuantity(match[1]),unit:text(match[2])}:{quantity:null,unit:''};
+}
 function quantityNear(message,itemName){
   const source=normalize(message),name=normalize(itemName),at=source.indexOf(name);if(at<0)return {quantity:null,unit:''};
   const before=source.slice(Math.max(0,at-42),at),after=source.slice(at+name.length,at+name.length+34),number='(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',unit='(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?';
@@ -101,15 +105,32 @@ function actionLabel(action){return ({create:'Tạo',edit:'Sửa',delete:'Xóa'}
 function parseDraft(message){
   const source=normalize(message),kind=receiptKind(source),explicitAction=actionKind(source),action=explicitAction||(kind&&/^\s*(nhap|xuat|ban|kiem ke|kiem kho)\b/.test(source)?'create':'');
   if(!action||!kind)return null;
-  const draft={id:uid(),action,kind,status:'pending',created_at:now(),warehouse_id:text(window.currentWarehouseId),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name),items:[],ambiguities:[]};
-  if(action==='create'){const extracted=extractItems(message,kind);draft.items=extracted.items;draft.ambiguities=extracted.ambiguities;draft.receipt_code=receiptCode(message);const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+  const draft={id:uid(),action,kind,status:'pending',created_at:now(),warehouse_id:text(window.currentWarehouseId),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name),items:[],clarifications:[]};
+  if(action==='create'){const extracted=extractItems(message,kind);draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
   else draft.receipt_code=receiptCode(message);
   return draft;
 }
-function draftReady(draft){return !(draft?.ambiguities||[]).some(row=>!row.selected_id);}
-function chooseDraftItem(draft,ambiguityId,optionId){
-  const ambiguity=draft?.ambiguities?.find(row=>String(row.id)===String(ambiguityId)),option=ambiguity?.options?.find(row=>String(row.id)===String(optionId));if(!ambiguity||!option)return false;
-  draft.items=(draft.items||[]).filter(item=>String(item.ambiguity_id)!==String(ambiguity.id));draft.items.push({id:option.id,name:option.name,unit:text(option.unit||ambiguity.unit),quantity:ambiguity.quantity,ambiguity_id:ambiguity.id});ambiguity.selected_id=option.id;return true;
+function draftReady(draft){
+  if(!draft)return false;
+  if(draft.action!=='create')return true;
+  return draft.items?.length>0&&!(draft.clarifications||[]).some(row=>!row.resolved)&&draft.items.every(item=>item.quantity!==null&&Number.isFinite(Number(item.quantity))&&(draft.kind==='stocktake'?Number(item.quantity)>=0:Number(item.quantity)>0));
+}
+function addQuantityClarification(draft,item){
+  if(item.quantity!==null||(draft.clarifications||[]).some(row=>row.type==='quantity'&&!row.resolved&&String(row.item_id)===String(item.id)))return;
+  draft.clarifications.push({id:uid(),type:'quantity',query:item.name,item_id:item.id,item_name:item.name,unit:item.unit,options:[1,5,10].map(value=>({id:String(value),value,label:`${formatNumber(value)}${item.unit?` ${item.unit}`:''}`})),resolved:false});
+}
+function answerDraftClarification(draft,clarificationId,optionId){
+  const clarification=draft?.clarifications?.find(row=>String(row.id)===String(clarificationId)&&!row.resolved),option=clarification?.options?.find(row=>String(row.id)===String(optionId));if(!clarification||!option)return false;
+  if(clarification.type==='item'){
+    const item={id:option.id,name:option.name,unit:text(option.unit||clarification.unit),quantity:clarification.quantity,clarification_id:clarification.id};
+    draft.items=(draft.items||[]).filter(row=>String(row.clarification_id)!==String(clarification.id));draft.items.push(item);clarification.selected_id=option.id;clarification.resolved=true;addQuantityClarification(draft,item);
+  }else{
+    const item=draft.items?.find(row=>String(row.id)===String(clarification.item_id));if(!item)return false;item.quantity=Number(option.value);clarification.selected_id=option.id;clarification.resolved=true;
+  }
+  return true;
+}
+function chooseDraftItem(draft,clarificationId,optionId){
+  return answerDraftClarification(draft,clarificationId,optionId);
 }
 function requestedTerm(message){
   return normalize(message)
@@ -135,20 +156,19 @@ function suggestionCandidates(message,draft){
   if(!candidates.length)candidates=catalog.map(item=>({item,score:tokens.reduce((score,token)=>score+(normalize(item.name).includes(token)?3:normalize(item.name).split(' ').some(word=>word.startsWith(token)||token.startsWith(word))?1:0),0)})).sort((a,b)=>b.score-a.score||normalize(a.item.name).localeCompare(normalize(b.item.name))).map(row=>row.item);
   return [...new Map(candidates.map(item=>[String(item.id),item])).values()].slice(0,4);
 }
-function commandFor(kind,item,quantity=null){
-  const verb=({import:'Nhập',export:'Xuất',stocktake:'Kiểm kê',sale:'Bán'})[kind],amount=quantity!==null?`${formatNumber(quantity)}${item.unit?` ${item.unit}`:''} `:'';
-  return `${verb} ${amount}${item.name}`;
-}
 function clarificationReply(message,draft){
-  if(draft.action!=='create'||draft.ambiguities.length)return null;
+  if(draft.action!=='create')return null;
+  if(draft.clarifications.some(row=>row.type==='item'&&!row.resolved))return {content:`Mình thấy tên bạn nói có thể khớp với nhiều mặt hàng trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn đúng mặt hàng ở bên dưới giúp mình nhé; lựa chọn sẽ được cập nhật ngay vào bản nháp.`,draft};
   if(!draft.items.length){
-    const term=requestedTerm(message),displayTerm=displayRequestedTerm(message,term),candidates=suggestionCandidates(message,draft),noun=draft.kind==='sale'?'món':'nguyên liệu';
-    return {content:term?`Mình chưa tìm thấy ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}, nên chưa tạo bản nháp để tránh làm sai. Bạn có thể nói rõ hơn được không ạ${candidates.length?' hoặc chọn một gợi ý bên dưới':''}?`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Mình chưa tạo phiếu vì câu lệnh chưa có mặt hàng cụ thể.`,suggestions:candidates.map(item=>({label:item.name,value:commandFor(draft.kind,item)})),localOnly:true};
+    const term=requestedTerm(message),displayTerm=displayRequestedTerm(message,term),candidates=suggestionCandidates(message,draft),noun=draft.kind==='sale'?'món':'nguyên liệu',amount=firstQuantity(message);
+    if(!candidates.length)return {content:term?`Mình chưa tìm thấy ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}. Bạn có thể nói rõ tên ${noun} hơn được không ạ?`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Bạn nói thêm tên và số lượng giúp mình nhé.`,localOnly:true};
+    draft.clarifications.push({id:uid(),type:'item',query:displayTerm||noun,quantity:draft.kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:amount.unit,options:candidates.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)})),resolved:false});
+    return {content:term?`Mình chưa tìm thấy chính xác ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn một gợi ý bên dưới nhé; mình sẽ cập nhật ngay vào bản nháp, không cần gửi lại câu lệnh.`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Hãy chọn một gợi ý bên dưới; mình sẽ cập nhật ngay vào bản nháp.`,draft};
   }
   const missing=draft.items.filter(item=>item.quantity===null);
   if(missing.length){
-    const item=missing[0],values=[1,5,10];
-    return {content:`Mình đã nhận ra ${missing.map(row=>row.name).join(', ')}, nhưng chưa rõ số lượng. Bạn muốn dùng số lượng nào ạ? Bạn có thể chọn nhanh bên dưới hoặc nhập một số khác.`,suggestions:missing.length===1?values.map(quantity=>({label:`${formatNumber(quantity)}${item.unit?` ${item.unit}`:''}`,value:commandFor(draft.kind,item,quantity)})):[],localOnly:true};
+    missing.forEach(item=>addQuantityClarification(draft,item));
+    return {content:`Mình đã nhận ra ${missing.map(row=>row.name).join(', ')}, nhưng chưa rõ số lượng. Bạn chọn số lượng cho từng mặt hàng bên dưới nhé; mỗi lựa chọn sẽ được áp dụng ngay.`,draft};
   }
   return null;
 }
@@ -156,7 +176,7 @@ function draftSummary(draft){
   const title=`${actionLabel(draft.action)} phiếu ${kindLabel(draft.kind)}`;
   const warehouse=draft.warehouse_name?` tại ${draft.warehouse_name}`:'';
   if(draft.action!=='create')return `${title}${draft.receipt_code?` · ${draft.receipt_code}`:' · cần bổ sung số phiếu'}${warehouse}.`;
-  const lines=draft.items.length?draft.items.map(item=>item.quantity===null?`${item.name} (chưa rõ số lượng)`: `${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} × ${item.name}`).join(', '):'chưa có mặt hàng; form sẽ mở trống';
+  const lines=draft.items.length?draft.items.map(item=>item.quantity===null?`${item.name} (chưa rõ số lượng)`: `${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} × ${item.name}`).join(', '):'chưa có mặt hàng';
   const header=[draft.receipt_code&&`số ${draft.receipt_code}`,draft.receipt_date&&`ngày ${displayDate(parseReportDate(draft.receipt_date))}`].filter(Boolean).join(' · ');
   return `${title}${warehouse}${header?` · ${header}`:''}: ${lines}.`;
 }
@@ -166,15 +186,30 @@ function reportState(){
 }
 function parseReportDate(value){const parts=text(value).split(/[\/-]/).map(Number);if(parts.length!==3)return null;const [year,month,day]=parts[0]>999?parts:[parts[2],parts[1],parts[0]],date=new Date(year,month-1,day);return date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day?date:null;}
 function displayDate(date){return new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date);}
+function naturalSingleDate(source,base=new Date()){
+  const value=normalize(source),date=new Date(base);date.setHours(0,0,0,0);
+  if(/\b(hom kia|ngay kia)\b/.test(value))date.setDate(date.getDate()-2);
+  else if(/\b(hom qua|ngay hom truoc|hom truoc)\b/.test(value))date.setDate(date.getDate()-1);
+  else{const ago=value.match(/\b(\d+)\s*ngay truoc\b/);if(ago)date.setDate(date.getDate()-Math.max(0,Number(ago[1])));else if(!/\b(hom nay|ngay nay)\b/.test(value))return null;}
+  return date;
+}
+function periodResult(start,end,label){start.setHours(0,0,0,0);end.setHours(23,59,59,999);return {start,end,label};}
 function reportPeriod(source){
-  const end=new Date(),start=new Date(end);end.setHours(23,59,59,999);
+  const end=new Date(),start=new Date(end),value=normalize(source);end.setHours(23,59,59,999);
   let label='30 ngày gần nhất';
-  const tokens=source.match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/g)||[],from=parseReportDate(tokens[0]),to=parseReportDate(tokens[1]);
+  const tokens=value.match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/g)||[],from=parseReportDate(tokens[0]),to=parseReportDate(tokens[1]);
   if(from&&to){const first=from<=to?from:to,last=from<=to?to:from;start.setTime(first.getTime());end.setTime(last.getTime());start.setHours(0,0,0,0);end.setHours(23,59,59,999);label=`từ ${displayDate(start)} đến ${displayDate(end)}`;}
   else if(from){start.setTime(from.getTime());end.setTime(from.getTime());start.setHours(0,0,0,0);end.setHours(23,59,59,999);label=`ngày ${displayDate(start)}`;}
-  else if(/hom nay/.test(source)){start.setHours(0,0,0,0);label='hôm nay';}
-  else if(/thang nay/.test(source)){start.setDate(1);start.setHours(0,0,0,0);label='tháng này';}
-  else{const matched=source.match(/(\d+)\s*ngay/),days=Math.max(1,Number(matched?.[1]||(/tuan nay/.test(source)?7:30)));start.setHours(0,0,0,0);start.setDate(start.getDate()-days+1);label=matched?`${days} ngày gần nhất`:/tuan nay/.test(source)?'7 ngày gần nhất':label;}
+  else if(/\b(hom kia|ngay kia)\b/.test(value)){start.setDate(start.getDate()-2);end.setTime(start.getTime());return periodResult(start,end,`hôm kia (${displayDate(start)})`);}
+  else if(/\b(hom qua|ngay hom truoc|hom truoc)\b/.test(value)){start.setDate(start.getDate()-1);end.setTime(start.getTime());return periodResult(start,end,`hôm qua (${displayDate(start)})`);}
+  else if(/\b(hom nay|ngay nay)\b/.test(value)){return periodResult(start,end,`hôm nay (${displayDate(start)})`);}
+  else if(/\btuan truoc\b/.test(value)){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day-7);end.setTime(start.getTime());end.setDate(end.getDate()+6);return periodResult(start,end,`tuần trước, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else if(/\btuan nay\b/.test(value)){const day=(start.getDay()+6)%7;start.setDate(start.getDate()-day);return periodResult(start,end,`tuần này, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else if(/\bthang truoc\b/.test(value)){start.setDate(1);start.setMonth(start.getMonth()-1);end.setTime(start.getTime());end.setMonth(end.getMonth()+1);end.setDate(0);return periodResult(start,end,`tháng trước, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else if(/\bthang nay\b/.test(value)){start.setDate(1);return periodResult(start,end,`tháng này, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else if(/\bquy (nay|truoc)\b/.test(value)){const previous=/\bquy truoc\b/.test(value),quarter=Math.floor(start.getMonth()/3)-(previous?1:0);start.setMonth(quarter*3,1);end.setTime(start.getTime());end.setMonth(end.getMonth()+3);end.setDate(0);if(!previous&&end>new Date())end.setTime(new Date().getTime());return periodResult(start,end,`${previous?'quý trước':'quý này'}, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else if(/\bnam (nay|truoc)\b/.test(value)){const previous=/\bnam truoc\b/.test(value),year=start.getFullYear()-(previous?1:0);start.setFullYear(year,0,1);end.setFullYear(year,11,31);if(!previous)end.setTime(new Date().getTime());return periodResult(start,end,`${previous?'năm trước':'năm nay'}, từ ${displayDate(start)} đến ${displayDate(end)}`);}
+  else{const exactAgo=value.match(/\b(\d+)\s*ngay truoc\b/);if(exactAgo){start.setDate(start.getDate()-Number(exactAgo[1]));end.setTime(start.getTime());return periodResult(start,end,`ngày ${displayDate(start)}`);}const matched=value.match(/(\d+)\s*ngay/),days=Math.max(1,Number(matched?.[1]||30));start.setHours(0,0,0,0);start.setDate(start.getDate()-days+1);label=matched?`${days} ngày gần nhất`:label;}
   return {start,end,label};
 }
 function rowDate(row){const value=row?.sold_at||row?.entry_date||row?.receipt_date||row?.date||row?.created_at;const date=value?new Date(value):null;return date&&!Number.isNaN(date.getTime())?date:null;}
@@ -203,7 +238,6 @@ function assistantReply(message){
     if(draft.action!=='create'&&!draft.receipt_code)return {content:`Mình hiểu bạn muốn ${actionLabel(draft.action).toLocaleLowerCase('vi')} phiếu ${kindLabel(draft.kind)}, nhưng chưa thấy số phiếu. Bạn gửi lại giúp mình theo mẫu “${actionLabel(draft.action)} phiếu ${kindLabel(draft.kind)} số PN-001” nhé.`};
     if(draft.action==='delete')return {content:`Mình đã chuẩn bị yêu cầu xóa phiếu ${kindLabel(draft.kind)} ${draft.receipt_code}. Khi bạn nhấn nút bên dưới, phần mềm sẽ tìm đúng phiếu và vẫn hỏi xác nhận lần cuối — chưa xóa ngay đâu nhé.`,draft};
     if(draft.action==='edit')return {content:`Mình đã nhận yêu cầu sửa phiếu ${kindLabel(draft.kind)} ${draft.receipt_code}. Bạn nhấn nút bên dưới để mở đúng phiếu, kiểm tra và chỉnh sửa trên form chính thức nhé.`,draft};
-    if(!draftReady(draft))return {content:`Mình thấy tên bạn nói có thể khớp với nhiều mặt hàng trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn đúng mặt hàng ở bên dưới giúp mình nhé; mình sẽ không tự đoán để tránh tạo sai phiếu.`,draft};
     const clarification=clarificationReply(message,draft);if(clarification)return clarification;
     return {content:`Mình đã đọc được yêu cầu và chuẩn bị bản nháp: ${draftSummary(draft)} Bạn xem lại phần tóm tắt rồi nhấn “Mở bản nháp để kiểm tra” nhé.`,draft};
   }
@@ -326,11 +360,10 @@ async function executeDraft(draft){
 
 function messageHtml(message){
   const draft=message.draft;
-  const choices=(draft?.ambiguities||[]).map(ambiguity=>`<div class="ly-assistant-choice"><b>“${esc(ambiguity.query)}”${ambiguity.quantity!==null?` · ${esc(formatNumber(ambiguity.quantity))}${ambiguity.unit?` ${esc(ambiguity.unit)}`:''}`:''}</b><div>${ambiguity.options.map(option=>`<button type="button" class="${String(ambiguity.selected_id)===String(option.id)?'is-selected':''}" data-draft-choice="${esc(draft.id)}" data-ambiguity-id="${esc(ambiguity.id)}" data-option-id="${esc(option.id)}">${String(ambiguity.selected_id)===String(option.id)?'✓ ':''}${esc(option.name)}${option.unit?` · ${esc(option.unit)}`:''}</button>`).join('')}</div></div>`).join('');
+  const choices=(draft?.clarifications||[]).filter(row=>!row.resolved).map(clarification=>`<div class="ly-assistant-choice"><b>${clarification.type==='quantity'?`Số lượng ${esc(clarification.item_name)}`:`“${esc(clarification.query)}”${clarification.quantity!==null?` · ${esc(formatNumber(clarification.quantity))}${clarification.unit?` ${esc(clarification.unit)}`:''}`:''}`}</b><div>${clarification.options.map(option=>`<button type="button" data-draft-choice="${esc(draft.id)}" data-clarification-id="${esc(clarification.id)}" data-option-id="${esc(option.id)}">${esc(option.label||option.name)}${clarification.type==='item'&&option.unit?` · ${esc(option.unit)}`:''}</button>`).join('')}</div></div>`).join('');
   const retry=draft&&['pending','opened'].includes(draft.status)&&draftReady(draft);
   const action=retry?`<div class="ly-assistant-draft"><b>${esc(draftSummary(draft))}</b><button type="button" data-confirm-draft="${esc(draft.id)}">${draft.action==='delete'?'Tiếp tục đến xác nhận xóa':draft.status==='opened'?'Mở lại bản nháp':'Mở bản nháp để kiểm tra'}</button></div>`:'';
-  const suggestions=(message.suggestions||[]).length?`<div class="ly-assistant-suggestions">${message.suggestions.map((suggestion,index)=>`<button type="button" data-suggestion-message="${esc(message.id)}" data-suggestion-index="${index}">${esc(suggestion.label)}</button>`).join('')}</div>`:'';
-  return `<div class="ly-assistant-message ${message.role==='user'?'is-user':'is-assistant'}"><div>${esc(message.content)}</div>${choices}${suggestions}${action}</div>`;
+  return `<div class="ly-assistant-message ${message.role==='user'?'is-user':'is-assistant'}"><div>${esc(message.content)}</div>${choices}${action}</div>`;
 }
 function renderMessages(){
   const holder=document.getElementById?.('lyAssistantMessages');if(!holder)return;
@@ -346,26 +379,8 @@ async function submit(){
   const input=document.getElementById?.('lyAssistantInput'),content=text(input?.value);if(!content)return;
   input.value='';await retireDrafts();await addMessage({id:uid(),role:'user',content,created_at:now()});
   const reply=assistantReply(content);
-  if(reply.draft||reply.localOnly){await addMessage({id:uid(),role:'assistant',content:reply.content,draft:reply.draft||null,suggestions:reply.suggestions||null,created_at:now()});return;}
+  if(reply.draft||reply.localOnly){await addMessage({id:uid(),role:'assistant',content:reply.content,draft:reply.draft||null,created_at:now()});return;}
   state.thinking=true;renderMessages();const answer=await askAi(content,reply.content);state.thinking=false;await addMessage({id:uid(),role:'assistant',content:answer,created_at:now()});
-}
-async function startVoice(){
-  const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!Recognition){await addMessage({id:uid(),role:'assistant',content:'Trình duyệt này chưa hỗ trợ nhập lệnh bằng giọng nói. Bạn vẫn có thể nhập lệnh bằng bàn phím.',created_at:now()});return false;}
-  if(!state.voiceConsent){
-    const accepted=confirm('Trình duyệt có thể gửi âm thanh tới dịch vụ nhận dạng giọng nói trực tuyến. Trợ lý Lát Yên không lưu âm thanh; chỉ văn bản nhận dạng được lưu trong lịch sử trên thiết bị. Bạn có muốn tiếp tục?');
-    if(!accepted)return false;
-    state.voiceConsent=true;
-  }
-  if(state.voiceRecognition){try{state.voiceRecognition.stop?.();}catch{}return true;}
-  const recognition=new Recognition();state.voiceRecognition=recognition;
-  recognition.lang='vi-VN';recognition.continuous=false;recognition.interimResults=false;recognition.maxAlternatives=1;
-  const button=document.querySelector?.('[data-assistant-voice]');
-  recognition.onstart=()=>{button?.classList?.add('is-listening');button?.setAttribute?.('aria-label','Đang nghe, nhấn để dừng');};
-  recognition.onend=()=>{button?.classList?.remove('is-listening');button?.setAttribute?.('aria-label','Ra lệnh bằng giọng nói');if(state.voiceRecognition===recognition)state.voiceRecognition=null;};
-  recognition.onerror=async event=>{await addMessage({id:uid(),role:'assistant',content:event?.error==='not-allowed'?'Chưa được cấp quyền micro. Hãy cho phép micro trong trình duyệt rồi thử lại.':'Không nhận được giọng nói. Vui lòng thử lại hoặc nhập lệnh bằng bàn phím.',created_at:now()});};
-  recognition.onresult=event=>{const transcript=text(event?.results?.[0]?.[0]?.transcript),input=document.getElementById?.('lyAssistantInput');if(!transcript||!input)return;input.value=transcript;input.dispatchEvent?.(new Event('input',{bubbles:true}));input.focus?.();input.setSelectionRange?.(transcript.length,transcript.length);};
-  recognition.start();return true;
 }
 function toggle(force){state.open=force===undefined?!state.open:Boolean(force);document.getElementById?.('lyAssistantDrawer')?.classList.toggle('is-open',state.open);}
 function installUi(){
@@ -373,20 +388,19 @@ function installUi(){
   const style=document.createElement('style');style.id='lyAssistantStyles';style.textContent=`
 .ly-assistant-launcher{position:fixed;right:18px;bottom:18px;z-index:95;border:0;border-radius:999px;background:#0f766e;color:#fff;padding:12px 16px;font-weight:800;box-shadow:0 12px 32px rgba(15,118,110,.28)}
 .ly-assistant-drawer{position:fixed;right:14px;bottom:72px;z-index:96;width:min(410px,calc(100vw - 28px));height:min(620px,calc(100vh - 100px));display:none;grid-template-rows:auto auto 1fr auto;background:#fff;border:1px solid #dbe5e4;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.24);overflow:hidden}.ly-assistant-drawer.is-open{display:grid}
-.ly-assistant-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid #e5e7eb}.ly-assistant-head h3{margin:0}.ly-assistant-head button{border:0;background:transparent;font-size:22px}.ly-assistant-privacy{padding:9px 14px;background:#ecfdf5;color:#065f46;font-size:12px}.ly-assistant-messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:9px}.ly-assistant-message{max-width:88%;padding:10px 11px;border-radius:13px;background:#f1f5f9;line-height:1.4;font-size:13px}.ly-assistant-message.is-user{align-self:flex-end;background:#0f766e;color:#fff}.ly-assistant-draft{display:grid;gap:8px;margin-top:9px;padding:9px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;color:#334155}.ly-assistant-draft button{border:0;border-radius:8px;background:#0f766e;color:#fff;padding:8px;font-weight:700}.ly-assistant-done{display:block;margin-top:6px;color:#047857}.ly-assistant-empty{margin:auto;color:#64748b;text-align:center;padding:18px}.ly-assistant-compose{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:11px;border-top:1px solid #e5e7eb}.ly-assistant-compose textarea{resize:none;min-height:44px;max-height:100px;border:1px solid #cbd5e1;border-radius:10px;padding:9px}.ly-assistant-compose button{border:0;border-radius:10px;background:#0f766e;color:#fff;padding:0 13px;font-weight:800}.ly-assistant-compose [data-assistant-voice]{width:48px;padding:0;background:#e7f4f2;color:#0f766e}.ly-voice-visual{display:flex;align-items:center;justify-content:center;gap:2px}.ly-voice-mic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.ly-voice-wave{display:flex;align-items:center;gap:2px;height:20px}.ly-voice-wave i{display:block;width:2px;height:6px;border-radius:9px;background:currentColor;animation:ly-assistant-wave 1.15s ease-in-out infinite}.ly-voice-wave i:nth-child(2){animation-delay:.16s}.ly-voice-wave i:nth-child(3){animation-delay:.32s}.ly-assistant-compose [data-assistant-voice].is-listening{background:#dc2626;color:#fff;box-shadow:0 0 0 4px rgba(220,38,38,.16)}.ly-assistant-compose [data-assistant-voice].is-listening .ly-voice-wave i{animation-duration:.55s}@keyframes ly-assistant-wave{0%,100%{height:5px;opacity:.45}50%{height:17px;opacity:1}}.ly-assistant-tools{display:flex;justify-content:flex-end;padding:0 12px 9px}.ly-assistant-tools button{border:0;background:transparent;color:#b42318;font-size:12px}
+.ly-assistant-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid #e5e7eb}.ly-assistant-head h3{margin:0}.ly-assistant-head button{border:0;background:transparent;font-size:22px}.ly-assistant-privacy{padding:9px 14px;background:#ecfdf5;color:#065f46;font-size:12px}.ly-assistant-messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:9px}.ly-assistant-message{max-width:88%;padding:10px 11px;border-radius:13px;background:#f1f5f9;line-height:1.4;font-size:13px}.ly-assistant-message.is-user{align-self:flex-end;background:#0f766e;color:#fff}.ly-assistant-draft{display:grid;gap:8px;margin-top:9px;padding:9px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;color:#334155}.ly-assistant-draft button{border:0;border-radius:8px;background:#0f766e;color:#fff;padding:8px;font-weight:700}.ly-assistant-done{display:block;margin-top:6px;color:#047857}.ly-assistant-empty{margin:auto;color:#64748b;text-align:center;padding:18px}.ly-assistant-compose{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px;border-top:1px solid #e5e7eb}.ly-assistant-compose textarea{resize:none;min-height:44px;max-height:100px;border:1px solid #cbd5e1;border-radius:10px;padding:9px}.ly-assistant-compose button{border:0;border-radius:10px;background:#0f766e;color:#fff;padding:0 14px;font-weight:800}.ly-assistant-send{display:flex;align-items:center;justify-content:center;gap:6px;overflow:hidden}.ly-assistant-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;animation:ly-assistant-send 2.4s ease-in-out infinite}@keyframes ly-assistant-send{0%,72%,100%{transform:translate(0,0) rotate(0);opacity:1}82%{transform:translate(4px,-4px) rotate(-5deg);opacity:.65}88%{transform:translate(-3px,3px) rotate(3deg);opacity:.35}}@media(prefers-reduced-motion:reduce){.ly-assistant-send svg{animation:none}}.ly-assistant-tools{display:flex;justify-content:flex-end;padding:0 12px 9px}.ly-assistant-tools button{border:0;background:transparent;color:#b42318;font-size:12px}
 .ly-assistant-choice{display:grid;gap:7px;margin-top:9px;padding:9px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#713f12}.ly-assistant-choice>div{display:flex;flex-wrap:wrap;gap:6px}.ly-assistant-choice button{border:1px solid #d6d3d1;border-radius:999px;background:#fff;color:#334155;padding:6px 9px;font-weight:700}.ly-assistant-choice button.is-selected{border-color:#0f766e;background:#ecfdf5;color:#065f46}
-.ly-assistant-suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.ly-assistant-suggestions button{border:1px solid #99d5cd;border-radius:999px;background:#f0fdfa;color:#115e59;padding:7px 10px;font-weight:750}
 .ly-assistant-thinking span{display:inline-block;animation:ly-assistant-thinking 1s ease-in-out infinite}@keyframes ly-assistant-thinking{0%,100%{opacity:.25}50%{opacity:1}}
 @media(max-width:520px){.ly-assistant-launcher{right:12px;bottom:12px}.ly-assistant-drawer{inset:10px;width:auto;height:auto;bottom:70px}}
 `;document.head.appendChild(style);
   const launcher=document.createElement('button');launcher.id='lyAssistantLauncher';launcher.className='ly-assistant-launcher';launcher.type='button';launcher.textContent='Trợ lý Lát Yên';launcher.setAttribute('aria-controls','lyAssistantDrawer');document.body.appendChild(launcher);
-  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><button type="button" data-assistant-close aria-label="Đóng">×</button></div><div class="ly-assistant-privacy">🔒 Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.</div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" data-assistant-voice title="Ra lệnh bằng giọng nói" aria-label="Ra lệnh bằng giọng nói"><span class="ly-voice-visual" aria-hidden="true"><svg class="ly-voice-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></svg><span class="ly-voice-wave"><i></i><i></i><i></i></span></span></button><button type="button" data-assistant-send>Gửi</button></div></div>`;document.body.appendChild(drawer);
-  launcher.addEventListener('click',()=>toggle());drawer.querySelector('[data-assistant-close]').addEventListener('click',()=>toggle(false));drawer.querySelector('[data-assistant-send]').addEventListener('click',submit);drawer.querySelector('[data-assistant-voice]').addEventListener('click',startVoice);drawer.querySelector('[data-assistant-clear]').addEventListener('click',()=>{if(confirm('Xóa toàn bộ lịch sử trợ lý trên thiết bị này?'))clearMessages();});
+  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><button type="button" data-assistant-close aria-label="Đóng">×</button></div><div class="ly-assistant-privacy">🔒 Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.</div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" class="ly-assistant-send" data-assistant-send aria-label="Gửi tin nhắn"><span>Gửi</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg></button></div></div>`;document.body.appendChild(drawer);
+  launcher.addEventListener('click',()=>toggle());drawer.querySelector('[data-assistant-close]').addEventListener('click',()=>toggle(false));drawer.querySelector('[data-assistant-send]').addEventListener('click',submit);drawer.querySelector('[data-assistant-clear]').addEventListener('click',()=>{if(confirm('Xóa toàn bộ lịch sử trợ lý trên thiết bị này?'))clearMessages();});
   drawer.querySelector('#lyAssistantInput').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit();}});
-  drawer.addEventListener('click',async event=>{const suggestion=event.target?.closest?.('[data-suggestion-message]');if(suggestion){const message=state.messages.find(row=>String(row.id)===String(suggestion.dataset.suggestionMessage)),selected=message?.suggestions?.[Number(suggestion.dataset.suggestionIndex)],input=document.getElementById?.('lyAssistantInput');if(!selected||!input)return;input.value=selected.value;input.dispatchEvent?.(new Event('input',{bubbles:true}));input.focus?.();input.setSelectionRange?.(input.value.length,input.value.length);message.suggestions=null;await writeMessage(message);renderMessages();return;}const choice=event.target?.closest?.('[data-draft-choice]');if(choice){const message=state.messages.find(row=>row.draft?.id===choice.dataset.draftChoice);if(!message||!chooseDraftItem(message.draft,choice.dataset.ambiguityId,choice.dataset.optionId))return;message.content=draftReady(message.draft)?`Cảm ơn bạn, mình đã cập nhật đúng mặt hàng đã chọn. ${draftSummary(message.draft)} Bạn kiểm tra lại rồi mở bản nháp nhé.`:'Mình đã ghi nhận lựa chọn này. Bạn chọn tiếp các mặt hàng còn chưa rõ nhé.';await writeMessage(message);renderMessages();return;}const id=event.target?.dataset?.confirmDraft;if(!id)return;const message=state.messages.find(row=>row.draft?.id===id);if(!message)return;try{await executeDraft(message.draft);message.draft=null;message.draft_retired_at=now();await writeMessage(message);renderMessages();toggle(false);}catch(error){await addMessage({id:uid(),role:'assistant',content:error?.message||String(error),created_at:now()});}});
+  drawer.addEventListener('click',async event=>{const choice=event.target?.closest?.('[data-draft-choice]');if(choice){const message=state.messages.find(row=>row.draft?.id===choice.dataset.draftChoice);if(!message||!answerDraftClarification(message.draft,choice.dataset.clarificationId,choice.dataset.optionId))return;message.content=draftReady(message.draft)?`Cảm ơn bạn, mình đã cập nhật lựa chọn trực tiếp vào bản nháp. ${draftSummary(message.draft)} Bạn kiểm tra lại rồi mở bản nháp nhé.`:'Mình đã cập nhật lựa chọn trực tiếp vào bản nháp. Bạn chọn tiếp phần còn chưa rõ bên dưới nhé.';await writeMessage(message);renderMessages();return;}const id=event.target?.dataset?.confirmDraft;if(!id)return;const message=state.messages.find(row=>row.draft?.id===id);if(!message)return;try{await executeDraft(message.draft);message.draft=null;message.draft_retired_at=now();await writeMessage(message);renderMessages();toggle(false);}catch(error){await addMessage({id:uid(),role:'assistant',content:error?.message||String(error),created_at:now()});}});
 }
 async function boot(){installUi();state.messages=await readMessages();state.ready=true;renderMessages();}
 
-window.__lyLocalAssistant={version:VERSION,parseDraft,chooseDraftItem,reportReply,assistantReply,askAi,submit,executeDraft,startVoice,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'openai-responses-via-authenticated-edge-function',lastAiError:state.lastAiError,draftLinks:'retired-on-open-or-next-command',reports:'read-only-current-snapshot',voice:'browser-speech-with-consent-manual-send'})};
+window.__lyLocalAssistant={version:VERSION,parseDraft,draftReady,chooseDraftItem,answerDraftClarification,reportReply,assistantReply,askAi,submit,executeDraft,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'openai-responses-via-authenticated-edge-function',lastAiError:state.lastAiError,draftLinks:'retired-on-open-or-next-command',reports:'read-only-current-snapshot',voice:'removed'})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
