@@ -1,0 +1,42 @@
+name: Supabase Keepalive
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/supabase-keepalive.yml"
+      - "supabase/migrations/*keepalive*.sql"
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
+
+jobs:
+  read-only-health-query:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Send verified read-only database activity
+        shell: bash
+        env:
+          SUPABASE_URL: https://isfotiyxufvsmlkqsgez.supabase.co
+          SUPABASE_PUBLISHABLE_KEY: sb_publishable_yRRO3Ijxa3VxK4Af1jQoTA_akPg97Cp
+        run: |
+          set -euo pipefail
+          for request_number in 1 2 3; do
+            response="$(curl --fail-with-body --silent --show-error --retry 2 \
+              --request POST \
+              --url "${SUPABASE_URL}/rest/v1/rpc/ly_keepalive" \
+              --header "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
+              --header "Content-Type: application/json" \
+              --data '{}')"
+            printf '%s' "${response}" | grep --quiet '"ok": true\|"ok":true'
+            if [ "${request_number}" -lt 3 ]; then sleep 2; fi
+          done
+          echo "Supabase read-only activity check completed."

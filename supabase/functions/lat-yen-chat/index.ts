@@ -33,6 +33,7 @@ Deno.serve(async request=>{
     if(!allowed(user.id))return json({error:'RATE_LIMITED'},429);
 
     const body=await request.json().catch(()=>({})),message=safeString(body?.message,2000),localContext=safeString(body?.local_context,4000),warehouseName=safeString(body?.warehouse_name,200);
+    const recentContext=Array.isArray(body?.recent_context)?body.recent_context.slice(-6).map((row:unknown)=>{const item=row as Record<string,unknown>;return {role:item?.role==='assistant'?'assistant':'user',content:safeString(item?.content,700)};}).filter((row:{content:string})=>row.content):[];
     if(!message)return json({error:'MESSAGE_REQUIRED'},400);
     const apiKey=Deno.env.get('OPENAI_API_KEY');
     if(!apiKey)return json({error:'AI_NOT_CONFIGURED'},503);
@@ -44,8 +45,9 @@ Deno.serve(async request=>{
         model,
         reasoning:{effort:'low'},
         max_output_tokens:700,
-        instructions:`Bạn là Trợ lý Lát Yên trong phần mềm quản lý kho và bán hàng. Trả lời bằng tiếng Việt tự nhiên, thân thiện, đúng trọng tâm, thường từ 2 đến 5 câu. Hãy trực tiếp trả lời câu hỏi kể cả khi không có dữ liệu nội bộ; nếu thiếu dữ liệu thì giải thích hợp lý và đề xuất bước tiếp theo, tuyệt đối không bịa số liệu. Dữ liệu trong verified_local_answer đã được phần mềm tính toán: phải giữ nguyên các con số và khoảng ngày đó. Không tuyên bố đã tạo, sửa, xóa, lưu hoặc xác nhận phiếu; các thao tác này chỉ được thực hiện bằng form chính thức ở thiết bị. Không yêu cầu hoặc tiết lộ khóa API, mật khẩu hay dữ liệu nhạy cảm.`,
-        input:JSON.stringify({question:message,warehouse:warehouseName||'Kho đang chọn',local_context:localContext||'Không có dữ liệu nội bộ kèm theo.'})
+        store:false,
+        instructions:`Bạn là Trợ lý Lát Yên trong phần mềm quản lý kho và bán hàng. Trả lời bằng tiếng Việt tự nhiên, thân thiện, đúng trọng tâm, thường từ 2 đến 5 câu. Dùng recent_context để hiểu câu nối tiếp và tương tác qua lại như hội thoại bình thường. Khi ý người dùng chưa rõ, hãy hỏi lại một câu ngắn và đưa 2 đến 4 lựa chọn cụ thể nếu có căn cứ; không tự suy diễn. Hãy trực tiếp trả lời câu hỏi kể cả khi không có dữ liệu nội bộ; nếu thiếu dữ liệu thì giải thích hợp lý và đề xuất bước tiếp theo, tuyệt đối không bịa số liệu. Dữ liệu trong verified_local_answer đã được phần mềm tính toán: phải giữ nguyên các con số và khoảng ngày đó. Không tuyên bố đã tạo, sửa, xóa, lưu hoặc xác nhận phiếu; các thao tác này chỉ được thực hiện bằng form chính thức ở thiết bị. Không yêu cầu hoặc tiết lộ khóa API, mật khẩu hay dữ liệu nhạy cảm.`,
+        input:JSON.stringify({question:message,recent_context:recentContext,warehouse:warehouseName||'Kho đang chọn',local_context:localContext||'Không có dữ liệu nội bộ kèm theo.'})
       })
     });
     const payload=await response.json().catch(()=>({}));

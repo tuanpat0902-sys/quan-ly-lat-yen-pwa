@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.24.5';
+const VERSION='2026.08.25.1';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,voiceConsent:false,voiceRecognition:null,lastAiError:''};
@@ -84,9 +84,11 @@ function receiptKind(source){
   return '';
 }
 function actionKind(source){
-  const actions=[['delete',/\b(xoa|huy)\b/],['edit',/\b(sua|cap nhat|chinh)\b/],['create',/\b(tao|lap|them|moi)\b/]]
-    .map(([action,pattern])=>({action,index:source.search(pattern)})).filter(row=>row.index>=0).sort((a,b)=>a.index-b.index);
-  return actions[0]?.action||'';
+  const lead=source.match(/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(xoa|huy|sua|cap nhat|chinh|tao|lap|them|moi)\b/)?.[1]||'';
+  if(['xoa','huy'].includes(lead))return 'delete';
+  if(['sua','cap nhat','chinh'].includes(lead))return 'edit';
+  if(['tao','lap','them','moi'].includes(lead))return 'create';
+  return '';
 }
 function receiptCode(message){
   const raw=text(message);
@@ -108,6 +110,47 @@ function draftReady(draft){return !(draft?.ambiguities||[]).some(row=>!row.selec
 function chooseDraftItem(draft,ambiguityId,optionId){
   const ambiguity=draft?.ambiguities?.find(row=>String(row.id)===String(ambiguityId)),option=ambiguity?.options?.find(row=>String(row.id)===String(optionId));if(!ambiguity||!option)return false;
   draft.items=(draft.items||[]).filter(item=>String(item.ambiguity_id)!==String(ambiguity.id));draft.items.push({id:option.id,name:option.name,unit:text(option.unit||ambiguity.unit),quantity:ambiguity.quantity,ambiguity_id:ambiguity.id});ambiguity.selected_id=option.id;return true;
+}
+function requestedTerm(message){
+  return normalize(message)
+    .replace(/\b(tao|lap|them|moi|sua|cap nhat|chinh|xoa|huy)\b/g,' ')
+    .replace(/\b(phieu|don|hoa don|nhap kho|nhap hang|nhap|xuat kho|xuat hang|xuat|ban hang|ban|kiem ke|kiem kho|kiem)\b/g,' ')
+    .replace(/\b\d{1,4}[\/-]\d{1,2}[\/-]\d{1,4}\b/g,' ')
+    .replace(/\b\d+(?:[.,]\d+)?\s*(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?\b/g,' ')
+    .replace(/\b(giup|minh|toi|cho|voi|nhe|a|so|ma)\b/g,' ').replace(/\s+/g,' ').trim();
+}
+function displayRequestedTerm(message,normalizedTerm){
+  const tokens=new Set(normalizedTerm.split(' ').filter(Boolean)),rawWords=text(message).split(/\s+/),matched=rawWords.filter(word=>{const token=normalize(word);return token&&tokens.has(token);}).join(' ').replace(/[.,;:!?]+$/,'');
+  const known=[...(legacyDb().ingredients||[]),...(legacyDb().products||[])].find(item=>normalize(item.name)===normalizedTerm);
+  return known?.name||matched||normalizedTerm;
+}
+function suggestionCandidates(message,draft){
+  const legacy=legacyDb(),term=requestedTerm(message),source=normalize(message),catalog=collectionFor(draft.kind),tokens=term.split(' ').filter(token=>token.length>1);
+  let candidates=[];
+  if(draft.kind==='sale'){
+    const ingredientIds=new Set((legacy.ingredients||[]).filter(item=>containsPhrase(source,normalize(item.name))||tokens.some(token=>normalize(item.name).includes(token))).map(item=>String(item.id)));
+    const relatedIds=new Set((legacy.recipeItems||[]).filter(row=>ingredientIds.has(String(row.ingredient_id))).map(row=>String(row.product_id)));
+    candidates=catalog.filter(item=>relatedIds.has(String(item.id)));
+  }
+  if(!candidates.length)candidates=catalog.map(item=>({item,score:tokens.reduce((score,token)=>score+(normalize(item.name).includes(token)?3:normalize(item.name).split(' ').some(word=>word.startsWith(token)||token.startsWith(word))?1:0),0)})).sort((a,b)=>b.score-a.score||normalize(a.item.name).localeCompare(normalize(b.item.name))).map(row=>row.item);
+  return [...new Map(candidates.map(item=>[String(item.id),item])).values()].slice(0,4);
+}
+function commandFor(kind,item,quantity=null){
+  const verb=({import:'Nhập',export:'Xuất',stocktake:'Kiểm kê',sale:'Bán'})[kind],amount=quantity!==null?`${formatNumber(quantity)}${item.unit?` ${item.unit}`:''} `:'';
+  return `${verb} ${amount}${item.name}`;
+}
+function clarificationReply(message,draft){
+  if(draft.action!=='create'||draft.ambiguities.length)return null;
+  if(!draft.items.length){
+    const term=requestedTerm(message),displayTerm=displayRequestedTerm(message,term),candidates=suggestionCandidates(message,draft),noun=draft.kind==='sale'?'món':'nguyên liệu';
+    return {content:term?`Mình chưa tìm thấy ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}, nên chưa tạo bản nháp để tránh làm sai. Bạn có thể nói rõ hơn được không ạ${candidates.length?' hoặc chọn một gợi ý bên dưới':''}?`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Mình chưa tạo phiếu vì câu lệnh chưa có mặt hàng cụ thể.`,suggestions:candidates.map(item=>({label:item.name,value:commandFor(draft.kind,item)})),localOnly:true};
+  }
+  const missing=draft.items.filter(item=>item.quantity===null);
+  if(missing.length){
+    const item=missing[0],values=[1,5,10];
+    return {content:`Mình đã nhận ra ${missing.map(row=>row.name).join(', ')}, nhưng chưa rõ số lượng. Bạn muốn dùng số lượng nào ạ? Bạn có thể chọn nhanh bên dưới hoặc nhập một số khác.`,suggestions:missing.length===1?values.map(quantity=>({label:`${formatNumber(quantity)}${item.unit?` ${item.unit}`:''}`,value:commandFor(draft.kind,item,quantity)})):[],localOnly:true};
+  }
+  return null;
 }
 function draftSummary(draft){
   const title=`${actionLabel(draft.action)} phiếu ${kindLabel(draft.kind)}`;
@@ -161,9 +204,7 @@ function assistantReply(message){
     if(draft.action==='delete')return {content:`Mình đã chuẩn bị yêu cầu xóa phiếu ${kindLabel(draft.kind)} ${draft.receipt_code}. Khi bạn nhấn nút bên dưới, phần mềm sẽ tìm đúng phiếu và vẫn hỏi xác nhận lần cuối — chưa xóa ngay đâu nhé.`,draft};
     if(draft.action==='edit')return {content:`Mình đã nhận yêu cầu sửa phiếu ${kindLabel(draft.kind)} ${draft.receipt_code}. Bạn nhấn nút bên dưới để mở đúng phiếu, kiểm tra và chỉnh sửa trên form chính thức nhé.`,draft};
     if(!draftReady(draft))return {content:`Mình thấy tên bạn nói có thể khớp với nhiều mặt hàng trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn đúng mặt hàng ở bên dưới giúp mình nhé; mình sẽ không tự đoán để tránh tạo sai phiếu.`,draft};
-    const missing=draft.items.filter(item=>item.quantity===null);
-    if(missing.length)return {content:`Mình nhận ra ${missing.map(item=>item.name).join(', ')}, nhưng chưa thấy số lượng rõ ràng nên mình không tự đoán. Mình đã để trống số lượng để bạn kiểm tra trên form trước khi lưu.`,draft};
-    if(!draft.items.length)return {content:`Được nhé. Mình sẽ mở một phiếu ${kindLabel(draft.kind)} trống tại ${draft.warehouse_name||'kho đang chọn'} để bạn điền và kiểm tra trước khi xác nhận.`,draft};
+    const clarification=clarificationReply(message,draft);if(clarification)return clarification;
     return {content:`Mình đã đọc được yêu cầu và chuẩn bị bản nháp: ${draftSummary(draft)} Bạn xem lại phần tóm tắt rồi nhấn “Mở bản nháp để kiểm tra” nhé.`,draft};
   }
   const report=reportReply(message);if(report)return report;
@@ -179,11 +220,16 @@ function aiContext(localReply){
   const data=reportState(),warehouseId=text(window.currentWarehouseId),warehouse=data.warehouses.find(row=>String(row.id)===warehouseId);
   return JSON.stringify({warehouse:warehouse?.name||'Kho đang chọn',available_data:{ingredients:data.ingredients.length,products:data.products.length,inventory_rows:data.inventory.length,sales:data.sales.length,imports:data.imports.length,exports:data.exports.length,cashflow_entries:data.cashflow.length},verified_local_answer:text(localReply).slice(0,3000)});
 }
+function recentConversation(currentMessage){
+  const rows=state.messages.filter(row=>!row.draft&&['user','assistant'].includes(row.role)).slice(-7);
+  if(rows.at(-1)?.role==='user'&&text(rows.at(-1)?.content)===text(currentMessage))rows.pop();
+  return rows.slice(-6).map(row=>({role:row.role,content:text(row.content).slice(0,700)}));
+}
 async function askAi(message,localReply){
   const client=supabaseClient();
   if(!client?.functions?.invoke)return localReply;
   try{
-    const request=client.functions.invoke('lat-yen-chat',{body:{message:text(message).slice(0,2000),local_context:aiContext(localReply),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name).slice(0,200)}});
+    const request=client.functions.invoke('lat-yen-chat',{body:{message:text(message).slice(0,2000),recent_context:recentConversation(message),local_context:aiContext(localReply),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name).slice(0,200)}});
     const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('AI_TIMEOUT')),15000));
     const {data,error}=await Promise.race([request,timeout]);
     if(error||!text(data?.answer))throw error||new Error('AI_EMPTY_RESPONSE');
@@ -283,7 +329,8 @@ function messageHtml(message){
   const choices=(draft?.ambiguities||[]).map(ambiguity=>`<div class="ly-assistant-choice"><b>“${esc(ambiguity.query)}”${ambiguity.quantity!==null?` · ${esc(formatNumber(ambiguity.quantity))}${ambiguity.unit?` ${esc(ambiguity.unit)}`:''}`:''}</b><div>${ambiguity.options.map(option=>`<button type="button" class="${String(ambiguity.selected_id)===String(option.id)?'is-selected':''}" data-draft-choice="${esc(draft.id)}" data-ambiguity-id="${esc(ambiguity.id)}" data-option-id="${esc(option.id)}">${String(ambiguity.selected_id)===String(option.id)?'✓ ':''}${esc(option.name)}${option.unit?` · ${esc(option.unit)}`:''}</button>`).join('')}</div></div>`).join('');
   const retry=draft&&['pending','opened'].includes(draft.status)&&draftReady(draft);
   const action=retry?`<div class="ly-assistant-draft"><b>${esc(draftSummary(draft))}</b><button type="button" data-confirm-draft="${esc(draft.id)}">${draft.action==='delete'?'Tiếp tục đến xác nhận xóa':draft.status==='opened'?'Mở lại bản nháp':'Mở bản nháp để kiểm tra'}</button></div>`:'';
-  return `<div class="ly-assistant-message ${message.role==='user'?'is-user':'is-assistant'}"><div>${esc(message.content)}</div>${choices}${action}</div>`;
+  const suggestions=(message.suggestions||[]).length?`<div class="ly-assistant-suggestions">${message.suggestions.map((suggestion,index)=>`<button type="button" data-suggestion-message="${esc(message.id)}" data-suggestion-index="${index}">${esc(suggestion.label)}</button>`).join('')}</div>`:'';
+  return `<div class="ly-assistant-message ${message.role==='user'?'is-user':'is-assistant'}"><div>${esc(message.content)}</div>${choices}${suggestions}${action}</div>`;
 }
 function renderMessages(){
   const holder=document.getElementById?.('lyAssistantMessages');if(!holder)return;
@@ -293,13 +340,13 @@ function renderMessages(){
 }
 async function addMessage(message){state.messages.push(message);await writeMessage(message);renderMessages();return message;}
 async function retireDrafts(exceptId=''){
-  const retired=[];for(const message of state.messages){if(!message.draft||String(message.draft.id)===String(exceptId))continue;message.draft=null;message.draft_retired_at=now();retired.push(writeMessage(message));}if(retired.length){await Promise.all(retired);renderMessages();}return retired.length;
+  const retired=[];for(const message of state.messages){if(String(message.draft?.id)===String(exceptId))continue;if(!message.draft&&!message.suggestions?.length)continue;message.draft=null;message.suggestions=null;message.draft_retired_at=now();retired.push(writeMessage(message));}if(retired.length){await Promise.all(retired);renderMessages();}return retired.length;
 }
 async function submit(){
   const input=document.getElementById?.('lyAssistantInput'),content=text(input?.value);if(!content)return;
   input.value='';await retireDrafts();await addMessage({id:uid(),role:'user',content,created_at:now()});
   const reply=assistantReply(content);
-  if(reply.draft){await addMessage({id:uid(),role:'assistant',content:reply.content,draft:reply.draft,created_at:now()});return;}
+  if(reply.draft||reply.localOnly){await addMessage({id:uid(),role:'assistant',content:reply.content,draft:reply.draft||null,suggestions:reply.suggestions||null,created_at:now()});return;}
   state.thinking=true;renderMessages();const answer=await askAi(content,reply.content);state.thinking=false;await addMessage({id:uid(),role:'assistant',content:answer,created_at:now()});
 }
 async function startVoice(){
@@ -328,14 +375,15 @@ function installUi(){
 .ly-assistant-drawer{position:fixed;right:14px;bottom:72px;z-index:96;width:min(410px,calc(100vw - 28px));height:min(620px,calc(100vh - 100px));display:none;grid-template-rows:auto auto 1fr auto;background:#fff;border:1px solid #dbe5e4;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.24);overflow:hidden}.ly-assistant-drawer.is-open{display:grid}
 .ly-assistant-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid #e5e7eb}.ly-assistant-head h3{margin:0}.ly-assistant-head button{border:0;background:transparent;font-size:22px}.ly-assistant-privacy{padding:9px 14px;background:#ecfdf5;color:#065f46;font-size:12px}.ly-assistant-messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:9px}.ly-assistant-message{max-width:88%;padding:10px 11px;border-radius:13px;background:#f1f5f9;line-height:1.4;font-size:13px}.ly-assistant-message.is-user{align-self:flex-end;background:#0f766e;color:#fff}.ly-assistant-draft{display:grid;gap:8px;margin-top:9px;padding:9px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;color:#334155}.ly-assistant-draft button{border:0;border-radius:8px;background:#0f766e;color:#fff;padding:8px;font-weight:700}.ly-assistant-done{display:block;margin-top:6px;color:#047857}.ly-assistant-empty{margin:auto;color:#64748b;text-align:center;padding:18px}.ly-assistant-compose{display:grid;grid-template-columns:1fr auto auto;gap:8px;padding:11px;border-top:1px solid #e5e7eb}.ly-assistant-compose textarea{resize:none;min-height:44px;max-height:100px;border:1px solid #cbd5e1;border-radius:10px;padding:9px}.ly-assistant-compose button{border:0;border-radius:10px;background:#0f766e;color:#fff;padding:0 13px;font-weight:800}.ly-assistant-compose [data-assistant-voice]{width:48px;padding:0;background:#e7f4f2;color:#0f766e}.ly-voice-visual{display:flex;align-items:center;justify-content:center;gap:2px}.ly-voice-mic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.ly-voice-wave{display:flex;align-items:center;gap:2px;height:20px}.ly-voice-wave i{display:block;width:2px;height:6px;border-radius:9px;background:currentColor;animation:ly-assistant-wave 1.15s ease-in-out infinite}.ly-voice-wave i:nth-child(2){animation-delay:.16s}.ly-voice-wave i:nth-child(3){animation-delay:.32s}.ly-assistant-compose [data-assistant-voice].is-listening{background:#dc2626;color:#fff;box-shadow:0 0 0 4px rgba(220,38,38,.16)}.ly-assistant-compose [data-assistant-voice].is-listening .ly-voice-wave i{animation-duration:.55s}@keyframes ly-assistant-wave{0%,100%{height:5px;opacity:.45}50%{height:17px;opacity:1}}.ly-assistant-tools{display:flex;justify-content:flex-end;padding:0 12px 9px}.ly-assistant-tools button{border:0;background:transparent;color:#b42318;font-size:12px}
 .ly-assistant-choice{display:grid;gap:7px;margin-top:9px;padding:9px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#713f12}.ly-assistant-choice>div{display:flex;flex-wrap:wrap;gap:6px}.ly-assistant-choice button{border:1px solid #d6d3d1;border-radius:999px;background:#fff;color:#334155;padding:6px 9px;font-weight:700}.ly-assistant-choice button.is-selected{border-color:#0f766e;background:#ecfdf5;color:#065f46}
+.ly-assistant-suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}.ly-assistant-suggestions button{border:1px solid #99d5cd;border-radius:999px;background:#f0fdfa;color:#115e59;padding:7px 10px;font-weight:750}
 .ly-assistant-thinking span{display:inline-block;animation:ly-assistant-thinking 1s ease-in-out infinite}@keyframes ly-assistant-thinking{0%,100%{opacity:.25}50%{opacity:1}}
 @media(max-width:520px){.ly-assistant-launcher{right:12px;bottom:12px}.ly-assistant-drawer{inset:10px;width:auto;height:auto;bottom:70px}}
 `;document.head.appendChild(style);
   const launcher=document.createElement('button');launcher.id='lyAssistantLauncher';launcher.className='ly-assistant-launcher';launcher.type='button';launcher.textContent='Trợ lý Lát Yên';launcher.setAttribute('aria-controls','lyAssistantDrawer');document.body.appendChild(launcher);
-  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><button type="button" data-assistant-close aria-label="Đóng">×</button></div><div class="ly-assistant-privacy">🔒 Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để tạo câu trả lời. Trợ lý không tự lưu hay xóa phiếu.</div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" data-assistant-voice title="Ra lệnh bằng giọng nói" aria-label="Ra lệnh bằng giọng nói"><span class="ly-voice-visual" aria-hidden="true"><svg class="ly-voice-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></svg><span class="ly-voice-wave"><i></i><i></i><i></i></span></span></button><button type="button" data-assistant-send>Gửi</button></div></div>`;document.body.appendChild(drawer);
+  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><button type="button" data-assistant-close aria-label="Đóng">×</button></div><div class="ly-assistant-privacy">🔒 Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.</div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" data-assistant-voice title="Ra lệnh bằng giọng nói" aria-label="Ra lệnh bằng giọng nói"><span class="ly-voice-visual" aria-hidden="true"><svg class="ly-voice-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"></path></svg><span class="ly-voice-wave"><i></i><i></i><i></i></span></span></button><button type="button" data-assistant-send>Gửi</button></div></div>`;document.body.appendChild(drawer);
   launcher.addEventListener('click',()=>toggle());drawer.querySelector('[data-assistant-close]').addEventListener('click',()=>toggle(false));drawer.querySelector('[data-assistant-send]').addEventListener('click',submit);drawer.querySelector('[data-assistant-voice]').addEventListener('click',startVoice);drawer.querySelector('[data-assistant-clear]').addEventListener('click',()=>{if(confirm('Xóa toàn bộ lịch sử trợ lý trên thiết bị này?'))clearMessages();});
   drawer.querySelector('#lyAssistantInput').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit();}});
-  drawer.addEventListener('click',async event=>{const choice=event.target?.closest?.('[data-draft-choice]');if(choice){const message=state.messages.find(row=>row.draft?.id===choice.dataset.draftChoice);if(!message||!chooseDraftItem(message.draft,choice.dataset.ambiguityId,choice.dataset.optionId))return;message.content=draftReady(message.draft)?`Cảm ơn bạn, mình đã cập nhật đúng mặt hàng đã chọn. ${draftSummary(message.draft)} Bạn kiểm tra lại rồi mở bản nháp nhé.`:'Mình đã ghi nhận lựa chọn này. Bạn chọn tiếp các mặt hàng còn chưa rõ nhé.';await writeMessage(message);renderMessages();return;}const id=event.target?.dataset?.confirmDraft;if(!id)return;const message=state.messages.find(row=>row.draft?.id===id);if(!message)return;try{await executeDraft(message.draft);message.draft=null;message.draft_retired_at=now();await writeMessage(message);renderMessages();toggle(false);}catch(error){await addMessage({id:uid(),role:'assistant',content:error?.message||String(error),created_at:now()});}});
+  drawer.addEventListener('click',async event=>{const suggestion=event.target?.closest?.('[data-suggestion-message]');if(suggestion){const message=state.messages.find(row=>String(row.id)===String(suggestion.dataset.suggestionMessage)),selected=message?.suggestions?.[Number(suggestion.dataset.suggestionIndex)],input=document.getElementById?.('lyAssistantInput');if(!selected||!input)return;input.value=selected.value;input.dispatchEvent?.(new Event('input',{bubbles:true}));input.focus?.();input.setSelectionRange?.(input.value.length,input.value.length);message.suggestions=null;await writeMessage(message);renderMessages();return;}const choice=event.target?.closest?.('[data-draft-choice]');if(choice){const message=state.messages.find(row=>row.draft?.id===choice.dataset.draftChoice);if(!message||!chooseDraftItem(message.draft,choice.dataset.ambiguityId,choice.dataset.optionId))return;message.content=draftReady(message.draft)?`Cảm ơn bạn, mình đã cập nhật đúng mặt hàng đã chọn. ${draftSummary(message.draft)} Bạn kiểm tra lại rồi mở bản nháp nhé.`:'Mình đã ghi nhận lựa chọn này. Bạn chọn tiếp các mặt hàng còn chưa rõ nhé.';await writeMessage(message);renderMessages();return;}const id=event.target?.dataset?.confirmDraft;if(!id)return;const message=state.messages.find(row=>row.draft?.id===id);if(!message)return;try{await executeDraft(message.draft);message.draft=null;message.draft_retired_at=now();await writeMessage(message);renderMessages();toggle(false);}catch(error){await addMessage({id:uid(),role:'assistant',content:error?.message||String(error),created_at:now()});}});
 }
 async function boot(){installUi();state.messages=await readMessages();state.ready=true;renderMessages();}
 

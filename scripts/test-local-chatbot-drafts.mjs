@@ -6,7 +6,7 @@ const source=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url)
 assert.ok(source.includes("DB_NAME='lat_yen_local_assistant_v1'"));
 assert.ok(source.includes('indexedDB.open(DB_NAME,1)'));
 assert.ok(source.includes('Lịch sử chat chỉ lưu trên thiết bị này'));
-assert.ok(source.includes('câu hỏi hiện tại và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật'));
+assert.ok(source.includes('câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật'));
 assert.ok(!source.includes('localStorage'),'assistant history must not use LocalStorage');
 for(const forbidden of [".rpc(",".from(",'saveImportReceipt?.','saveExportReceipt?.','saveStocktakeReceipt?.','saveSaleReceipt?.'])assert.ok(!source.includes(forbidden),`assistant must not directly commit business data: ${forbidden}`);
 assert.ok(source.includes('window.SpeechRecognition||window.webkitSpeechRecognition'));
