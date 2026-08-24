@@ -1,13 +1,13 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV33)return;
-  window.__lyModuleLoaderV33=true;
+  if(window.__lyModuleLoaderV34)return;
+  window.__lyModuleLoaderV34=true;
 
-  const VERSION='2026.08.24.31';
+  const VERSION='2026.08.24.32';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
-    appVersion:{src:'./ly-app-version.js?v=2.1.30',test:()=>window.__lyAppVersion?.version==='2.1.30'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.31',test:()=>window.__lyAppVersion?.version==='2.1.31'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.6',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.6'},
@@ -23,11 +23,15 @@
     salesTakeover:{src:'./ly-fresh-core-v2-sales-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2SalesTakeover?.version==='2026.08.24.3'},
     cashflowTakeover:{src:'./ly-fresh-core-v2-cashflow-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2CashflowTakeover?.version==='2026.08.24.3'},
     masterDataTakeover:{src:'./ly-fresh-core-v2-masterdata-takeover.js?v=20260823.5',test:()=>window.__lyFreshCoreV2MasterDataTakeover?.version==='2026.08.23.5'},
-    readTakeover:{src:'./ly-fresh-core-v2-read-takeover.js?v=20260823.4',test:()=>window.__lyFreshCoreV2ReadTakeover?.version==='2026.08.23.4'},
-    manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js?v=20260823.1',test:()=>window.__lyFreshCoreV2ManualRefresh?.version==='2026.08.23.1'},
-    realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260824.6',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.24.6'},
+    readTakeover:{src:'./ly-fresh-core-v2-read-takeover.js?v=20260824.5',test:()=>window.__lyFreshCoreV2ReadTakeover?.version==='2026.08.24.5'},
+    manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js?v=20260824.2',test:()=>window.__lyFreshCoreV2ManualRefresh?.version==='2026.08.24.2'},
+    realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.24.7'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
-    finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.3',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.3'},
+    inAppNotifications:{src:'./ly-inapp-notifications.js?v=20260824.2',test:()=>window.__lyInAppNotifications?.version==='2026.08.24.2'},
+    dataNotifications:{src:'./ly-data-notifications.js?v=20260823.6',test:()=>window.__lyDataActivityNotifications?.version==='2026.08.23.6'},
+    notificationCenter:{src:'./ly-notification-center.js?v=20260823.3',test:()=>window.__lyNotificationCenter?.version==='2026.08.23.3'},
+    cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
+    finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.4',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.4'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.1',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.1'},
     settings:{src:'./ly-settings-enhancements.js?v=20260824.3',test:()=>window.__lyNotificationMaster?.version==='2026.08.24.3'},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
@@ -79,6 +83,10 @@
     await load('manualRefresh');
     await load('realtime');
     await load('realtimePhase2');
+    await load('inAppNotifications');
+    await load('dataNotifications');
+    await load('notificationCenter');
+    await load('cloudRealtime');
     await load('finalOwnership');
   }
 

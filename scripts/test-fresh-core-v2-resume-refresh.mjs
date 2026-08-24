@@ -3,7 +3,7 @@ import vm from 'node:vm';
 import fs from 'node:fs/promises';
 
 const source=await fs.readFile(new URL('../ly-fresh-core-v2-read-takeover.js',import.meta.url),'utf8');
-let refreshes=0,loads=0,hydrations=0,renders=0,visibleListener=null;
+let refreshes=0,loads=0,hydrations=0,renders=0,visibleListener=null,draftOpen=false,deferredCallback=null;
 let phase='ready',orgId='org-1';
 const order=[];
 const legacyFetch=async()=>[];
@@ -11,7 +11,7 @@ const snapshot={products:[]};
 const context={
  console,Date,
  navigator:{onLine:true},document:{hidden:false},
- setTimeout(fn){fn();return 1;},clearTimeout(){},
+ setTimeout(fn,delay){if(delay===700){deferredCallback=fn;return 700;}fn();return 1;},clearTimeout(){},
  lyFreshFetch:legacyFetch,
  loadCloud:async()=>{order.push('load');loads++;return {ok:true};},
  invalidateDerivedCaches(){order.push('invalidate');},cacheSave(){order.push('cache');},flushCacheSave(){order.push('flush');},renderAll(){order.push('render');renders++;},updatePendingSyncBadge(){order.push('badge');},
@@ -20,6 +20,7 @@ const context={
    __lyFreshCoreV2:{store:{getState(){return snapshot;}},async refreshCoreDomains(){order.push('refresh');refreshes++;await Promise.resolve();return true;}},
    __lyFreshCoreV2LegacyHydration:{hydrate(input){assert.equal(input,snapshot);order.push('hydrate');hydrations++;return true;}},
    __lyFreshCoreV2Shadow:{status(){return {phase,orgId};}},
+   v240HasActiveDraft(){return draftOpen;},v240MarkProjectionDeferred(){},
    addEventListener(type,fn,capture){if(type==='visibilitychange'&&capture)visibleListener=fn;},removeEventListener(){},
  }
 };
@@ -31,9 +32,11 @@ visibleListener();const first=await context.loadCloud();
 assert.equal(refreshes,1);assert.equal(hydrations,1);assert.equal(loads,0,'foreground fast-path must bypass Legacy loadCloud mapping');assert.equal(renders,1);assert.equal(first.fastPath,'foreground-hydration');
 assert.deepEqual(order,['refresh','hydrate','invalidate','cache','flush','render','badge']);assert.equal(api.status().foregroundFastPaths,1);
 
+draftOpen=true;const beforeDraftHydrations=hydrations,beforeDraftRenders=renders;visibleListener();const deferred=await context.loadCloud();assert.equal(deferred.fastPath,'foreground-deferred');assert.equal(hydrations,beforeDraftHydrations);assert.equal(renders,beforeDraftRenders);assert.equal(loads,0);assert.equal(typeof deferredCallback,'function');draftOpen=false;deferredCallback();assert.equal(hydrations,beforeDraftHydrations+1);assert.equal(renders,beforeDraftRenders+1);
+
 let release;context.window.__lyFreshCoreV2.refreshCoreDomains=()=>{refreshes++;order.push('refresh2');return new Promise(r=>{release=r;});};
 visibleListener();visibleListener();const pending=context.loadCloud();await Promise.resolve();assert.equal(typeof release,'function');release();await pending;
-assert.equal(refreshes,2,'repeated foreground must share one pending refresh');assert.equal(hydrations,2);assert.equal(loads,0);assert.ok(api.status().foregroundCoalesced>=1);
+assert.equal(refreshes,3,'repeated foreground must share one pending refresh');assert.equal(hydrations,3);assert.equal(loads,0);assert.ok(api.status().foregroundCoalesced>=1);
 context.window.__lyFreshCoreV2.refreshCoreDomains=async()=>{refreshes++;order.push('refresh3');return true;};
 
 context.navigator.onLine=false;visibleListener();await context.loadCloud();assert.equal(loads,1,'offline must keep Legacy fallback');

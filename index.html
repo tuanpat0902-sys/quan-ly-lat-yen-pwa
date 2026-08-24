@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>QUẢN LÝ LÁT YÊN</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>
 <style>
 :root{--bg:#f4f7f6;--card:#fff;--text:#17202a;--muted:#667085;--primary:#0f766e;--primary2:#115e59;--danger:#b42318;--warn:#b54708;--ok:#067647;--border:#e4e7ec;--shadow:0 8px 28px rgba(16,24,40,.07)}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text)}button,input,select{font:inherit}button{cursor:pointer}header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}.top{max-width:1380px;margin:auto;padding:12px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between}.brand{font-weight:850;font-size:20px}.brand small{display:block;color:var(--muted);font-size:12px;font-weight:500}.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.cloud{padding:7px 10px;border-radius:999px;background:#fffaeb;color:var(--warn);font-size:12px;font-weight:700}.cloud.online{background:#ecfdf3;color:var(--ok)}.cloud.offline{background:#fef3f2;color:var(--danger)}nav{display:flex;gap:7px;overflow:auto;padding:0 18px 11px;max-width:1380px;margin:auto}nav button{white-space:nowrap;border:1px solid var(--border);background:#fff;padding:8px 11px;border-radius:10px}nav button.active{background:var(--primary);color:#fff;border-color:var(--primary)}main{max-width:1380px;margin:auto;padding:20px}.panel{display:none}.panel.active{display:block}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow)}.metric .value{font-weight:850;font-size:27px;margin:4px 0}.muted{color:var(--muted)}h2{margin:0 0 14px}h3{margin:0 0 10px}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.toolbar .spacer{flex:1}.primary,.secondary,.danger{border-radius:10px;padding:9px 12px}.primary{background:var(--primary);color:#fff;border:1px solid var(--primary)}.primary:hover{background:var(--primary2)}.secondary{background:#fff;color:var(--text);border:1px solid var(--border)}.danger{background:#fff;color:var(--danger);border:1px solid #fecdca}.sm{padding:6px 9px;border-radius:8px;font-size:12px}input,select{width:100%;padding:9px 10px;border:1px solid #d0d5dd;border-radius:9px;background:#fff}.toolbar input,.toolbar select{width:auto;min-width:180px}label{font-size:12px;color:#475467;display:block;margin-bottom:5px}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.full{grid-column:1/-1}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px 9px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top}th{background:#f9fafb;color:#475467;position:sticky;top:0}.right{text-align:right}.low{color:var(--warn);font-weight:700}.ok{color:var(--ok);font-weight:700}.neg{color:var(--danger);font-weight:700}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef4ff;font-size:11px}.badge.okb{background:#ecfdf3;color:var(--ok)}.badge.warnb{background:#fffaeb;color:var(--warn)}.notice{padding:10px 12px;background:#ecfdf3;color:#05603a;border-radius:10px;margin-bottom:12px}.warnbox{padding:10px 12px;background:#fffaeb;color:#7a2e0e;border-radius:10px;margin-bottom:12px}.empty{text-align:center;color:var(--muted);padding:22px}.scroll{overflow:auto;max-height:520px}.modal{position:fixed;inset:0;background:rgba(16,24,40,.48);display:none;align-items:center;justify-content:center;padding:14px;z-index:50}.modal.open{display:flex}.modal-box{background:#fff;border-radius:17px;padding:17px;width:min(820px,100%);max-height:92vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.25)}.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.x{border:0;background:none;font-size:25px}.recipe-line{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-bottom:8px}.section-gap{margin-top:16px}.footer-note{font-size:12px;color:var(--muted);margin-top:14px}.toast{position:fixed;right:18px;bottom:18px;z-index:80;background:#101828;color:#fff;padding:11px 14px;border-radius:10px;display:none;max-width:360px}.toast.show{display:block}.profit{color:var(--ok);font-weight:800}
@@ -11621,7 +11622,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.30</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.31</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11652,7 +11653,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
-<script src="./ly-module-loader.js?v=20260824.31"></script>
+<script src="./ly-module-loader.js?v=20260824.32"></script>
 <script src="./ly-history-bridge.js?v=20260823.1"></script>
 <script src="./ly-employees-bridge.js?v=20260823.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -12563,6 +12564,61 @@ let v219LastUserEditAt=0;
 let v219DeferredRender=false;
 let v219DeferredTimer=null;
 
+/* ===== V240 OPEN-DRAFT PROTECTION ===== */
+const V240_DRAFT_SELECTOR=[
+  '.inline-import-form.open',
+  '#modal.open',
+  '[data-ly-draft-open="1"]'
+].join(',');
+let v240DeferredStatusShown=false;
+
+function v240ActiveDraft(){
+  return document.querySelector(
+    V240_DRAFT_SELECTOR
+  );
+}
+
+function v240HasActiveDraft(){
+  return !!v240ActiveDraft();
+}
+
+function v240MarkProjectionDeferred(){
+  if(v240DeferredStatusShown)return;
+  v240DeferredStatusShown=true;
+
+  try{
+    setCloudStatus(
+      'Cloud + Realtime • Đã nhận dữ liệu, chờ hoàn tất phiếu đang thao tác',
+      'online'
+    );
+    window.__lyUnifiedCloudRealtime?.refresh?.();
+  }catch(e){}
+}
+
+function v240ClearDeferredStatus(){
+  if(!v240DeferredStatusShown)return;
+  v240DeferredStatusShown=false;
+
+  try{
+    const realtime=
+      window.__lyFreshCoreV2Realtime?.status?.()||{};
+
+    setCloudStatus(
+      realtime.connected
+        ?'Cloud • Realtime'
+        :'Cloud • Smart Sync',
+      navigator.onLine
+        ?'online'
+        :'offline'
+    );
+    window.__lyUnifiedCloudRealtime?.refresh?.();
+  }catch(e){}
+}
+
+window.v240HasActiveDraft=v240HasActiveDraft;
+window.v240MarkProjectionDeferred=v240MarkProjectionDeferred;
+window.v240ClearDeferredStatus=v240ClearDeferredStatus;
+
 function v219EditableElement(el){
   if(!el)return false;
 
@@ -12699,6 +12755,7 @@ function v219InteractionActive(){
     modalOpen ||
     v233ComboOpen() ||
     v233PaletteOpen() ||
+    v240HasActiveDraft() ||
     v233TextEditingActive() ||
     v233RecentInteraction()
   );
@@ -12728,6 +12785,9 @@ function v219FlushDeferredRender(){
   }
 
   if(v219InteractionActive()){
+    if(v240HasActiveDraft()){
+      v240MarkProjectionDeferred();
+    }
     v233ScheduleDeferredFlush();
     return;
   }
@@ -12744,6 +12804,7 @@ function v219FlushDeferredRender(){
   }
 
   v219DeferredRender=false;
+  v240ClearDeferredStatus();
 
   try{
     renderWarehouseSelect();
@@ -12765,6 +12826,9 @@ function v219FlushDeferredRender(){
 function v219SafeBackgroundRender(){
   if(v219InteractionActive()){
     v219DeferredRender=true;
+    if(v240HasActiveDraft()){
+      v240MarkProjectionDeferred();
+    }
     v233ScheduleDeferredFlush();
     return false;
   }
@@ -12776,6 +12840,8 @@ function v219SafeBackgroundRender(){
   );
 
   updatePendingSyncBadge();
+
+  v240ClearDeferredStatus();
 
   return true;
 }
@@ -53905,7 +53971,7 @@ window.addEventListener('unhandledrejection',event=>{
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(console.warn);
+    navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update?.()).catch(console.warn);
   });
 }
 </script>
@@ -55334,7 +55400,27 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.30',REVISION='fresh-core-v2-authoritative-v31';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.31',REVISION='fresh-core-v2-authoritative-v32';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+
+
+<script src="./ly-app-version.js?v=2.1.31"></script>
+<script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
+<script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
+<script src="./ly-fresh-core-v2-shadow.js?v=20260824.6"></script>
+<script src="./ly-legacy-dom-shim.js?v=20260824.4"></script>
+<script src="./ly-legacy-state-shim.js?v=20260824.4"></script>
+<script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
+<script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
+<script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
+<script src="./ly-menu-security.js?v=20260824.2"></script>
+<script src="./ly-inapp-notifications.js?v=20260824.2"></script>
+<script src="./ly-data-notifications.js?v=20260823.6"></script>
+<script src="./ly-notification-center.js?v=20260823.3"></script>
+<script src="./ly-cloud-realtime.js?v=20260824.5"></script>
+<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.4"></script>
+<script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>
+<script src="./ly-independent-bootstrap.js?v=20260824.4"></script>
+<script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>
 
 </body>
 </html>

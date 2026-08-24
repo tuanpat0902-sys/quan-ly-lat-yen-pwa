@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2RealtimeV1)return;
   window.__lyFreshCoreV2RealtimeV1=true;
 
-  const VERSION='2026.08.24.6';
+  const VERSION='2026.08.24.7';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const DEBOUNCE_MS=260;
@@ -16,15 +16,36 @@
     ly_cashflow_entries:'cashflow'
   };
 
-  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,batches:0,coalescedEvents:0,refreshes:0,projections:0,deferredRenders:0,projectionErrors:0,catchups:0,catchupSkips:0,catchupErrors:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastCatchupAt:0,lastError:''};
+  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,batches:0,coalescedEvents:0,refreshes:0,projections:0,deferredProjections:0,deferredRenders:0,projectionErrors:0,catchups:0,catchupSkips:0,catchupErrors:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastCatchupAt:0,lastError:''};
   let channel=null;
   let batchTimer=null;
+  let projectionTimer=null;
+  let pendingProjectionReason='';
   let catchupPromise=null;
   const pendingDomains=new Map();
 
   function legacySupabase(){try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;}
   function orgId(){try{if(typeof v261OrganizationId!=='undefined'&&v261OrganizationId)return String(v261OrganizationId);}catch(e){}return String(window.__lyFreshOrgId||'');}
   function core(){return window.__lyFreshCoreV2||null;}
+
+  function draftActive(){try{return window.v240HasActiveDraft?.()===true;}catch(e){return false;}}
+
+  function scheduleProjection(reason){
+    pendingProjectionReason=reason||pendingProjectionReason||'deferred';
+    clearTimeout(projectionTimer);
+    projectionTimer=setTimeout(()=>{
+      projectionTimer=null;
+      const next=pendingProjectionReason;
+      if(!next)return;
+      if(draftActive()){
+        window.v240MarkProjectionDeferred?.();
+        scheduleProjection(next);
+        return;
+      }
+      pendingProjectionReason='';
+      projectLegacy(`deferred:${next}`);
+    },700);
+  }
 
   function renderVisiblePanel(){
     const safe=typeof window.v235RequestBackgroundRender==='function'?window.v235RequestBackgroundRender:typeof window.v219SafeBackgroundRender==='function'?window.v219SafeBackgroundRender:null;
@@ -37,11 +58,20 @@
   function projectLegacy(reason){
     const current=core(),bridge=window.__lyFreshCoreV2LegacyHydration;
     if(!current?.store?.getState||typeof bridge?.hydrate!=='function')return false;
+    if(draftActive()){
+      state.deferredProjections++;
+      window.v240MarkProjectionDeferred?.();
+      scheduleProjection(reason);
+      current.events?.emit?.('realtime:legacy-projection-deferred',{reason,at:Date.now()});
+      return true;
+    }
     try{
       if(bridge.hydrate(current.store.getState())!==true)return false;
       renderVisiblePanel();
       state.projections++;
+      pendingProjectionReason='';
       state.lastError='';
+      window.v240ClearDeferredStatus?.();
       current.events?.emit?.('realtime:legacy-projected',{reason,at:Date.now()});
       return true;
     }catch(error){
@@ -138,6 +168,7 @@
       state.phase=state.connected?'active':String(statusValue||'connecting').toLowerCase();
       current.store?.patch?.({connectivity:{...(current.store.getState()?.connectivity||{}),online:navigator.onLine,realtime:state.connected}},{source:'realtime'});
       current.events?.emit?.('realtime:status',{status:statusValue,connected:state.connected});
+      try{window.dispatchEvent?.(new CustomEvent('latyen:v2-realtime-status',{detail:{status:statusValue,connected:state.connected,phase:state.phase}}));}catch(e){}
       if(state.connected&&!wasConnected)catchUp(state.catchups?'reconnected':'initial-subscribed');
     });
     state.enabled=true;
@@ -147,7 +178,10 @@
 
   function disable(){
     if(batchTimer)clearTimeout(batchTimer);
+    if(projectionTimer)clearTimeout(projectionTimer);
     batchTimer=null;
+    projectionTimer=null;
+    pendingProjectionReason='';
     pendingDomains.clear();
     const client=legacySupabase();
     if(client&&channel)try{client.removeChannel(channel);}catch(e){}
@@ -159,6 +193,6 @@
 
   function boot(){if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
 
-  window.__lyFreshCoreV2Realtime={version:VERSION,enable,disable,catchUp,flush:flushBatch,status:()=>({...state}),tableDomain:()=>({...TABLE_DOMAIN})};
+  window.__lyFreshCoreV2Realtime={version:VERSION,enable,disable,catchUp,flush:flushBatch,flushProjection:()=>projectLegacy(pendingProjectionReason||'manual'),status:()=>({...state,pendingProjection:pendingProjectionReason}),tableDomain:()=>({...TABLE_DOMAIN})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 })();

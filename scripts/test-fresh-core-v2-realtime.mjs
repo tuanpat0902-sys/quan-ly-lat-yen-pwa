@@ -8,11 +8,13 @@ const refreshes=[];
 const events=[];
 let statusHandler=null;
 let batchCallback=null;
+let projectionCallback=null;
 let catchups=0;
 let hydrations=0;
 let safeRenders=0;
 let fallbackRenders=0;
 let deferRender=false;
+let draftOpen=false;
 
 const channel={on(type,filter,callback){handlers.push({type,filter,callback});return this;},subscribe(callback){statusHandler=callback;callback('SUBSCRIBED');return this;}};
 const client={channel(){return channel;},removeChannel(){}};
@@ -30,7 +32,7 @@ const context={
   console,
   Date,
   navigator:{onLine:true},
-  setTimeout(callback,delay){if(delay===260){batchCallback=callback;return 260;}callback();return 1;},
+  setTimeout(callback,delay){if(delay===260){batchCallback=callback;return 260;}if(delay===700){projectionCallback=callback;return 700;}callback();return 1;},
   clearTimeout(){},
   document:{readyState:'complete',addEventListener(){}},
   window:{
@@ -39,6 +41,8 @@ const context={
     __lyFreshCoreV2:core,
     __lyFreshCoreV2Shadow:{status(){return {phase:'ready',refreshAt:Date.now()};}},
     __lyFreshCoreV2LegacyHydration:{hydrate(snapshot){assert.equal(snapshot,storeState);hydrations++;return true;}},
+    v240HasActiveDraft(){return draftOpen;},
+    v240MarkProjectionDeferred(){},
     v235RequestBackgroundRender(){safeRenders++;return !deferRender;},
     renderAll(){fallbackRenders++;}
   }
@@ -81,6 +85,21 @@ handlers.find(item=>item.filter.table==='ly_cashflow_entries').callback({});
 await batchCallback();
 await flush();
 assert.equal(api.status().deferredRenders,1,'active editing must defer the render instead of rebuilding the form');
+
+deferRender=false;
+draftOpen=true;
+const beforeDraftHydrations=hydrations,beforeDraftRenders=safeRenders;
+handlers.find(item=>item.filter.table==='ly_cashflow_entries').callback({});
+await batchCallback();
+await flush();
+assert.equal(hydrations,beforeDraftHydrations,'an open receipt must block realtime hydration');
+assert.equal(safeRenders,beforeDraftRenders,'an open receipt must not be rebuilt by realtime');
+assert.ok(api.status().deferredProjections>=1);
+assert.equal(typeof projectionCallback,'function');
+draftOpen=false;
+projectionCallback();
+assert.equal(hydrations,beforeDraftHydrations+1,'deferred realtime data must project once after the receipt closes');
+assert.equal(safeRenders,beforeDraftRenders+1);
 
 statusHandler('CHANNEL_ERROR');
 assert.equal(api.status().connected,false);

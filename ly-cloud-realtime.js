@@ -1,8 +1,8 @@
 (()=>{
   'use strict';
-  if(window.__lyUnifiedCloudRealtimeV4)return;
-  window.__lyUnifiedCloudRealtimeV4=true;
-  const VERSION='2026.08.23.4';
+  if(window.__lyUnifiedCloudRealtimeV5)return;
+  window.__lyUnifiedCloudRealtimeV5=true;
+  const VERSION='2026.08.24.5';
   let observer=null,scheduled=false,lastScanKey='',lastCloud=null;
   const text=v=>String(v??'').trim();
 
@@ -39,8 +39,8 @@
       if((/realtime|real-time/.test(idClass)||/^(realtime|real-time|realtime online|realtime connected|realtime • online)$/i.test(label))&&el.dataset.lyMergedRealtime!=='1')el.dataset.lyMergedRealtime='1';
     }
   }
-  function inferState(el){const raw=text(el.title||el.getAttribute('aria-label')||el.textContent),lower=raw.toLowerCase();let mode='synced';if(/gián đoạn|offline|mất kết nối|tạm dừng|lỗi/.test(lower))mode='offline';else if(/chờ|pending|còn\s+\d+\s+mục/.test(lower))mode='pending';else if(/đang|đồng bộ|syncing|đang tải|đang gửi|gửi thay đổi/.test(lower))mode='syncing';const realtime=/realtime|real-time/.test(lower)&&mode!=='offline',smartSync=/smart\s*sync/.test(lower)&&!realtime&&mode!=='offline';return {mode,realtime,smartSync,raw};}
-  function titleFor(x){if(x.mode==='offline')return 'Cloud + Realtime • Mất kết nối';if(x.mode==='pending')return 'Cloud • Có dữ liệu đang chờ đồng bộ';if(x.mode==='syncing')return x.realtime?'Cloud + Realtime • Đang đồng bộ':'Cloud • Đang đồng bộ';if(x.realtime)return 'Cloud + Realtime • Đã kết nối';if(x.smartSync)return 'Cloud • Smart Sync dự phòng';return x.raw||'Cloud • Đã kết nối';}
+  function inferState(el){const raw=text(el.title||el.getAttribute('aria-label')||el.textContent),lower=raw.toLowerCase(),v2=window.__lyFreshCoreV2Realtime?.status?.()||{};let mode='synced';if(typeof navigator!=='undefined'&&!navigator.onLine||/gián đoạn|offline|mất kết nối|tạm dừng|lỗi/.test(lower))mode='offline';else if(/chờ|pending|còn\s+\d+\s+mục/.test(lower)||v2.pendingProjection)mode='pending';else if(/đang|đồng bộ|syncing|đang tải|đang gửi|gửi thay đổi/.test(lower)||v2.enabled&&!v2.connected&&v2.phase!=='idle-no-context')mode='syncing';const realtime=(v2.connected===true||/realtime|real-time/.test(lower))&&mode!=='offline',smartSync=!realtime&&mode!=='offline'&&(v2.enabled===true||/smart\s*sync/.test(lower));return {mode,realtime,smartSync,raw,pendingDraft:/chờ hoàn tất phiếu/.test(lower)};}
+  function titleFor(x){if(x.mode==='offline')return 'Cloud + Realtime • Mất kết nối';if(x.pendingDraft)return 'Cloud + Realtime • Đã nhận dữ liệu, chờ hoàn tất phiếu đang thao tác';if(x.mode==='pending')return 'Cloud • Có dữ liệu đang chờ đồng bộ';if(x.mode==='syncing')return x.realtime?'Cloud + Realtime • Đang đồng bộ':'Cloud • Đang đồng bộ';if(x.realtime)return 'Cloud + Realtime • Đã kết nối';if(x.smartSync)return 'Cloud • Smart Sync dự phòng';return x.raw||'Cloud • Đã kết nối';}
   function mark(x){if(x.mode==='offline')return '<path d="M8.7 10.2l6.6 6.6"></path>';if(x.mode==='pending')return '<path d="M12 10.5v3l2 1"></path>';if(x.mode==='syncing')return '<path d="M9.5 13.5a3 3 0 0 1 4.9-2.2"></path><path d="M14.7 10.2v2.5h-2.5"></path><path d="M14.5 14a3 3 0 0 1-4.9 2.2"></path><path d="M9.3 17.3v-2.5h2.5"></path>';return '<path d="m9.6 13.4 1.5 1.5 3.4-3.5"></path>';}
 
   function render(){
@@ -69,6 +69,9 @@
   }
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
   window.addEventListener('online',schedule);
+  window.addEventListener('offline',schedule);
+  window.addEventListener('latyen:v2-realtime-status',schedule);
+  window.addEventListener('latyen:v2-hydrated',schedule);
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   window.__lyUnifiedCloudRealtime={version:VERSION,refresh:schedule,status:()=>{const el=document.getElementById('cloudStatus');return el?inferState(el):null;}};
 })();
