@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.9",
-  "revision": "fresh-core-v2-authoritative-v10",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-62",
+  "appVersion": "2.1.10",
+  "revision": "fresh-core-v2-authoritative-v11",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-63",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "single-runtime-no-sw-injection"
+  "bootstrapFix": "independent-supabase-before-shadow"
 }
