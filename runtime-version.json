@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.22",
-  "revision": "fresh-core-v2-authoritative-v23",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-75",
+  "appVersion": "2.1.23",
+  "revision": "fresh-core-v2-authoritative-v24",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-76",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "broad-legacy-date-range-state-compatibility"
+  "bootstrapFix": "callable-hybrid-legacy-range-state"
 }
