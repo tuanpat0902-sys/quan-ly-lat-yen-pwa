@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.13",
-  "revision": "fresh-core-v2-authoritative-v14",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-66",
+  "appVersion": "2.1.14",
+  "revision": "fresh-core-v2-authoritative-v15",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-67",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "legacy-dom-e-compatibility-shim"
+  "bootstrapFix": "legacy-dollar-selector-compatibility-shim"
 }
