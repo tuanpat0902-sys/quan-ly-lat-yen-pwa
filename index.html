@@ -11787,7 +11787,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.37</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.38</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11819,7 +11819,7 @@ html.v257-device-locked body{
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260824.38"></script>
+<script src="./ly-module-loader.js?v=20260824.39"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260823.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -26688,6 +26688,8 @@ function menuIcon(name, sub=false){
 
     imports:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg></span>`,
 
+    suppliers:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>`,
+
     recipes:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2Z"/><path d="M8 8h8"/><path d="M8 12h6"/></svg></span>`,
 
     stocktake:`<span class="${cls}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="m8 11 2.2 2.2L16 7.5"/><path d="M8 16h8"/></svg></span>`,
@@ -26795,6 +26797,10 @@ function navInit(){
 
         <button onclick="showTab('imports',this)" data-panel="imports">
           ${menuIcon('imports',true)}<span>Nhập / xuất kho</span>
+        </button>
+
+        <button onclick="showTab('suppliers',this)" data-panel="suppliers">
+          ${menuIcon('suppliers',true)}<span>Nhà cung cấp</span>
         </button>
 
         <button onclick="showTab('stocktake',this)" data-panel="stocktake">
@@ -26922,10 +26928,10 @@ const ACTIVE_PANEL_IDS=new Set('dashboard ingredients imports recipes sales stoc
 
 function normalizeActivePanelId(id){
   const value=String(id||'');
-  return ACTIVE_PANEL_IDS.has(value)?value:'ingredients';
+  return ACTIVE_PANEL_IDS.has(value)?value:'sales';
 }
 
-let activePanelId=(()=>{try{return normalizeActivePanelId(localStorage.getItem(ACTIVE_PANEL_STORAGE_KEY))}catch(e){return 'ingredients'}})();
+let activePanelId=(()=>{try{return normalizeActivePanelId(localStorage.getItem(ACTIVE_PANEL_STORAGE_KEY))}catch(e){return 'sales'}})();
 const renderQueue=new Map();
 let deferredRenderKeys=new Map();
 
@@ -31304,12 +31310,13 @@ function renderImports(){
           <div class="section-gap">
             <div class="import-receipt-header">
               <b>Danh sách mặt hàng nhập</b>
-              <button
-                type="button"
-                class="secondary sm"
-                onclick="addImportReceiptLine()"
-              >+ Thêm mặt hàng</button>
+              <div class="import-receipt-header-actions">
+                <button type="button" class="secondary sm" onclick="showTab('suppliers',document.querySelector('#nav button[data-panel=\'suppliers\']'))">Quản lý nhà cung cấp</button>
+                <button type="button" class="secondary sm" onclick="addImportReceiptLine()">+ Thêm mặt hàng</button>
+              </div>
             </div>
+
+            <div class="import-supplier-help">Chọn nhà cung cấp đã có hoặc nhập tên mới. Tên mới sẽ tự động được thêm vào danh sách nhà cung cấp khi lưu phiếu.</div>
 
             <div class="import-receipt-columns">
               <span class="receipt-stt-head">STT</span>
@@ -37728,7 +37735,20 @@ async function saveStocktake(){
   return saveStocktakeReceipt();
 }
 
-function renderSuppliers(){E.suppliers.innerHTML=`<div class="toolbar"><button class="primary" onclick="supplierModal()">+ Nhà cung cấp</button></div><div class="card"><h2>Nhà cung cấp</h2>${db.suppliers.length?`<table><tr><th>Tên</th><th>Điện thoại</th><th>Địa chỉ</th><th>Ghi chú</th><th></th></tr>${db.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.phone||'—')}</td><td>${esc(s.address||'—')}</td><td>${esc(s.note||'')}</td><td class="right"><button class="secondary sm" onclick="supplierModal('${s.id}')">Sửa</button></td></tr>`).join('')}</table>`:'<div class="empty">Chưa có nhà cung cấp</div>'}</div>`}
+function renderSuppliers(){
+  const importItems=window.__lyFreshHeaders?.importItems||[];
+  const usage=new Map();
+  importItems.forEach(x=>{if(x?.supplier_id)usage.set(x.supplier_id,(usage.get(x.supplier_id)||0)+1)});
+  E.suppliers.innerHTML=`
+    <div class="supplier-page-head">
+      <div><h2>Nhà cung cấp</h2><div class="muted">Quản lý nguồn nhập được dùng trong phiếu nhập kho và bảng nguyên liệu.</div></div>
+      <button class="primary" onclick="supplierModal()">+ Thêm nhà cung cấp</button>
+    </div>
+    <div class="card supplier-list-card">
+      <div class="supplier-list-summary"><b>${num(db.suppliers.length)} nhà cung cấp</b><span class="muted">${num(importItems.length)} dòng nhập đã liên kết</span></div>
+      ${db.suppliers.length?`<div class="scroll"><table><tr><th>Nhà cung cấp</th><th>Điện thoại</th><th>Địa chỉ</th><th class="right">Dòng nhập</th><th>Ghi chú</th><th></th></tr>${db.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.phone||'—')}</td><td>${esc(s.address||'—')}</td><td class="right"><span class="badge">${num(usage.get(s.id)||0)}</span></td><td>${esc(s.note||'—')}</td><td class="right"><button class="secondary sm" onclick="supplierModal('${s.id}')">Sửa</button></td></tr>`).join('')}</table></div>`:'<div class="empty">Chưa có nhà cung cấp. Hãy tạo nhà cung cấp trước khi nhập kho.</div>'}
+    </div>`;
+}
 function supplierModal(id=''){let s=db.suppliers.find(x=>x.id===id)||{name:'',phone:'',address:'',note:''};openModal(`<div class="modal-head"><h3>${id?'Sửa':'Thêm'} nhà cung cấp</h3><button class="x" onclick="closeModal()">×</button></div><div class="form-grid"><div><label>Tên</label><input id="spName" value="${esc(s.name)}"></div><div><label>Điện thoại</label><input id="spPhone" value="${esc(s.phone||'')}"></div><div><label>Địa chỉ</label><input id="spAddress" value="${esc(s.address||'')}"></div><div class="full"><label>Ghi chú</label><input id="spNote" value="${esc(s.note||'')}"></div></div><button class="primary section-gap" onclick="saveSupplier('${id}')">Lưu lên Cloud</button>`)}
 async function saveSupplier(id){
   const n=$('spName'),p=$('spPhone'),a=$('spAddress'),no=$('spNote');
@@ -39899,23 +39919,23 @@ function attendanceKey(employeeId,date){
 
 function attendanceRecord(employeeId,date){
   const store=loadAttendanceStore();
-  const saved=store[attendanceKey(employeeId,date)]||{};
-  const slots=Array.isArray(saved.time_slots)?saved.time_slots:[];
-  const overtimeSlots=Array.isArray(saved.overtime_slots)?saved.overtime_slots:[];
+  const saved=store[attendanceKey(employeeId,date)]||null;
+  const slots=Array.isArray(saved?.time_slots)?saved.time_slots:[];
+  const overtimeSlots=Array.isArray(saved?.overtime_slots)?saved.overtime_slots:[];
 
   return {
-    status:saved.status||'work',
-    full_day:saved.full_day==null?1:Number(saved.full_day),
-    hours:Number(saved.hours||0),
-    overtime_hours:Number(saved.overtime_hours||0),
-    note:saved.note||'',
+    status:saved?(saved.status||'work'):'off',
+    full_day:saved?(saved.full_day==null?1:Number(saved.full_day)):0,
+    hours:Number(saved?.hours||0),
+    overtime_hours:Number(saved?.overtime_hours||0),
+    note:saved?.note||'',
     time_slots:slots,
     overtime_slots:overtimeSlots,
-    pay_type:saved.pay_type||'normal',
-    pay_multiplier:Number(saved.pay_multiplier||1),
-    overtime_multiplier:Number(saved.overtime_multiplier||1.5),
-    daily_bonus:Number(saved.daily_bonus||0),
-    daily_penalty:Number(saved.daily_penalty||0)
+    pay_type:saved?.pay_type||'normal',
+    pay_multiplier:Number(saved?.pay_multiplier||1),
+    overtime_multiplier:Number(saved?.overtime_multiplier||1.5),
+    daily_bonus:Number(saved?.daily_bonus||0),
+    daily_penalty:Number(saved?.daily_penalty||0)
   };
 }
 
@@ -40289,7 +40309,8 @@ function previewAttendanceDayPayroll(row){
     otPay=otHours*hourlyRate*otMultiplier;
   }
 
-  const total=Math.max(0,regular+otPay+bonus-penalty);
+  const status=row.querySelector('.attStatus')?.value||'off';
+  const total=status==='work'?Math.max(0,regular+otPay+bonus-penalty):0;
   const out=row.querySelector('.attDayPayPreview');
   if(out)out.textContent=money(total);
 }
@@ -40309,6 +40330,7 @@ function attendancePayrollDetail(e,month){
       leaveDays+=1;
       continue;
     }
+    if(r.status!=='work')continue;
 
     const mult=Math.max(0,Number(r.pay_multiplier||1));
     const otMult=Math.max(0,Number(r.overtime_multiplier||1.5));
@@ -40345,12 +40367,13 @@ function attendanceSummary(employeeId,month){
 
   for(const date of monthDateList(month)){
     const r=attendanceRecord(employeeId,date);
-    const status=r.status||'work';
+    const status=r.status||'off';
 
     if(status==='leave'||status==='absent'){
       leaveDays+=1;
       continue;
     }
+    if(status!=='work')continue;
 
     if(mode==='day'){
       workDays+=Number(r.full_day||0);
@@ -40370,7 +40393,7 @@ function saveAttendanceCell(employeeId,date){
 
   const store=loadAttendanceStore();
   store[attendanceKey(employeeId,date)]={
-    status:row.querySelector('.attStatus')?.value||'work',
+    status:row.querySelector('.attStatus')?.value||'off',
     full_day:Number(row.querySelector('.attFullDay')?.value||0),
     hours:Number(row.querySelector('.attHours')?.value||0),
     overtime_slots:readOvertimeSlots(row),
@@ -40395,7 +40418,7 @@ function saveAttendanceMonth(){
       const overtimeSlots=readOvertimeSlots(row);
 
       store[attendanceKey(employeeId,date)]={
-        status:row.querySelector('.attStatus')?.value||'work',
+        status:row.querySelector('.attStatus')?.value||'off',
         full_day:Number(row.querySelector('.attFullDay')?.value||0),
         time_slots:slots,
         hours:totalSlotHours(slots),
@@ -40450,9 +40473,10 @@ function toggleAttendanceEmployee(employeeId){
 function updateAttendanceRowStatusColor(selectEl){
   const row=selectEl?.closest('[data-attendance-row]');
   if(!row)return;
-  const status=selectEl.value||'work';
+  const status=selectEl.value||'off';
   row.classList.toggle('is-working-day',status==='work');
-  row.classList.toggle('is-nonworking-day',status==='leave'||status==='absent');
+  row.classList.toggle('is-nonworking-day',status!=='work');
+  previewAttendanceDayPayroll(row);
 }
 
 function attendanceEmployeeDetailHtml(employeeId,month){
@@ -40511,6 +40535,7 @@ function attendanceEmployeeDetailHtml(employeeId,month){
 
                 <td class="att-status-cell">
                   <select class="attStatus" onchange="updateAttendanceRowStatusColor(this)">
+                    <option value="off" ${r.status==='off'?'selected':''}>Không đi làm</option>
                     <option value="work" ${r.status==='work'?'selected':''}>Đi làm</option>
                     <option value="leave" ${r.status==='leave'?'selected':''}>Nghỉ phép</option>
                     <option value="absent" ${r.status==='absent'?'selected':''}>Nghỉ không phép</option>
@@ -40559,7 +40584,7 @@ function attendanceEmployeeDetailHtml(employeeId,month){
                   const otBase=mode==='day'
                     ? Number(e.base_salary||0)/(Math.max(1,Number(e.standard_days||26))*8)
                     : Number(e.hourly_rate||0);
-                  return Math.max(0,regular+overtimeHoursFromRecord(r)*otBase*otMult+Number(r.daily_bonus||0)-Number(r.daily_penalty||0));
+                  return r.status==='work'?Math.max(0,regular+overtimeHoursFromRecord(r)*otBase*otMult+Number(r.daily_bonus||0)-Number(r.daily_penalty||0)):0;
                 })())}</b></td>
                 <td class="att-note-cell"><input class="attNote attendance-note" value="${esc(r.note||'')}" placeholder="Ghi chú"></td>
               </tr>`;
@@ -40631,7 +40656,7 @@ function saveAttendanceForEmployee(employeeId){
     const date=row.dataset.attendanceDate;
     const store=loadAttendanceStore();
     store[attendanceKey(employeeId,date)]={
-      status:row.querySelector('.attStatus')?.value||'work',
+      status:row.querySelector('.attStatus')?.value||'off',
       full_day:Number(row.querySelector('.attFullDay')?.value||0),
       time_slots:readAttendanceSlots(row),
       hours:totalSlotHours(readAttendanceSlots(row)),
@@ -40783,9 +40808,10 @@ function employeeAttendanceInRange(employeeId,start,end){
     if(warehouseId!==currentWarehouseId||empId!==employeeId)continue;
     if(date<start||date>end)continue;
 
-    const status=r.status||'work';
+    const status=r.status||'off';
     if(status==='leave'){leaveDays+=1;continue}
     if(status==='absent'){absentDays+=1;continue}
+    if(status!=='work')continue;
 
     workDays+=Number(r.full_day||0);
     hours+=Number(r.hours||0);
@@ -52595,6 +52621,8 @@ async function v260Login(){
 
   v257ClearDisconnectedState?.();
 
+  try{localStorage.setItem(ACTIVE_PANEL_STORAGE_KEY,'sales')}catch(e){}
+
   location.reload();
 }
 
@@ -55007,39 +55035,25 @@ renderSettings=function(){
 
   const brand=loadAppBrand();
   const online=navigator.onLine;
-  const realtime=window.__lyUnifiedCloudRealtime?.status?.();
-  const realtimeLabel=realtime?.connected===false?'Đang kết nối':'Realtime sẵn sàng';
-
   root.innerHTML=`
     <div class="settings-workspace-head">
       <div>
         <h2>Cài đặt hệ thống</h2>
-        <div class="muted">Quản lý Cloud, thông báo, tài khoản và nhận diện phần mềm.</div>
+        <div class="muted">Thiết lập phần mềm và thiết bị hiện tại.</div>
       </div>
-      <button class="secondary sm" onclick="v260LogoutAndWipe()">Đăng xuất</button>
-    </div>
-
-    <div class="settings-health-grid">
-      <div class="settings-health-item">
-        <span class="settings-health-icon">☁</span>
-        <div><span>Kết nối Cloud</span><b>${online?'Đang trực tuyến':'Mất kết nối'}</b></div>
-      </div>
-      <div class="settings-health-item">
-        <span class="settings-health-icon">↻</span>
-        <div><span>Đồng bộ dữ liệu</span><b>${esc(realtimeLabel)}</b></div>
-      </div>
-      <div class="settings-health-item">
-        <span class="settings-health-icon">●</span>
-        <div><span>Tài khoản</span><b>${esc(v260AccountEmail()||'admin@latyen.vn')}</b></div>
+      <div class="settings-head-actions">
+        <span class="settings-status-pill ${online?'is-online':'is-offline'}"><i></i>${online?'Cloud trực tuyến':'Cloud mất kết nối'}</span>
+        <span class="settings-account-pill">${esc(v260AccountEmail()||'admin@latyen.vn')}</span>
+        <button class="secondary sm" onclick="v260LogoutAndWipe()">Đăng xuất</button>
       </div>
     </div>
 
-    <div class="settings-dashboard-grid">
+    <div class="settings-dashboard-grid settings-dashboard-grid-v2">
         <div class="card settings-cloud-card">
           <div class="settings-card-head">
             <div>
               <h3>Cloud & đồng bộ Realtime</h3>
-              <div class="muted">Supabase là nguồn dữ liệu nghiệp vụ duy nhất.</div>
+              <div class="muted">Dữ liệu nghiệp vụ được đồng bộ tự động giữa các thiết bị.</div>
             </div>
             <div class="fresh-settings-status">
               <span class="fresh-settings-status-dot" style="${online?'':'background:#d64545'}"></span>
@@ -55049,7 +55063,7 @@ renderSettings=function(){
           <div id="v269SyncState" class="muted settings-cloud-state">Dữ liệu được cập nhật tự động giữa các thiết bị.</div>
           <div class="fresh-settings-actions">
             <button class="primary" onclick="loadCloud()">Tải dữ liệu mới nhất</button>
-            <button class="secondary" onclick="setupRealtime();toastMsg('Đang kết nối lại Realtime')">Kết nối lại Realtime</button>
+            <button class="secondary" onclick="setupRealtime();toastMsg('Đang kết nối lại Realtime')">Kết nối lại</button>
           </div>
         </div>
 
@@ -55059,14 +55073,17 @@ renderSettings=function(){
           <div class="settings-card-head">
             <div>
               <h3>Dữ liệu & an toàn</h3>
-              <div class="muted">Tạo bản sao thủ công hoặc dọn dữ liệu nghiệp vụ cũ trên thiết bị.</div>
+              <div class="muted">Sao lưu hoặc khôi phục dữ liệu bằng tệp JSON.</div>
             </div>
           </div>
           <div class="settings-data-actions">
             <button class="secondary" onclick="exportBackup()">Xuất file backup</button>
             <button class="secondary" onclick="selectBackupImport()">Khôi phục từ file</button>
-            <button class="secondary" style="grid-column:1/-1" onclick="v271PurgeLegacyBusinessLocal().then(()=>loadCloud())">Dọn dữ liệu local cũ</button>
           </div>
+          <details class="settings-advanced-tools">
+            <summary>Công cụ nâng cao</summary>
+            <button class="secondary sm" onclick="v271PurgeLegacyBusinessLocal().then(()=>loadCloud())">Dọn bộ nhớ dữ liệu cũ trên thiết bị</button>
+          </details>
           <input id="backupImportInput" type="file" accept="application/json,.json" style="display:none" onchange="importBackupFile(this)">
         </div>
         <div class="card brand-settings-card settings-identity-card">
@@ -55095,10 +55112,6 @@ renderSettings=function(){
               <button class="secondary" onclick="selectAppLogo()">${brand.logo?'Thay logo':'Thêm logo'}</button>
               ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa</button>`:''}
             </div>
-          </div>
-          <div class="settings-device-note">
-            <div class="muted">Tài khoản dùng chung trên các thiết bị</div>
-            <b>${esc(v260AccountEmail()||'admin@latyen.vn')}</b>
           </div>
         </div>
     </div>
@@ -55634,14 +55647,14 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.37',REVISION='fresh-core-v2-authoritative-v38';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.38',REVISION='fresh-core-v2-authoritative-v39';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
 
 
 
 
 
-<script src="./ly-app-version.js?v=2.1.37"></script>
+<script src="./ly-app-version.js?v=2.1.38"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
 <script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
@@ -55651,6 +55664,7 @@ saveSaleReceipt=async function(){
 <script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
 <script src="./ly-sidebar-visuals.js?v=20260824.1"></script>
+<script src="./ly-compact-admin-layout.js?v=20260824.1"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
 <script src="./ly-data-notifications.js?v=20260823.6"></script>

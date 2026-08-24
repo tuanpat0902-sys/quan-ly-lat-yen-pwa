@@ -3,7 +3,7 @@
   if(window.__lySettingsEnhancementsV2)return;
   window.__lySettingsEnhancementsV2=true;
 
-  const VERSION='2026.08.24.3';
+  const VERSION='2026.08.24.4';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const LEGACY_PREF_KEY='lat_yen_notify_pref_v226';
   const PAGE_LOADED_AT=new Date();
@@ -60,13 +60,19 @@
       .ly-notify-master-hint{margin-top:9px;padding:9px 10px;border-radius:9px;background:#f8fafc;border:1px solid #e4e7ec;color:#667085;font-size:11.5px;line-height:1.4}
       .ly-notify-master-hint.is-off{background:#fff8f7;border-color:#fee4e2;color:#912018}
       .ly-notify-master-disabled{opacity:.55!important}
-      .ly-version-card{margin-top:14px}
-      .ly-version-table{width:100%;border-collapse:collapse;margin-top:10px}
-      .ly-version-table td{padding:9px 10px;border-bottom:1px solid #eef2f6;vertical-align:top;font-size:13px}
-      .ly-version-table td:first-child{width:180px;color:#667085;font-weight:700}
+      .ly-version-card{margin-top:12px;padding:13px 15px!important}
+      .ly-version-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+      .ly-version-head h3{margin:0 0 3px!important}
+      .ly-version-state{font-size:11px;font-weight:750;color:#067647;background:#ecfdf3;border-radius:999px;padding:4px 8px;white-space:nowrap}
+      .ly-version-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+      .ly-version-summary span{padding:5px 8px;border:1px solid #e4e7ec;border-radius:8px;background:#f8fafc;font-size:11.5px;color:#475467}
+      .ly-version-details{margin-top:10px;border-top:1px solid #eef2f6;padding-top:8px}
+      .ly-version-details summary{cursor:pointer;color:#475467;font-size:12px;font-weight:750}
+      .ly-version-table{width:100%;border-collapse:collapse;margin-top:7px}
+      .ly-version-table td{padding:6px 8px;border-bottom:1px solid #eef2f6;vertical-align:top;font-size:11.5px}
+      .ly-version-table td:first-child{width:150px;color:#667085;font-weight:700}
       .ly-version-value{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;word-break:break-word}
-      .ly-version-primary{font-size:18px;font-weight:850;color:#0f766e}
-      .ly-version-note{margin-top:10px;padding:10px 12px;border-radius:10px;background:#f8fafc;border:1px solid #e4e7ec;color:#475467;font-size:12px;line-height:1.5}
+      .ly-version-primary{font-size:17px;font-weight:850;color:#0f766e}
       @media(max-width:650px){.ly-version-table td:first-child{width:120px}.ly-version-table td{font-size:12px;padding:8px 6px}}
     `;
     document.head.appendChild(s);
@@ -112,23 +118,21 @@
     }
     const v=versionSnapshot();
     card.innerHTML=`
-      <h3>Thông tin phiên bản</h3>
-      <div class="ly-version-primary">${esc(v.appLabel)}</div>
-      <table class="ly-version-table">
-        <tbody>
-          <tr><td>App version</td><td class="ly-version-value">${esc(v.appVersion)}</td></tr>
-          <tr><td>Revision</td><td class="ly-version-value">${esc(v.revision)}</td></tr>
-          <tr><td>Fresh Core V2</td><td class="ly-version-value">${esc(v.coreVersion)}</td></tr>
-          <tr><td>Final ownership</td><td class="ly-version-value">${esc(v.ownershipVersion)}</td></tr>
+      <div class="ly-version-head">
+        <div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">${esc(v.appLabel)}</div></div>
+        <span class="ly-version-state">Đang hoạt động</span>
+      </div>
+      <div class="ly-version-summary"><span>Revision: <b>${esc(v.revision)}</b></span><span>Tải lúc: <b>${esc(v.loadedAt)}</b></span></div>
+      <details class="ly-version-details">
+        <summary>Xem chi tiết kỹ thuật</summary>
+        <table class="ly-version-table"><tbody>
+          <tr><td>Fresh Core</td><td class="ly-version-value">${esc(v.coreVersion)}</td></tr>
+          <tr><td>Quyền ghi dữ liệu</td><td class="ly-version-value">${esc(v.ownershipVersion)}</td></tr>
           <tr><td>Module loader</td><td class="ly-version-value">${esc(v.moduleLoaderVersion)}</td></tr>
-          <tr><td>Settings module</td><td class="ly-version-value">${esc(v.settingsModuleVersion)}</td></tr>
           <tr><td>Service Worker</td><td class="ly-version-value">${esc(v.serviceWorker)}</td></tr>
-          <tr><td>Trang được tải lúc</td><td>${esc(v.loadedAt)}</td></tr>
-          <tr><td>URL đang chạy</td><td class="ly-version-value">${esc(v.pageUrl)}</td></tr>
-        </tbody>
-      </table>
-      <div class="ly-version-note">Dùng bảng này làm nguồn kiểm tra phiên bản đang chạy trên thiết bị. Nếu header bị cache hoặc chưa đổi badge, hãy đối chiếu dòng <b>App version</b>, <b>Revision</b> và <b>Settings module</b> tại đây.</div>
-    `;
+          <tr><td>URL</td><td class="ly-version-value">${esc(v.pageUrl)}</td></tr>
+        </tbody></table>
+      </details>`;
     return true;
   }
 

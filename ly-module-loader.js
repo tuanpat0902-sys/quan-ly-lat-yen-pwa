@@ -1,14 +1,14 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV38)return;
-  window.__lyModuleLoaderV38=true;
+  if(window.__lyModuleLoaderV39)return;
+  window.__lyModuleLoaderV39=true;
 
-  const VERSION='2026.08.24.38';
+  const VERSION='2026.08.24.39';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
-    appVersion:{src:'./ly-app-version.js?v=2.1.37',test:()=>window.__lyAppVersion?.version==='2.1.37'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.38',test:()=>window.__lyAppVersion?.version==='2.1.38'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
@@ -34,7 +34,7 @@
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
     finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.4',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.4'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.1',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.1'},
-    settings:{src:'./ly-settings-enhancements.js?v=20260824.3',test:()=>window.__lyNotificationMaster?.version==='2026.08.24.3'},
+    settings:{src:'./ly-settings-enhancements.js?v=20260824.4',test:()=>window.__lyNotificationMaster?.version==='2026.08.24.4'},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
