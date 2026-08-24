@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-95';
+const CACHE='lat-yen-fresh-core-v2-authoritative-97';
 const INDEX_KEY='./index.html';
 const CORE_ASSETS=[
   INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',
@@ -12,7 +12,7 @@ const CORE_ASSETS=[
   './ly-finance-bridge.js','./ly-finance.js','./ly-reports-bridge.js','./ly-reports.js',
   './ly-settings-ui-bridge.js','./ly-settings-ui.js','./ly-cashflow-bridge.js','./ly-cashflow.js',
   './ly-special-reports-bridge.js','./ly-special-reports.js','./ly-employee-reports-bridge.js','./ly-employee-reports.js',
-  './ly-data-notifications.js','./ly-inapp-notifications.js','./ly-notification-center.js','./ly-cloud-realtime.js',
+  './ly-data-notifications.js','./ly-inapp-notifications.js','./ly-notification-center.js','./ly-inventory-alerts.js','./ly-cloud-realtime.js',
   './ly-heavy-panels.js','./ly-menu-security.js','./ly-performance-optimizer.js?v=20260823.4',
   './src-v2/bootstrap.js','./src-v2/core/event-bus.js','./src-v2/core/store.js','./src-v2/data/supabase-gateway.js','./src-v2/domains/create-domains.js',
   './src-v2/domains/ingredients/ingredients-repository.js','./src-v2/domains/ingredients/ingredients-service.js',

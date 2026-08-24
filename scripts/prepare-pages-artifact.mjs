@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.42';
-const REVISION='fresh-core-v2-authoritative-v43';
-const LOADER_VERSION='20260824.42';
-const SW_CACHE='lat-yen-fresh-core-v2-authoritative-95';
+const APP_VERSION='2.1.43';
+const REVISION='fresh-core-v2-authoritative-v44';
+const LOADER_VERSION='20260824.44';
+const SW_CACHE='lat-yen-fresh-core-v2-authoritative-97';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`
@@ -22,12 +22,13 @@ const RUNTIME_BLOCK=`
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
 <script src="./ly-data-notifications.js?v=20260823.6"></script>
 <script src="./ly-notification-center.js?v=20260823.3"></script>
+<script src="./ly-inventory-alerts.js?v=20260824.1"></script>
 <script src="./ly-cloud-realtime.js?v=20260824.5"></script>
 <script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.4"></script>
 <script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>
 <script src="./ly-independent-bootstrap.js?v=20260824.4"></script>
 <script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
-<script src="./ly-local-chatbot.js?v=20260824.1"></script>
+<script src="./ly-local-chatbot.js?v=20260824.3"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 `;
 
@@ -69,6 +70,7 @@ function prepareSw(source){
   if(!sw.includes("'./ly-legacy-list-shim.js'"))sw=sw.replace("'./ly-legacy-model-shim.js',","'./ly-legacy-model-shim.js','./ly-legacy-list-shim.js',");
   if(!sw.includes("'./ly-menu-security.js'"))sw=sw.replace("'./ly-legacy-list-shim.js',","'./ly-legacy-list-shim.js','./ly-menu-security.js',");
   if(!sw.includes("'./ly-local-chatbot.js'"))sw=sw.replace("'./ly-warehouse-delete-ux.js',","'./ly-warehouse-delete-ux.js','./ly-local-chatbot.js',");
+  if(!sw.includes("'./ly-inventory-alerts.js'"))sw=sw.replace("'./ly-notification-center.js',","'./ly-notification-center.js','./ly-inventory-alerts.js',");
   return sw;
 }
 
@@ -90,9 +92,10 @@ const checks=[
   ['in-app notifications',output.includes('ly-inapp-notifications.js?v=20260824.2')],
   ['data notifications',output.includes('ly-data-notifications.js?v=20260823.6')],
   ['notification center',output.includes('ly-notification-center.js?v=20260823.3')],
+  ['inventory alerts',output.includes('ly-inventory-alerts.js?v=20260824.1')],
   ['unified cloud realtime',output.includes('ly-cloud-realtime.js?v=20260824.5')],
   ['stable bootstrap',output.includes('ly-independent-bootstrap.js?v=20260824.4')],
-  ['local assistant',output.includes('ly-local-chatbot.js?v=20260824.1')],
+  ['local assistant',output.includes('ly-local-chatbot.js?v=20260824.3')],
   ['single auth owner',!output.includes('ly-auth-gate.js')],
   ['single Supabase client bootstrap',output.includes('ly-supabase-bootstrap.js?v=20260824.2')],
   ['shadow',output.includes('ly-fresh-core-v2-shadow.js?v=20260824.7')],

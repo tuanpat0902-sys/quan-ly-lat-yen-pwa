@@ -8,30 +8,58 @@ assert.ok(source.includes('indexedDB.open(DB_NAME,1)'));
 assert.ok(source.includes('Dữ liệu chat chỉ nằm trên thiết bị này')||source.includes('Lịch sử chat và đề xuất chỉ lưu trên thiết bị này'));
 assert.ok(!source.includes('localStorage'),'assistant history must not use LocalStorage');
 for(const forbidden of [".rpc(",".from(",'saveImportReceipt?.','saveExportReceipt?.','saveStocktakeReceipt?.','saveSaleReceipt?.'])assert.ok(!source.includes(forbidden),`assistant must not directly commit business data: ${forbidden}`);
+assert.ok(source.includes('window.SpeechRecognition||window.webkitSpeechRecognition'));
+assert.ok(source.includes("recognition.lang='vi-VN'"));
+assert.ok(source.includes('Trình duyệt có thể gửi âm thanh tới dịch vụ nhận dạng giọng nói trực tuyến'));
+for(const forbidden of ['MediaRecorder','getUserMedia'])assert.ok(!source.includes(forbidden),`assistant must not capture or retain raw audio: ${forbidden}`);
 
-const elements=new Map([
-  ['importReceiptLines',{cleared:false,replaceChildren(){this.cleared=true;}}],
-  ['receiptNote',{value:''}]
-]);
+let formOpen=false;
+const form={classList:{contains(name){return name==='open'&&formOpen;}},querySelector(){return null;},scrollIntoView(){}};
+const voiceButton={classList:{add(){},remove(){}},setAttribute(){}};
+const input={value:''};
+const elements=new Map([['imports',{}],['inlineImportReceiptForm',form],['toggleImportReceiptBtn',{click(){formOpen=true;opened.push(['toggle']);}}],['receiptNote',{value:''}],['lyAssistantInput',input]]);
 const opened=[];
+const navButton={click(){opened.push(['panel','imports']);}};
 const document={
-  readyState:'loading',addEventListener(){},querySelector(){return null;},
+  readyState:'loading',addEventListener(){},querySelector(selector){if(selector.includes('data-panel="imports"'))return navButton;if(selector==='[data-assistant-voice]')return voiceButton;return null;},
   getElementById(id){return elements.get(id)||null;},
   createElement(){return {appendChild(){},setAttribute(){},addEventListener(){},classList:{toggle(){}},dataset:{}};}
 };
-const context={console,Date,Math,Promise,setTimeout(fn){fn();return 1;},document,window:{
-  currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',name:'Đường',ingredient_type:'purchased'}],products:[{id:'p1',name:'Cà phê sữa'}]},
-  showTab(panel){opened.push(['panel',panel]);},renderImports(){opened.push(['render']);},toggleImportReceiptForm(value){opened.push(['form',value]);},addImportReceiptLine(...args){opened.push(['line',...args]);}
+let recognition;
+class SpeechRecognitionMock{constructor(){recognition=this;}start(){this.onstart?.();}abort(){this.onend?.();}}
+const currentIso=new Date().toISOString();
+const context={console,Date,Math,Promise,setTimeout(fn){fn();return 1;},confirm(){return true;},document,window:{
+  currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',name:'Đường',ingredient_type:'purchased'}],products:[{id:'p1',name:'Cà phê sữa'}],inventory:[{warehouse_id:'w1',ingredient_id:'i1',quantity:25}],sales:[{id:'s1',warehouse_id:'w1',sold_at:currentIso,total_amount:120000},{id:'s2',warehouse_id:'w1',sold_at:'2026-08-10T08:00:00+07:00',total_amount:40000}],saleItems:[{sale_id:'s1',product_id:'p1',quantity:3},{sale_id:'s2',product_id:'p1',quantity:1}],cashflows:[{warehouse_id:'w1',entry_type:'income',entry_date:currentIso,amount:500000},{warehouse_id:'w1',entry_type:'expense',entry_date:currentIso,amount:125000}]},
+  SpeechRecognition:SpeechRecognitionMock,
 },globalThis:null};
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);
 const assistant=context.window.__lyLocalAssistant;
 
+assert.equal(await assistant.startVoice(),true);
+assert.equal(recognition.lang,'vi-VN');assert.equal(recognition.continuous,false);assert.equal(recognition.interimResults,false);
+await recognition.onresult({results:[[{transcript:'Tạo phiếu nhập'}]]});
+assert.equal(input.value,'');assert.equal(assistant.status().messageCount,2,'voice transcript must create a local user message and a draft reply');
+assert.match(assistant.reportReply('Báo cáo doanh thu hôm nay').content,/120\.000 đ/);
+assert.match(assistant.reportReply('Báo cáo doanh thu hôm nay').content,/Cà phê sữa/);
+assert.match(assistant.reportReply('Tồn kho hiện tại').content,/Đường 25/);
+assert.match(assistant.reportReply('Thu chi hôm nay').content,/Chênh lệch 375\.000 đ/);
+assert.match(assistant.reportReply('Báo cáo doanh thu từ 01/08/2026 đến 18/08/2026').content,/từ 01\/08\/2026 đến 18\/08\/2026/);
+assert.match(assistant.reportReply('Báo cáo doanh thu từ 01/08/2026 đến 18/08/2026').content,/40\.000 đ/,'custom range must include only sales inside the requested dates');
+assert.match(assistant.reportReply('Báo cáo doanh thu từ 2026-08-18 đến 2026-08-01').content,/từ 01\/08\/2026 đến 18\/08\/2026/,'reversed custom dates must be normalized');
+assert.equal(assistant.parseDraft('Báo cáo doanh thu hôm nay'),null,'reports must remain read-only and never become a business draft');
+
 const create=assistant.parseDraft('Tạo phiếu nhập 10 kg Đường');
 assert.equal(create.action,'create');assert.equal(create.kind,'import');assert.equal(create.warehouse_id,'w1');assert.equal(create.items[0].id,'i1');assert.equal(create.items[0].quantity,10);
-await assistant.executeDraft(create);
-assert.equal(create.status,'opened');assert.equal(elements.get('importReceiptLines').cleared,true);assert.equal(elements.get('receiptNote').value,'Bản nháp từ Trợ lý Lát Yên');
-assert.deepEqual(opened.map(row=>row[0]),['panel','render','form','line']);assert.equal(opened.at(-1)[1],'i1');assert.equal(opened.at(-1)[3],10);
+const openOnly=assistant.parseDraft('Tạo phiếu nhập');
+await assistant.executeDraft(openOnly);
+assert.equal(openOnly.status,'opened');assert.equal(formOpen,true);assert.equal(elements.get('receiptNote').value,'Bản nháp từ Trợ lý Lát Yên');
+assert.deepEqual(opened.map(row=>row[0]),['panel','toggle']);
+await assistant.executeDraft(openOnly);assert.equal(opened.filter(row=>row[0]==='toggle').length,1,'reopening an already-open draft must not close the form');
+elements.delete('inlineImportReceiptForm');
+const missingForm=assistant.parseDraft('Tạo phiếu nhập');
+await assert.rejects(()=>assistant.executeDraft(missingForm),/Không tìm thấy form phiếu/);
+assert.equal(missingForm.status,'pending','failed navigation must remain retryable');
 const remove=assistant.parseDraft('Xóa phiếu kiểm kê số KK-001');
 assert.equal(remove.action,'delete');assert.equal(remove.kind,'stocktake');assert.equal(remove.receipt_code,'KK-001');
 const edit=assistant.parseDraft('Sửa phiếu bán BH-009');

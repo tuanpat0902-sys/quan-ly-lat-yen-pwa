@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import vm from 'node:vm';
+
+const source=await fs.readFile(new URL('../ly-inventory-alerts.js',import.meta.url),'utf8');
+assert.ok(!source.includes('.from('),'inventory alerts must use the already-loaded snapshot, not query Supabase');
+assert.ok(!source.includes('.rpc('),'inventory alerts must remain read-only');
+const values=new Map(),toasts=[];
+const localStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,String(value))};
+const document={readyState:'loading',hidden:false,addEventListener(){}};
+const context={console,Date,Math,Intl,Promise,JSON,localStorage,document,Notification:{permission:'granted'},navigator:{serviceWorker:{}},setTimeout(){return 1;},clearTimeout(){},window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i0',name:'Muối',minimum_stock:5},{id:'i1',name:'Đường',minimum_stock:10},{id:'i2',name:'Sữa',minimum_stock:10},{id:'i3',name:'Cà phê',minimum_stock:10}],inventory:[{warehouse_id:'w1',ingredient_id:'i0',quantity:0},{warehouse_id:'w1',ingredient_id:'i1',quantity:8},{warehouse_id:'w1',ingredient_id:'i2',quantity:14},{warehouse_id:'w1',ingredient_id:'i3',quantity:20}]},__lyInAppNotifications:{show(...args){toasts.push(args);}},addEventListener(){}}};
+context.window.window=context.window;context.window.document=document;context.window.localStorage=localStorage;context.window.Notification=context.Notification;context.window.navigator=context.navigator;
+vm.createContext(context);vm.runInContext(source,context);
+const alerts=context.window.__lyInventoryAlerts;
+assert.equal(alerts.classify(0,5),'out');assert.equal(alerts.classify(8,10),'restock');assert.equal(alerts.classify(14,10),'low');assert.equal(alerts.classify(20,10),'');
+const first=await alerts.scan();assert.equal(first.out.length,1);assert.equal(first.restock.length,1);assert.equal(first.low.length,1);assert.equal(toasts.length,3);
+await alerts.scan();assert.equal(toasts.length,3,'unchanged stock levels must not create duplicate alerts');
+context.window.db.inventory[1].quantity=16;await alerts.scan();
+context.window.db.inventory[1].quantity=7;await alerts.scan();assert.equal(toasts.length,4,'a resolved threshold that becomes critical again must alert again');
+console.log('Inventory threshold alerts and deduplication contract: PASS');
