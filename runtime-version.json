@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.24",
-  "revision": "fresh-core-v2-authoritative-v25",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-77",
+  "appVersion": "2.1.25",
+  "revision": "fresh-core-v2-authoritative-v26",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-78",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "broad-callable-legacy-list-compatibility"
+  "bootstrapFix": "legacy-money-export-and-compat-contract"
 }
