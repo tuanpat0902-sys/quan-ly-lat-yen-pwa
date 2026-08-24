@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2DocumentsTakeoverV1)return;
   window.__lyFreshCoreV2DocumentsTakeoverV1=true;
 
-  const VERSION='2026.08.23.2';
+  const VERSION='2026.08.24.3';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const SAVE_ROUTES={ly_save_import:'imports',ly_save_export:'exports',ly_save_stocktake:'stocktake'};
@@ -21,7 +21,7 @@
     try{
       window.__lyFreshHeaders={...(window.__lyFreshHeaders||{}),imports:(imports.receipts||[]).slice(),importItems:(imports.items||[]).slice(),exports:(exports.receipts||[]).slice(),exportItems:(exports.items||[]).slice(),stocktakes:(stocktake.receipts||[]).slice(),stocktakeItems:(stocktake.items||[]).slice(),transactions:(inventory.transactions||[]).slice()};
       if(typeof db!=='undefined'&&db){db.inventory=(inventory.balances||[]).slice();db.movements=(inventory.transactions||[]).slice();}
-      if(typeof invalidateDerivedCaches==='function')invalidateDerivedCaches();
+      if(typeof invalidateDataIndexes==='function')invalidateDataIndexes();else if(typeof invalidateDerivedCaches==='function')invalidateDerivedCaches();
       for(const name of ['renderImports','renderStocktake','renderDashboard','renderReports','renderFinanceData'])try{if(typeof globalThis[name]==='function')globalThis[name]();}catch(e){}
       state.hydrations++;return true;
     }catch(error){state.lastError=String(error?.message||error||'Legacy documents hydration failed');return false;}

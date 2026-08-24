@@ -7,6 +7,7 @@ const previousFromCalls=[];
 const mutations=[];
 const renders=[];
 let legacyLoadCalls=0;
+let indexInvalidations=0;
 let entries=[{id:'existing',warehouse_id:'w1',entry_type:'expense',entry_date:'2026-08-23',category:'Old',amount:10,note:'x'}];
 
 function rawTable(name){
@@ -28,7 +29,8 @@ const context={
   window:{
     sb:client,
     loadCloud:async()=>{legacyLoadCalls++;return {legacy:true};},
-    invalidateDerivedCaches(){renders.push('invalidate');},
+    invalidateDataIndexes(){indexInvalidations++;renders.push('invalidate-indexes');},
+    invalidateDerivedCaches(){renders.push('invalidate-derived');},
     renderCashflow(){renders.push('cashflow');},
     renderCashflowReport(){renders.push('report');},
     __lyFreshCoreV2:{
@@ -58,6 +60,7 @@ assert.equal(mutations.length,0,'cashflow create must not hit previous raw mutat
 assert.equal(context.window.__lyFreshCashflow.at(-1).type,'income');
 assert.equal(context.window.__lyFreshCashflow.at(-1).date,'2026-08-23');
 assert.equal(context.window.__lyFreshCashflow.at(-1).amount,100);
+assert.ok(indexInvalidations>=1,'cashflow mutation must invalidate shared cached projections');
 
 const suppressedCreateReload=await context.window.loadCloud();
 assert.equal(legacyLoadCalls,0,'immediate post-create loadCloud must be suppressed');

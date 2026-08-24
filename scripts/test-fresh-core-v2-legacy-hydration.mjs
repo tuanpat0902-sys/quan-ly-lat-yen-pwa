@@ -10,7 +10,8 @@ const snapshot={
  salesData:{sales:[{id:'sale1'}],items:[{id:'salei1'}]},cashflowEntries:[{id:'c1',entry_type:'IN',entry_date:'2026-08-23',amount:'1250'}]
 };
 const db={};
-const context={console,Date,db,window:{db,__lyFreshCoreV2:{store:{getState(){return snapshot;}}}}};context.globalThis=context;
+let indexInvalidations=0;
+const context={console,Date,db,invalidateDataIndexes(){indexInvalidations++;},window:{db,__lyFreshCoreV2:{store:{getState(){return snapshot;}}}}};context.globalThis=context;
 vm.createContext(context);vm.runInContext(source,context,{filename:'ly-fresh-core-v2-legacy-hydration.js'});
 const api=context.window.__lyFreshCoreV2LegacyHydration;
 assert.ok(api);assert.equal(api.hydrate(),true);
@@ -21,5 +22,6 @@ assert.equal(context.window.__lyFreshHeaders.stocktakes[0].id,'sr1');assert.equa
 assert.equal(context.window.__lyFreshHeaders.sales[0].id,'sale1');assert.equal(context.window.__lyFreshHeaders.saleItems[0].id,'salei1');assert.equal(context.window.__lyFreshHeaders.transactions[0].id,'tx1');
 assert.deepEqual({...context.window.__lyFreshCashflow[0]},{id:'c1',entry_type:'IN',entry_date:'2026-08-23',amount:1250,type:'IN',date:'2026-08-23'});
 assert.notEqual(db.products,snapshot.products,'hydration must copy arrays instead of aliasing V2 state');
+assert.equal(indexInvalidations,1,'hydration must invalidate cached receipt indexes before any render');
 assert.equal(api.status().hydrates,1);
 console.log('Fresh Core V2 Legacy hydration bridge: PASS');

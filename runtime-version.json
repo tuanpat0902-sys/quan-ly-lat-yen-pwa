@@ -1,8 +1,9 @@
 {
-  "appVersion": "2.1.28",
-  "revision": "fresh-core-v2-authoritative-v29",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-81",
+  "appVersion": "2.1.29",
+  "revision": "fresh-core-v2-authoritative-v30",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-82",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "single-auth-owner-and-single-supabase-client"
+  "bootstrapFix": "single-auth-owner-and-single-supabase-client",
+  "postMutationVisibility": "invalidate-indexes-hydrate-render-realtime"
 }

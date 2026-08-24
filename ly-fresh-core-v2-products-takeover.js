@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2ProductsTakeoverV1)return;
   window.__lyFreshCoreV2ProductsTakeoverV1=true;
 
-  const VERSION='2026.08.23.3';
+  const VERSION='2026.08.24.4';
   const TARGET_RPC='ly_save_product';
   const TARGET_TABLE='ly_products';
   const MAX_WAIT_MS=60000;
@@ -20,7 +20,7 @@
     const products=Array.isArray(snapshot.products)?snapshot.products:[];const recipeItems=Array.isArray(snapshot.recipeItems)?snapshot.recipeItems:[];
     try{
       if(typeof db!=='undefined'&&db){db.products=products.slice();db.recipeItems=recipeItems.slice();}
-      if(typeof invalidateDerivedCaches==='function')invalidateDerivedCaches();
+      if(typeof invalidateDataIndexes==='function')invalidateDataIndexes();else if(typeof invalidateDerivedCaches==='function')invalidateDerivedCaches();
       if(typeof renderRecipes==='function')renderRecipes();if(typeof renderSales==='function')renderSales();if(typeof renderDashboard==='function')renderDashboard();else if(typeof renderAll==='function')renderAll();
       state.hydrations++;return true;
     }catch(error){state.lastError=String(error?.message||error||'Legacy products hydration failed');return false;}

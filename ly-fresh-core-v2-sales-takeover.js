@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2SalesTakeoverV1)return;
   window.__lyFreshCoreV2SalesTakeoverV1=true;
 
-  const VERSION='2026.08.23.2';
+  const VERSION='2026.08.24.3';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const state={version:VERSION,phase:'waiting',enabled:false,calls:0,success:0,errors:0,fallbacks:0,hydrations:0,suppressedReloads:0,lastRpc:'',lastAt:0,lastError:''};
@@ -19,7 +19,7 @@
     try{
       window.__lyFreshHeaders={...(window.__lyFreshHeaders||{}),sales:(sales.sales||[]).slice(),saleItems:(sales.items||[]).slice(),transactions:(inventory.transactions||[]).slice()};
       if(typeof db!=='undefined'&&db){db.sales=(sales.sales||[]).slice();db.saleItems=(sales.items||[]).slice();db.inventory=(inventory.balances||[]).slice();db.movements=(inventory.transactions||[]).slice();}
-      if(typeof invalidateDerivedCaches==='function')invalidateDerivedCaches();
+      if(typeof invalidateDataIndexes==='function')invalidateDataIndexes();else if(typeof invalidateDerivedCaches==='function')invalidateDerivedCaches();
       for(const name of ['renderSales','renderDashboard','renderReports','renderFinanceData'])try{if(typeof globalThis[name]==='function')globalThis[name]();}catch(e){}
       state.hydrations++;return true;
     }catch(error){state.lastError=String(error?.message||error||'Legacy sales hydration failed');return false;}

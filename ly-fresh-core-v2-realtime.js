@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2RealtimeV1)return;
   window.__lyFreshCoreV2RealtimeV1=true;
 
-  const VERSION='2026.08.23.4';
+  const VERSION='2026.08.24.5';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const DEBOUNCE_MS=180;
@@ -27,7 +27,7 @@
     ly_cashflow_entries:'cashflow'
   };
 
-  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,refreshes:0,catchups:0,catchupErrors:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastCatchupAt:0,lastError:''};
+  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,refreshes:0,projections:0,projectionErrors:0,catchups:0,catchupErrors:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastCatchupAt:0,lastError:''};
   let channel=null;
   let catchupPromise=null;
   const timers=new Map();
@@ -36,6 +36,19 @@
   function orgId(){try{if(typeof v261OrganizationId!=='undefined'&&v261OrganizationId)return String(v261OrganizationId);}catch(e){}return String(window.__lyFreshOrgId||'');}
   function core(){return window.__lyFreshCoreV2||null;}
 
+  function projectLegacy(reason){
+    const c=core(),bridge=window.__lyFreshCoreV2LegacyHydration;
+    if(!c?.store?.getState||typeof bridge?.hydrate!=='function')return false;
+    try{
+      if(bridge.hydrate(c.store.getState())!==true)return false;
+      if(typeof window.renderAll==='function')window.renderAll();
+      else for(const name of ['renderDashboard','renderIngredients','renderImports','renderStocktake','renderSales','renderCashflow'])try{window[name]?.();}catch(e){}
+      state.projections++;state.lastError='';
+      c.events?.emit?.('realtime:legacy-projected',{reason,at:Date.now()});
+      return true;
+    }catch(error){state.projectionErrors++;state.lastError=String(error?.message||error||'Realtime projection failed');console.warn('[Lát Yên] V2 realtime projection',error);return false;}
+  }
+
   function schedule(domain,table){
     state.events++;state.lastTable=table;state.lastDomain=domain;state.lastAt=Date.now();
     clearTimeout(timers.get(domain));
@@ -43,7 +56,7 @@
       timers.delete(domain);
       const c=core(),refresh=c?.domains?.[domain]?.refresh;
       if(typeof refresh!=='function')return;
-      try{await refresh();state.refreshes++;state.lastError='';c.events?.emit?.('realtime:domain-refreshed',{domain,table,at:Date.now()});}
+      try{await refresh();projectLegacy(`domain:${domain}`);state.refreshes++;state.lastError='';c.events?.emit?.('realtime:domain-refreshed',{domain,table,at:Date.now()});}
       catch(error){state.errors++;state.lastError=String(error?.message||error||'Realtime refresh failed');console.warn('[Lát Yên] V2 realtime refresh',domain,error);}
     },DEBOUNCE_MS));
   }
@@ -55,6 +68,7 @@
     catchupPromise=(async()=>{
       try{
         await c.refreshCoreDomains();
+        projectLegacy(`catchup:${reason}`);
         state.catchups++;
         state.lastCatchupAt=Date.now();
         state.lastError='';

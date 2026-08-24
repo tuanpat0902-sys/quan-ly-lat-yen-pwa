@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2CashflowTakeoverV1)return;
   window.__lyFreshCoreV2CashflowTakeoverV1=true;
 
-  const VERSION='2026.08.23.2';
+  const VERSION='2026.08.24.3';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const TABLE='ly_cashflow_entries';
@@ -37,7 +37,7 @@
     const entries=core?.store?.getState?.()?.cashflowEntries;
     if(!Array.isArray(entries))return false;
     window.__lyFreshCashflow=legacyProjection(entries);
-    try{window.invalidateDerivedCaches?.();}catch(e){}
+    try{if(typeof window.invalidateDataIndexes==='function')window.invalidateDataIndexes();else window.invalidateDerivedCaches?.();}catch(e){}
     try{window.renderCashflow?.();}catch(e){}
     try{window.renderCashflowReport?.();}catch(e){}
     return true;

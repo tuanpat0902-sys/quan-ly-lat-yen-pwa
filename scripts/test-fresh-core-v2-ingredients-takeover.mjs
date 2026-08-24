@@ -4,11 +4,11 @@ import fs from 'node:fs/promises';
 
 const source=await fs.readFile(new URL('../ly-fresh-core-v2-ingredients-takeover.js',import.meta.url),'utf8');
 const originalCalls=[];const rawMutations=[];const saveCalls=[];const removeCalls=[];
-let loadCloudCalls=0,renderCalls=0,invalidateCalls=0;
+let loadCloudCalls=0,renderCalls=0,invalidateCalls=0,indexInvalidations=0;
 let ingredients=[{id:'old',name:'Old'}];let preparedItems=[];
 const rawTable={select(){return this;},delete(){rawMutations.push('delete');return this;},eq(){return this;},then(resolve){return Promise.resolve({data:null,error:null}).then(resolve);}};
 const client={async rpc(name,params){originalCalls.push([name,params]);return {data:'legacy-id',error:null};},from(){return rawTable;}};
-const context={console,db:{ingredients:[],preparedItems:[]},loadCloud:async()=>{loadCloudCalls++;return {legacy:true};},renderIngredients(){renderCalls++;},invalidateDerivedCaches(){invalidateCalls++;},setTimeout(fn){fn();return 1;},clearTimeout(){},CustomEvent:class CustomEvent{constructor(type,init={}){this.type=type;this.detail=init.detail;}},document:{readyState:'complete',addEventListener(){}},window:{sb:client,__lyFreshCoreV2:{store:{getState(){return {ingredients,preparedItems};}},domains:{ingredients:{async save(ingredient,nextPrepared){saveCalls.push([ingredient,nextPrepared]);ingredients=[{...ingredient,id:'v2-id'}];preparedItems=nextPrepared;return 'v2-id';},async remove(id){removeCalls.push(id);ingredients=ingredients.filter(x=>x.id!==id);preparedItems=preparedItems.filter(x=>x.prepared_ingredient_id!==id);return {id};}}}},dispatchEvent(){}}};
+const context={console,db:{ingredients:[],preparedItems:[]},loadCloud:async()=>{loadCloudCalls++;return {legacy:true};},renderIngredients(){renderCalls++;},invalidateDataIndexes(){indexInvalidations++;},invalidateDerivedCaches(){invalidateCalls++;},setTimeout(fn){fn();return 1;},clearTimeout(){},CustomEvent:class CustomEvent{constructor(type,init={}){this.type=type;this.detail=init.detail;}},document:{readyState:'complete',addEventListener(){}},window:{sb:client,__lyFreshCoreV2:{store:{getState(){return {ingredients,preparedItems};}},domains:{ingredients:{async save(ingredient,nextPrepared){saveCalls.push([ingredient,nextPrepared]);ingredients=[{...ingredient,id:'v2-id'}];preparedItems=nextPrepared;return 'v2-id';},async remove(id){removeCalls.push(id);ingredients=ingredients.filter(x=>x.id!==id);preparedItems=preparedItems.filter(x=>x.prepared_ingredient_id!==id);return {id};}}}},dispatchEvent(){}}};
 context.globalThis=context;vm.createContext(context);vm.runInContext(source,context,{filename:'ly-fresh-core-v2-ingredients-takeover.js'});
 const api=context.window.__lyFreshCoreV2IngredientsTakeover;assert.equal(api.status().enabled,true);
 const ingredient={name:'A',ingredient_type:'prepared'},prepared=[{source_ingredient_id:'i1',quantity:2}];
@@ -17,6 +17,6 @@ await context.loadCloud();assert.equal(loadCloudCalls,0,'post-save loadCloud mus
 const deleted=await client.from('ly_ingredients').delete().eq('id','v2-id').eq('org_id','org-1');assert.equal(deleted.error,null);assert.deepEqual(removeCalls,['v2-id']);assert.equal(rawMutations.length,0,'ingredient delete must not hit raw mutation');assert.equal(context.db.ingredients.length,0);
 await context.loadCloud();assert.equal(loadCloudCalls,0,'post-delete loadCloud must be suppressed');await context.loadCloud();assert.equal(loadCloudCalls,1,'manual reload must remain available');
 const other=await client.rpc('ly_save_product',{p_product:{name:'P'}});assert.equal(other.data,'legacy-id');await context.loadCloud();assert.equal(loadCloudCalls,2,'unrelated RPC must not arm suppression');
-assert.ok(renderCalls>=2);assert.ok(invalidateCalls>=2);
+assert.ok(renderCalls>=2);assert.ok(indexInvalidations>=2,'ingredient mutations must invalidate cached indexes');assert.equal(invalidateCalls,0,'index invalidation already covers derived caches');
 api.disable();await client.rpc('ly_save_ingredient',{p_ingredient:{name:'B'},p_prepared_items:[]});assert.equal(originalCalls.at(-1)[0],'ly_save_ingredient');await context.loadCloud();assert.equal(loadCloudCalls,3);
 console.log('Fresh Core V2 ingredients takeover: PASS');
