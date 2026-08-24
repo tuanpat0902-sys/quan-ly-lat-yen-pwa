@@ -3,13 +3,15 @@
   if(window.__lyModuleLoaderV47)return;
   window.__lyModuleLoaderV47=true;
 
-  const VERSION='2026.08.25.49';
+  const VERSION='2026.08.25.50';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     appVersion:{src:'./ly-app-version.js?v=2.1.48',test:()=>window.__lyAppVersion?.version==='2.1.48'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260825.3',test:()=>window.__lyLocalAssistant?.version==='2026.08.25.3'},
+    chatMultiItemNormalizer:{src:'./ly-chat-multi-item-normalizer.js?v=20260825.1',test:()=>window.__lyChatMultiItemNormalizer?.version==='2026.08.25.1'},
+    chatUnitNormalizer:{src:'./ly-chat-unit-normalizer.js?v=20260825.2',test:()=>window.__lyChatUnitNormalizer?.version==='2026.08.25.2'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
@@ -65,6 +67,12 @@
     return pending;
   }
 
+  async function loadAssistant(){
+    await load('localAssistant');
+    await load('chatMultiItemNormalizer');
+    await load('chatUnitNormalizer');
+  }
+
   async function loadCore(){
     await load('supabaseBootstrap');
     try{await window.__lySupabaseReady;}catch(e){}
@@ -110,9 +118,9 @@
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
   load('runtimeErrorBoundary');
   load('appVersion');
-  load('localAssistant');
+  loadAssistant();
   loadCore();
   load('warehouseDeleteUX');
-  setTimeout(()=>{load('runtimeErrorBoundary');load('branding');load('appVersion');load('localAssistant');loadCore();load('warehouseDeleteUX');},500);
-  window.__lyModuleLoader={version:VERSION,load,loadCore,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
+  setTimeout(()=>{load('runtimeErrorBoundary');load('branding');load('appVersion');loadAssistant();loadCore();load('warehouseDeleteUX');},500);
+  window.__lyModuleLoader={version:VERSION,load,loadCore,loadAssistant,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
 })();
