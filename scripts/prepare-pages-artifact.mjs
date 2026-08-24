@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.31';
-const REVISION='fresh-core-v2-authoritative-v32';
-const LOADER_VERSION='20260824.32';
-const SW_CACHE='lat-yen-fresh-core-v2-authoritative-84';
+const APP_VERSION='2.1.32';
+const REVISION='fresh-core-v2-authoritative-v33';
+const LOADER_VERSION='20260824.33';
+const SW_CACHE='lat-yen-fresh-core-v2-authoritative-85';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`
@@ -46,7 +46,7 @@ export function prepareHtml(source){
     html=html.includes(tag)?html.replace(tag,tag+'\n'+AUTH_SHIM):html.replace(/<head>/i,'<head>\n'+AUTH_SHIM);
   }
   html=html.replace(
-    /\n?<script src="\.\/ly-app-version\.js\?v=[^"]+"><\/script>[\s\S]*?<script src="\.\/ly-warehouse-delete-ux\.js\?v=[^"]+"><\/script>\n?/g,
+    /\n?(?:<script src="\.\/ly-runtime-error-boundary\.js\?v=[^"]+"><\/script>\n)?<script src="\.\/ly-app-version\.js\?v=[^"]+"><\/script>[\s\S]*?<script src="\.\/ly-warehouse-delete-ux\.js\?v=[^"]+"><\/script>\n?/g,
     '\n'
   );
   return /<\/body>/i.test(html)?html.replace(/<\/body>/i,RUNTIME_BLOCK+'\n</body>'):html+RUNTIME_BLOCK;
@@ -56,6 +56,7 @@ function prepareSw(source){
   let sw=String(source||'');
   sw=sw.replace(/const CACHE='[^']+';/,`const CACHE='${SW_CACHE}';`);
   if(!sw.includes("'./ly-supabase-bootstrap.js'"))sw=sw.replace("INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-module-loader.js','./ly-app-version.js',","INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',");
+  if(!sw.includes("'./ly-runtime-error-boundary.js'"))sw=sw.replace("INDEX_KEY,'./manifest.webmanifest','./icon.svg',","INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js',");
   if(!sw.includes("'./ly-legacy-dom-shim.js'"))sw=sw.replace("'./ly-fresh-core-v2-final-ownership.js',","'./ly-fresh-core-v2-final-ownership.js','./ly-legacy-dom-shim.js',");
   if(!sw.includes("'./ly-legacy-state-shim.js'"))sw=sw.replace("'./ly-legacy-dom-shim.js',","'./ly-legacy-dom-shim.js','./ly-legacy-state-shim.js',");
   if(!sw.includes("'./ly-legacy-helper-shim.js'"))sw=sw.replace("'./ly-legacy-state-shim.js',","'./ly-legacy-state-shim.js','./ly-legacy-helper-shim.js',");
@@ -72,6 +73,7 @@ const swOutput=prepareSw(swInput);
 const checks=[
   ['version',output.includes(`ly-app-version.js?v=${APP_VERSION}`)],
   ['loader',output.includes(`ly-module-loader.js?v=${LOADER_VERSION}`)],
+  ['runtime error boundary',output.includes('ly-runtime-error-boundary.js?v=20260824.1')],
   ['state shim',output.includes('ly-legacy-state-shim.js?v=20260824.4')],
   ['helper shim v2',output.includes('ly-legacy-helper-shim.js?v=20260824.2')],
   ['model shim',output.includes('ly-legacy-model-shim.js?v=20260824.2')],
@@ -87,7 +89,7 @@ const checks=[
   ['single auth owner',!output.includes('ly-auth-gate.js')],
   ['single Supabase client bootstrap',output.includes('ly-supabase-bootstrap.js?v=20260824.2')],
   ['shadow',output.includes('ly-fresh-core-v2-shadow.js?v=20260824.6')],
-  ['core84',swOutput.includes(SW_CACHE)]
+  ['core85',swOutput.includes(SW_CACHE)]
 ];
 for(const [name,ok]of checks)if(!ok)throw new Error(`Pages artifact check failed: ${name}`);
 

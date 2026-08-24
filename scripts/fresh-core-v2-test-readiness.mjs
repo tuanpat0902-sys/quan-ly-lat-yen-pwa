@@ -9,7 +9,7 @@ const required=[
  'ly-fresh-core-v2-shadow.js','ly-fresh-core-v2-read-takeover.js','ly-fresh-core-v2-legacy-hydration.js','ly-fresh-core-v2-manual-refresh.js',
  'ly-fresh-core-v2-realtime.js','ly-fresh-core-v2-realtime-phase2.js','ly-fresh-core-v2-ingredients-takeover.js','ly-fresh-core-v2-products-takeover.js',
  'ly-fresh-core-v2-documents-takeover.js','ly-fresh-core-v2-sales-takeover.js','ly-fresh-core-v2-cashflow-takeover.js','ly-fresh-core-v2-masterdata-takeover.js',
- 'ly-independent-bootstrap.js','ly-menu-security.js','ly-notification-center.js','ly-data-notifications.js','ly-inapp-notifications.js','ly-cloud-realtime.js',
+ 'ly-independent-bootstrap.js','ly-menu-security.js','ly-runtime-error-boundary.js','ly-notification-center.js','ly-data-notifications.js','ly-inapp-notifications.js','ly-cloud-realtime.js',
  'src-v2/bootstrap.js','src-v2/domains/create-domains.js','src-v2/data/supabase-gateway.js','scripts/legacy-direct-write-guard.mjs'
 ];
 for(const file of required)assert.equal(await exists(file),true,`missing Fresh Core V2 test-candidate file: ${file}`);
@@ -43,7 +43,7 @@ assert.ok(loader.includes("cloudRealtime:{src:'./ly-cloud-realtime.js")&&cloud.i
 assert.ok(security.includes('ly_verify_menu_password')&&security.includes('ly_set_menu_password'),'protected-menu RPC contract missing');
 assert.ok(writeGuard.includes('PASS')||writeGuard.includes('direct-write'),'Legacy direct-write guard missing');
 
-for(const script of ['v2:takeover:ingredients','v2:takeover:products','v2:takeover:documents','v2:takeover:sales','v2:takeover:cashflow','v2:takeover:masterdata','v2:takeover:reads','v2:legacy-hydration','v2:resume-refresh','v2:manual-refresh','v2:realtime','v2:realtime:phase2','v2:draft-safety','experience:runtime','ui:stability','menu:security','v2:readiness'])assert.ok(pkg.includes(`\"${script}\"`),`package gate missing ${script}`);
+for(const script of ['v2:takeover:ingredients','v2:takeover:products','v2:takeover:documents','v2:takeover:sales','v2:takeover:cashflow','v2:takeover:masterdata','v2:takeover:reads','v2:legacy-hydration','v2:resume-refresh','v2:manual-refresh','v2:realtime','v2:realtime:phase2','v2:draft-safety','experience:runtime','runtime:error-boundary','ui:stability','menu:security','v2:readiness'])assert.ok(pkg.includes(`\"${script}\"`),`package gate missing ${script}`);
 assert.ok(pkg.includes('legacy:write-guard'),'write guard is not part of package gates');
 
 console.log(`Fresh Core V2 TEST CANDIDATE readiness: PASS (${coreTables.length} core tables, domain/write/read/realtime/fallback gates present)`);

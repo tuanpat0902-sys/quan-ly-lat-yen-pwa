@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.31",
-  "revision": "fresh-core-v2-authoritative-v32",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-84",
+  "appVersion": "2.1.32",
+  "revision": "fresh-core-v2-authoritative-v33",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-85",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
   "bootstrapFix": "single-auth-owner-and-single-supabase-client",
@@ -9,5 +9,6 @@
   "uiStability": "preserve-active-panel-and-open-receipt-drafts-across-background-refresh",
   "notifications": "restored-center-toasts-and-data-events",
   "cloudRealtime": "unified-v2-live-status-and-deferred-projection",
+  "runtimeErrors": "quiet-deduplicated-diagnostics-without-generic-toast-spam",
   "menuSecurity": "restored-six-protected-menus"
 }

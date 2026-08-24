@@ -11622,7 +11622,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.31</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.32</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11653,7 +11653,8 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
-<script src="./ly-module-loader.js?v=20260824.32"></script>
+<script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
+<script src="./ly-module-loader.js?v=20260824.33"></script>
 <script src="./ly-history-bridge.js?v=20260823.1"></script>
 <script src="./ly-employees-bridge.js?v=20260823.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -53945,26 +53946,8 @@ async function init(){
 }
 /* Legacy init disabled by Fresh Core adapter. */
 
-let lastRuntimeErrorAt=0;
-
-window.addEventListener('error',event=>{
-  const now=Date.now();
-  console.error('Runtime error:',event.error||event.message);
-
-  if(now-lastRuntimeErrorAt>4000){
-    lastRuntimeErrorAt=now;
-    toastMsg('Phần mềm vừa tự xử lý một lỗi hiển thị.');
-  }
-});
-
-window.addEventListener('unhandledrejection',event=>{
-  console.error('Unhandled async error:',event.reason);
-
-  // Không để promise lỗi mạng gây cảnh báo trình duyệt liên tục.
-  if(String(event.reason?.message||event.reason||'').toLowerCase().includes('network')){
-    event.preventDefault?.();
-  }
-});
+/* Runtime errors are captured by ly-runtime-error-boundary.js.
+   It keeps diagnostics without interrupting receipt entry with generic toasts. */
 
 </script>
 
@@ -55400,10 +55383,12 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.31',REVISION='fresh-core-v2-authoritative-v32';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.32',REVISION='fresh-core-v2-authoritative-v33';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
 
-<script src="./ly-app-version.js?v=2.1.31"></script>
+
+
+<script src="./ly-app-version.js?v=2.1.32"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
 <script src="./ly-fresh-core-v2-shadow.js?v=20260824.6"></script>
