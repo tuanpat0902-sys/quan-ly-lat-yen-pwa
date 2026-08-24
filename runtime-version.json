@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.12",
-  "revision": "fresh-core-v2-authoritative-v13",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-65",
+  "appVersion": "2.1.13",
+  "revision": "fresh-core-v2-authoritative-v14",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-66",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "projection-store-without-legacy-db"
+  "bootstrapFix": "legacy-dom-e-compatibility-shim"
 }
