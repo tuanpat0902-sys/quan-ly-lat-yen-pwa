@@ -1,16 +1,16 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.34';
-const REVISION='fresh-core-v2-authoritative-v35';
-const LOADER_VERSION='20260824.35';
-const SW_CACHE='lat-yen-fresh-core-v2-authoritative-87';
+const APP_VERSION='2.1.35';
+const REVISION='fresh-core-v2-authoritative-v36';
+const LOADER_VERSION='20260824.36';
+const SW_CACHE='lat-yen-fresh-core-v2-authoritative-88';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`
 <script src="./ly-app-version.js?v=${APP_VERSION}"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
-<script src="./ly-fresh-core-v2-shadow.js?v=20260824.6"></script>
+<script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
 <script src="./ly-legacy-dom-shim.js?v=20260824.4"></script>
 <script src="./ly-legacy-state-shim.js?v=20260824.4"></script>
 <script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
@@ -88,7 +88,7 @@ const checks=[
   ['stable bootstrap',output.includes('ly-independent-bootstrap.js?v=20260824.4')],
   ['single auth owner',!output.includes('ly-auth-gate.js')],
   ['single Supabase client bootstrap',output.includes('ly-supabase-bootstrap.js?v=20260824.2')],
-  ['shadow',output.includes('ly-fresh-core-v2-shadow.js?v=20260824.6')],
+  ['shadow',output.includes('ly-fresh-core-v2-shadow.js?v=20260824.7')],
   ['core85',swOutput.includes(SW_CACHE)]
 ];
 for(const [name,ok]of checks)if(!ok)throw new Error(`Pages artifact check failed: ${name}`);

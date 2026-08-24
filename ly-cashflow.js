@@ -3,7 +3,7 @@
 (()=>{
   'use strict';
   if(window.__lyCashflowModule)return;
-  window.__lyCashflowModule={version:'2026.08.23.1'};
+  window.__lyCashflowModule={version:'2026.08.24.2'};
 
   function renderCashflow(){
     if(!E.cashflow)return;
@@ -430,9 +430,6 @@
     `;
   }
   
-  const INVENTORY_PAYMENT_CASHFLOW_CATEGORY=
-    'Thanh toán Nhập kho (không tính P&L)';
-
   window.__lyCashflowModule.renderCashflow=renderCashflow;
   window.__lyCashflowModule.renderCashflowReport=renderCashflowReport;
 })();

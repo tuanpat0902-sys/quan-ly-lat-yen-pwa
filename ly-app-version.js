@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.34',REVISION='fresh-core-v2-authoritative-v35';
+  const VERSION='2.1.35',REVISION='fresh-core-v2-authoritative-v36';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Thu–Chi dùng Fresh Core trực tiếp; báo cáo tháng/năm giữ đúng kỳ đang xem và tải ổn định hơn.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã sửa vòng lặp lưu nguyên liệu/phiếu nhập, khôi phục tạo Thu–Chi và báo cáo tài chính; giao diện Cài đặt được sắp xếp lại.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();

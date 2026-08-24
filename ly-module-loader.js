@@ -1,17 +1,17 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV36)return;
-  window.__lyModuleLoaderV36=true;
+  if(window.__lyModuleLoaderV37)return;
+  window.__lyModuleLoaderV37=true;
 
-  const VERSION='2026.08.24.35';
+  const VERSION='2026.08.24.36';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
-    appVersion:{src:'./ly-app-version.js?v=2.1.34',test:()=>window.__lyAppVersion?.version==='2.1.34'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.35',test:()=>window.__lyAppVersion?.version==='2.1.35'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
-    shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.6',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.6'},
+    shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
     domShim:{src:'./ly-legacy-dom-shim.js?v=20260824.4',test:()=>window.__lyLegacyDomShim?.version==='2026.08.24.4'},
     stateShim:{src:'./ly-legacy-state-shim.js?v=20260824.4',test:()=>window.__lyLegacyStateShim?.version==='2026.08.24.4'},
     helperShim:{src:'./ly-legacy-helper-shim.js?v=20260824.2',test:()=>window.__lyLegacyHelperShim?.version==='2026.08.24.2'},
@@ -42,7 +42,7 @@
     employeesUI:{src:'./ly-employees.js?v=20260823.1',test:()=>!!window.__lyEmployeesModule},
     financeUI:{src:'./ly-finance.js?v=20260824.2',test:()=>window.__lyFinanceModule?.version==='2026.08.24.2'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
-    cashflowUI:{src:'./ly-cashflow.js?v=20260823.1',test:()=>!!window.__lyCashflowModule}
+    cashflowUI:{src:'./ly-cashflow.js?v=20260824.2',test:()=>window.__lyCashflowModule?.version==='2026.08.24.2'}
   };
 
   function load(name){

@@ -17,8 +17,32 @@ export function createSupabaseGateway({ client, getOrgId, tables = DEFAULT_TABLE
   if (typeof getOrgId !== 'function') throw new Error('getOrgId is required');
   if (typeof client.from !== 'function' || typeof client.rpc !== 'function') throw new Error('Invalid Supabase client');
 
-  const fromClient = client.from.bind(client);
-  const rpcClient = client.rpc.bind(client);
+  /*
+    Keep one immutable transport per Supabase client. Takeover modules replace
+    client.from/client.rpc at runtime to support Legacy callers. A later core
+    bootstrap must never capture those wrappers, otherwise V2 -> wrapper -> V2
+    becomes an unbounded recursive call.
+  */
+  const transportKey = '__lyFreshCoreV2Transport';
+  let transport = client[transportKey];
+  if (!transport) {
+    transport = Object.freeze({
+      from: client.from.bind(client),
+      rpc: client.rpc.bind(client)
+    });
+    try {
+      Object.defineProperty(client, transportKey, {
+        value: transport,
+        configurable: false,
+        enumerable: false,
+        writable: false
+      });
+    } catch (_) {
+      // Some client proxies are not extensible; this instance still stays safe.
+    }
+  }
+  const fromClient = transport.from;
+  const rpcClient = transport.rpc;
 
   function assertTable(table) { if (!tables.has(table)) throw new Error(`Table not allowed: ${table}`); }
   function assertRpc(name) { if (!rpcs.has(name)) throw new Error(`RPC not allowed: ${name}`); }

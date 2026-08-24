@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 
 const financeSource=await fs.readFile(new URL('../ly-finance.js',import.meta.url),'utf8');
+const cashflowSource=await fs.readFile(new URL('../ly-cashflow.js',import.meta.url),'utf8');
 const indexSource=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
 const elements={
@@ -46,5 +47,15 @@ assert.equal(context.window.__lyFinanceViewState.mode,'year','year selection mus
 assert.match(indexSource,/core\?\.domains\?\.cashflow/,'cashflow writes must use the Fresh Core V2 domain');
 assert.doesNotMatch(indexSource,/\.from\(['"]ly_cashflow_entries['"]\)\s*\.upsert/,'cashflow save must not recurse through the legacy Supabase wrapper');
 assert.doesNotMatch(indexSource,/\.from\(['"]ly_cashflow_entries['"]\)\s*\.delete/,'cashflow delete must not recurse through the legacy Supabase wrapper');
+
+const sharedRuleStart=indexSource.indexOf('const INVENTORY_PAYMENT_CASHFLOW_CATEGORY=');
+const sharedRuleEnd=indexSource.indexOf('function financeExportsInRange',sharedRuleStart);
+assert.ok(sharedRuleStart>0&&sharedRuleEnd>sharedRuleStart,'shared inventory-payment cashflow rule must exist before finance calculations');
+const sharedContext={esc:value=>String(value??'')};
+vm.createContext(sharedContext);
+vm.runInContext(indexSource.slice(sharedRuleStart,sharedRuleEnd),sharedContext,{filename:'cashflow-shared-rule.js'});
+assert.match(sharedContext.cashflowCategoryOptions('expense'),/Thanh toán Nhập kho/,'create form must render the inventory-payment category');
+assert.equal(sharedContext.isInventoryPurchaseCashflow({category:'Thanh toán Nhập kho (không tính P&L)'}),true,'finance report must recognize the shared category');
+assert.doesNotMatch(cashflowSource,/const INVENTORY_PAYMENT_CASHFLOW_CATEGORY/,'lazy UI module must not hide the shared business rule in a private scope');
 
 console.log('Finance and cashflow stability: PASS');

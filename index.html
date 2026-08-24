@@ -8438,7 +8438,7 @@ table.app-aligned-table td > .muted{
   }
 }
 
-/* ===== V2.1.34 FINANCE + SETTINGS WORKSPACE ===== */
+/* ===== V2.1.35 FINANCE + SETTINGS WORKSPACE ===== */
 #finance{
   max-width:1480px;
   margin:0 auto;
@@ -8546,13 +8546,6 @@ table.app-aligned-table td > .muted{
 }
 #settings .settings-health-item span{display:block;color:#64748b;font-size:10px}
 #settings .settings-health-item b{display:block;margin-top:2px;font-size:12px}
-#settings .fresh-settings-grid{
-  display:grid;
-  grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr);
-  gap:12px;
-  align-items:start;
-}
-#settings .fresh-settings-grid>.settings-column{display:grid;gap:12px}
 #settings .card{border-radius:14px}
 #settings .settings-card-head{
   display:flex;
@@ -8563,10 +8556,26 @@ table.app-aligned-table td > .muted{
 }
 #settings .settings-card-head h3{margin:0 0 3px;font-size:15px}
 #settings .fresh-settings-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#settings .settings-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(330px,.85fr);grid-template-areas:"cloud identity" "notify data";gap:16px;align-items:stretch}
+#settings .settings-cloud-card{grid-area:cloud}
+#settings .settings-identity-card{grid-area:identity}
+#settings .settings-notify-host{grid-area:notify;min-width:0}
+#settings .settings-data-card{grid-area:data}
+#settings .settings-dashboard-grid>.card,
+#settings .settings-notify-host>.card{margin:0;box-sizing:border-box;padding:18px}
+#settings .settings-cloud-state{min-height:54px;padding:12px 14px;border:1px solid #e2e8ec;border-radius:11px;background:#f8fbfb;line-height:1.5}
+#settings .settings-data-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+#settings .settings-data-actions button{width:100%;min-height:38px}
+#settings .settings-device-note{margin-top:16px;padding-top:14px;border-top:1px solid #e7edef}
+#settings .settings-device-note b{display:block;margin-top:5px;overflow-wrap:anywhere}
+#settings .brand-settings-card .field{margin-top:14px}
+#settings .brand-settings-head{align-items:center}
+#settings .brand-preview-logo{width:58px;height:58px;object-fit:contain;border-radius:12px}
+#settings #lyMenuSecuritySettings{margin-top:16px!important;padding:18px!important;border-radius:14px!important}
 
 @media(max-width:900px){
   #finance .finance-visual-grid{grid-template-columns:1fr}
-  #settings .fresh-settings-grid{grid-template-columns:1fr}
+  #settings .settings-dashboard-grid{grid-template-columns:1fr;grid-template-areas:"cloud" "identity" "notify" "data"}
 }
 @media(max-width:700px){
   #finance .finance-filter-card{position:static}
@@ -8576,6 +8585,8 @@ table.app-aligned-table td > .muted{
   #finance .finance-quick-ranges button{width:100%}
   #settings .settings-workspace-head{align-items:flex-start;flex-direction:column}
   #settings .settings-health-grid{grid-template-columns:1fr}
+  #settings .settings-dashboard-grid{gap:12px}
+  #settings .settings-data-actions{grid-template-columns:1fr}
 }
 
 /* ===== V180 SYSTEM PERFORMANCE ===== */
@@ -11762,7 +11773,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.34</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.35</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11794,7 +11805,7 @@ html.v257-device-locked body{
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260824.35"></script>
+<script src="./ly-module-loader.js?v=20260824.36"></script>
 <script src="./ly-history-bridge.js?v=20260823.1"></script>
 <script src="./ly-employees-bridge.js?v=20260823.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -38338,6 +38349,9 @@ function cashflowFilteredList(){
     .sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.created_at).localeCompare(String(a.created_at)));
 }
 
+const INVENTORY_PAYMENT_CASHFLOW_CATEGORY=
+  'Thanh toán Nhập kho (không tính P&L)';
+
 function cashflowCategoryOptions(
   type,
   selected=''
@@ -55030,9 +55044,8 @@ renderSettings=function(){
       </div>
     </div>
 
-    <div class="fresh-settings-grid">
-      <div class="settings-column">
-        <div class="card">
+    <div class="settings-dashboard-grid">
+        <div class="card settings-cloud-card">
           <div class="settings-card-head">
             <div>
               <h3>Cloud & đồng bộ Realtime</h3>
@@ -55043,37 +55056,34 @@ renderSettings=function(){
               ${online?'Online':'Offline'}
             </div>
           </div>
-          <div id="v269SyncState" class="muted">Dữ liệu được cập nhật tự động giữa các thiết bị.</div>
+          <div id="v269SyncState" class="muted settings-cloud-state">Dữ liệu được cập nhật tự động giữa các thiết bị.</div>
           <div class="fresh-settings-actions">
             <button class="primary" onclick="loadCloud()">Tải dữ liệu mới nhất</button>
             <button class="secondary" onclick="setupRealtime();toastMsg('Đang kết nối lại Realtime')">Kết nối lại Realtime</button>
           </div>
         </div>
 
-        <div id="freshNotifyHost"></div>
+        <div id="freshNotifyHost" class="settings-notify-host"></div>
 
-        <div class="card">
+        <div class="card settings-data-card">
           <div class="settings-card-head">
             <div>
               <h3>Dữ liệu & an toàn</h3>
               <div class="muted">Tạo bản sao thủ công hoặc dọn dữ liệu nghiệp vụ cũ trên thiết bị.</div>
             </div>
           </div>
-          <div class="fresh-settings-actions">
+          <div class="settings-data-actions">
             <button class="secondary" onclick="exportBackup()">Xuất file backup</button>
             <button class="secondary" onclick="selectBackupImport()">Khôi phục từ file</button>
-            <button class="secondary" onclick="v271PurgeLegacyBusinessLocal().then(()=>loadCloud())">Dọn dữ liệu local cũ</button>
+            <button class="secondary" style="grid-column:1/-1" onclick="v271PurgeLegacyBusinessLocal().then(()=>loadCloud())">Dọn dữ liệu local cũ</button>
           </div>
           <input id="backupImportInput" type="file" accept="application/json,.json" style="display:none" onchange="importBackupFile(this)">
         </div>
-      </div>
-
-      <div class="settings-column">
-        <div class="card brand-settings-card">
+        <div class="card brand-settings-card settings-identity-card">
           <div class="brand-settings-head">
             <div>
               <h3>Nhận diện phần mềm</h3>
-              <div class="muted">Tên và logo hiển thị trên các thiết bị.</div>
+              <div class="muted">Tên và logo dùng thống nhất trên các thiết bị.</div>
             </div>
             ${brand.logo?`<img class="brand-preview-logo" src="${brand.logo}" alt="Logo">`:''}
           </div>
@@ -55086,8 +55096,8 @@ renderSettings=function(){
             </div>
           </div>
 
-          <div style="margin-top:12px">
-            <label>Logo</label>
+          <div style="margin-top:14px">
+            <label>Logo phần mềm</label>
             <input id="brandLogoInput" type="file"
               accept="image/png,image/jpeg,image/webp,image/gif"
               style="display:none" onchange="handleAppLogo(this)">
@@ -55096,18 +55106,11 @@ renderSettings=function(){
               ${brand.logo?`<button class="danger" onclick="removeAppLogo()">Xóa</button>`:''}
             </div>
           </div>
-        </div>
-
-        <div class="card">
-          <div class="settings-card-head">
-            <div>
-              <h3>Thiết bị khác</h3>
-              <div class="muted">Đăng nhập cùng tài khoản để dùng dữ liệu Cloud hiện tại.</div>
-            </div>
+          <div class="settings-device-note">
+            <div class="muted">Tài khoản dùng chung trên các thiết bị</div>
+            <b>${esc(v260AccountEmail()||'admin@latyen.vn')}</b>
           </div>
-          <b>${esc(v260AccountEmail()||'admin@latyen.vn')}</b>
         </div>
-      </div>
     </div>
   `;
 
@@ -55639,15 +55642,17 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.34',REVISION='fresh-core-v2-authoritative-v35';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.35',REVISION='fresh-core-v2-authoritative-v36';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
 
 
 
-<script src="./ly-app-version.js?v=2.1.34"></script>
+
+
+<script src="./ly-app-version.js?v=2.1.35"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
-<script src="./ly-fresh-core-v2-shadow.js?v=20260824.6"></script>
+<script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
 <script src="./ly-legacy-dom-shim.js?v=20260824.4"></script>
 <script src="./ly-legacy-state-shim.js?v=20260824.4"></script>
 <script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>

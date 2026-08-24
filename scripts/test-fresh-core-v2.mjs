@@ -24,10 +24,14 @@ import { createMasterDataRepository } from '../src-v2/domains/master-data/master
   const client = { from(name){ calls.push(['from', name]); return fakeQuery; }, rpc(name,params){ calls.push(['rpc', name, params]); return Promise.resolve({ data:{ok:true}, error:null }); } };
   const gateway = createSupabaseGateway({ client, getOrgId:()=> 'org-1' });
   client.rpc=()=>{throw new Error('patched legacy rpc must not be used by V2 gateway');};
+  client.from=()=>{throw new Error('patched legacy from must not be used by V2 gateway');};
+  const restartedGateway = createSupabaseGateway({ client, getOrgId:()=> 'org-1' });
   const rows = await gateway.selectOrg('ly_ingredients');
   assert.equal(rows.length,1);
   assert.deepEqual(calls.slice(0,3),[['from','ly_ingredients'],['select','*'],['eq','org_id','org-1']]);
   assert.deepEqual(await gateway.rpc('ly_bootstrap',{}),{ok:true});
+  assert.deepEqual(await restartedGateway.rpc('ly_bootstrap',{}),{ok:true},'restarted core must reuse pristine RPC transport');
+  assert.equal((await restartedGateway.selectOrg('ly_ingredients')).length,1,'restarted core must reuse pristine table transport');
   assert.throws(()=>gateway.table('private_table'),/not allowed/);
   await assert.rejects(()=>gateway.rpc('ly_post_import',{}),/not allowed/);
 }
