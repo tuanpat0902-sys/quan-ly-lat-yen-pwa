@@ -4,18 +4,15 @@ const source = await fs.readFile(new URL('../index.html', import.meta.url), 'utf
 
 // These are the only intentional Legacy UI direct table mutations that still
 // exist in index.html. Each one is intercepted by a Fresh Core V2 takeover
-// adapter at runtime. This guard prevents the monolith from growing new direct
-// Supabase write paths while the strangler migration is in progress.
+// adapter at runtime. Tables absent from this map (including Thu/Chi) must stay
+// on direct Fresh Core domain routes and may not regain a Legacy Supabase write.
 const baseline = new Map([
   ['ly_suppliers:insert', 1],
   ['ly_suppliers:upsert', 1],
   ['ly_warehouses:upsert', 1],
-  ['ly_warehouses:delete', 1],
   ['ly_inventory:upsert', 1],
   ['ly_ingredients:delete', 1],
-  ['ly_products:delete', 1],
-  ['ly_cashflow_entries:upsert', 1],
-  ['ly_cashflow_entries:delete', 1]
+  ['ly_products:delete', 1]
 ]);
 
 const normalized = source.replace(/\s+/g, ' ');

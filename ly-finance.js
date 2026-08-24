@@ -4,10 +4,36 @@
   'use strict';
   if(window.__lyFinanceUIV1)return;
   window.__lyFinanceUIV1=true;
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.24.2';
+
+  function financeViewState(){
+    const now=new Date();
+    const defaults={
+      mode:'month',
+      day:todayLocalISO(),
+      month:currentMonthISO(),
+      year:String(now.getFullYear()),
+      from:financeDefaultFromDate(),
+      to:todayLocalISO()
+    };
+    const saved=window.__lyFinanceViewState;
+    return window.__lyFinanceViewState={...defaults,...(saved&&typeof saved==='object'?saved:{})};
+  }
+
+  function rememberFinanceView(){
+    const state=financeViewState();
+    state.mode=$('financeMode')?.value||state.mode;
+    state.day=$('financeDay')?.value||state.day;
+    state.month=$('financeMonth')?.value||state.month;
+    state.year=$('financeYear')?.value||state.year;
+    state.from=$('financeFrom')?.value||state.from;
+    state.to=$('financeTo')?.value||state.to;
+    return state;
+  }
 
   function renderFinance(){
     if(!E.finance)return;
+    const view=financeViewState();
   
     E.finance.innerHTML=`
       <div class="finance-header">
@@ -23,21 +49,21 @@
           <div>
             <label>Chế độ xem</label>
             <select id="financeMode" onchange="renderFinanceData()">
-              <option value="day">Theo ngày</option>
-              <option value="month" selected>Theo tháng</option>
-              <option value="year">Theo năm</option>
-              <option value="range">Khoảng thời gian</option>
+              <option value="day" ${view.mode==='day'?'selected':''}>Theo ngày</option>
+              <option value="month" ${view.mode==='month'?'selected':''}>Theo tháng</option>
+              <option value="year" ${view.mode==='year'?'selected':''}>Theo năm</option>
+              <option value="range" ${view.mode==='range'?'selected':''}>Khoảng thời gian</option>
             </select>
           </div>
   
           <div id="financeDayBox" style="display:none">
             <label>Ngày</label>
-            <input id="financeDay" type="date" value="${todayLocalISO()}" onchange="renderFinanceData()">
+            <input id="financeDay" type="date" value="${esc(view.day)}" onchange="renderFinanceData()">
           </div>
   
           <div id="financeMonthBox">
             <label>Tháng</label>
-            <input id="financeMonth" type="month" value="${currentMonthISO()}" onchange="renderFinanceData()">
+            <input id="financeMonth" type="month" value="${esc(view.month)}" onchange="renderFinanceData()">
           </div>
   
           <div id="financeYearBox" style="display:none">
@@ -49,7 +75,7 @@
               min="2000"
               max="2100"
               step="1"
-              value="${financeCurrentYear()}"
+              value="${esc(view.year)}"
               onchange="renderFinanceData()"
             >
           </div>
@@ -57,11 +83,11 @@
           <div id="financeRangeBox" class="finance-range-box" style="display:none">
             <div>
               <label>Từ ngày</label>
-              <input id="financeFrom" type="date" value="${financeDefaultFromDate()}">
+              <input id="financeFrom" type="date" value="${esc(view.from)}">
             </div>
             <div>
               <label>Đến ngày</label>
-              <input id="financeTo" type="date" value="${todayLocalISO()}">
+              <input id="financeTo" type="date" value="${esc(view.to)}">
             </div>
             <button type="button" class="primary finance-apply-range" onclick="renderFinanceData()">Xem báo cáo</button>
           </div>
@@ -85,6 +111,8 @@
   function renderFinanceData(){
     const area=$('financeReportArea');
     if(!area)return;
+    try{
+      rememberFinanceView();
   
     const mode=$('financeMode')?.value||'month';
   
@@ -527,7 +555,9 @@
           </summary>
   
           <div class="finance-detail-body">
-            ${financeYearBreakdownHtml(r.year)}
+            <div id="financeYearBreakdownHost" class="finance-year-loading">
+              Đang chuẩn bị bảng đối chiếu 12 tháng…
+            </div>
           </div>
         </details>
       `:''}
@@ -729,9 +759,32 @@
       ()=>drawFinanceTrend(sales,mode),
       300
     );
+
+    if(mode==='year'){
+      scheduleIdleWork('finance-year-breakdown',()=>{
+        const host=$('financeYearBreakdownHost');
+        if(!host)return;
+        try{
+          host.innerHTML=financeYearBreakdownHtml(r.year);
+        }catch(error){
+          console.error('Finance yearly breakdown',error);
+          host.innerHTML=`<div class="warnbox">Không thể tạo bảng 12 tháng: ${esc(error?.message||error)}</div>`;
+        }
+      },180);
+    }
+    }catch(error){
+      console.error('Finance report render',error);
+      area.innerHTML=`
+        <div class="warnbox finance-report-error">
+          <b>Không thể hiển thị báo cáo kỳ đã chọn.</b>
+          <div>${esc(error?.message||error)}</div>
+          <button type="button" class="secondary sm" onclick="invalidateDerivedCaches?.();renderFinanceData()">Thử tải lại báo cáo</button>
+        </div>`;
+    }
   }
 
   window.renderFinance=renderFinance;
   window.renderFinanceData=renderFinanceData;
+  window.__lyFinanceRememberView=rememberFinanceView;
   window.__lyFinanceModule={version:VERSION,render:renderFinance,renderData:renderFinanceData};
 })();
