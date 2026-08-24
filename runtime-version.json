@@ -1,8 +1,9 @@
 {
-  "appVersion": "2.1.39",
-  "revision": "fresh-core-v2-authoritative-v40",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-92",
-  "warehouseDelete": "fresh-core-v2",
+  "appVersion": "2.1.40",
+  "revision": "fresh-core-v2-authoritative-v41",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-93",
+  "warehouseDelete": "password-confirmed-transactional-cascade",
+  "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
   "bootstrapFix": "single-auth-owner-and-single-supabase-client",
   "postMutationVisibility": "invalidate-indexes-hydrate-active-panel-batched-realtime",
@@ -17,5 +18,6 @@
   "settingsLayout": "compact-responsive-essential-controls",
   "attendanceDefault": "off-not-working",
   "supplierMenu": "hidden-with-functions-retained",
-  "salesChart": "full-labels-scroll-safe-responsive"
+  "salesChart": "full-labels-scroll-safe-responsive",
+  "sidebarVisuals": "full-width-logo-and-consistent-navigation-palette"
 }

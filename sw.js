@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-92';
+const CACHE='lat-yen-fresh-core-v2-authoritative-93';
 const INDEX_KEY='./index.html';
 const CORE_ASSETS=[
   INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',
@@ -26,7 +26,7 @@ self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=a
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim();})());});
 async function networkFirst(request){try{const response=await fetch(request,{cache:'no-store'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(request,response.clone()).catch(()=>{});}return response;}catch(e){return caches.match(request,{ignoreSearch:false})||caches.match(new URL(request.url).pathname.replace(/^\/quan-ly-lat-yen-pwa\//,'./'));}}
 async function navigationSource(request){try{const response=await fetch(request,{cache:'no-store'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(INDEX_KEY,response.clone()).catch(()=>{});}return response;}catch(e){return caches.match(INDEX_KEY);}}
-const RPC_TABLE={ly_save_import:'ly_import_receipts',ly_save_export:'ly_export_receipts',ly_save_stocktake:'ly_stocktake_receipts',ly_save_sale:'ly_sales',ly_save_ingredient:'ly_ingredients',ly_save_product:'ly_products'};
+const RPC_TABLE={ly_save_import:'ly_import_receipts',ly_save_export:'ly_export_receipts',ly_save_stocktake:'ly_stocktake_receipts',ly_save_sale:'ly_sales',ly_save_ingredient:'ly_ingredients',ly_save_product:'ly_products',ly_save_warehouse_secure:'ly_warehouses',ly_delete_warehouse_secure:'ly_warehouses'};
 function isSupabaseOrigin(url){return url.protocol==='https:'&&/^[a-z0-9-]+\\.supabase\\.co$/i.test(url.hostname);}
 function classifyMutation(request,url,body){const method=request.method.toUpperCase();if(!['POST','PUT','PATCH','DELETE'].includes(method)||!isSupabaseOrigin(url)||!url.pathname.startsWith('/rest/v1/'))return '';const rpc=url.pathname.match(/^\/rest\/v1\/rpc\/([^/]+)$/)?.[1]||'';if(rpc){if(rpc==='ly_delete_receipt'){const kind=String(body?.p_type||body?.p_kind||body?.kind||'').toLowerCase();return kind==='import'?'ly_import_receipts':kind==='export'?'ly_export_receipts':kind==='stocktake'?'ly_stocktake_receipts':kind==='sale'?'ly_sales':'';}return RPC_TABLE[rpc]||'';}const table=url.pathname.replace('/rest/v1/','').split('/')[0];return ['ly_warehouses','ly_suppliers','ly_ingredients','ly_products','ly_prepared_items','ly_inventory','ly_stock_transactions','ly_import_receipts','ly_export_receipts','ly_stocktake_receipts','ly_sales','ly_cashflow_entries'].includes(table)?table:'';}
 async function readJsonSafe(request){try{const s=await request.clone().text();return s?JSON.parse(s):null;}catch(e){return null;}}

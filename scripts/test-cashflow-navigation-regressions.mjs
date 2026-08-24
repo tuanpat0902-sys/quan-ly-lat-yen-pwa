@@ -26,7 +26,7 @@ vm.runInContext(
   {filename:'active-panel-persistence.js'}
 );
 assert.equal(navContext.__activePanelId,'cashflow','reload must restore the last valid panel');
-assert.equal(navContext.__normalizeActivePanelId('unknown'),'ingredients','invalid persisted panels must fall back safely');
+assert.equal(navContext.__normalizeActivePanelId('unknown'),'sales','invalid persisted panels must fall back to the login default Sales panel');
 assert.match(source,/showTab\(\s*selectedPanel,/,'nav initialization must restore the active panel shell before Cloud render');
 assert.match(source,/localStorage\.setItem\(ACTIVE_PANEL_STORAGE_KEY,activePanelId\)/,'navigation must persist every panel change');
 

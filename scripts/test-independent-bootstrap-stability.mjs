@@ -28,7 +28,7 @@ const context={
   document,
   setTimeout(callback){timers.push(callback);return timers.length;},
   window:{
-    __LY_APP_VERSION:'2.1.39',
+    __LY_APP_VERSION:'2.1.40',
     __lyFreshCoreV2:core,
     __lyFreshCoreV2Shadow:{status(){return {phase:'ready'};}},
     __lyFreshCoreV2FinalOwnership:{async install(){installs++;return true;},status(){return {phase:'active',active:true};}},
