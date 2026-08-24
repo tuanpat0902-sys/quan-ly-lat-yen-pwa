@@ -7,10 +7,14 @@ const handlers=[];
 const refreshes=[];
 const events=[];
 let statusHandler=null;
+let batchCallback=null;
 let catchups=0;
 let hydrations=0;
-let renders=0;
-const channel={on(type,filter,cb){handlers.push({type,filter,cb});return this;},subscribe(cb){statusHandler=cb;cb('SUBSCRIBED');return this;}};
+let safeRenders=0;
+let fallbackRenders=0;
+let deferRender=false;
+
+const channel={on(type,filter,callback){handlers.push({type,filter,callback});return this;},subscribe(callback){statusHandler=callback;callback('SUBSCRIBED');return this;}};
 const client={channel(){return channel;},removeChannel(){}};
 const domains={};
 for(const name of ['masterData','ingredients','products','imports','exports','stocktake','sales','cashflow','inventory'])domains[name]={async refresh(){refreshes.push(name);}};
@@ -19,9 +23,26 @@ const core={
   domains,
   async refreshCoreDomains(){catchups++;return [];},
   events:{emit(type,payload){events.push([type,payload]);}},
-  store:{getState(){return storeState;},patch(p){Object.assign(storeState,p);}}
+  store:{getState(){return storeState;},patch(patch){Object.assign(storeState,patch);}}
 };
-const context={console,navigator:{onLine:true},setTimeout(fn){fn();return 1;},clearTimeout(){},document:{readyState:'complete',addEventListener(){}},window:{sb:client,__lyFreshOrgId:'org-1',__lyFreshCoreV2:core,__lyFreshCoreV2LegacyHydration:{hydrate(snapshot){assert.equal(snapshot,storeState);hydrations++;return true;}},renderAll(){renders++;}}};
+
+const context={
+  console,
+  Date,
+  navigator:{onLine:true},
+  setTimeout(callback,delay){if(delay===260){batchCallback=callback;return 260;}callback();return 1;},
+  clearTimeout(){},
+  document:{readyState:'complete',addEventListener(){}},
+  window:{
+    sb:client,
+    __lyFreshOrgId:'org-1',
+    __lyFreshCoreV2:core,
+    __lyFreshCoreV2Shadow:{status(){return {phase:'ready',refreshAt:Date.now()};}},
+    __lyFreshCoreV2LegacyHydration:{hydrate(snapshot){assert.equal(snapshot,storeState);hydrations++;return true;}},
+    v235RequestBackgroundRender(){safeRenders++;return !deferRender;},
+    renderAll(){fallbackRenders++;}
+  }
+};
 context.globalThis=context;
 vm.createContext(context);
 vm.runInContext(source,context,{filename:'ly-fresh-core-v2-realtime.js'});
@@ -31,39 +52,47 @@ await flush();
 const api=context.window.__lyFreshCoreV2Realtime;
 assert.equal(api.status().enabled,true);
 assert.equal(api.status().connected,true);
-assert.equal(api.status().catchups,1,'initial realtime subscription must perform one full V2 catch-up');
-assert.equal(catchups,1);
-assert.equal(hydrations,1,'initial catch-up must project V2 state into the visible Legacy shell');
-assert.equal(renders,1,'initial catch-up must render the current menu');
+assert.equal(api.status().catchups,1);
+assert.equal(api.status().catchupSkips,1,'fresh Shadow data must avoid a duplicate full startup refresh');
+assert.equal(catchups,0,'initial subscription must reuse the just-loaded Shadow snapshot');
+assert.equal(hydrations,1);
+assert.equal(safeRenders,1);
+assert.equal(fallbackRenders,0,'Realtime must use the interaction-safe Legacy renderer');
 assert.equal(handlers.length,17,'must subscribe exactly to V2-owned domain tables');
-assert.ok(handlers.every(x=>x.filter.filter==='org_id=eq.org-1'));
-assert.equal(api.tableDomain().ly_warehouses,'masterData');
-assert.equal(api.tableDomain().ly_suppliers,'masterData');
-assert.equal(api.tableDomain().ly_inventory,'inventory');
-assert.equal(api.tableDomain().ly_stock_transactions,'inventory');
+assert.ok(handlers.every(item=>item.filter.filter==='org_id=eq.org-1'));
 
-for(const [table,expected] of [['ly_warehouses','masterData'],['ly_ingredients','ingredients'],['ly_sale_items','sales'],['ly_inventory','inventory'],['ly_stock_transactions','inventory']]){
-  const handler=handlers.find(x=>x.filter.table===table);
-  await handler.cb({});
-  assert.equal(refreshes.at(-1),expected);
+for(const table of ['ly_warehouses','ly_ingredients','ly_sale_items','ly_inventory','ly_stock_transactions']){
+  handlers.find(item=>item.filter.table===table).callback({});
 }
+assert.equal(api.status().events,5);
+assert.equal(api.status().coalescedEvents,4,'events arriving together must be coalesced');
+assert.equal(typeof batchCallback,'function');
+await batchCallback();
 await flush();
-assert.ok(hydrations>=6,'every realtime domain refresh must hydrate visible menus');
-assert.ok(renders>=6,'every realtime domain refresh must render without a page reload');
+assert.deepEqual([...new Set(refreshes)].sort(),['ingredients','inventory','masterData','sales']);
+assert.equal(refreshes.length,4,'duplicate inventory table events must refresh the inventory domain once');
+assert.equal(api.status().batches,1);
+assert.equal(api.status().projections,2,'one realtime batch must produce one visible projection');
+assert.equal(hydrations,2);
+assert.equal(safeRenders,2);
+
+deferRender=true;
+handlers.find(item=>item.filter.table==='ly_cashflow_entries').callback({});
+await batchCallback();
+await flush();
+assert.equal(api.status().deferredRenders,1,'active editing must defer the render instead of rebuilding the form');
 
 statusHandler('CHANNEL_ERROR');
 assert.equal(api.status().connected,false);
 statusHandler('SUBSCRIBED');
 await flush();
-assert.equal(api.status().catchups,2,'reconnect must perform another full V2 catch-up');
-assert.equal(catchups,2);
+assert.equal(api.status().catchups,2);
+assert.equal(catchups,1,'reconnect must perform one authoritative full catch-up');
 assert.ok(events.some(([type,payload])=>type==='realtime:catchup-complete'&&payload.reason==='reconnected'));
 
 await api.catchUp('manual-test');
 assert.equal(api.status().catchups,3);
-assert.equal(catchups,3);
-assert.equal(api.status().projections,8,'domain refreshes and catch-ups must all project into the UI');
-
+assert.equal(catchups,2);
 assert.equal(source.includes('loadCloud('),false,'V2 realtime must not trigger Legacy full reload');
-assert.equal(source.includes('.innerHTML'),false,'V2 realtime must not mutate DOM');
-console.log('Fresh Core V2 realtime coordinator + reconnect catch-up: PASS');
+assert.equal(source.includes('.innerHTML'),false,'V2 realtime must not mutate DOM directly');
+console.log('Fresh Core V2 realtime batching + active-panel projection: PASS');

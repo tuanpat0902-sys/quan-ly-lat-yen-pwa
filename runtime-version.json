@@ -1,9 +1,11 @@
 {
-  "appVersion": "2.1.29",
-  "revision": "fresh-core-v2-authoritative-v30",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-82",
+  "appVersion": "2.1.30",
+  "revision": "fresh-core-v2-authoritative-v31",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-83",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
   "bootstrapFix": "single-auth-owner-and-single-supabase-client",
-  "postMutationVisibility": "invalidate-indexes-hydrate-render-realtime"
+  "postMutationVisibility": "invalidate-indexes-hydrate-active-panel-batched-realtime",
+  "uiStability": "preserve-active-panel-and-stop-healthy-shell-rerenders",
+  "menuSecurity": "restored-six-protected-menus"
 }
