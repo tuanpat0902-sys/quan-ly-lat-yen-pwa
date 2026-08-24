@@ -89,7 +89,7 @@ import { createMasterDataRepository } from '../src-v2/domains/master-data/master
   assert.deepEqual(core.store.getState().preparedItems,[]);
   assert.deepEqual(core.store.getState().inventoryData,{balances:[],transactions:[]});
   assert.equal(panel,'sales');
-  assert.equal(core.version,'2.4.0-master-data-takeover-ready');
+  assert.equal(core.version,'2.5.0-authoritative');
   assert.ok(core.domains.ingredients && core.domains.products && core.domains.imports && core.domains.exports && core.domains.stocktake && core.domains.sales && core.domains.cashflow && core.domains.inventory && core.domains.masterData);
 }
 

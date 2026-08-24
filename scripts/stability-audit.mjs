@@ -39,6 +39,7 @@ const ctx={console,Promise,setTimeout,clearTimeout,queueMicrotask};
 ctx.window=ctx;
 ctx.self=ctx;
 ctx.navigator={onLine:true};
+ctx.sb={auth:{getSession:async()=>({data:{session:null},error:null})}};
 ctx.location={origin:'https://example.test'};
 ctx.requestIdleCallback=()=>0;
 ctx.cancelIdleCallback=()=>{};
@@ -48,7 +49,10 @@ const scriptNodes=[];
 let context;
 const runFile=(file)=>vm.runInContext(fs.readFileSync(path.join(ROOT,file),'utf8'),context,{filename:file});
 ctx.document={
+  readyState:'loading',
+  scripts:[],
   addEventListener:()=>{},
+  getElementById:()=>null,
   querySelector:()=>null,
   createElement:(tag)=>({tagName:String(tag).toUpperCase(),dataset:{},addEventListener:()=>{}}),
   head:{appendChild:(s)=>{
@@ -90,3 +94,4 @@ try{
 
 if(failed){console.error('\nStability audit failed.');process.exit(1);}
 console.log('\nStability audit passed.');
+process.exit(0);

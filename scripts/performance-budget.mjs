@@ -11,7 +11,7 @@ const indexBytes=Buffer.byteLength(index);
 const intervals=(runtime.match(/setInterval\s*\(/g)||[]).length;
 const observers=(runtime.match(/new\s+MutationObserver\s*\(/g)||[]).length;
 const innerHtml=(runtime.match(/\.innerHTML\s*=/g)||[]).length;
-const coreNumber=Number(sw.match(/fresh-core-(\d+)/)?.[1]||0);
+const coreNumber=Number(sw.match(/(?:fresh-core|authoritative)-(\d+)/)?.[1]||0);
 console.log(`INFO: index=${indexBytes} bytes intervals=${intervals} observers=${observers} innerHTML=${innerHtml} core=${coreNumber}`);
 if(indexBytes>1_320_000)fail('index.html exceeded 1.32 MB performance budget');else pass('index.html performance budget');
 if(intervals>8)fail(`setInterval call sites increased above budget: ${intervals}`);else pass('timer call-site budget');

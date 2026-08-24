@@ -13,8 +13,8 @@ const required=[
 ];
 for(const file of required)assert.equal(await exists(file),true,`missing Fresh Core V2 test-candidate file: ${file}`);
 
-const [pkg,sw,readTakeover,hydration,manual,realtime,phase2,domains,writeGuard]=await Promise.all([
- read('package.json'),read('sw.js'),read('ly-fresh-core-v2-read-takeover.js'),read('ly-fresh-core-v2-legacy-hydration.js'),read('ly-fresh-core-v2-manual-refresh.js'),read('ly-fresh-core-v2-realtime.js'),read('ly-fresh-core-v2-realtime-phase2.js'),read('src-v2/domains/create-domains.js'),read('scripts/legacy-direct-write-guard.mjs')
+const [pkg,sw,loader,readTakeover,hydration,manual,realtime,phase2,domains,writeGuard]=await Promise.all([
+ read('package.json'),read('sw.js'),read('ly-module-loader.js'),read('ly-fresh-core-v2-read-takeover.js'),read('ly-fresh-core-v2-legacy-hydration.js'),read('ly-fresh-core-v2-manual-refresh.js'),read('ly-fresh-core-v2-realtime.js'),read('ly-fresh-core-v2-realtime-phase2.js'),read('src-v2/domains/create-domains.js'),read('scripts/legacy-direct-write-guard.mjs')
 ]);
 
 const coreTables=['ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items','ly_products','ly_recipe_items','ly_inventory','ly_import_receipts','ly_import_items','ly_export_receipts','ly_export_items','ly_stocktake_receipts','ly_stocktake_items','ly_sales','ly_sale_items','ly_stock_transactions','ly_cashflow_entries'];
@@ -25,7 +25,8 @@ for(const file of ['ly-fresh-core-v2-ingredients-takeover.js','ly-fresh-core-v2-
 
 assert.ok(readTakeover.includes('foregroundFastPaths'),'foreground fast-path telemetry missing');
 assert.ok(readTakeover.includes('hydrateFromCore'),'shared hydration wiring missing');
-assert.ok(hydration.includes('ly-fresh-core-v2-manual-refresh.js'),'manual refresh coordinator is not chained from hydration runtime');
+assert.ok(hydration.includes('__lyFreshCoreV2LegacyHydration'),'Legacy hydration API missing');
+assert.ok(loader.includes("manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js")&&loader.includes("await load('manualRefresh')"),'manual refresh coordinator is not chained from the module loader');
 assert.ok(manual.includes('autoSyncNow'),'manual user refresh hook missing');
 assert.ok(manual.includes('refreshCoreDomains'),'manual refresh is not authoritative V2 refresh');
 assert.ok(realtime.includes('refreshCoreDomains')&&realtime.toLowerCase().includes('catchup'),'realtime reconnect catch-up missing');

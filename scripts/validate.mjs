@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { basename, join } from 'node:path';
+import vm from 'node:vm';
 
 const ROOT = process.cwd();
 const INDEX_MAX_BYTES = 1_500_000;
@@ -23,6 +24,17 @@ if(existsSync(join(ROOT,'index.html'))){
   if(size>INDEX_MAX_BYTES)fail(`index.html exceeds ${(INDEX_MAX_BYTES/1024).toFixed(0)} KiB safety ceiling`);else ok('index.html is inside safety ceiling');
   for(const fn of ['auditActionClass','auditFilterRows','renderHistory','renderEmployees','renderFinance','renderFinanceData','renderReports','renderSettings','renderCashflow','renderCashflowReport','renderImportReport','renderExportReport','renderSaleReport','renderEmployeePayrollTable','renderEmployeeAttendance','renderEmployeeReport','renderEmployeeSalaryReport'])if(new RegExp(`\\bfunction\\s+${fn}\\s*\\(`).test(html))fail(`index.html still contains extracted ${fn}()`);
   for(const kept of ['compactAuditRows','loadAuditLog','saveAuditLog','auditLog','debouncedHistoryRender','loadEmployees','bindEmployeeActions','financeInventorySnapshot','financeInventoryPeriod','financeSalesInRange','financeSalaryCostInRange','financeCashflowInRange','drawFinanceTrend','drawReportCharts','migrateV2ToCloud','isInventoryPurchaseCashflow','formatVNDate','addExportReceiptLine','drawSaleReportCharts','previewPayrollRow','toggleAttendanceEmployee','drawEmployeeWorkChart','toggleSalaryReportSource'])if(!new RegExp(`\\bfunction\\s+${kept}\\s*\\(`).test(html))fail(`index.html lost required core ${kept}()`);
+  const scripts=html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi);
+  let inlineIndex=0;
+  for(const match of scripts){
+    const attrs=match[1]||'',source=match[2]||'';
+    const id=attrs.match(/\bid=["']([^"']+)["']/i)?.[1]||`inline-${inlineIndex}`;
+    inlineIndex++;
+    if(/\bsrc\s*=/i.test(attrs)||/\btype=["']module["']/i.test(attrs)||!source.trim())continue;
+    try{new vm.Script(source,{filename:`index.html#${id}`})}
+    catch(error){fail(`index.html script ${id} syntax check failed`);console.error(String(error?.stack||error))}
+  }
+  if(!failed)ok('index.html inline script syntax');
   if(!failed)ok('Lazy UI extraction is intact while data/calculation/migration cores stay resident');
 }
 
