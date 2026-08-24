@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.38',REVISION='fresh-core-v2-authoritative-v39';
+  const VERSION='2.1.39',REVISION='fresh-core-v2-authoritative-v40';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Bổ sung quản lý nhà cung cấp, bố cục Cài đặt gọn hơn và trạng thái chấm công mặc định “Không đi làm”.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Ẩn mục Nhà cung cấp khỏi menu và cải thiện biểu đồ số lượng bán để không mất tên món.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();

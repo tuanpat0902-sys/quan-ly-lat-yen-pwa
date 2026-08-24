@@ -42,6 +42,9 @@
 #settings #lyMenuSecuritySettings .ly-sec-fields input{height:34px;margin-top:3px}
 #settings #lyMenuSecuritySettings .ly-sec-actions{margin-top:9px}
 #settings #lyMenuSecuritySettings .ly-sec-note{margin-top:7px}
+.sale-chart-panel h3{white-space:normal;line-height:1.35;margin-bottom:10px}
+.sale-chart-scroll{width:100%;overflow-x:auto;overflow-y:hidden;padding:2px 0 8px;overscroll-behavior-inline:contain}
+#sales .sale-chart-scroll canvas{width:max(720px,100%)!important;max-width:none!important;max-height:none!important;display:block}
 .supplier-page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
 .supplier-page-head h2{margin:0 0 3px}
 .supplier-list-card{padding:0!important;overflow:hidden}

@@ -504,7 +504,9 @@
       <div class="sale-analysis-grid section-gap">
         <div class="card sale-analysis-panel sale-chart-panel">
           <h3>Biểu đồ số lượng bán — ${esc(range.title)}</h3>
-          <canvas id="saleQtyChart" height="220"></canvas>
+          <div class="sale-chart-scroll" aria-label="Biểu đồ số lượng bán có thể cuộn ngang">
+            <canvas id="saleQtyChart" height="220"></canvas>
+          </div>
         </div>
 
         <div class="card sale-analysis-panel sale-table-panel">
@@ -539,5 +541,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.24.2'};
+  window.__lySpecialReportsModule={version:'2026.08.24.3'};
 })();
