@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.40",
-  "revision": "fresh-core-v2-authoritative-v41",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-93",
+  "appVersion": "2.1.41",
+  "revision": "fresh-core-v2-authoritative-v42",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-94",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -13,6 +13,7 @@
   "runtimeErrors": "quiet-deduplicated-diagnostics-without-generic-toast-spam",
   "mutationRouting": "direct-v2-rpc-with-targeted-domain-refresh-and-no-wrapper-recursion",
   "ingredientWarehouseScope": "new-ingredients-only-in-selected-warehouse",
+  "newWarehouseState": "empty-without-inventory-membership-seeding",
   "menuSecurity": "restored-six-protected-menus",
   "supplierManagement": "visible-linked-supplier-directory-and-import-guidance",
   "settingsLayout": "compact-responsive-essential-controls",

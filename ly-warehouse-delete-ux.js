@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.24.2';
+const VERSION='2026.08.24.3';
 if(window.__lyWarehouseDeleteUX?.version===VERSION)return;
 const text=v=>String(v??'').trim();
 const html=v=>text(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -95,15 +95,6 @@ async function saveWarehouseSecure(id=''){
     const {data,error}=await client.rpc('ly_save_warehouse_secure',{p_warehouse:row,p_password_mode:mode,p_current_password:current||null,p_new_password:next||null});
     if(error)throw error;
     const warehouseId=data?.id;if(!warehouseId)throw new Error('Cloud chưa trả về mã kho.');
-    if(!id){
-      const purchased=(getDb()?.ingredients||[]).filter(x=>x.ingredient_type==='purchased');
-      if(purchased.length){
-        const org=text(window.__lyFreshOrgId);
-        const inventory=purchased.map(item=>({org_id:org,warehouse_id:warehouseId,ingredient_id:item.id,quantity:0}));
-        const result=await client.from('ly_inventory').upsert(inventory,{onConflict:'org_id,warehouse_id,ingredient_id'});
-        if(result.error)throw result.error;
-      }
-    }
     statusCache.set(warehouseId,{has_password:Boolean(data?.has_password)});
     try{currentWarehouseId=warehouseId}catch(_){window.currentWarehouseId=warehouseId}
     await refresh();close();notify(id?'Đã lưu thay đổi kho':'Đã tạo kho mới');
