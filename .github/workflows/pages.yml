@@ -29,8 +29,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Prepare Ver 2.1.1 authoritative runtime
-        run: node scripts/prepare-pages-artifact.mjs
+      - name: Validate Pages artifact contract
+        run: node scripts/prepare-pages-artifact.mjs --check
 
       - name: Build minimal Pages artifact
         shell: bash
@@ -41,6 +41,21 @@ jobs:
           cp index.html sw.js manifest.webmanifest icon.svg .nojekyll runtime-version.json _site/
           find . -maxdepth 1 -type f -name 'ly-*.js' -exec cp {} _site/ \;
           cp -R src-v2 _site/src-v2
+
+          # Production must use the source-of-truth runtime, never the stale
+          # rewrite constants from prepare-pages-artifact.mjs.
+          sed -E -i "s#ly-module-loader\.js\?v=[^\"']+#ly-module-loader.js?v=20260825.53#g" _site/index.html
+          sed -i "s/const VERSION='2026.08.25.52';/const VERSION='2026.08.25.53';/" _site/ly-module-loader.js
+          sed -i "s#ly-chat-unit-normalizer.js?v=20260825.4#ly-chat-unit-normalizer.js?v=20260825.6#" _site/ly-module-loader.js
+          sed -i "s/__lyChatUnitNormalizer?.version==='2026.08.25.4'/__lyChatUnitNormalizer?.version==='2026.08.25.6'/" _site/ly-module-loader.js
+          sed -i "s/lat-yen-fresh-core-v2-authoritative-105/lat-yen-fresh-core-v2-authoritative-106/" _site/sw.js
+
+          grep -q "ly-module-loader.js?v=20260825.53" _site/index.html
+          grep -q "ly-chat-unit-normalizer.js?v=20260825.6" _site/ly-module-loader.js
+          grep -q "__lyChatUnitNormalizer?.version==='2026.08.25.6'" _site/ly-module-loader.js
+          grep -q "lat-yen-fresh-core-v2-authoritative-106" _site/sw.js
+          grep -q "ly-chat-stock-command-normalizer-v4.js?v=20260825.4" _site/ly-chat-unit-normalizer.js
+
           echo 'Pages artifact files:'
           find _site -type f | sort
 
