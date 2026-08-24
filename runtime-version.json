@@ -1,8 +1,8 @@
 {
-  "appVersion": "2.1.10",
-  "revision": "fresh-core-v2-authoritative-v11",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-63",
+  "appVersion": "2.1.12",
+  "revision": "fresh-core-v2-authoritative-v13",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-65",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
-  "bootstrapFix": "independent-supabase-before-shadow"
+  "bootstrapFix": "projection-store-without-legacy-db"
 }
