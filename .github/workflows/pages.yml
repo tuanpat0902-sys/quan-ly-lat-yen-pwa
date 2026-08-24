@@ -44,18 +44,46 @@ jobs:
 
           # Deploy source-of-truth runtime; do not let stale prepare constants
           # downgrade chatbot/runtime generations.
-          sed -E -i "s#ly-module-loader\.js\?v=[^\"']+#ly-module-loader.js?v=20260825.54#g" _site/index.html
-          sed -i "s/const VERSION='2026.08.25.52';/const VERSION='2026.08.25.54';/" _site/ly-module-loader.js
+          sed -E -i "s#ly-module-loader\.js\?v=[^\"']+#ly-module-loader.js?v=20260825.55#g" _site/index.html
+          sed -i "s/const VERSION='2026.08.25.52';/const VERSION='2026.08.25.55';/" _site/ly-module-loader.js
           sed -i "s#ly-chat-unit-normalizer.js?v=20260825.4#ly-chat-unit-normalizer.js?v=20260825.7#" _site/ly-module-loader.js
           sed -i "s/__lyChatUnitNormalizer?.version==='2026.08.25.4'/__lyChatUnitNormalizer?.version==='2026.08.25.7'/" _site/ly-module-loader.js
-          sed -i "s/lat-yen-fresh-core-v2-authoritative-105/lat-yen-fresh-core-v2-authoritative-107/" _site/sw.js
+          sed -i "s/lat-yen-fresh-core-v2-authoritative-105/lat-yen-fresh-core-v2-authoritative-108/" _site/sw.js
 
-          grep -q "ly-module-loader.js?v=20260825.54" _site/index.html
+          # Critical stock-command guards must exist before ANY chatbot handler.
+          # Load them in <head>, independent from the asynchronous module loader.
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('_site/index.html')
+          s=p.read_text(encoding='utf-8')
+          block='''<script src="./ly-chat-stock-command-normalizer-v4.js?v=20260825.4"></script>\n<script src="./ly-chat-stock-submit-gate.js?v=20260825.1"></script>\n'''
+          if 'ly-chat-stock-submit-gate.js?v=20260825.1' not in s:
+              marker='</head>'
+              if marker not in s.lower():
+                  raise SystemExit('Missing </head> for critical chatbot preload')
+              pos=s.lower().find(marker)
+              s=s[:pos]+block+s[pos:]
+          p.write_text(s,encoding='utf-8')
+
+          p=Path('_site/sw.js')
+          sw=p.read_text(encoding='utf-8')
+          needle="'./ly-chat-unit-normalizer.js',"
+          extra="'./ly-chat-unit-normalizer.js','./ly-chat-stock-command-normalizer-v4.js','./ly-chat-stock-submit-gate.js',"
+          if "'./ly-chat-stock-submit-gate.js'" not in sw:
+              if needle not in sw:
+                  raise SystemExit('Missing chatbot asset anchor in service worker')
+              sw=sw.replace(needle,extra,1)
+          p.write_text(sw,encoding='utf-8')
+          PY
+
+          grep -q "ly-module-loader.js?v=20260825.55" _site/index.html
+          grep -q "ly-chat-stock-command-normalizer-v4.js?v=20260825.4" _site/index.html
+          grep -q "ly-chat-stock-submit-gate.js?v=20260825.1" _site/index.html
           grep -q "ly-chat-unit-normalizer.js?v=20260825.7" _site/ly-module-loader.js
           grep -q "__lyChatUnitNormalizer?.version==='2026.08.25.7'" _site/ly-module-loader.js
-          grep -q "lat-yen-fresh-core-v2-authoritative-107" _site/sw.js
-          grep -q "ly-chat-stock-command-normalizer-v4.js?v=20260825.4" _site/ly-chat-unit-normalizer.js
-          grep -q "ly-chat-stock-submit-gate.js?v=20260825.1" _site/ly-chat-unit-normalizer.js
+          grep -q "lat-yen-fresh-core-v2-authoritative-108" _site/sw.js
+          grep -q "'./ly-chat-stock-command-normalizer-v4.js'" _site/sw.js
+          grep -q "'./ly-chat-stock-submit-gate.js'" _site/sw.js
           grep -q "legacyDisabled:true" _site/ly-chat-stock-command-normalizer.js
 
           echo 'Pages artifact files:'
