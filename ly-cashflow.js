@@ -3,7 +3,27 @@
 (()=>{
   'use strict';
   if(window.__lyCashflowModule)return;
-  window.__lyCashflowModule={version:'2026.08.24.2'};
+  window.__lyCashflowModule={version:'2026.08.24.3'};
+
+  function normalizeCashflowEntry(entry){
+    const source=entry&&typeof entry==='object'?entry:{};
+    const rawType=String(source.type??source.entry_type??'')
+      .trim()
+      .toLowerCase();
+    const type=
+      rawType==='income'||rawType==='thu'
+        ?'income'
+        :rawType==='expense'||rawType==='chi'
+          ?'expense'
+          :rawType;
+
+    return {
+      ...source,
+      type,
+      date:source.date??source.entry_date??'',
+      amount:Number(source.amount||0)
+    };
+  }
 
   function renderCashflow(){
     if(!E.cashflow)return;
@@ -28,13 +48,17 @@
       $('cashflowReportTo')?.value||
       todayLocalISO();
   
-    const editing=
+    const editingRaw=
       cashflowEditId
         ?loadCashflow()
           .find(
             x=>x.id===cashflowEditId
           )
         :null;
+
+    const editing=editingRaw
+      ?normalizeCashflowEntry(editingRaw)
+      :null;
   
     if(cashflowEditId && !editing){
       cashflowEditId='';
@@ -319,7 +343,12 @@
       return;
     }
   
-    const list=cashflowFilteredList();
+    // Fresh Core stores canonical fields as entry_type/entry_date while the
+    // legacy UI uses type/date. Normalize at the report boundary as well as
+    // during hydration so a partially refreshed client can never total rows
+    // as zero or label an income row as an expense.
+    const list=cashflowFilteredList()
+      .map(normalizeCashflowEntry);
     const income=list.filter(x=>x.type==='income').reduce((s,x)=>s+Number(x.amount||0),0);
     const expense=list.filter(x=>x.type==='expense').reduce((s,x)=>s+Number(x.amount||0),0);
     const balance=income-expense;
@@ -433,12 +462,7 @@
   function projectFreshState(core=window.__lyFreshCoreV2){
     const entries=core?.store?.getState?.()?.cashflowEntries;
     if(!Array.isArray(entries))return false;
-    window.__lyFreshCashflow=entries.map(x=>({
-      id:x.id,warehouse_id:x.warehouse_id,type:x.entry_type??x.type,
-      date:x.entry_date??x.date,category:x.category,amount:Number(x.amount||0),
-      note:x.note||'',finance_scope:x.finance_scope||undefined,
-      created_at:x.created_at,updated_at:x.updated_at
-    }));
+    window.__lyFreshCashflow=entries.map(normalizeCashflowEntry);
     invalidateDataIndexes?.();
     invalidateDerivedCaches?.();
     if(activePanelId==='cashflow')renderCashflow();
@@ -448,4 +472,5 @@
   window.__lyCashflowModule.renderCashflow=renderCashflow;
   window.__lyCashflowModule.renderCashflowReport=renderCashflowReport;
   window.__lyCashflowModule.projectFreshState=projectFreshState;
+  window.__lyCashflowModule.normalizeEntry=normalizeCashflowEntry;
 })();

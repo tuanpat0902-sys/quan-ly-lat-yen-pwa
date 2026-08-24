@@ -2,7 +2,7 @@
   'use strict';
   if(window.__lyHistoryBridgeV1)return;
   window.__lyHistoryBridgeV1=true;
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.24.2';
   let loading=null;
 
   function fallbackLoad(){
@@ -15,7 +15,7 @@
         return;
       }
       const s=document.createElement('script');
-      s.src='./ly-activity-history.js?v=20260823.1';
+      s.src='./ly-activity-history.js?v=20260824.2';
       s.async=true;
       s.dataset.lyModule='activityHistory';
       s.onload=()=>resolve(window.__lyActivityHistoryModule||null);

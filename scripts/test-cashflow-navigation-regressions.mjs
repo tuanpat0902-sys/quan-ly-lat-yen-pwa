@@ -68,9 +68,9 @@ context.__lyFreshCoreV2={
   }}
 };
 vm.createContext(context);
-const projectionStart=cashflowSource.indexOf('function projectFreshState(');
+const projectionStart=cashflowSource.indexOf('function normalizeCashflowEntry(');
 const projectionEnd=cashflowSource.indexOf('window.__lyCashflowModule.renderCashflow=',projectionStart);
-assert.ok(projectionStart>0&&projectionEnd>projectionStart,'cashflow module must expose direct Fresh projection');
+assert.ok(projectionStart>0&&projectionEnd>projectionStart,'cashflow module must expose normalized direct Fresh projection');
 vm.runInContext(
   cashflowSource.slice(projectionStart,projectionEnd)+
     ';globalThis.__projectFreshState=projectFreshState;',

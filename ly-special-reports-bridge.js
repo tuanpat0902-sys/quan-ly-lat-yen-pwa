@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   if(window.__lySpecialReportsBridge)return;
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.24.2';
   let loading=null;
   const stubs={};
   function load(){
@@ -10,7 +10,7 @@
     if(loading)return loading;
     loading=new Promise(resolve=>{
       const s=document.createElement('script');
-      s.src='./ly-special-reports.js?v=20260823.1';
+      s.src='./ly-special-reports.js?v=20260824.2';
       s.async=true;
       s.onload=()=>resolve(true);
       s.onerror=()=>{loading=null;resolve(false)};

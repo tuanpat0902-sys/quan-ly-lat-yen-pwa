@@ -3,12 +3,12 @@
   if(window.__lyModuleLoaderV38)return;
   window.__lyModuleLoaderV38=true;
 
-  const VERSION='2026.08.24.37';
+  const VERSION='2026.08.24.38';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
-    appVersion:{src:'./ly-app-version.js?v=2.1.36',test:()=>window.__lyAppVersion?.version==='2.1.36'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.37',test:()=>window.__lyAppVersion?.version==='2.1.37'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
@@ -17,7 +17,7 @@
     helperShim:{src:'./ly-legacy-helper-shim.js?v=20260824.2',test:()=>window.__lyLegacyHelperShim?.version==='2026.08.24.2'},
     modelShim:{src:'./ly-legacy-model-shim.js?v=20260824.2',test:()=>window.__lyLegacyModelShim?.version==='2026.08.24.2'},
     listShim:{src:'./ly-legacy-list-shim.js?v=20260824.1',test:()=>window.__lyLegacyListShim?.version==='2026.08.24.1'},
-    menuSecurity:{src:'./ly-menu-security.js?v=20260824.2',test:()=>window.__lyMenuSecurity?.version==='2026.08.24.2'},
+    menuSecurity:{src:'./ly-menu-security.js?v=20260824.3',test:()=>window.__lyMenuSecurity?.version==='2026.08.24.3'},
     ingredientsTakeover:{src:'./ly-fresh-core-v2-ingredients-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2IngredientsTakeover?.version==='2026.08.24.4'},
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
     documentsTakeover:{src:'./ly-fresh-core-v2-documents-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2DocumentsTakeover?.version==='2026.08.24.3'},
@@ -38,11 +38,11 @@
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
-    activityHistory:{src:'./ly-activity-history.js?v=20260823.1',test:()=>!!window.__lyActivityHistoryModule},
+    activityHistory:{src:'./ly-activity-history.js?v=20260824.2',test:()=>window.__lyActivityHistoryModule?.version==='2026.08.24.2'},
     employeesUI:{src:'./ly-employees.js?v=20260823.1',test:()=>!!window.__lyEmployeesModule},
     financeUI:{src:'./ly-finance.js?v=20260824.2',test:()=>window.__lyFinanceModule?.version==='2026.08.24.2'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
-    cashflowUI:{src:'./ly-cashflow.js?v=20260824.2',test:()=>window.__lyCashflowModule?.version==='2026.08.24.2'}
+    cashflowUI:{src:'./ly-cashflow.js?v=20260824.3',test:()=>window.__lyCashflowModule?.version==='2026.08.24.3'}
   };
 
   function load(name){

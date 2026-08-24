@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.33",
-  "revision": "fresh-core-v2-authoritative-v34",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-86",
+  "appVersion": "2.1.37",
+  "revision": "fresh-core-v2-authoritative-v38",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-90",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
   "bootstrapFix": "single-auth-owner-and-single-supabase-client",

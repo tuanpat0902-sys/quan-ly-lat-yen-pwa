@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.36',REVISION='fresh-core-v2-authoritative-v37';
+  const VERSION='2.1.37',REVISION='fresh-core-v2-authoritative-v38';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Phiếu Thu–Chi mới hiển thị ngay sau khi lưu; khi tải lại, phần mềm giữ nguyên mục đang làm việc.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Báo cáo Thu/Chi nhận đúng khoản thu, khoản chi và hiển thị tỷ lệ chi phí; khi tải lại, phần mềm giữ nguyên mục đang làm việc.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();

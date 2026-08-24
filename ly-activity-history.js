@@ -4,7 +4,76 @@
   'use strict';
   if(window.__lyActivityHistoryUIV1)return;
   window.__lyActivityHistoryUIV1=true;
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.24.2';
+  const cloudState={orgId:'',rows:[],loading:false,loaded:false,error:''};
+
+  function cloudClient(){
+    try{if(typeof sb!=='undefined'&&sb?.from)return sb;}catch(e){}
+    return window.sb?.from?window.sb:null;
+  }
+
+  function activityModule(table){
+    return ({
+      ly_warehouses:'Kho/Chi nhánh',ly_suppliers:'Nhà cung cấp',
+      ly_ingredients:'Nguyên liệu/ Dụng cụ',ly_prepared_items:'Pha chế',
+      ly_products:'Thực đơn',ly_recipe_items:'Công thức',
+      ly_import_receipts:'Nhập kho',ly_export_receipts:'Xuất kho',
+      ly_stocktake_receipts:'Kiểm kê',ly_sales:'Bán hàng',
+      ly_cashflow_entries:'Thu/Chi'
+    })[String(table||'')]||'Hệ thống';
+  }
+
+  function cloudActivityRow(row){
+    const event=String(row?.event_type||'').toLowerCase();
+    const action=event==='insert'?'Tạo mới':event==='update'?'Cập nhật':event==='delete'?'Xóa':'Thay đổi';
+    const amount=Number(row?.amount||0);
+    return {
+      id:`cloud_${row?.id||''}`,
+      warehouse_id:'',
+      module:activityModule(row?.entity_table),
+      action,
+      summary:String(row?.entity_name||row?.entity_id||'Dữ liệu Cloud'),
+      details:amount>0?`Giá trị ${money(amount)}`:'Đồng bộ từ Cloud',
+      created_at:row?.created_at||new Date().toISOString(),
+      _cloud:true
+    };
+  }
+
+  function activityRows(){
+    const local=loadAuditLog();
+    const seen=new Set();
+    return [...cloudState.rows,...local]
+      .filter(row=>{
+        const key=String(row?.id||'');
+        if(key&&seen.has(key))return false;
+        if(key)seen.add(key);
+        return true;
+      })
+      .sort((a,b)=>new Date(b?.created_at||0)-new Date(a?.created_at||0));
+  }
+
+  async function refreshCloudHistory(force=false){
+    const orgId=String(window.__lyFreshOrgId||'');
+    const client=cloudClient();
+    if(!orgId||!client||cloudState.loading)return false;
+    if(!force&&cloudState.loaded&&cloudState.orgId===orgId)return true;
+    cloudState.loading=true;cloudState.orgId=orgId;cloudState.error='';
+    try{
+      const {data,error}=await client.from('ly_activity_events')
+        .select('id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at')
+        .eq('org_id',orgId).order('id',{ascending:false}).limit(500);
+      if(error)throw error;
+      cloudState.rows=(data||[]).map(cloudActivityRow);
+      cloudState.loaded=true;
+      return true;
+    }catch(error){
+      cloudState.error=String(error?.message||error||'Không tải được lịch sử Cloud');
+      return false;
+    }finally{
+      cloudState.loading=false;
+      try{if(typeof activePanelId!=='undefined'&&activePanelId==='history')setTimeout(renderHistory,0);}catch(e){}
+    }
+  }
 
   function auditActionClass(action){
     const a=String(action||'').toLowerCase();
@@ -20,7 +89,7 @@
     const start=$('historyFrom')?.value||'';
     const end=$('historyTo')?.value||'';
   
-    return loadAuditLog().filter(x=>{
+    return activityRows().filter(x=>{
       if(x.warehouse_id && x.warehouse_id!==currentWarehouseId)return false;
       if(module!=='all'&&x.module!==module)return false;
       const date=String(x.created_at||'').slice(0,10);
@@ -36,10 +105,11 @@
 
   function renderHistory(){
     if(!E.history)return;
+    refreshCloudHistory(false);
   
     const allAuditRows=auditFilterRows();
     const auditRows=allAuditRows.slice(0,300);
-    const modules=[...new Set(loadAuditLog()
+    const modules=[...new Set(activityRows()
       .filter(x=>!x.warehouse_id||x.warehouse_id===currentWarehouseId)
       .map(x=>x.module)
       .filter(Boolean))]
@@ -106,7 +176,7 @@
               `).join('')}
             </table>
           </div>
-        `:'<div class="empty">Chưa có hoạt động được ghi nhận. Các thay đổi mới từ phiên bản này sẽ xuất hiện tại đây.</div>'}
+        `:`<div class="empty">${cloudState.loading?'Đang tải lịch sử hoạt động từ Cloud…':cloudState.error?'Không tải được lịch sử Cloud: '+esc(cloudState.error):'Chưa có hoạt động được ghi nhận.'}</div>`}
       </div>
   
       <div class="card section-gap">
@@ -139,5 +209,5 @@
   window.auditActionClass=auditActionClass;
   window.auditFilterRows=auditFilterRows;
   window.renderHistory=renderHistory;
-  window.__lyActivityHistoryModule={version:VERSION,render:renderHistory};
+  window.__lyActivityHistoryModule={version:VERSION,render:renderHistory,refresh:()=>refreshCloudHistory(true),status:()=>({...cloudState,count:activityRows().length})};
 })();

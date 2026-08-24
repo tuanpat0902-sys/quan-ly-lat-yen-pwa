@@ -1823,7 +1823,6 @@ aside,
   font-size:12.5px !important;
 }
 
-/* Mục đang chọn vẫn nổi bật nhưng không cao hơn quá nhiều */
 #nav button.active,
 #nav .nav-submenu > button.active{
   min-height:34px !important;
@@ -1832,7 +1831,6 @@ aside,
   font-size:13.5px !important;
 }
 
-/* Loại bỏ khoảng trống thừa nếu nav dùng gap */
 #nav{
   gap:0 !important;
 }
@@ -1854,6 +1852,20 @@ aside,
   width:100%!important;
   max-height:260px;
 }
+.sale-analysis-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  gap:10px;
+  align-items:stretch;
+}
+.sale-analysis-panel{
+  min-width:0;
+  margin-top:0!important;
+}
+.sale-analysis-panel .scroll{
+  max-height:310px;
+  overflow:auto;
+}
 @media(max-width:700px){
   #sales .import-report-filter{
     display:grid;
@@ -1861,6 +1873,9 @@ aside,
   }
   #sales .import-report-filter>div{
     min-width:0;
+  }
+  .sale-analysis-grid{
+    grid-template-columns:1fr;
   }
 }
 
@@ -8438,7 +8453,6 @@ table.app-aligned-table td > .muted{
   }
 }
 
-/* ===== V2.1.36 CASHFLOW + ACTIVE PANEL STABILITY ===== */
 #finance{
   max-width:1480px;
   margin:0 auto;
@@ -11773,7 +11787,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.36</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.37</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11805,14 +11819,14 @@ html.v257-device-locked body{
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260824.37"></script>
-<script src="./ly-history-bridge.js?v=20260823.1"></script>
+<script src="./ly-module-loader.js?v=20260824.38"></script>
+<script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260823.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
 <script src="./ly-reports-bridge.js?v=20260823.1"></script>
 <script src="./ly-settings-ui-bridge.js?v=20260823.1"></script>
 <script src="./ly-cashflow-bridge.js?v=20260823.1"></script>
-<script src="./ly-special-reports-bridge.js?v=20260823.1"></script>
+<script src="./ly-special-reports-bridge.js?v=20260824.2"></script>
 <script src="./ly-employee-reports-bridge.js?v=20260823.1"></script>
 <script>
 // ===== SUPABASE PROJECT =====
@@ -54085,11 +54099,6 @@ async function init(){
 
   updatePendingSyncBadge();
 }
-/* Legacy init disabled by Fresh Core adapter. */
-
-/* Runtime errors are captured by ly-runtime-error-boundary.js.
-   It keeps diagnostics without interrupting receipt entry with generic toasts. */
-
 </script>
 
 <script>
@@ -54102,12 +54111,6 @@ if ('serviceWorker' in navigator) {
 
 
 <script>
-/* ============================================================
-   LÁT YÊN — LEGACY UI / FRESH CLOUD CORE
-   UI remains from the refined legacy application.
-   Business persistence below is completely Cloud-authoritative.
-   ============================================================ */
-
 window.__lyFreshOrgId=null;
 window.__lyFreshRealtime=null;
 window.__lyFreshReloadTimer=null;
@@ -55631,14 +55634,14 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.36',REVISION='fresh-core-v2-authoritative-v37';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.37',REVISION='fresh-core-v2-authoritative-v38';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card';root.appendChild(card);}const core=window.__lyFreshCoreV2||{},fo=window.__lyFreshCoreV2FinalOwnership||{},loader=window.__lyModuleLoader||{};card.innerHTML='<h3>Thông tin phiên bản</h3><div style="font-size:20px;font-weight:850;color:#0f766e;margin:8px 0">Ver '+APP_VERSION+'</div><table style="width:100%;border-collapse:collapse"><tbody><tr><td style="padding:8px;font-weight:700">App version</td><td style="padding:8px">'+APP_VERSION+'</td></tr><tr><td style="padding:8px;font-weight:700">Revision</td><td style="padding:8px">'+REVISION+'</td></tr><tr><td style="padding:8px;font-weight:700">Fresh Core V2</td><td style="padding:8px">'+(core.mode||core.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Final ownership</td><td style="padding:8px">'+(fo.version||'authoritative')+'</td></tr><tr><td style="padding:8px;font-weight:700">Module loader</td><td style="padding:8px">'+(loader.version||'đang tải')+'</td></tr><tr><td style="padding:8px;font-weight:700">Service Worker</td><td style="padding:8px;word-break:break-all">'+(navigator.serviceWorker?.controller?.scriptURL||'chưa có controller')+'</td></tr><tr><td style="padding:8px;font-weight:700">Tải trang lúc</td><td style="padding:8px">'+new Date().toLocaleString('vi-VN')+'</td></tr></tbody></table>';return true;}function boot(){render();document.addEventListener('click',e=>{const b=e.target?.closest?.('button[data-panel]');if(b?.dataset?.panel==='settings')setTimeout(render,50)},true);window.addEventListener('latyen:panel',e=>{if(e?.detail?.panel==='settings')setTimeout(render,50)});}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
 
 
 
 
 
-<script src="./ly-app-version.js?v=2.1.36"></script>
+<script src="./ly-app-version.js?v=2.1.37"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
 <script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
@@ -55647,7 +55650,8 @@ saveSaleReceipt=async function(){
 <script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
-<script src="./ly-menu-security.js?v=20260824.2"></script>
+<script src="./ly-sidebar-visuals.js?v=20260824.1"></script>
+<script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
 <script src="./ly-data-notifications.js?v=20260823.6"></script>
 <script src="./ly-notification-center.js?v=20260823.3"></script>
@@ -55656,6 +55660,7 @@ saveSaleReceipt=async function(){
 <script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>
 <script src="./ly-independent-bootstrap.js?v=20260824.4"></script>
 <script src="./ly-warehouse-delete-ux.js?v=20260824.1"></script>
+<script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 
 </body>
 </html>

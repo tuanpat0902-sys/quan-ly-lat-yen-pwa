@@ -58,4 +58,33 @@ assert.match(sharedContext.cashflowCategoryOptions('expense'),/Thanh toán Nhậ
 assert.equal(sharedContext.isInventoryPurchaseCashflow({category:'Thanh toán Nhập kho (không tính P&L)'}),true,'finance report must recognize the shared category');
 assert.doesNotMatch(cashflowSource,/const INVENTORY_PAYMENT_CASHFLOW_CATEGORY/,'lazy UI module must not hide the shared business rule in a private scope');
 
+const cashflowElements={
+  cashflowReportArea:{innerHTML:''},
+  cashflowReportMode:{value:'month'},
+  cashflowReportDayBox:{style:{}},cashflowReportMonthBox:{style:{}},
+  cashflowReportRangeBox:{style:{}}
+};
+const cashflowContext={
+  window:null,E:{cashflow:{}},console,Number,String,Array,Date,
+  $:id=>cashflowElements[id]||null,
+  cashflowRange:()=>({start:'2026-08-01',end:'2026-08-31',label:'Tháng 08/2026'}),
+  cashflowFilteredList:()=>[
+    {entry_type:'income',entry_date:'2026-08-24',category:'Thu khác',amount:800000},
+    {entry_type:'expense',entry_date:'2026-08-18',category:'Tiền thuê mặt bằng',amount:3500000},
+    {type:'chi',date:'2026-08-19',category:'Điện nước',amount:650000}
+  ],
+  esc:value=>String(value??''),money:value=>`money:${Number(value||0)}`,
+  num:value=>String(Number(value||0)),formatVNDate:value=>String(value||''),
+  setTimeout:fn=>{fn();return 1;},invalidateDataIndexes:()=>{},
+  invalidateDerivedCaches:()=>{},activePanelId:'cashflow'
+};
+cashflowContext.window=cashflowContext;
+vm.createContext(cashflowContext);
+vm.runInContext(cashflowSource,cashflowContext,{filename:'ly-cashflow.js'});
+cashflowContext.__lyCashflowModule.renderCashflowReport();
+assert.match(cashflowElements.cashflowReportArea.innerHTML,/money:800000/,'entry_type income must contribute to total income');
+assert.match(cashflowElements.cashflowReportArea.innerHTML,/money:4150000/,'entry_type and legacy chi must contribute to total expense');
+assert.match(cashflowElements.cashflowReportArea.innerHTML,/cashflow-type income[^>]*>Thu</,'canonical income must not be mislabeled as expense');
+assert.match(cashflowElements.cashflowReportArea.innerHTML,/Tỷ lệ chi phí[\s\S]*Tiền thuê mặt bằng[\s\S]*84\.337/,'expense ratio must render from normalized rows');
+
 console.log('Finance and cashflow stability: PASS');

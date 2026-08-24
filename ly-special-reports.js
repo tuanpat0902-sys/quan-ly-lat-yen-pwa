@@ -501,33 +501,35 @@
         </div>
       </div>
   
-      <div class="card section-gap">
-        <h3>Biểu đồ số lượng bán — ${esc(range.title)}</h3>
-        <canvas id="saleQtyChart" height="220"></canvas>
-      </div>
-  
-      <div class="card section-gap">
-        <h3>Thống kê số lượng theo món</h3>
-        ${ranked.length?`
-          <div class="scroll">
-            <table>
-              <tr>
-                <th>Món</th>
-                <th>Đơn vị</th>
-                <th class="right">Số lượng bán</th>
-                <th class="right">Tỷ trọng</th>
-              </tr>
-              ${ranked.map(x=>`
+      <div class="sale-analysis-grid section-gap">
+        <div class="card sale-analysis-panel sale-chart-panel">
+          <h3>Biểu đồ số lượng bán — ${esc(range.title)}</h3>
+          <canvas id="saleQtyChart" height="220"></canvas>
+        </div>
+
+        <div class="card sale-analysis-panel sale-table-panel">
+          <h3>Thống kê số lượng theo món</h3>
+          ${ranked.length?`
+            <div class="scroll">
+              <table>
                 <tr>
-                  <td><b>${esc(x.name)}</b></td>
-                  <td>${esc(x.unit||'')}</td>
-                  <td class="right"><b>${num(x.qty)}</b></td>
-                  <td class="right">${qty?((x.qty/qty)*100).toFixed(1):'0.0'}%</td>
+                  <th>Món</th>
+                  <th>Đơn vị</th>
+                  <th class="right">Số lượng bán</th>
+                  <th class="right">Tỷ trọng</th>
                 </tr>
-              `).join('')}
-            </table>
-          </div>
-        `:'<div class="empty">Không có dữ liệu bán hàng trong khoảng thời gian này.</div>'}
+                ${ranked.map(x=>`
+                  <tr>
+                    <td><b>${esc(x.name)}</b></td>
+                    <td>${esc(x.unit||'')}</td>
+                    <td class="right"><b>${num(x.qty)}</b></td>
+                    <td class="right">${qty?((x.qty/qty)*100).toFixed(1):'0.0'}%</td>
+                  </tr>
+                `).join('')}
+              </table>
+            </div>
+          `:'<div class="empty">Không có dữ liệu bán hàng trong khoảng thời gian này.</div>'}
+        </div>
       </div>
     `;
   
@@ -537,5 +539,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.23.1'};
+  window.__lySpecialReportsModule={version:'2026.08.24.2'};
 })();
