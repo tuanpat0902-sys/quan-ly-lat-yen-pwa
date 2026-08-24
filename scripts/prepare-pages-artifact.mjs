@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.32';
-const REVISION='fresh-core-v2-authoritative-v33';
-const LOADER_VERSION='20260824.33';
-const SW_CACHE='lat-yen-fresh-core-v2-authoritative-85';
+const APP_VERSION='2.1.33';
+const REVISION='fresh-core-v2-authoritative-v34';
+const LOADER_VERSION='20260824.34';
+const SW_CACHE='lat-yen-fresh-core-v2-authoritative-86';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`

@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.32",
-  "revision": "fresh-core-v2-authoritative-v33",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-85",
+  "appVersion": "2.1.33",
+  "revision": "fresh-core-v2-authoritative-v34",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-86",
   "warehouseDelete": "fresh-core-v2",
   "settingsVersionPanel": true,
   "bootstrapFix": "single-auth-owner-and-single-supabase-client",
@@ -10,5 +10,7 @@
   "notifications": "restored-center-toasts-and-data-events",
   "cloudRealtime": "unified-v2-live-status-and-deferred-projection",
   "runtimeErrors": "quiet-deduplicated-diagnostics-without-generic-toast-spam",
+  "mutationRouting": "direct-v2-rpc-with-targeted-domain-refresh-and-no-wrapper-recursion",
+  "ingredientWarehouseScope": "new-ingredients-only-in-selected-warehouse",
   "menuSecurity": "restored-six-protected-menus"
 }

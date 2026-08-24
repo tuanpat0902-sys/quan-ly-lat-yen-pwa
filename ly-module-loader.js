@@ -1,14 +1,14 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV35)return;
-  window.__lyModuleLoaderV35=true;
+  if(window.__lyModuleLoaderV36)return;
+  window.__lyModuleLoaderV36=true;
 
-  const VERSION='2026.08.24.33';
+  const VERSION='2026.08.24.34';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
-    appVersion:{src:'./ly-app-version.js?v=2.1.32',test:()=>window.__lyAppVersion?.version==='2.1.32'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.33',test:()=>window.__lyAppVersion?.version==='2.1.33'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.6',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.6'},

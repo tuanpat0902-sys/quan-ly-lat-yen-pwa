@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.32',REVISION='fresh-core-v2-authoritative-v33';
+  const VERSION='2.1.33',REVISION='fresh-core-v2-authoritative-v34';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã loại bỏ cảnh báo lỗi hiển thị lặp lại và giữ lại chẩn đoán kỹ thuật ở chế độ nền.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Phiếu được lưu qua đường giao dịch V2 ổn định và nguyên liệu mới chỉ thuộc kho đang chọn.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
