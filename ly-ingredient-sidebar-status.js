@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientSidebarStatus)return;
-  const VERSION='2026.08.26.4';
+  const VERSION='2026.08.26.5';
   let timer=0;
 
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
@@ -86,7 +86,7 @@
 
   function ensureChatUnitSync(){
     if(window.__lyChatUnitSync||document.querySelector('script[data-ly-chat-unit-sync]'))return;
-    const script=document.createElement('script');script.src='./ly-chat-unit-sync.js?v=20260826.1';script.async=true;script.dataset.lyChatUnitSync='1';
+    const script=document.createElement('script');script.src='./ly-chat-unit-sync.js?v=20260826.3';script.async=true;script.dataset.lyChatUnitSync='1';
     (document.head||document.documentElement).appendChild(script);
   }
 
