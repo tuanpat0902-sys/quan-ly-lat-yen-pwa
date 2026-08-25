@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV49)return;
   window.__lyModuleLoaderV49=true;
 
-  const VERSION='2026.08.25.63';
+  const VERSION='2026.08.25.64';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -29,6 +29,7 @@
     manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js?v=20260824.2',test:()=>window.__lyFreshCoreV2ManualRefresh?.version==='2026.08.24.2'},
     realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.24.7'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
+    ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260825.1',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.25.1'},
     inAppNotifications:{src:'./ly-inapp-notifications.js?v=20260824.2',test:()=>window.__lyInAppNotifications?.version==='2026.08.24.2'},
     dataNotifications:{src:'./ly-data-notifications.js?v=20260825.7',test:()=>window.__lyDataActivityNotifications?.version==='2026.08.25.7'},
     notificationCenter:{src:'./ly-notification-center.js?v=20260823.3',test:()=>window.__lyNotificationCenter?.version==='2026.08.23.3'},
@@ -65,58 +66,27 @@
     return pending;
   }
 
-  async function loadAssistant(){
-    await load('localAssistant');
-  }
+  async function loadAssistant(){await load('localAssistant');}
 
   async function loadCore(){
     await load('supabaseBootstrap');
     try{await window.__lySupabaseReady;}catch(e){}
-    await load('hydration');
-    await load('shadow');
-    await load('domShim');
-    await load('stateShim');
-    await load('helperShim');
-    await load('modelShim');
-    await load('listShim');
-    await load('menuSecurity');
-    await load('ingredientsTakeover');
-    await load('productsTakeover');
-    await load('documentsTakeover');
-    await load('salesTakeover');
-    await load('cashflowTakeover');
-    await load('masterDataTakeover');
-    await load('readTakeover');
-    await load('manualRefresh');
-    await load('realtime');
-    await load('realtimePhase2');
-    await load('inAppNotifications');
-    await load('dataNotifications');
-    await load('notificationCenter');
-    await load('inventoryAlerts');
-    await load('cloudRealtime');
-    await load('finalOwnership');
+    await load('hydration');await load('shadow');await load('domShim');await load('stateShim');await load('helperShim');await load('modelShim');await load('listShim');await load('menuSecurity');
+    await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
+    await load('ingredientConversionSync');
+    await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('cloudRealtime');await load('finalOwnership');
   }
 
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
   function preparePanel(panel){
     if(panel==='settings'){load('settingsUI');load('settings');load('branding');}
-    if(panel==='history')load('activityHistory');
-    if(panel==='employees')load('employeesUI');
-    if(panel==='finance')load('financeUI');
-    if(panel==='reports')load('reportsUI');
-    if(panel==='cashflow')load('cashflowUI');
-    if(HEAVY.has(panel))load('heavyPanels');
+    if(panel==='history')load('activityHistory');if(panel==='employees')load('employeesUI');if(panel==='finance')load('financeUI');if(panel==='reports')load('reportsUI');if(panel==='cashflow')load('cashflowUI');if(HEAVY.has(panel))load('heavyPanels');
   }
 
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
   document.addEventListener('click',event=>preparePanel(panelOf(event.target)),true);
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
-  load('runtimeErrorBoundary');
-  load('appVersion');
-  loadAssistant();
-  loadCore();
-  load('warehouseDeleteUX');
+  load('runtimeErrorBoundary');load('appVersion');loadAssistant();loadCore();load('warehouseDeleteUX');
   setTimeout(()=>{load('runtimeErrorBoundary');load('branding');load('appVersion');loadAssistant();loadCore();load('warehouseDeleteUX');},500);
   window.__lyModuleLoader={version:VERSION,load,loadCore,loadAssistant,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
 })();
