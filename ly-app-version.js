@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.58',REVISION='fresh-core-v2-authoritative-v59';
+  const VERSION='2.1.59',REVISION='fresh-core-v2-authoritative-v60';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};

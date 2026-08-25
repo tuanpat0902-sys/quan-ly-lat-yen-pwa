@@ -6,6 +6,8 @@ const source=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url)
 assert.ok(source.includes("DB_NAME='lat_yen_local_assistant_v1'"));
 assert.ok(source.includes('indexedDB.open(DB_NAME,1)'));
 assert.ok(source.includes('Lịch sử chat chỉ lưu trên thiết bị này'));
+assert.ok(source.includes('class="ly-assistant-privacy-icon"')&&source.includes('>?</span>'),'privacy information must use a compact question-mark icon');
+assert.ok(source.includes('width:46px;height:46px;font-size:36px'),'the mobile chat close control must have a large touch target and visible icon');
 assert.ok(source.includes('câu hỏi hiện tại, tối đa 10 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật'));
 assert.ok(!source.includes('localStorage'),'assistant history must not use LocalStorage');
 for(const forbidden of [".rpc(",".from(",'saveImportReceipt?.','saveExportReceipt?.','saveStocktakeReceipt?.','saveSaleReceipt?.'])assert.ok(!source.includes(forbidden),`assistant must not directly commit business data: ${forbidden}`);
@@ -49,6 +51,8 @@ const bestSeller=assistant.reportReply('Món nào bán chạy nhất năm nay');
 const profitReport=assistant.reportReply('Báo cáo lợi nhuận cuối kỳ năm nay');assert.equal(profitReport.report_kind,'profit');assert.match(profitReport.content,/-35\.927\.000 đ/);assert.match(profitReport.content,/doanh thu 100\.000 đ − giá vốn 40\.000 đ/);
 const profitTypo=assistant.reportReply('Lợi nhuận năm nat');assert.equal(profitTypo.report_kind,'profit','the common “năm nat” typo must still mean “năm nay”');assert.match(profitTypo.content,/năm nay/);
 const inventoryValue=assistant.reportReply('Báo cáo giá trị tồn kho cuối kỳ năm nay');assert.equal(inventoryValue.report_kind,'inventory_value');assert.match(inventoryValue.content,/123\.456 đ/);assert.match(inventoryValue.content,/Giá trị tồn kho cuối kỳ/);
+const inventoryAfterProfit=assistant.contextualReportMessage('giá trị tồn kho cuối kỳ',[{role:'user',content:'lợi nhuận năm nay'}]);assert.equal(inventoryAfterProfit,'giá trị tồn kho cuối kỳ nam nay','only the previous time period may be inherited, never its report intent');assert.equal(assistant.reportReply(inventoryAfterProfit).report_kind,'inventory_value','inventory value after a profit question must stay an inventory report');
+const unclearClosing=assistant.assistantReply('báo cáo cuối kỳ');assert.equal(unclearClosing.suggestions.length,2,'an unclear closing report must offer choices instead of guessing');assert.match(unclearClosing.content,/chưa rõ/);
 assert.match(assistant.reportReply('Báo cáo doanh thu hôm nay').content,/Cà phê sữa/);
 assert.match(assistant.reportReply('Tồn kho hiện tại').content,/Đường 25/);
 const inventoryDetail=assistant.reportReply('Thống kê chi tiết tồn kho');assert.equal(inventoryDetail.report_kind,'inventory_detail');assert.match(inventoryDetail.content,/1\. Đường: 25 kg/);assert.match(inventoryDetail.content,/Tổng cộng 1 nguyên liệu còn hàng/);
@@ -60,7 +64,7 @@ assert.match(assistant.reportReply('Báo cáo doanh thu từ 2026-08-18 đến 2
 assert.match(assistant.reportReply('Báo cáo doanh thu ngày hôm qua').content,/hôm qua \(\d{2}\/\d{2}\/\d{4}\)/,'yesterday must resolve to one explicit date');
 const followup=assistant.contextualReportMessage('hôm qua',[{role:'user',content:'doanh thu ngày hôm nay là bao nhiêu'},{role:'assistant',content:'Không có giao dịch'}]);assert.equal(followup,'Báo cáo doanh thu hôm qua','short time-only follow-up must retain the previous report intent');assert.match(assistant.reportReply(followup).content,/hôm qua \(\d{2}\/\d{2}\/\d{4}\)/);
 assert.equal(assistant.contextualReportMessage('ngày hôm qua',[{role:'user',content:'thu chi hôm nay'}]),'Báo cáo thu chi ngày hôm qua');
-const salaryFollowup=assistant.contextualReportMessage('lương nhân viên thì bao nhiêu',[{role:'user',content:'báo cáo tài chính năm nay'}]);assert.match(salaryFollowup,/lương nhân viên thì bao nhiêu báo cáo tài chính năm nay/);assert.match(assistant.reportReply(salaryFollowup).content,/36\.000\.000 đ/,'salary follow-up must retain the previous year period and use payroll data');assert.match(assistant.reportReply(salaryFollowup).content,/An: 20\.000\.000 đ/);
+const salaryFollowup=assistant.contextualReportMessage('lương nhân viên thì bao nhiêu',[{role:'user',content:'báo cáo tài chính năm nay'}]);assert.equal(salaryFollowup,'lương nhân viên thì bao nhiêu nam nay');assert.match(assistant.reportReply(salaryFollowup).content,/36\.000\.000 đ/,'salary follow-up must retain only the previous year period and use payroll data');assert.match(assistant.reportReply(salaryFollowup).content,/An: 20\.000\.000 đ/);
 const salaryExplicit=assistant.reportReply('Báo cáo lương nhân viên năm nay');assert.equal(salaryExplicit.report_kind,'salary');assert.match(salaryExplicit.content,/tổng quỹ lương 36\.000\.000 đ/,'an explicit salary report must never fall back to the generic finance summary');
 assert.equal(salaryRange[0],`${new Date().getFullYear()}-01-01`);assert.equal(salaryRange[1],`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`,'salary calculation must receive the full requested year-to-date range');
 assert.equal(assistant.contextualReportMessage('năm trước',[{role:'user',content:'báo cáo lương nhân viên năm nay'}]),'Báo cáo lương nhân viên năm trước');

@@ -56,6 +56,7 @@ ctx.document={
   querySelector:()=>null,
   createElement:(tag)=>({tagName:String(tag).toUpperCase(),dataset:{},addEventListener:()=>{}}),
   head:{appendChild:(s)=>{
+    if(s.tagName==='STYLE')return s;
     scriptNodes.push(s);
     const rel=String(s.src||'').replace(/^\.\//,'').split('?')[0];
     try{

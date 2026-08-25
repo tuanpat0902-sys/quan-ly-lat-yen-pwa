@@ -85,6 +85,8 @@ cashflowContext.__lyCashflowModule.renderCashflowReport();
 assert.match(cashflowElements.cashflowReportArea.innerHTML,/money:800000/,'entry_type income must contribute to total income');
 assert.match(cashflowElements.cashflowReportArea.innerHTML,/money:4150000/,'entry_type and legacy chi must contribute to total expense');
 assert.match(cashflowElements.cashflowReportArea.innerHTML,/cashflow-type income[^>]*>Thu</,'canonical income must not be mislabeled as expense');
-assert.match(cashflowElements.cashflowReportArea.innerHTML,/Tỷ lệ chi phí[\s\S]*Tiền thuê mặt bằng[\s\S]*84\.337/,'expense ratio must render from normalized rows');
+assert.match(cashflowElements.cashflowReportArea.innerHTML,/Tỷ lệ chi phí[\s\S]*cashflow-expense-donut[\s\S]*Tiền thuê mặt bằng[\s\S]*84\.337/,'expense ratio must render as a donut chart from normalized rows');
+assert.match(cashflowElements.cashflowReportArea.innerHTML,/--cashflow-expense-gradient:#dc2626 0% 84\.337[\s\S]*#f97316/,'expense chart slices must follow each normalized category ratio');
+assert.match(cashflowSource,/\.cashflow-expense-chart[\s\S]*conic-gradient\(var\(--cashflow-expense-gradient\)\)/,'expense chart must have a native responsive donut visualization in its lazy UI owner');
 
 console.log('Finance and cashflow stability: PASS');

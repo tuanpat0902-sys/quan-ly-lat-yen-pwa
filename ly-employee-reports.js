@@ -101,6 +101,8 @@
     const range=employeeReportRange();
     if(range.start>range.end){
       area.innerHTML='<div class="warnbox">Từ ngày không được lớn hơn đến ngày.</div>';
+      const chartPeriod=$('employeeWorkChartPeriod');if(chartPeriod)chartPeriod.textContent='Khoảng thời gian chưa hợp lệ.';
+      drawEmployeeWorkChart([]);
       return;
     }
   
@@ -126,6 +128,7 @@
     const mostWorked=[...activeRows].sort((a,b)=>
       (b.workDays*8+b.hours+b.overtime)-(a.workDays*8+a.hours+a.overtime)
     )[0];
+    const chartPeriod=$('employeeWorkChartPeriod');if(chartPeriod)chartPeriod.textContent=range.label;
   
     area.innerHTML=`
       <div class="employee-report-kpis">
@@ -185,11 +188,6 @@
             </table>
           </div>
         `:'<div class="empty section-gap">Không có dữ liệu chấm công trong kỳ đã chọn.</div>'}
-      </div>
-  
-      <div class="card section-gap">
-        <h3>Biểu đồ thời lượng làm việc</h3>
-        <canvas id="employeeWorkChart"></canvas>
       </div>
     `;
   
@@ -316,5 +314,5 @@
   window.renderEmployeeAttendance=renderEmployeeAttendance;
   window.renderEmployeeReport=renderEmployeeReport;
   window.renderEmployeeSalaryReport=renderEmployeeSalaryReport;
-  window.__lyEmployeeReportsModule={version:'2026.08.23.1'};
+  window.__lyEmployeeReportsModule={version:'2026.08.25.1'};
 })();

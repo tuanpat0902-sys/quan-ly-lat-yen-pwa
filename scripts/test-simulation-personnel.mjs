@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source=fs.readFileSync(new URL('../ly-simulation-personnel.js',import.meta.url),'utf8');
+const employeesUi=fs.readFileSync(new URL('../ly-employees.js',import.meta.url),'utf8');
+const employeeReports=fs.readFileSync(new URL('../ly-employee-reports.js',import.meta.url),'utf8');
+const indexSource=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const store=new Map([['lat_yen_current_warehouse_id','e9c91d73-fa60-0749-ce2a-524b643ba054']]);
 const localStorage={getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,String(v))};
 const window={dispatchEvent(){}};
@@ -16,4 +19,9 @@ if(Object.keys(attendance).length!==28)throw new Error('Expected 28 attendance r
 if(Object.keys(payroll).length!==4)throw new Error('Expected 4 payroll rows');
 window.__lySimulationPersonnel.seed();
 if(JSON.parse(store.get('lat_yen_employees_v1')).length!==4)throw new Error('Seed must be idempotent');
+if(!/employee-salary-chart-grid[\s\S]*employeeSalaryReportArea[\s\S]*employeeWorkChart/.test(employeesUi))throw new Error('Salary table and work chart must share the same responsive grid');
+if(/<canvas id="employeeWorkChart"/.test(employeeReports))throw new Error('Employee report must not render a second work chart below the detailed report');
+if(!/employeeWorkChartPeriod/.test(employeeReports))throw new Error('Work chart must show the currently selected report period');
+if(!/\.employee-salary-chart-grid\{[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/.test(employeesUi))throw new Error('Salary and chart cards must be side by side on wide screens');
+if(!/@media\(max-width:1050px\)[\s\S]*\.employee-salary-chart-grid\{grid-template-columns:1fr\}/.test(employeesUi))throw new Error('Salary and chart cards must stack on narrow screens');
 console.log('Simulation personnel seed: PASS');

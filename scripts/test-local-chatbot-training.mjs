@@ -29,6 +29,7 @@ assert.ok(stocktake?.open_blank,'a generic stocktake request must open the real 
 
 const recipe=assistant.parseDraft('Tạo công thức tên món là Yên Lát bao gồm 10g Đường, 10ml Sữa, 10ml Trà');
 assert.equal(recipe.kind,'recipe');assert.equal(recipe.name,'Yên Lát');assert.deepEqual(Array.from(recipe.items,row=>[row.name,row.quantity]),[['Đường',10],['Sữa',10],['Trà',10]]);
+const pricedRecipe=assistant.assistantReply('Tạo công thức: YẾN YẾN đơn vị là cốc, bao gồm 10g đá và 10g nước đường, giá bán 100 nghìn');assert.equal(pricedRecipe.draft.name,'YẾN YẾN');assert.equal(pricedRecipe.draft.unit,'cốc');assert.equal(pricedRecipe.draft.selling_price,100000);assert.match(pricedRecipe.content,/đơn vị cốc · giá bán 100\.000 đ/);
 const prepared=assistant.parseDraft('Tạo nguyên liệu pha chế tên là Syrup đường bao gồm 100g Đường');
 assert.equal(prepared.kind,'prepared');assert.equal(prepared.name,'Syrup đường');assert.equal(prepared.items[0].id,'i2');
 const preparedExample=assistant.parseDraft('Tạo nguyên liệu pha chế: Đường, bao gồm 10g đá, 10g nước đường, thành phẩm 20g đường');

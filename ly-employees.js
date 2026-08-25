@@ -4,7 +4,8 @@
   'use strict';
   if(window.__lyEmployeesUIV1)return;
   window.__lyEmployeesUIV1=true;
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.25.1';
+  if(!document.getElementById?.('lyEmployeeLayoutStyles')){const style=document.createElement('style');style.id='lyEmployeeLayoutStyles';style.textContent=`.employee-salary-chart-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:10px}.employee-salary-chart-grid>.card{margin-top:0!important;min-width:0}.employee-work-chart-card{display:flex;flex-direction:column}.employee-work-chart-card canvas{flex:1;margin-top:8px}@media(max-width:1050px){.employee-salary-chart-grid{grid-template-columns:1fr}}`;document.head.appendChild(style);}
 
   function renderEmployees(){
     if(!E.employees)return;
@@ -95,19 +96,31 @@
         <div id="employeeAttendanceArea"></div>
       </div>
       `:''}
-      <div class="card section-gap">
-        <div class="employee-section-head">
-          <div>
-            <h3>Báo cáo lương nhân viên</h3>
-            <div class="muted">Chỉ hiển thị tên và lương; lương có thể lấy từ chấm công hoặc nhập trực tiếp.</div>
+      <div class="employee-salary-chart-grid section-gap">
+        <div class="card employee-salary-card">
+          <div class="employee-section-head">
+            <div>
+              <h3>Báo cáo lương nhân viên</h3>
+              <div class="muted">Chỉ hiển thị tên và lương; lương có thể lấy từ chấm công hoặc nhập trực tiếp.</div>
+            </div>
+            <div>
+              <label>Tháng lương</label>
+              <input id="employeeSalaryReportMonth" type="month" value="${month}" onchange="renderEmployeeSalaryReport()">
+            </div>
           </div>
-          <div>
-            <label>Tháng lương</label>
-            <input id="employeeSalaryReportMonth" type="month" value="${month}" onchange="renderEmployeeSalaryReport()">
-          </div>
+
+          <div id="employeeSalaryReportArea" class="section-gap"></div>
         </div>
-  
-        <div id="employeeSalaryReportArea" class="section-gap"></div>
+
+        <div class="card employee-work-chart-card">
+          <div class="employee-section-head">
+            <div>
+              <h3>Biểu đồ thời lượng làm việc</h3>
+              <div id="employeeWorkChartPeriod" class="muted">Theo kỳ báo cáo nhân sự đang chọn.</div>
+            </div>
+          </div>
+          <canvas id="employeeWorkChart" aria-label="Biểu đồ thời lượng làm việc của nhân viên"></canvas>
+        </div>
       </div>
   
       <div class="card section-gap">

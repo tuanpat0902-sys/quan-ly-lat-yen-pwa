@@ -2,13 +2,13 @@
 (()=>{
   'use strict';
   if(window.__lyEmployeeReportsBridge)return;
-  const VERSION='2026.08.23.1';
+  const VERSION='2026.08.25.1';
   let loading=null;
   function load(){
     if(window.__lyEmployeeReportsModule)return Promise.resolve(true);
     if(loading)return loading;
     loading=new Promise(resolve=>{
-      const s=document.createElement('script');s.src='./ly-employee-reports.js?v=20260823.1';s.async=true;
+      const s=document.createElement('script');s.src='./ly-employee-reports.js?v=20260825.1';s.async=true;
       s.onload=()=>resolve(true);s.onerror=()=>{loading=null;resolve(false)};(document.head||document.documentElement).appendChild(s);
     });
     return loading;

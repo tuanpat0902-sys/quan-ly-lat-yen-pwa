@@ -9,7 +9,7 @@
     if(pending)return pending;
     pending=new Promise(resolve=>{
       const s=document.createElement('script');
-      s.src='./ly-employees.js?v=20260823.1';
+      s.src='./ly-employees.js?v=20260825.1';
       s.async=true;
       s.onload=()=>resolve(true);
       s.onerror=()=>{pending=null;resolve(false)};

@@ -12,7 +12,7 @@ const end=src.indexOf('function isInventoryPurchaseCashflow(',start);
 if(start<0||end<0||end<=start)throw new Error('Cashflow extraction markers not found');
 const original=src.slice(start,end).trim();
 if(!original.includes('function renderCashflow(')||!original.includes('function renderCashflowReport('))throw new Error('Unexpected Cashflow source span');
-const wrapped=`/* Lát Yên — Cashflow UI V1\n   Extracted from Legacy index.html. Cashflow persistence/business rules remain in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyCashflowModule)return;\n  window.__lyCashflowModule={version:'2026.08.23.1'};\n\n${original.split('\n').map(x=>'  '+x).join('\n')}\n\n  window.__lyCashflowModule.renderCashflow=renderCashflow;\n  window.__lyCashflowModule.renderCashflowReport=renderCashflowReport;\n})();\n`;
+const wrapped=`/* Lát Yên — Cashflow UI V1\n   Extracted from Legacy index.html. Cashflow persistence/business rules remain in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyCashflowModule)return;\n  window.__lyCashflowModule={version:'2026.08.25.1'};\n\n${original.split('\n').map(x=>'  '+x).join('\n')}\n\n  window.__lyCashflowModule.renderCashflow=renderCashflow;\n  window.__lyCashflowModule.renderCashflowReport=renderCashflowReport;\n})();\n`;
 fs.writeFileSync('ly-cashflow.js',wrapped);
 const check=spawnSync(process.execPath,['--check','ly-cashflow.js'],{encoding:'utf8'});
 if(check.status!==0)throw new Error(check.stderr||'ly-cashflow.js syntax failed');
