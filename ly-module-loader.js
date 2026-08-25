@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV49)return;
   window.__lyModuleLoaderV49=true;
 
-  const VERSION='2026.08.26.1';
+  const VERSION='2026.08.26.3';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -31,6 +31,7 @@
     realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260825.1',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.25.1'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
     ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260826.2',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.26.2'},
+    ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260826.1',test:()=>window.__lyIngredientTableUX?.version==='2026.08.26.1'},
     stockUnitSync:{src:'./ly-stock-unit-sync.js?v=20260825.1',test:()=>window.__lyStockUnitSync?.version==='2026.08.25.1'},
     inAppNotifications:{src:'./ly-inapp-notifications.js?v=20260824.2',test:()=>window.__lyInAppNotifications?.version==='2026.08.24.2'},
     dataNotifications:{src:'./ly-data-notifications.js?v=20260825.7',test:()=>window.__lyDataActivityNotifications?.version==='2026.08.25.7'},
@@ -75,7 +76,7 @@
     try{await window.__lySupabaseReady;}catch(e){}
     await load('hydration');await load('shadow');await load('domShim');await load('stateShim');await load('helperShim');await load('modelShim');await load('listShim');await load('formDraftGuard');await load('menuSecurity');
     await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
-    await load('ingredientConversionSync');await load('stockUnitSync');
+    await load('ingredientConversionSync');await load('ingredientTableUX');await load('stockUnitSync');
     await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('cloudRealtime');await load('finalOwnership');
   }
 
