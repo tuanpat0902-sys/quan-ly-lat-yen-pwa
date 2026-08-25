@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 const report=await fs.readFile(new URL('../ly-special-reports.js',import.meta.url),'utf8');
-const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
+const index=(await fs.readFile(new URL('../index.html',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 const bridge=await fs.readFile(new URL('../ly-special-reports-bridge.js',import.meta.url),'utf8');
 const layout=await fs.readFile(new URL('../ly-compact-admin-layout.js',import.meta.url),'utf8');
 

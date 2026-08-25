@@ -6,7 +6,7 @@ const ROOT=process.cwd();
 let failed=false;
 const fail=m=>{failed=true;console.error('FAIL:',m)};
 const pass=m=>console.log('PASS:',m);
-const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+const html=fs.readFileSync(path.join(ROOT,'index.html'),'utf8').replace(/\r\n/g,'\n');
 const sw=fs.readFileSync(path.join(ROOT,'sw.js'),'utf8');
 
 const bootstrap=[

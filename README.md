@@ -1,4 +1,4 @@
-# Quản Lý Lát Yên — Ver 2.1.65
+# Quản Lý Lát Yên — Ver 2.1.67
 
 Production PWA: https://tuanpat0902-sys.github.io/quan-ly-lat-yen-pwa/
 

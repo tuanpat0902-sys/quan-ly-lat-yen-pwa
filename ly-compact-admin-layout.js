@@ -64,7 +64,21 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
 .supplier-list-card th,.supplier-list-card td{padding:9px 10px}
 .import-receipt-header-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .import-supplier-help{margin:7px 0 9px;padding:7px 9px;border:1px solid #dbe8e6;border-radius:8px;background:#f6fbfa;color:#52636c;font-size:11.5px;line-height:1.4}
+.ingredient-conversion-grid{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(180px,.8fr) minmax(260px,1.4fr);gap:10px;align-items:end;margin-top:10px;padding:11px;border:1px solid #d8e7e4;border-radius:10px;background:#f6fbfa}
+.ingredient-conversion-hint{min-height:36px;display:flex;align-items:center;padding:7px 9px;border-radius:8px;background:#fff;color:#52636c;font-size:11.5px;line-height:1.4}
+.ingredient-unit-select{height:34px!important;min-height:34px!important;padding:5px 7px!important}
+.import-receipt-line.unit-conversion-invalid{border-color:#f04438!important;background:#fff5f4!important}
+.import-receipt-line.unit-conversion-invalid .irUnit{border-color:#f04438!important;color:#b42318!important}
+@media(min-width:601px){
+  main{padding:18px 20px!important}
+  .card{border-radius:12px!important;padding:14px!important}
+  .grid,.grid2{gap:12px!important}
+  .form-grid{gap:9px!important}
+  .scroll{border-radius:10px}
+  .toolbar{gap:8px!important}
+}
 @media(max-width:900px){#settings .settings-dashboard-grid-v2{grid-template-columns:1fr;grid-template-areas:'cloud' 'identity' 'notify' 'data'}}
+@media(max-width:900px){.ingredient-conversion-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ingredient-conversion-hint{grid-column:1/-1}}
 @media(max-width:700px){#settings .settings-workspace-head{align-items:flex-start;flex-direction:column}#settings .settings-head-actions{justify-content:flex-start}#settings .settings-account-pill{max-width:100%;overflow-wrap:anywhere}.supplier-page-head{align-items:flex-start;flex-direction:column}.supplier-page-head button{width:100%}.import-receipt-header-actions{width:100%}.import-receipt-header-actions button{flex:1}.supplier-list-summary{align-items:flex-start;flex-direction:column}}
 /* Phone workspace: preserve touch targets while removing unused vertical space. */
 @media(max-width:600px){
@@ -90,6 +104,14 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
   .inline-import-form .section-gap{margin-top:9px!important}
   .inline-import-form input,.inline-import-form select{height:36px!important;min-height:36px!important;padding:5px 7px!important}
   .inline-import-form .receipt-modal-actions{position:sticky;bottom:0;z-index:4;margin:10px -10px -10px!important;padding:9px 10px max(9px,env(safe-area-inset-bottom))!important;background:rgba(255,255,255,.96);backdrop-filter:blur(8px)}
+  .ingredient-conversion-grid{grid-template-columns:1fr!important;gap:7px!important;padding:9px!important}
+  .ingredient-conversion-hint{grid-column:auto!important;min-height:0!important;display:block!important}
+  .ingredient-inline-head{align-items:flex-start!important;gap:8px!important}
+  .ingredient-inline-head>button{flex:0 0 auto}
+  .ingredient-inline-footer{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important}
+  .ingredient-inline-footer>div:last-child{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
+  .ingredient-inline-footer button{width:100%!important}
+  .import-receipt-line .irUnit{width:100%!important;min-width:0!important}
   body:has(#inlineImportReceiptForm.open,#inlineExportReceiptForm.open,#inlineStocktakeForm.open,#inlineSaleReceiptForm.open,#inlineRecipeForm.open,#ingredientInlinePanel.open) #lyAssistantLauncher{display:none!important}
 
   #sales .import-page-toolbar{gap:8px!important}
@@ -124,5 +146,5 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
 @media(max-width:420px){.toolbar{grid-template-columns:1fr!important}}
 `;
   document.head.appendChild(style);
-  window.__lyCompactAdminLayout={version:'2026.08.25.3'};
+  window.__lyCompactAdminLayout={version:'2026.08.25.4'};
 })();

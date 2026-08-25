@@ -11,7 +11,7 @@ const required = [
   'ly-finance-bridge.js','ly-finance.js','ly-reports-bridge.js','ly-reports.js','ly-settings-ui-bridge.js','ly-settings-ui.js',
   'ly-cashflow-bridge.js','ly-cashflow.js','ly-special-reports-bridge.js','ly-special-reports.js','ly-employee-reports-bridge.js','ly-employee-reports.js',
   'ly-data-notifications.js','ly-inapp-notifications.js','ly-notification-center.js','ly-inventory-alerts.js',
-  'ly-cloud-realtime.js','ly-menu-security.js','ly-performance-optimizer.js','ly-heavy-panels.js','ly-compact-admin-layout.js'
+  'ly-cloud-realtime.js','ly-menu-security.js','ly-performance-optimizer.js','ly-heavy-panels.js','ly-compact-admin-layout.js','ly-unit-conversions.js'
 ];
 let failed=false;
 function fail(message){failed=true;console.error(`FAIL: ${message}`)}
@@ -47,7 +47,7 @@ if(existsSync(join(ROOT,'ly-module-loader.js'))){
 }
 if(existsSync(join(ROOT,'sw.js'))){
   const sw=readFileSync(join(ROOT,'sw.js'),'utf8');
-  for(const asset of ['ly-runtime-error-boundary.js','ly-module-loader.js','ly-history-bridge.js','ly-activity-history.js','ly-employees-bridge.js','ly-employees.js','ly-finance-bridge.js','ly-finance.js','ly-reports-bridge.js','ly-reports.js','ly-settings-ui-bridge.js','ly-settings-ui.js','ly-cashflow-bridge.js','ly-cashflow.js','ly-special-reports-bridge.js','ly-special-reports.js','ly-employee-reports-bridge.js','ly-employee-reports.js','ly-heavy-panels.js','ly-menu-security.js','ly-performance-optimizer.js','ly-compact-admin-layout.js','ly-inventory-alerts.js'])if(!sw.includes(asset))fail(`service worker does not reference ${asset}`);
+  for(const asset of ['ly-runtime-error-boundary.js','ly-module-loader.js','ly-history-bridge.js','ly-activity-history.js','ly-employees-bridge.js','ly-employees.js','ly-finance-bridge.js','ly-finance.js','ly-reports-bridge.js','ly-reports.js','ly-settings-ui-bridge.js','ly-settings-ui.js','ly-cashflow-bridge.js','ly-cashflow.js','ly-special-reports-bridge.js','ly-special-reports.js','ly-employee-reports-bridge.js','ly-employee-reports.js','ly-heavy-panels.js','ly-menu-security.js','ly-performance-optimizer.js','ly-compact-admin-layout.js','ly-unit-conversions.js','ly-inventory-alerts.js'])if(!sw.includes(asset))fail(`service worker does not reference ${asset}`);
   for(const full of ['ly-activity-history.js','ly-employees.js','ly-finance.js','ly-reports.js','ly-settings-ui.js','ly-cashflow.js','ly-special-reports.js','ly-employee-reports.js'])if(new RegExp(`scripts\\.push\\([^\\n]*${full.replace('.','\\.')}`).test(sw))fail(`${full} must not be injected at startup`);
   const cache=sw.match(/const CACHE='([^']+)'/)?.[1];if(!cache)fail('service worker cache version not found');else console.log(`INFO: service worker cache ${cache}`);
 }

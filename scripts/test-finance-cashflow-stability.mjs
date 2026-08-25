@@ -4,7 +4,7 @@ import vm from 'node:vm';
 
 const financeSource=await fs.readFile(new URL('../ly-finance.js',import.meta.url),'utf8');
 const cashflowSource=await fs.readFile(new URL('../ly-cashflow.js',import.meta.url),'utf8');
-const indexSource=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
+const indexSource=(await fs.readFile(new URL('../index.html',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 
 const elements={
   financeReportArea:{innerHTML:''},financeMode:{value:'month'},financeDayBox:{style:{}},

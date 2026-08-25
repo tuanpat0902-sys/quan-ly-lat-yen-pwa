@@ -1,7 +1,7 @@
 {
   "name": "quan-ly-lat-yen-pwa",
   "private": true,
-  "version": "2.1.65",
+  "version": "2.1.67",
   "scripts": {
     "validate": "node scripts/validate.mjs",
     "stability": "node scripts/stability-audit.mjs",
@@ -47,10 +47,11 @@
     "menu:icon-motion": "node scripts/test-menu-icon-motion.mjs",
     "supplier:ui": "node scripts/test-supplier-navigation.mjs",
     "settings:compact": "node scripts/test-settings-compact-layout.mjs",
+    "units:conversion": "node scripts/test-unit-conversions.mjs",
     "attendance:default": "node scripts/test-attendance-default-status.mjs",
     "login:default-panel": "node scripts/test-login-default-panel.mjs",
     "v2:readiness": "node scripts/fresh-core-v2-test-readiness.mjs",
-    "check": "npm run validate && npm run stability && npm run perf:budget && npm run legacy:write-guard && npm run legacy:compat && npm run version:check && npm run pages:artifact:check && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:takeover:reads && npm run v2:legacy-hydration && npm run v2:resume-refresh && npm run v2:manual-refresh && npm run v2:realtime && npm run v2:realtime:phase2 && npm run v2:draft-safety && npm run experience:runtime && npm run runtime:error-boundary && npm run mutation:routing && npm run ui:stability && npm run menu:security && npm run finance:stability && npm run regression:cashflow-nav && npm run report:sales-layout && npm run personnel:simulation && npm run history:cloud && npm run logo:layout && npm run warehouse:security && npm run warehouse:create-empty && npm run assistant:local && npm run assistant:forms && npm run assistant:training && npm run assistant:ai && npm run supabase:keepalive && npm run inventory:alerts && npm run menu:icon-motion && npm run supplier:ui && npm run settings:compact && npm run attendance:default && npm run login:default-panel && npm run v2:readiness"
+    "check": "npm run validate && npm run stability && npm run perf:budget && npm run legacy:write-guard && npm run legacy:compat && npm run version:check && npm run pages:artifact:check && npm run v2:test && npm run v2:shadow && npm run v2:takeover:ingredients && npm run v2:takeover:products && npm run v2:takeover:documents && npm run v2:takeover:sales && npm run v2:takeover:cashflow && npm run v2:takeover:masterdata && npm run v2:takeover:reads && npm run v2:legacy-hydration && npm run v2:resume-refresh && npm run v2:manual-refresh && npm run v2:realtime && npm run v2:realtime:phase2 && npm run v2:draft-safety && npm run experience:runtime && npm run runtime:error-boundary && npm run mutation:routing && npm run ui:stability && npm run menu:security && npm run finance:stability && npm run regression:cashflow-nav && npm run report:sales-layout && npm run personnel:simulation && npm run history:cloud && npm run logo:layout && npm run warehouse:security && npm run warehouse:create-empty && npm run assistant:local && npm run assistant:forms && npm run assistant:training && npm run assistant:ai && npm run supabase:keepalive && npm run inventory:alerts && npm run menu:icon-motion && npm run supplier:ui && npm run settings:compact && npm run units:conversion && npm run attendance:default && npm run login:default-panel && npm run v2:readiness"
   },
   "engines": { "node": ">=20" }
 }

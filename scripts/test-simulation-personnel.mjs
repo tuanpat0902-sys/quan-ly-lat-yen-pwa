@@ -4,7 +4,7 @@ import vm from 'node:vm';
 const source=fs.readFileSync(new URL('../ly-simulation-personnel.js',import.meta.url),'utf8');
 const employeesUi=fs.readFileSync(new URL('../ly-employees.js',import.meta.url),'utf8');
 const employeeReports=fs.readFileSync(new URL('../ly-employee-reports.js',import.meta.url),'utf8');
-const indexSource=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const indexSource=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const store=new Map([['lat_yen_current_warehouse_id','e9c91d73-fa60-0749-ce2a-524b643ba054']]);
 const localStorage={getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,String(v))};
 const window={dispatchEvent(){}};

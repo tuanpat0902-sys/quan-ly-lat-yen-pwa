@@ -11622,7 +11622,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.65</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.67</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11663,6 +11663,7 @@ html.v257-device-locked body{
 <script src="./ly-cashflow-bridge.js?v=20260823.1"></script>
 <script src="./ly-special-reports-bridge.js?v=20260824.3"></script>
 <script src="./ly-employee-reports-bridge.js?v=20260825.1"></script>
+<script src="./ly-unit-conversions.js?v=20260825.1"></script>
 <script>
 // ===== SUPABASE PROJECT =====
 const SUPABASE_URL = 'https://isfotiyxufvsmlkqsgez.supabase.co';
@@ -28047,6 +28048,9 @@ function openIngredientInline(id='',forcedType=''){
   };
   const type=i.ingredient_type||forcedType||'purchased';
   const items=id?preparedRecipeFor(id):[];
+  const unitApi=window.__lyUnitConversions;
+  const knownUnit=!!unitApi?.definition?.(i.unit);
+  const unitRule=unitApi?.ruleFor?.(id)||{baseUnit:i.unit||'g',purchaseUnit:i.unit||'g',ratio:1};
 
   panel.dataset.type=type;
   panel.dataset.editId=id||'';
@@ -28066,26 +28070,23 @@ function openIngredientInline(id='',forcedType=''){
         <div><label>Tên nguyên liệu/ dụng cụ</label><input id="igName" value="${esc(i.name)}" placeholder="Tên nguyên liệu/ dụng cụ"></div>
         <div>
           <label>Đơn vị tính</label>
-          <select id="igUnit" onchange="toggleOtherIngredientUnit()">
-            <option value="g" ${i.unit==='g'?'selected':''}>g — gram</option>
-            <option value="kg" ${i.unit==='kg'?'selected':''}>kg — kilogram</option>
-            <option value="ml" ${i.unit==='ml'?'selected':''}>ml — mililit</option>
-            <option value="l" ${i.unit==='l'?'selected':''}>l — lít</option>
-            <option value="cái" ${i.unit==='cái'?'selected':''}>cái</option>
-            <option value="gói" ${i.unit==='gói'?'selected':''}>gói</option>
-            <option value="chai" ${i.unit==='chai'?'selected':''}>chai</option>
-            <option value="lon" ${i.unit==='lon'?'selected':''}>lon</option>
-            <option value="hộp" ${i.unit==='hộp'?'selected':''}>hộp</option>
-            <option value="khác" ${!['g','kg','ml','l','cái','gói','chai','lon','hộp'].includes(i.unit)?'selected':''}>Khác</option>
+          <select id="igUnit" onchange="toggleOtherIngredientUnit();updateIngredientConversionHint()">
+            ${unitApi?.optionsHtml?.(i.unit,{includeAll:true})||'<option value="g">g</option>'}
           </select>
         </div>
-        <div id="igOtherUnitWrap" style="${!['g','kg','ml','l','cái','gói','chai','lon','hộp'].includes(i.unit)?'':'display:none'}">
+        <div id="igOtherUnitWrap" style="${knownUnit?'display:none':''}">
           <label>Đơn vị khác</label>
-          <input id="igUnitOther" value="${!['g','kg','ml','l','cái','gói','chai','lon','hộp'].includes(i.unit)?esc(i.unit):''}" placeholder="Nhập đơn vị">
+          <input id="igUnitOther" value="${knownUnit?'':esc(i.unit)}" placeholder="Nhập đơn vị" oninput="updateIngredientConversionHint()">
         </div>
         ${type==='purchased'
           ?`<div><label>Tồn tối thiểu</label><input id="igMin" type="number" step="0.001" value="${i.minimum_stock||0}"></div>`
           :''}
+      </div>
+
+      <div class="ingredient-conversion-grid">
+        <div><label>Đơn vị mua/đóng gói</label><select id="igPurchaseUnit" onchange="updateIngredientConversionHint()">${unitApi?.optionsHtml?.(unitRule.purchaseUnit,{includeAll:true,allowOther:false})||`<option value="${esc(i.unit||'g')}">${esc(i.unit||'g')}</option>`}</select></div>
+        <div><label>Số đơn vị tồn nhận được</label><input id="igConversionRatio" type="number" min="0.000001" step="0.001" value="${Number(unitRule.ratio||1)}" oninput="updateIngredientConversionHint()"></div>
+        <div id="igConversionHint" class="ingredient-conversion-hint"></div>
       </div>
 
       ${type==='prepared'?`
@@ -28125,6 +28126,7 @@ function openIngredientInline(id='',forcedType=''){
 
   panel.classList.add('open');
   updateIngredientActionButtons();
+  updateIngredientConversionHint();
 
   if(type==='prepared'){
     if(items.length)items.forEach(r=>addPreparedLine(r.source_ingredient_id,r.quantity));
@@ -28139,6 +28141,8 @@ function toggleOtherIngredientUnit(){
   if(wrap)wrap.style.display=sel?.value==='khác'?'block':'none';
 }
 
+function updateIngredientConversionHint(){window.__lyUnitConversions?.updateIngredientFormHint?.()}
+
 function ingredientModal(id='',forcedType=''){
   openIngredientInline(id,forcedType);
 }
@@ -28149,7 +28153,10 @@ function updateIngredientUnitDisplay(selectEl,className){
   if(!row)return;
   const ing=db.ingredients.find(i=>i.id===selectEl.value);
   const unitEl=row.querySelector('.'+className);
-  if(unitEl)unitEl.textContent=ing?.unit||'—';
+  if(unitEl?.tagName==='SELECT'){
+    const previous=unitEl.value;
+    if(!window.__lyUnitConversions?.applyIngredientOptions?.(unitEl,ing,previous)){unitEl.options.length=0;unitEl.add(new Option(ing?.unit||'—',ing?.unit||''))}
+  }else if(unitEl)unitEl.textContent=ing?.unit||'—';
 }
 
 function addPreparedLine(sourceId='',qty=''){
@@ -28202,6 +28209,8 @@ async function saveIngredient(id){
   const minEl=document.getElementById('igMin');
   const costEl=document.getElementById('igCost');
   const batchEl=document.getElementById('igBatchOutput');
+  const purchaseUnitEl=document.getElementById('igPurchaseUnit');
+  const conversionRatioEl=document.getElementById('igConversionRatio');
   const btn=document.getElementById('igSaveBtn');
   const status=document.getElementById('igSaveStatus');
 
@@ -28213,6 +28222,8 @@ async function saveIngredient(id){
   const selected=unitEl.value;
   const unit=selected==='khác'?(unitOtherEl?.value||'').trim():selected;
   const type=typeEl.value||'purchased';
+  const purchaseUnit=(purchaseUnitEl?.value||unit).trim()||unit;
+  const conversionRatio=Number(conversionRatioEl?.value||1);
 
   const localPayload={
     name:nameEl.value.trim(),
@@ -28230,6 +28241,10 @@ async function saveIngredient(id){
 
   if(!localPayload.name||!localPayload.unit){
     if(status)status.innerHTML='<span style="color:#b91c1c">Vui lòng nhập tên và đơn vị.</span>';
+    return;
+  }
+  if(!Number.isFinite(conversionRatio)||conversionRatio<=0){
+    if(status)status.innerHTML='<span style="color:#b91c1c">Tỷ lệ quy đổi phải lớn hơn 0.</span>';
     return;
   }
 
@@ -28284,6 +28299,8 @@ async function saveIngredient(id){
         });
       }
     }
+
+    window.__lyUnitConversions?.saveIngredientRule?.(ingredientId,{baseUnit:unit,purchaseUnit,ratio:conversionRatio});
 
     // Nguyên liệu / inventory có thể vừa được thêm hoặc đổi loại.
     // Xóa index cũ trước khi tính tiếp để mọi màn hình đọc đúng dữ liệu mới.
@@ -28474,7 +28491,7 @@ function addImportReceiptLine(ingredientId='',supplierName='',qty='',unitCost=''
       `).join('')}
     </select>
 
-    <span class="irUnit ingredient-unit-cell"></span>
+    <select class="irUnit ingredient-unit-select" onchange="updateImportReceiptTotals()"></select>
 
     <input class="irSupplier" list="supplierSuggestions" placeholder="Nhà cung cấp" value="${esc(supplierName)}">
 
@@ -28499,10 +28516,18 @@ function updateImportReceiptTotals(){
   rows.forEach(row=>{
     const qty=Number(row.querySelector('.irQty')?.value||0);
     const unitCost=Number(row.querySelector('.irUnitCost')?.value||0);
+    const ingredientId=row.querySelector('.irIngredient')?.value||'';
+    const ingredient=db.ingredients.find(item=>item.id===ingredientId);
+    const enteredUnit=row.querySelector('.irUnit')?.value||ingredient?.unit||'';
+    const convertedQty=window.__lyUnitConversions?.convert?.(qty,enteredUnit,ingredient?.unit||enteredUnit,ingredientId);
     const lineTotal=qty*unitCost;
     total+=lineTotal;
     const out=row.querySelector('.irLineTotal');
-    if(out)out.textContent=money(lineTotal);
+    if(out){
+      out.textContent=money(lineTotal);
+      out.title=Number.isFinite(convertedQty)?`${num(qty)} ${enteredUnit} = ${num(convertedQty)} ${ingredient?.unit||enteredUnit}`:'Đơn vị chưa có tỷ lệ quy đổi';
+    }
+    row.classList.toggle('unit-conversion-invalid',qty>0&&!Number.isFinite(convertedQty));
   });
   const totalEl=$('receiptGrandTotal');
   if(totalEl)totalEl.textContent=money(total);
@@ -28510,12 +28535,21 @@ function updateImportReceiptTotals(){
 
 function getImportReceiptLines(){
   return [...document.querySelectorAll('.import-receipt-line')]
-    .map(row=>({
-      ingredient_id:row.querySelector('.irIngredient')?.value||'',
-      supplier_name:(row.querySelector('.irSupplier')?.value||'').trim(),
-      quantity:Number(row.querySelector('.irQty')?.value||0),
-      unit_cost:Number(row.querySelector('.irUnitCost')?.value||0)
-    }))
+    .map(row=>{
+      const ingredientId=row.querySelector('.irIngredient')?.value||'';
+      const ingredient=db.ingredients.find(item=>item.id===ingredientId);
+      const enteredQuantity=Number(row.querySelector('.irQty')?.value||0);
+      const enteredUnit=row.querySelector('.irUnit')?.value||ingredient?.unit||'';
+      const enteredUnitCost=Number(row.querySelector('.irUnitCost')?.value||0);
+      const quantity=window.__lyUnitConversions?.convert?.(enteredQuantity,enteredUnit,ingredient?.unit||enteredUnit,ingredientId);
+      const total=enteredQuantity*enteredUnitCost;
+      return {
+        ingredient_id:ingredientId,
+        supplier_name:(row.querySelector('.irSupplier')?.value||'').trim(),
+        quantity:Number.isFinite(quantity)?quantity:0,
+        unit_cost:Number.isFinite(quantity)&&quantity>0?total/quantity:0
+      };
+    })
     .filter(x=>x.ingredient_id&&x.quantity>0);
 }
 
@@ -31795,6 +31829,7 @@ async function saveImportReceipt(){
 
   if(!receiptNo)return alert('Nhập số phiếu');
   if(!currentWarehouseId)return alert('Chưa chọn kho/chi nhánh');
+  if(document.querySelector('.import-receipt-line.unit-conversion-invalid'))return alert('Có đơn vị nhập chưa thiết lập tỷ lệ quy đổi. Hãy kiểm tra lại đơn vị của mặt hàng.');
   if(!lines.length)return alert('Thêm ít nhất 1 mặt hàng có số lượng lớn hơn 0');
 
   const duplicateIngredients=new Set();
@@ -55496,9 +55531,9 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.65',REVISION='fresh-core-v2-authoritative-v66';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.67',REVISION='fresh-core-v2-authoritative-v68';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
-<script src="./ly-app-version.js?v=2.1.65"></script>
+<script src="./ly-app-version.js?v=2.1.67"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
 <script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
@@ -55508,7 +55543,7 @@ saveSaleReceipt=async function(){
 <script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
 <script src="./ly-sidebar-visuals.js?v=20260825.1"></script>
-<script src="./ly-compact-admin-layout.js?v=20260825.3"></script>
+<script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
 <script src="./ly-data-notifications.js?v=20260825.7"></script>

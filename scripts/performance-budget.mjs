@@ -5,7 +5,7 @@ const UNUSED_CHAT_EXPERIMENTS=new Set([
   'ly-chat-stock-command-normalizer-v4.js','ly-chat-stock-core-v5.js','ly-chat-stock-submit-gate.js','ly-chat-submit-controller-v6.js'
 ]);
 const files=fs.readdirSync('.').filter(f=>f.endsWith('.js')&&!UNUSED_CHAT_EXPERIMENTS.has(f));
-const index=fs.readFileSync('index.html','utf8');
+const index=fs.readFileSync('index.html','utf8').replace(/\r\n/g,'\n');
 const runtime=[index,...files.map(f=>fs.readFileSync(f,'utf8'))].join('\n');
 const perf=fs.readFileSync('ly-performance-optimizer.js','utf8');
 const sw=fs.readFileSync('sw.js','utf8');

@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import vm from 'node:vm';
+
+const source=await fs.readFile(new URL('../ly-unit-conversions.js',import.meta.url),'utf8');
+const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
+const stockNormalizer=await fs.readFile(new URL('../ly-chat-stock-command-normalizer-v4.js',import.meta.url),'utf8');
+const memory=new Map();
+const context={window:{},localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,String(value)),removeItem:key=>memory.delete(key)},Date};
+context.window.window=context.window;
+context.window.localStorage=context.localStorage;
+vm.createContext(context);
+vm.runInContext(source,context);
+const units=context.window.__lyUnitConversions;
+
+assert.equal(units.convert(1,'kg','g'),1000);
+assert.equal(units.convert(2500,'ml','l'),2.5);
+assert.equal(units.convert(2,'l','cl'),200);
+assert.equal(units.canonical('kilogram'),'kg');
+assert.equal(units.canonical('lít'),'l');
+assert.ok(Number.isNaN(units.convert(1,'thùng','chai','ing-1')));
+units.saveIngredientRule('ing-1',{baseUnit:'chai',purchaseUnit:'thùng',ratio:24});
+assert.equal(units.convert(2,'thùng','chai','ing-1'),48);
+assert.equal(units.convert(48,'chai','thùng','ing-1'),2);
+assert.equal(units.ruleFor('ing-1').ratio,24);
+assert.match(units.optionsHtml('g'),/>mg — miligam</);
+assert.match(units.optionsHtml('g'),/>thùng</);
+assert.match(units.ingredientOptionsHtml({id:'ing-1',unit:'chai'},'thùng'),/value="thùng" selected/);
+assert.match(html,/id="igPurchaseUnit"/,'ingredient form must expose the purchase or packaging unit');
+assert.match(html,/id="igConversionRatio"/,'ingredient form must expose the conversion ratio');
+assert.match(source,/convert\(1,purchase,base\)/,'standard metric ratios must be calculated automatically');
+assert.match(html,/const total=enteredQuantity\*enteredUnitCost/,'import total must remain based on the entered purchase unit');
+assert.match(html,/unit_cost:Number\.isFinite\(quantity\)&&quantity>0\?total\/quantity:0/,'import unit cost must be normalized to the inventory base unit');
+assert.match(html,/unit-conversion-invalid/,'invalid packaging conversions must block receipt confirmation');
+assert.match(stockNormalizer,/window\.__lyUnitConversions\?\.convert/,'chat stock commands must reuse the shared conversion rules');
+assert.match(stockNormalizer,/tấn\|tan\|kg/,'chat stock commands must recognize expanded common units');
+console.log('Measurement units and ingredient conversion rules: PASS');
