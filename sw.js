@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-145';
+const CACHE='lat-yen-fresh-core-v2-authoritative-146';
 const INDEX_KEY='./index.html';
 const CORE_ASSETS=[
   INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',
