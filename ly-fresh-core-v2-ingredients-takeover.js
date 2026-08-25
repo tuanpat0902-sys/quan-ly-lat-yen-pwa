@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2IngredientsTakeoverV1)return;
   window.__lyFreshCoreV2IngredientsTakeoverV1=true;
 
-  const VERSION='2026.08.24.4';
+  const VERSION='2026.08.25.2';
   const TARGET_RPC='ly_save_ingredient';
   const TARGET_TABLE='ly_ingredients';
   const MAX_WAIT_MS=60000;
@@ -14,6 +14,23 @@
   function legacySupabase(){try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;}
   function coreReady(){const core=window.__lyFreshCoreV2;return core?.domains?.ingredients?.save&&core?.domains?.ingredients?.remove&&core?.store?.getState?core:null;}
   function response(data,error=null){return error?{data:null,error,status:400,statusText:'V2 ingredient mutation failed'}:{data,error:null,status:200,statusText:'OK'};}
+
+  function withConversionFields(input){
+    const ingredient={...(input||{})};
+    try{
+      const get=id=>document.getElementById(id);
+      const unitApi=window.__lyUnitConversions;
+      const rawBase=get('igUnit')?.value==='khác'?String(get('igUnitOther')?.value||'').trim():get('igUnit')?.value;
+      const rawPurchase=get('igPurchaseUnit')?.value;
+      const ratio=Number(get('igConversionRatio')?.value);
+      const base=unitApi?.canonical?unitApi.canonical(rawBase||ingredient.unit||''):String(rawBase||ingredient.unit||'').trim();
+      const purchase=unitApi?.canonical?unitApi.canonical(rawPurchase||base):String(rawPurchase||base||'').trim();
+      if(base)ingredient.unit=base;
+      if(purchase)ingredient.purchase_unit=purchase;
+      if(Number.isFinite(ratio)&&ratio>0)ingredient.conversion_ratio=ratio;
+    }catch(e){}
+    return ingredient;
+  }
 
   function hydrateLegacy(){
     const core=coreReady();if(!core)return false;
@@ -38,7 +55,8 @@
     state.calls++;state.lastAction='save';state.lastAt=Date.now();const core=coreReady();
     if(!core){state.fallbacks++;return originalRpc(name,params,...rest);}
     try{
-      const ingredient=params?.p_ingredient;const preparedItems=Array.isArray(params?.p_prepared_items)?params.p_prepared_items:[];
+      const ingredient=withConversionFields(params?.p_ingredient);
+      const preparedItems=Array.isArray(params?.p_prepared_items)?params.p_prepared_items:[];
       const id=await core.domains.ingredients.save(ingredient,preparedItems);
       hydrateLegacy();suppressNextLoadCloud=true;state.success++;state.lastError='';
       window.dispatchEvent(new CustomEvent('latyen:v2-ingredient-saved',{detail:{id,at:state.lastAt}}));
