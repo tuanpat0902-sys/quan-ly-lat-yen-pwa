@@ -26,6 +26,7 @@ if(!/\.employee-salary-chart-grid\{[\s\S]*grid-template-columns:minmax\(0,1\.08f
 if(!/@media\(max-width:1180px\)[\s\S]*\.employee-salary-chart-grid\{grid-template-columns:1fr\}/.test(employeesUi))throw new Error('Salary and chart cards must stack before becoming cramped');
 if(!/employee-salary-card \.salary-report-table-wrap,[\s\S]*width:100%!important;max-width:none!important/.test(employeesUi))throw new Error('Salary table must use its card width consistently');
 const workChart=indexSource.match(/function drawEmployeeWorkChart\([\s\S]*?\n}\n\nfunction openEmployeeAttendance/)?.[0]||'';
-if(!/available=\(parent\?\.clientHeight\|\|0\)/.test(workChart))throw new Error('Work chart must scale to the adjacent salary card');
+if(!/height=lyHorizontalChartHeight\(rows\.length\)/.test(workChart))throw new Error('Work chart must use the same height rule as the sales chart');
+if(!/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/.test(workChart))throw new Error('Work chart bars must use the same thickness as sales bars');
 if(/Arial/.test(workChart))throw new Error('Work chart must inherit the application typeface');
 console.log('Simulation personnel seed: PASS');

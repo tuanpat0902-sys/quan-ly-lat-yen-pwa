@@ -15,8 +15,10 @@ assert.match(layout,/#sales \.sale-chart-scroll canvas\{width:max\(720px,100%\)!
 assert.match(index,/ctx\.fillText\(String\(r\.name\|\|''\),left-9,cy\)/,'product labels must remain complete');
 const salesChart=index.match(/function drawNativeSalesQtyChart\([\s\S]*?\n}\n\nfunction getCustomSaleSources/)?.[0]||'';
 assert.doesNotMatch(salesChart,/label\.slice/,'sales product labels must not be truncated');
-assert.match(salesChart,/Math\.max\(230,62\+\(rows\.length\*22\)\)/,'sales chart must stay visually compact');
-assert.match(salesChart,/Math\.max\(8,Math\.min\(12,rowH\*\.48\)\)/,'sales bars must use the shared compact thickness');
+assert.match(index,/const LY_HORIZONTAL_CHART_BASE_HEIGHT=340/,'horizontal charts must share one base height balanced with the salary table');
+assert.match(index,/function lyHorizontalChartHeight\(rowCount\)/,'horizontal charts must share one sizing function');
+assert.match(salesChart,/lyHorizontalChartHeight\(rows\.length\)/,'sales chart must use the shared chart height');
+assert.match(salesChart,/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/,'sales bars must use the shared compact thickness');
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
 assert.match(bridge,/ly-special-reports\.js\?v=20260824\.3/,'bridge must bypass the previous cached report module');
