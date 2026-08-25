@@ -11,10 +11,10 @@ const kinds={
   sale:{panel:'sales',formId:'inlineSaleReceiptForm',toggleId:'toggleSaleReceiptBtn',holderId:'saleReceiptLines',rowSelector:'.sale-receipt-line',select:'.srProduct',quantity:'.srQty',noteId:'saleReceiptNote'}
 };
 const elements=new Map(),rows={import:[],export:[],stocktake:[],sale:[]};
-const panelNodes=new Map(['imports','stocktake','sales'].map(id=>[id,{classList:{active:false,contains(name){return name==='active'&&this.active;}}}]));
+const panelNodes=new Map(['imports','stocktake','sales','recipes','ingredients'].map(id=>[id,{classList:{active:false,contains(name){return name==='active'&&this.active;}}}]));
 function control(){return {value:'',dispatchEvent(){}};}
 function makeRow(kind,id=''){
-  const spec=kinds[kind],select=spec.select?control():null,quantity=control(),row={dataset:kind==='stocktake'?{ingredientId:id}:{},querySelector(selector){if(selector===spec.select)return select;if(selector===spec.quantity)return quantity;return null;},remove(){const at=rows[kind].indexOf(row);if(at>=0)rows[kind].splice(at,1);}};return row;
+  const spec=kinds[kind],select=spec.select?control():null,quantity=control(),unitCost=control(),itemDiscountType=control(),itemDiscountValue=control(),row={dataset:kind==='stocktake'?{ingredientId:id}:{},querySelector(selector){if(selector===spec.select)return select;if(selector===spec.quantity)return quantity;if(selector==='.irUnitCost')return unitCost;if(selector==='.srItemDiscountType')return itemDiscountType;if(selector==='.srItemDiscountValue')return itemDiscountValue;return null;},remove(){const at=rows[kind].indexOf(row);if(at>=0)rows[kind].splice(at,1);}};return row;
 }
 function mountKind(kind){
   const spec=kinds[kind];rows[kind]=[];
@@ -27,9 +27,18 @@ function mountKind(kind){
 }
 for(const [id,panel] of panelNodes)elements.set(id,panel);
 for(const kind of Object.keys(kinds))mountKind(kind);
-for(const id of ['receiptNo','receiptDate','exportReceiptNo','exportReceiptDate','stocktakeReceiptNo','stocktakeReceiptDate','saleReceiptNo','saleReceiptDate'])elements.set(id,control());
-const document={readyState:'loading',addEventListener(){},getElementById(id){return elements.get(id)||null;},querySelector(selector){const panel=selector.match(/data-panel="([^"]+)"/)?.[1];return panel?{click(){opened.push(`panel:${panel}`);for(const [id,node] of panelNodes)node.classList.active=id===panel;for(const [kind,spec] of Object.entries(kinds))if(spec.panel===panel)mountKind(kind);}}:null;},createElement(){return {};}};
-const context={console,Date,Math,Promise,Intl,Event:class Event{},setTimeout(fn){fn();return 1;},document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đường',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Sữa',unit:'lít',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Cà phê sữa',unit:'ly'},{id:'p2',warehouse_id:'w1',name:'Cà phê đen',unit:'ly'}],recipeItems:[{product_id:'p1',ingredient_id:'i1'},{product_id:'p2',ingredient_id:'i1'}]}},globalThis:null};
+for(const id of ['receiptNo','receiptDate','exportReceiptNo','exportReceiptDate','stocktakeReceiptNo','stocktakeReceiptDate','saleReceiptNo','saleReceiptDate','saleDiscountType','saleDiscountValue'])elements.set(id,control());
+const document={readyState:'loading',addEventListener(){},getElementById(id){return elements.get(id)||null;},querySelector(selector){const panel=selector.match(/data-panel="([^"]+)"/)?.[1];return panel?{click(){opened.push(`panel:${panel}`);for(const [id,node] of panelNodes)node.classList.active=id===panel;}}:null;},createElement(){return {};}};
+const context={console,Date,Math,Promise,Intl,Event:class Event{},setTimeout(fn){fn();return 1;},document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đường',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Sữa',unit:'lít',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Bột cacao',unit:'g',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Cà phê sữa',unit:'ly'},{id:'p2',warehouse_id:'w1',name:'Cà phê đen',unit:'ly'}],recipeItems:[{product_id:'p1',ingredient_id:'i1'},{product_id:'p2',ingredient_id:'i1'}]}},globalThis:null};
+const recipeRows=[],preparedRows=[];
+const recipeName=control(),preparedName=control(),preparedOutput=control(),preparedUnit=control();
+const recipeForm={classList:{open:false,contains(name){return name==='open'&&this.open;}},querySelectorAll(selector){return selector==='.recipe-line'?recipeRows:[];}};
+const preparedPanel={classList:{open:false,contains(name){return name==='open'&&this.open;}},querySelectorAll(selector){return selector==='#preparedRecipeLines .recipe-line'?preparedRows:[];}};
+const makeRecipeRow=()=>{const ingredient=control(),quantity=control();return {querySelector(selector){return selector==='.rlIng'?ingredient:selector==='.rlQty'?quantity:null;},remove(){const at=recipeRows.indexOf(this);if(at>=0)recipeRows.splice(at,1);}};};
+const makePreparedRow=()=>{const ingredient=control(),quantity=control();return {querySelector(selector){return selector==='.prSource'?ingredient:selector==='.prQty'?quantity:null;},remove(){const at=preparedRows.indexOf(this);if(at>=0)preparedRows.splice(at,1);}};};
+elements.set('inlineRecipeForm',recipeForm);elements.set('rpName',recipeName);elements.set('ingredientInlinePanel',preparedPanel);elements.set('igName',preparedName);elements.set('igBatchOutput',preparedOutput);elements.set('igUnit',preparedUnit);
+context.window.openInlineRecipeForm=()=>{recipeForm.classList.open=true;recipeRows.splice(0,recipeRows.length,makeRecipeRow());opened.push('recipe');};context.window.addRecipeLine=()=>recipeRows.push(makeRecipeRow());
+context.window.openIngredientInline=()=>{preparedPanel.classList.open=true;preparedRows.splice(0,preparedRows.length,makePreparedRow());opened.push('prepared');};context.window.addPreparedLine=()=>preparedRows.push(makePreparedRow());
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);
 const assistant=context.window.__lyLocalAssistant;
@@ -37,6 +46,9 @@ const assistant=context.window.__lyLocalAssistant;
 const importDraft=assistant.assistantReply('Tạo phiếu nhập 10 kg Đường và 3 lít Sữa').draft;
 assert.ok(importDraft,'multi-item import command must produce a draft');assert.deepEqual(Array.from(importDraft.items,row=>[row.name,row.quantity]),[['Đường',10],['Sữa',3]]);await assistant.executeDraft(importDraft);
 assert.equal(rows.import[0].querySelector('.irIngredient').value,'i1');assert.equal(rows.import[0].querySelector('.irQty').value,'10');assert.equal(rows.import[1].querySelector('.irIngredient').value,'i2');assert.equal(rows.import[1].querySelector('.irQty').value,'3');
+
+const pricedImport=assistant.assistantReply('Nhập 1 kg Bột cacao, thành tiền nhập 100.000').draft;
+assert.equal(pricedImport.items[0].quantity,1000,'kg must be converted to the ingredient base unit g');assert.equal(pricedImport.items[0].unit_cost,100,'total amount must derive unit cost after conversion');await assistant.executeDraft(pricedImport);assert.equal(rows.import[0].querySelector('.irQty').value,'1000');assert.equal(rows.import[0].querySelector('.irUnitCost').value,'100');
 
 const exportDraft=assistant.assistantReply('Tạo phiếu xuất 5 kg Đường và 2 lít Sữa').draft;
 assert.ok(exportDraft,'export command must produce a draft response');await assistant.executeDraft(exportDraft);
@@ -53,16 +65,21 @@ assert.ok(saleDraft,'sale command must produce a draft response');await assistan
 assert.equal(rows.sale[0].querySelector('.srProduct').value,'p1');assert.equal(rows.sale[0].querySelector('.srQty').value,'2');assert.equal(elements.get('saleReceiptNote').value,'Bản nháp từ Trợ lý Lát Yên');
 assert.equal(rows.sale[1].querySelector('.srProduct').value,'p2');assert.equal(rows.sale[1].querySelector('.srQty').value,'3');
 
+const recipeDraft=assistant.assistantReply('Tạo công thức tên món là Cacao sữa gồm 20g Bột cacao và 1 lít Sữa').draft;
+await assistant.executeDraft(recipeDraft);assert.equal(recipeForm.classList.open,true);assert.equal(recipeName.value,'Cacao sữa');assert.deepEqual(recipeRows.map(row=>[row.querySelector('.rlIng').value,row.querySelector('.rlQty').value]),[['i3','20'],['i2','1']]);
+const preparedDraft=assistant.assistantReply('Tạo nguyên liệu pha chế tên là Sốt cacao gồm 50g Bột cacao').draft;
+await assistant.executeDraft(preparedDraft);assert.equal(preparedPanel.classList.open,true);assert.equal(preparedName.value,'Sốt cacao');assert.equal(preparedRows[0].querySelector('.prSource').value,'i3');assert.equal(preparedRows[0].querySelector('.prQty').value,'50');
+
 const ambiguousSale=assistant.assistantReply('Tạo phiếu bán 2 cà phê').draft;
 assert.ok(ambiguousSale);assert.equal(ambiguousSale.clarifications.length,1);assert.equal(ambiguousSale.clarifications[0].options.map(row=>row.name).join('|'),'Cà phê sữa|Cà phê đen');
 await assert.rejects(()=>assistant.executeDraft(ambiguousSale),/cần chọn đúng mặt hàng/);
 const wrongSale=assistant.assistantReply('Bán 10kg đường');
-assert.ok(wrongSale.draft);assert.match(wrongSale.content,/không cần gửi lại câu lệnh/i);assert.deepEqual(Array.from(wrongSale.draft.clarifications[0].options,row=>row.name),['Cà phê sữa','Cà phê đen']);assert.equal(assistant.answerDraftClarification(wrongSale.draft,wrongSale.draft.clarifications[0].id,'p1'),true);assert.deepEqual(Array.from(wrongSale.draft.items,row=>[row.name,row.quantity]),[['Cà phê sữa',10]]);assert.equal(assistant.draftReady(wrongSale.draft),true);
+assert.ok(wrongSale.draft);assert.match(wrongSale.content,/không cần gửi lại câu lệnh/i);assert.deepEqual(Array.from(wrongSale.draft.clarifications[0].options,row=>row.name),['Cà phê sữa','Cà phê đen']);assert.equal(assistant.answerDraftClarification(wrongSale.draft,wrongSale.draft.clarifications[0].id,'p1'),true);assert.deepEqual(Array.from(wrongSale.draft.items,row=>[row.name,row.quantity]),[['Cà phê sữa',null]]);assert.equal(assistant.draftReady(wrongSale.draft),false);assert.ok(wrongSale.draft.clarifications.some(row=>row.type==='quantity'&&!row.resolved),'kg must not be silently treated as cups');
 const missingSaleQuantity=assistant.assistantReply('Bán Cà phê sữa');
 assert.ok(missingSaleQuantity.draft);assert.match(missingSaleQuantity.content,/chưa rõ số lượng/);const quantityChoice=missingSaleQuantity.draft.clarifications.find(row=>row.type==='quantity');assert.deepEqual(Array.from(quantityChoice.options,row=>row.label),['1 ly','5 ly','10 ly']);assert.equal(assistant.answerDraftClarification(missingSaleQuantity.draft,quantityChoice.id,'5'),true);assert.equal(missingSaleQuantity.draft.items[0].quantity,5);assert.equal(assistant.draftReady(missingSaleQuantity.draft),true);
-const wrongExport=assistant.assistantReply('Xuất 3 kg Bột cacao');
+const wrongExport=assistant.assistantReply('Xuất 3 kg Hạt matcha');
 assert.equal(wrongExport.draft,undefined);assert.equal(wrongExport.localOnly,true);assert.match(wrongExport.content,/chưa tìm thấy nguyên liệu/i);assert.ok(!wrongExport.suggestions,'zero-relevance ingredients must never be suggested');
 assert.equal(assistant.parseDraft('Xuất 3 kg Sữa').kind,'export');assert.equal(assistant.parseDraft('Bán 2 Cà phê sữa').kind,'sale');assert.equal(assistant.parseDraft('Kiểm kho 4 kg Đường').kind,'stocktake');
-assert.ok(opened.includes('import')&&opened.includes('export')&&opened.includes('stocktake')&&opened.includes('sale'));
+assert.ok(opened.includes('import')&&opened.includes('export')&&opened.includes('stocktake')&&opened.includes('sale')&&opened.includes('recipe')&&opened.includes('prepared'));
 assert.ok(!source.includes('data-suggestion-message'),'all suggestion choices must update the draft immediately instead of refilling chat input');
 console.log('Assistant unified multi-item business form contracts: PASS');

@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.4';
+const VERSION='2026.08.25.5';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:''};
@@ -49,6 +49,17 @@ function collectionFor(kind){
   return rows.filter(item=>item?.active!==false&&(!warehouseId||!item?.warehouse_id||String(item.warehouse_id)===warehouseId)&&(kind==='sale'||(item.ingredient_type||'purchased')==='purchased'));
 }
 function parsedQuantity(value){const token=normalize(value),words={khong:0,mot:1,hai:2,ba:3,bon:4,tu:4,nam:5,sau:6,bay:7,tam:8,chin:9,muoi:10};if(token in words)return words[token];const number=Number(token.replace(',','.'));return Number.isFinite(number)?number:null;}
+const UNIT_ALIASES={ky:'kg',kilogram:'kg',gram:'g',gam:'g',lit:'l','litre':'l',coc:'ly',cup:'ly',chiec:'cai',suat:'phan'};
+const UNIT_DEFS={g:['mass',1],kg:['mass',1000],ml:['volume',1],l:['volume',1000],ly:['count',1],chai:['count',1],goi:['count',1],hop:['count',1],cai:['count',1],phan:['count',1],dia:['count',1]};
+function canonicalUnit(value){const unit=normalize(value);return UNIT_ALIASES[unit]||unit;}
+function amountForItem(amount,item){
+  const target=canonicalUnit(item?.unit),source=canonicalUnit(amount?.unit);
+  if(amount?.quantity===null)return {quantity:null,unit:target||source,compatible:true};
+  if(!source||!target||source===target)return {quantity:amount.quantity,unit:target||source,compatible:true};
+  const from=UNIT_DEFS[source],to=UNIT_DEFS[target];
+  if(!from||!to||from[0]!==to[0])return {quantity:null,unit:target||source,compatible:false};
+  return {quantity:amount.quantity*from[1]/to[1],unit:target,compatible:true};
+}
 function parsedMoney(value,scale=''){
   const raw=text(value).replace(/\s/g,''),number=/^\d{1,3}(?:\.\d{3})+$/.test(raw)?Number(raw.replace(/\./g,'')):Number(raw.replace(',','.'));
   if(!Number.isFinite(number)||number<0)return null;
@@ -76,10 +87,14 @@ function firstQuantity(message){
   return match?{quantity:parsedQuantity(match[1]),unit:text(match[2])}:{quantity:null,unit:''};
 }
 function quantityNear(message,itemName){
-  const source=normalize(message),name=normalize(itemName),at=source.indexOf(name);if(at<0)return {quantity:null,unit:''};
-  const before=source.slice(Math.max(0,at-42),at),after=source.slice(at+name.length,at+name.length+34),number='(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',unit='(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?';
-  const left=before.match(new RegExp(`${number}\\s*${unit}\\s*$`)),right=after.match(new RegExp(`^\\s*(?:x|:)?\\s*${number}\\s*${unit}`)),match=left||right;
-  return match?{quantity:parsedQuantity(match[1]),unit:text(match[2])}:{quantity:null,unit:''};
+  const source=normalize(message),name=normalize(itemName),number='(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',unit='(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?';
+  let at=source.indexOf(name);
+  while(at>=0){
+    const before=source.slice(Math.max(0,at-42),at),after=source.slice(at+name.length,at+name.length+34),left=before.match(new RegExp(`${number}\\s*${unit}\\s*$`)),right=after.match(new RegExp(`^\\s*(?:x|:)?\\s*${number}\\s*${unit}`)),match=left||right;
+    if(match)return {quantity:parsedQuantity(match[1]),unit:text(match[2])};
+    at=source.indexOf(name,at+name.length);
+  }
+  return {quantity:null,unit:''};
 }
 function containsPhrase(source,phrase){const escaped=phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');return new RegExp(`(?:^|[^a-z0-9])${escaped}(?=$|[^a-z0-9])`).test(source);}
 function extractItems(message,kind){
@@ -87,7 +102,7 @@ function extractItems(message,kind){
     .filter(item=>containsPhrase(source,normalize(item.name)))
     .sort((a,b)=>normalize(b.name).length-normalize(a.name).length)
     .filter((item,index,rows)=>!rows.slice(0,index).some(parent=>normalize(parent.name).includes(normalize(item.name))))
-    ,items=exact.map(item=>{const amount=quantityNear(message,item.name),quantity=amount.quantity;return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null)};}),groups=new Map();
+    ,items=exact.map(item=>{const amount=amountForItem(quantityNear(message,item.name),item),quantity=amount.quantity;return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null)};}),groups=new Map();
   for(const item of catalog){
     if(exact.some(row=>String(row.id)===String(item.id)))continue;
     const words=normalize(item.name).split(' ');let phrase='';
@@ -97,8 +112,7 @@ function extractItems(message,kind){
   const ambiguities=[];
   for(const [phrase,candidates] of groups){
     const amount=quantityNear(message,phrase),unique=[...new Map(candidates.map(item=>[String(item.id),item])).values()];
-    if(unique.length>1)ambiguities.push({id:uid(),query:phrase,quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:text(amount.unit),selected_id:'',options:unique.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)}))});
-    else if(unique.length===1){const item=unique[0],quantity=kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null);items.push({id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity});}
+    if(unique.length)ambiguities.push({id:uid(),query:phrase,quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:text(amount.unit),selected_id:'',options:unique.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)}))});
   }
   return {items,ambiguities};
 }
@@ -158,7 +172,7 @@ function addQuantityClarification(draft,item){
 function answerDraftClarification(draft,clarificationId,optionId){
   const clarification=draft?.clarifications?.find(row=>String(row.id)===String(clarificationId)&&!row.resolved),option=clarification?.options?.find(row=>String(row.id)===String(optionId));if(!clarification||!option)return false;
   if(clarification.type==='item'){
-    const item={id:option.id,name:option.name,unit:text(option.unit||clarification.unit),quantity:clarification.quantity,clarification_id:clarification.id};
+    const converted=amountForItem({quantity:clarification.quantity,unit:clarification.unit},option),item={id:option.id,name:option.name,unit:text(option.unit||converted.unit||clarification.unit),quantity:converted.quantity,clarification_id:clarification.id};
     draft.items=(draft.items||[]).filter(row=>String(row.clarification_id)!==String(clarification.id));draft.items.push(item);clarification.selected_id=option.id;clarification.resolved=true;addQuantityClarification(draft,item);
   }else{
     const item=draft.items?.find(row=>String(row.id)===String(clarification.item_id));if(!item)return false;item.quantity=Number(option.value);clarification.selected_id=option.id;clarification.resolved=true;
@@ -343,17 +357,13 @@ async function askAi(message,localReply,reply={}){
 
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitFor(read,attempts=60){for(let i=0;i<attempts;i++){const value=read();if(value)return value;await delay(50);}return null;}
-async function navigate(panel,formId){
-  const previousForm=formId?document.getElementById?.(formId):null;
+async function navigate(panel){
   const button=document.querySelector?.(`#nav button[data-panel="${panel}"]`);
   if(!button)throw new Error('Không tìm thấy mục nghiệp vụ cần mở.');
   button.click();
   const target=await waitFor(()=>{const node=document.getElementById?.(panel);return node?.classList?.contains?.('active')?node:null;});
   if(!target)throw new Error('Màn hình nghiệp vụ chưa sẵn sàng.');
-  if(!formId)return target;
-  const currentForm=await waitFor(()=>{const form=document.getElementById?.(formId);return form&&form!==previousForm?form:null;});
-  if(!currentForm)throw new Error('Form nghiệp vụ chưa dựng xong. Vui lòng thử lại.');
-  return currentForm;
+  return target;
 }
 function setValue(id,value){const element=document.getElementById?.(id);if(element&&value!==undefined)element.value=String(value);}
 function signal(element,type){try{element?.dispatchEvent?.(new Event(type,{bubbles:true}));}catch(_){}}
@@ -377,7 +387,7 @@ function fillDraftItems(draft,contract,form){
   draft.items.forEach((item,index)=>{const row=rows[index];if(!row)return;const select=row.querySelector(contract.select),quantity=row.querySelector(contract.quantity),unitCost=contract.unitCost?row.querySelector(contract.unitCost):null,itemDiscountType=row.querySelector('.srItemDiscountType'),itemDiscountValue=row.querySelector('.srItemDiscountValue');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=item.quantity===null?'':String(item.quantity);signal(quantity,'input');}if(unitCost&&item.unit_cost!==null&&item.unit_cost!==undefined){unitCost.value=String(item.unit_cost);signal(unitCost,'input');}if(item.discount&&itemDiscountType&&itemDiscountValue){itemDiscountType.value=item.discount.type;signal(itemDiscountType,'change');itemDiscountValue.value=String(item.discount.value);signal(itemDiscountValue,'input');}});
 }
 async function openRecipeDraft(draft){
-  await navigate('recipes','inlineRecipeForm');
+  await navigate('recipes');
   if(typeof window.openInlineRecipeForm!=='function')throw new Error('Không tìm thấy form tạo công thức.');
   window.openInlineRecipeForm('');
   const form=await waitFor(()=>document.getElementById?.('inlineRecipeForm')?.classList.contains('open')&&document.getElementById('inlineRecipeForm'));
@@ -395,7 +405,8 @@ async function openPreparedDraft(draft){
 async function openCreateDraft(draft){
   if(draft.kind==='recipe')return openRecipeDraft(draft);
   if(draft.kind==='prepared')return openPreparedDraft(draft);
-  const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports',contract=formContract(draft.kind),form=await navigate(panel,contract.form);
+  const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports',contract=formContract(draft.kind);await navigate(panel);
+  const form=await waitFor(()=>document.getElementById?.(contract.form));
   if(!form)throw new Error('Không tìm thấy form phiếu trên màn hình nghiệp vụ.');
   if(!form.classList.contains('open')){
     const owner=({import:'toggleImportReceiptForm',export:'toggleExportReceiptForm',stocktake:'toggleStocktakeForm',sale:'toggleSaleReceiptForm'})[draft.kind],open=window[owner];

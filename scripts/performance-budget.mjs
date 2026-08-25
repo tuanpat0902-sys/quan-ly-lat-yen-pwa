@@ -1,5 +1,10 @@
 import fs from 'node:fs';
-const files=fs.readdirSync('.').filter(f=>f.endsWith('.js'));
+const UNUSED_CHAT_EXPERIMENTS=new Set([
+  'ly-chat-command-normalizer.js','ly-chat-command-normalizer-v2.js','ly-chat-command-normalizer-v3.js',
+  'ly-chat-multi-item-normalizer.js','ly-chat-unit-normalizer.js','ly-chat-stock-command-normalizer.js',
+  'ly-chat-stock-command-normalizer-v4.js','ly-chat-stock-core-v5.js','ly-chat-stock-submit-gate.js','ly-chat-submit-controller-v6.js'
+]);
+const files=fs.readdirSync('.').filter(f=>f.endsWith('.js')&&!UNUSED_CHAT_EXPERIMENTS.has(f));
 const index=fs.readFileSync('index.html','utf8');
 const runtime=[index,...files.map(f=>fs.readFileSync(f,'utf8'))].join('\n');
 const perf=fs.readFileSync('ly-performance-optimizer.js','utf8');

@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import vm from 'node:vm';
 
 const source=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url),'utf8');
+const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
+const appVersion=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const document={readyState:'loading',addEventListener(){},getElementById(){return null;},querySelector(){return null;}};
 const context={console,Date,Math,Promise,Intl,document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Đường',unit:'g',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Sữa',unit:'ml',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Trà',unit:'ml',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Yến nâu',unit:'ly'}]}},globalThis:null,setTimeout};
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
@@ -12,6 +14,8 @@ const imported=assistant.parseDraft('Nhập 10kg đá với đơn giá nhập l�
 assert.equal(imported.kind,'import');assert.equal(imported.items[0].unit_cost,10000,'must understand import unit price expressed in thousands');
 const importTotal=assistant.parseDraft('Nhập 10kg đá, thành tiền nhập 100.000');
 assert.equal(importTotal.items[0].unit_cost,10000,'must derive unit cost from total import amount and quantity');
+const convertedImport=assistant.parseDraft('Nhập 1kg đường, thành tiền nhập 100.000');
+assert.equal(convertedImport.items[0].quantity,1000,'kg must be converted to the ingredient base unit g');assert.equal(convertedImport.items[0].unit_cost,100,'derived unit cost must use the converted base quantity');
 
 const sale=assistant.parseDraft('Bán 10 ly yến nâu, có giảm giá tổng hóa đơn 10%');
 assert.equal(sale.receipt_discount.type,'percent');assert.equal(sale.receipt_discount.value,10,'must preserve receipt-level percent discount');
@@ -28,4 +32,6 @@ assert.equal(prepared.kind,'prepared');assert.equal(prepared.name,'Syrup đườ
 
 assert.match(source,/z-index:1001/,'chat drawer must stay above data tables on mobile');
 assert.match(source,/height:min\(460px,calc\(100dvh - 72px\)\)/,'mobile chat drawer must have a bounded height');
+assert.ok(!loader.includes('chatMultiItemNormalizer:{')&&!loader.includes('chatUnitNormalizer:{'),'only the local assistant may own the send interaction');
+assert.ok(!appVersion.includes('loadUnitNormalizer'),'the app version module must not inject a second chatbot command handler');
 console.log('Assistant training commands for prices, discounts, stocktake, recipes, and prepared ingredients: PASS');

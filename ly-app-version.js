@@ -1,22 +1,9 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.49',REVISION='fresh-core-v2-authoritative-v50';
+  const VERSION='2.1.50',REVISION='fresh-core-v2-authoritative-v51';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
-  const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false,unitNormalizerLoaded:false};
-
-  function loadUnitNormalizer(){
-    if(window.__lyChatUnitNormalizer?.version==='2026.08.25.1'){state.unitNormalizerLoaded=true;return true;}
-    if(document.querySelector?.('script[data-ly-chat-unit-normalizer]'))return false;
-    const script=document.createElement?.('script');
-    if(!script)return false;
-    script.src='./ly-chat-unit-normalizer.js?v=20260825.1';
-    script.async=true;
-    script.dataset.lyChatUnitNormalizer='1';
-    script.onload=()=>{state.unitNormalizerLoaded=window.__lyChatUnitNormalizer?.version==='2026.08.25.1';};
-    (document.head||document.documentElement)?.appendChild?.(script);
-    return true;
-  }
+  const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
 
   function mount(){
     const name=document.getElementById?.('appNameText');
@@ -52,12 +39,12 @@
     return true;
   }
 
-  function boot(){loadUnitNormalizer();mount();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
+  function boot(){mount();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
   window.__LY_APP_VERSION=VERSION;
   window.__LY_APP_VERSION_LABEL=LABEL;
-  window.__lyAppVersion={version:VERSION,revision:REVISION,label:LABEL,mount,loadUnitNormalizer,status:()=>({...state})};
+  window.__lyAppVersion={version:VERSION,revision:REVISION,label:LABEL,mount,status:()=>({...state})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{loadUnitNormalizer();mount();},delay));
-  window.addEventListener?.('focus',()=>{loadUnitNormalizer();mount();});
+  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(mount,delay));
+  window.addEventListener?.('focus',mount);
   window.addEventListener?.('latyen:branding-updated',()=>setTimeout(mount,0));
 })();

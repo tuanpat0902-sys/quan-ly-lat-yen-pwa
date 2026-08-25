@@ -81,7 +81,7 @@ await assistant.executeDraft(withHeader);assert.equal(elements.get('receiptNo').
 elements.delete('inlineImportReceiptForm');
 renderForm=false;
 const missingForm=assistant.parseDraft('Tạo phiếu nhập 1 kg Đường');
-await assert.rejects(()=>assistant.executeDraft(missingForm),/Form nghiệp vụ chưa dựng xong/);
+await assert.rejects(()=>assistant.executeDraft(missingForm),/Không tìm thấy form phiếu/);
 assert.equal(missingForm.status,'pending','failed navigation must remain retryable');
 const remove=assistant.parseDraft('Xóa phiếu kiểm kê số KK-001');
 assert.equal(remove.action,'delete');assert.equal(remove.kind,'stocktake');assert.equal(remove.receipt_code,'KK-001');
