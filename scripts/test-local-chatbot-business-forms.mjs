@@ -11,7 +11,7 @@ const kinds={
   sale:{panel:'sales',formId:'inlineSaleReceiptForm',toggleId:'toggleSaleReceiptBtn',holderId:'saleReceiptLines',rowSelector:'.sale-receipt-line',select:'.srProduct',quantity:'.srQty',noteId:'saleReceiptNote'}
 };
 const elements=new Map(),rows={import:[],export:[],stocktake:[],sale:[]};
-const panelNodes=new Map(['imports','stocktake','sales','recipes','ingredients'].map(id=>[id,{classList:{active:false,contains(name){return name==='active'&&this.active;}}}]));
+const panelNodes=new Map(['imports','stocktake','sales','recipes','ingredients','cashflow'].map(id=>[id,{classList:{active:false,contains(name){return name==='active'&&this.active;}}}]));
 let securityOpen=false,securityPanel='',securityPolls=0;
 const securityOverlay={classList:{contains(name){if(name!=='open'||!securityOpen)return false;if(++securityPolls>=2){securityOpen=false;for(const [id,node] of panelNodes)node.classList.active=id===securityPanel;}return securityOpen;}}};
 function control(){return {value:'',dispatchEvent(){}};}
@@ -34,14 +34,14 @@ for(const id of ['receiptNo','receiptDate','exportReceiptNo','exportReceiptDate'
 const document={readyState:'loading',addEventListener(){},getElementById(id){return elements.get(id)||null;},querySelector(selector){const panel=selector.match(/data-panel="([^"]+)"/)?.[1];return panel?{click(){opened.push(`panel:${panel}`);if(['recipes','ingredients'].includes(panel)){securityOpen=true;securityPanel=panel;securityPolls=0;for(const node of panelNodes.values())node.classList.active=false;return;}for(const [id,node] of panelNodes)node.classList.active=id===panel;}}:null;},createElement(){return {};}};
 const context={console,Date,Math,Promise,Intl,Event:class Event{},setTimeout(fn){fn();return 1;},document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đường',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Sữa',unit:'lít',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Bột cacao',unit:'g',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i5',warehouse_id:'w1',name:'Nước đường',unit:'g',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Cà phê sữa',unit:'ly'},{id:'p2',warehouse_id:'w1',name:'Cà phê đen',unit:'ly'}],recipeItems:[{product_id:'p1',ingredient_id:'i1'},{product_id:'p2',ingredient_id:'i1'}]}},globalThis:null};
 const recipeRows=[],preparedRows=[];
-const recipeName=control(),preparedName=control(),preparedOutput=control(),preparedUnit=control();
+const recipeName=control(),preparedName=control(),preparedOutput=control(),preparedUnit=control(),ingredientMinimum=control(),cashflowType=control(),cashflowCategory=control(),cashflowAmount=control(),cashflowNote=control(),cashflowDate=control();
 const recipeForm={classList:{open:false,contains(name){return name==='open'&&this.open;}},querySelectorAll(selector){return selector==='.recipe-line'?recipeRows:[];}};
-const preparedPanel={classList:{open:false,contains(name){return name==='open'&&this.open;}},querySelectorAll(selector){return selector==='#preparedRecipeLines .recipe-line'?preparedRows:[];}};
+const preparedPanel={dataset:{type:''},classList:{open:false,contains(name){return name==='open'&&this.open;}},querySelectorAll(selector){return selector==='#preparedRecipeLines .recipe-line'?preparedRows:[];},scrollIntoView(){}};
 const makeRecipeRow=()=>{const ingredient=control(),quantity=control();return {querySelector(selector){return selector==='.rlIng'?ingredient:selector==='.rlQty'?quantity:null;},remove(){const at=recipeRows.indexOf(this);if(at>=0)recipeRows.splice(at,1);}};};
 const makePreparedRow=()=>{const ingredient=control(),quantity=control();return {querySelector(selector){return selector==='.prSource'?ingredient:selector==='.prQty'?quantity:null;},remove(){const at=preparedRows.indexOf(this);if(at>=0)preparedRows.splice(at,1);}};};
-elements.set('inlineRecipeForm',recipeForm);elements.set('rpName',recipeName);elements.set('ingredientInlinePanel',preparedPanel);elements.set('igName',preparedName);elements.set('igBatchOutput',preparedOutput);elements.set('igUnit',preparedUnit);
+elements.set('inlineRecipeForm',recipeForm);elements.set('rpName',recipeName);elements.set('ingredientInlinePanel',preparedPanel);elements.set('igName',preparedName);elements.set('igBatchOutput',preparedOutput);elements.set('igUnit',preparedUnit);elements.set('igMin',ingredientMinimum);elements.set('cashflowType',cashflowType);elements.set('cashflowCategory',cashflowCategory);elements.set('cashflowAmount',cashflowAmount);elements.set('cashflowNote',cashflowNote);elements.set('cashflowDate',cashflowDate);
 context.window.openInlineRecipeForm=()=>{recipeForm.classList.open=true;recipeRows.splice(0,recipeRows.length,makeRecipeRow());opened.push('recipe');};context.window.addRecipeLine=()=>recipeRows.push(makeRecipeRow());
-context.window.openIngredientInline=()=>{preparedPanel.classList.open=true;preparedRows.splice(0,preparedRows.length,makePreparedRow());opened.push('prepared');};context.window.addPreparedLine=()=>preparedRows.push(makePreparedRow());
+context.window.openIngredientInline=(_,type)=>{preparedPanel.dataset.type=type;preparedPanel.classList.open=true;if(type==='prepared')preparedRows.splice(0,preparedRows.length,makePreparedRow());opened.push(type);};context.window.addPreparedLine=()=>preparedRows.push(makePreparedRow());context.window.toggleCashflowForm=()=>opened.push('cashflow');
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);
 const assistant=context.window.__lyLocalAssistant;
@@ -73,6 +73,14 @@ await assistant.executeDraft(recipeDraft);assert.equal(recipeForm.classList.open
 const preparedDraft=assistant.assistantReply('Tạo nguyên liệu pha chế: Đường, bao gồm 10g đá, 10g nước đường, thành phẩm 20g đường').draft;
 await assistant.executeDraft(preparedDraft);assert.equal(preparedPanel.classList.open,true);assert.equal(preparedName.value,'Đường');assert.equal(preparedOutput.value,'20');assert.equal(preparedUnit.value,'g');assert.deepEqual(preparedRows.map(row=>[row.querySelector('.prSource').value,row.querySelector('.prQty').value]),[['i5','10'],['i4','0.01']]);
 
+const ingredientDraft=assistant.assistantReply('Tạo nguyên liệu: Bột quế, đơn vị g, tồn tối thiểu 100g').draft;
+assert.ok(ingredientDraft);assert.equal(ingredientDraft.name,'Bột quế');await assistant.executeDraft(ingredientDraft);assert.equal(preparedPanel.dataset.type,'purchased');assert.equal(preparedName.value,'Bột quế');assert.equal(preparedUnit.value,'g');assert.equal(ingredientMinimum.value,'100');
+
+const cashflowReply=assistant.assistantReply('Tạo phiếu thu/chi "tiền điện" 10 nghìn');
+assert.ok(cashflowReply.draft);assert.equal(cashflowReply.draft.amount,10000);const categoryChoice=cashflowReply.draft.clarifications.find(row=>row.type==='cashflow_category');assert.ok(categoryChoice);assert.ok(categoryChoice.options.some(row=>row.label==='Chi · Điện'));const electric=categoryChoice.options.find(row=>row.category==='Điện');assert.equal(assistant.answerDraftClarification(cashflowReply.draft,categoryChoice.id,electric.id),true);assert.equal(assistant.draftReady(cashflowReply.draft),true);await assistant.executeDraft(cashflowReply.draft);assert.equal(cashflowType.value,'expense');assert.equal(cashflowCategory.value,'Điện');assert.equal(cashflowAmount.value,'10000');
+const unknownExpense=assistant.assistantReply('Tạo phiếu chi "phí vệ sinh lạ" 20k').draft;assert.ok(unknownExpense);assert.equal(unknownExpense.category,undefined);assert.ok(unknownExpense.clarifications[0].options.some(row=>row.category==='Chi phí khác'),'unknown expense content must offer a safe fallback instead of guessing');
+const missingMoney=assistant.assistantReply('Tạo phiếu chi tiền điện');assert.equal(missingMoney.localOnly,true);assert.match(missingMoney.content,/chưa đọc được số tiền/i);
+
 const ambiguousSale=assistant.assistantReply('Tạo phiếu bán 2 cà phê').draft;
 assert.ok(ambiguousSale);assert.equal(ambiguousSale.clarifications.length,1);assert.equal(ambiguousSale.clarifications[0].options.map(row=>row.name).join('|'),'Cà phê sữa|Cà phê đen');
 await assert.rejects(()=>assistant.executeDraft(ambiguousSale),/cần chọn đúng mặt hàng/);
@@ -83,7 +91,7 @@ assert.ok(missingSaleQuantity.draft);assert.match(missingSaleQuantity.content,/c
 const wrongExport=assistant.assistantReply('Xuất 3 kg Hạt matcha');
 assert.equal(wrongExport.draft,undefined);assert.equal(wrongExport.localOnly,true);assert.match(wrongExport.content,/chưa tìm thấy nguyên liệu/i);assert.ok(!wrongExport.suggestions,'zero-relevance ingredients must never be suggested');
 assert.equal(assistant.parseDraft('Xuất 3 kg Sữa').kind,'export');assert.equal(assistant.parseDraft('Bán 2 Cà phê sữa').kind,'sale');assert.equal(assistant.parseDraft('Kiểm kho 4 kg Đường').kind,'stocktake');
-assert.ok(opened.includes('import')&&opened.includes('export')&&opened.includes('stocktake')&&opened.includes('sale')&&opened.includes('recipe')&&opened.includes('prepared'));
+assert.ok(opened.includes('import')&&opened.includes('export')&&opened.includes('stocktake')&&opened.includes('sale')&&opened.includes('recipe')&&opened.includes('prepared')&&opened.includes('purchased')&&opened.includes('cashflow'));
 assert.ok(!source.includes('data-suggestion-message'),'all suggestion choices must update the draft immediately instead of refilling chat input');
 assert.ok(source.includes("closest?.('[data-draft-choice],[data-confirm-draft]')"),'draft actions must resolve clicks from the button or any nested element');
 assert.ok(source.includes("document.addEventListener('click',handleDraftActionClick,true)"),'draft actions must survive chat drawer rerenders through delegated capture handling');

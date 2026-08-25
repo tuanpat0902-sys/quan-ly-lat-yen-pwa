@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.8';
+const VERSION='2026.08.25.9';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',openingDraftId:''};
@@ -125,13 +125,15 @@ function receiptKind(source){
 function businessKind(source){
   if(/cong thuc|recipe/.test(source))return 'recipe';
   if(/nguyen lieu.*pha che|dung cu.*pha che|pha che.*nguyen lieu|pha che.*dung cu/.test(source))return 'prepared';
+  if(/phieu thu|phieu chi|thu\s*\/\s*chi|thu chi|khoan thu|khoan chi/.test(source))return 'cashflow';
+  if(/nguyen lieu|dung cu/.test(source))return 'ingredient';
   return receiptKind(source);
 }
 function actionKind(source){
-  const lead=source.match(/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(xoa|huy|sua|cap nhat|chinh|tao|lap|them|moi)\b/)?.[1]||'';
+  const lead=source.match(/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(xoa|huy|sua|cap nhat|chinh|tao|tap|lap|them|moi)\b/)?.[1]||'';
   if(['xoa','huy'].includes(lead))return 'delete';
   if(['sua','cap nhat','chinh'].includes(lead))return 'edit';
-  if(['tao','lap','them','moi'].includes(lead))return 'create';
+  if(['tao','tap','lap','them','moi'].includes(lead))return 'create';
   return '';
 }
 function receiptCode(message){
@@ -140,7 +142,7 @@ function receiptCode(message){
   if(explicit)return text(explicit);
   return text(raw.match(/\b([A-Za-z]{1,10}[-_/]\d[A-Za-z0-9._/-]*)\b/i)?.[1]||'');
 }
-function kindLabel(kind){return ({import:'nhập kho',export:'xuất kho',stocktake:'kiểm kê',sale:'bán hàng',recipe:'công thức',prepared:'nguyên liệu pha chế'})[kind]||'phiếu';}
+function kindLabel(kind){return ({import:'nhập kho',export:'xuất kho',stocktake:'kiểm kê',sale:'bán hàng',recipe:'công thức',prepared:'nguyên liệu pha chế',ingredient:'nguyên liệu',cashflow:'thu/chi'})[kind]||'phiếu';}
 function actionLabel(action){return ({create:'Tạo',edit:'Sửa',delete:'Xóa'})[action]||'Xử lý';}
 function creationParts(message,kind){
   const raw=text(message),marker=kind==='recipe'?raw.match(/(?:công\s+thức|cong\s+thuc)/i):raw.match(/(?:(?:nguyên\s+liệu|nguyen\s+lieu|dụng\s+cụ|dung\s+cu)\s+pha\s+chế|pha\s+chế\s+(?:nguyên\s+liệu|nguyen\s+lieu|dụng\s+cụ|dung\s+cu))/i);
@@ -151,17 +153,41 @@ function creationParts(message,kind){
   const after=tail.slice(Number(componentMarker.index)+componentMarker[0].length),outputMarker=after.match(/(?:[,;]\s*)?(?:(?:thành\s+phẩm|thanh\s+pham|sản\s+lượng|san\s+luong|thu\s+được|thu\s+duoc|cho\s+ra|ra\s+được|ra\s+duoc)\b\s*[:=]?|=>|->)/i),componentEnd=outputMarker?Number(outputMarker.index):after.length;
   return {name,components:after.slice(0,componentEnd).replace(/[\s,;.]+$/g,'').trim(),output:outputMarker?after.slice(Number(outputMarker.index)+outputMarker[0].length).trim():''};
 }
+function ingredientCreation(message){
+  const raw=text(message),marker=raw.match(/(?:nguyên\s+liệu|nguyen\s+lieu|dụng\s+cụ|dung\s+cu)/i),tail=marker?raw.slice(Number(marker.index||0)+marker[0].length):'';
+  const unitMatch=tail.match(/(?:đơn\s+vị(?:\s+tính)?|don\s+vi(?:\s+tinh)?|dvt)\s*(?:là|la|:|=)?\s*([\p{L}]+)/iu),minimumMatch=tail.match(/(?:tồn\s+tối\s+thiểu|ton\s+toi\s+thieu|mức\s+tối\s+thiểu|muc\s+toi\s+thieu)\s*(?:là|la|:|=)?\s*(\d+(?:[.,]\d+)?)/i);
+  const stop=[unitMatch?.index,minimumMatch?.index].filter(Number.isFinite),end=stop.length?Math.min(...stop):tail.length;
+  const name=tail.slice(0,end).replace(/^[\s:;,\-]*(?:tên\s*)?(?:là|la)?\s*/i,'').replace(/[\s:;,\-]+$/g,'').trim();
+  return {name,unit:canonicalUnit(unitMatch?.[1]||'g'),minimum_stock:minimumMatch?parsedQuantity(minimumMatch[1]):0};
+}
+const CASHFLOW_CATEGORIES={income:['Doanh thu khác','Hoàn tiền','Thu khác'],expense:['Điện','Nước','Thuê mặt bằng','Internet','Vận chuyển','Sửa chữa','Mua sắm dụng cụ','Thanh toán Nhập kho (không tính P&L)','Chi phí khác']};
+function cashflowCatalog(){
+  const rows=[];for(const type of ['income','expense'])for(const category of CASHFLOW_CATEGORIES[type])rows.push({type,category});
+  for(const entry of reportState().cashflow||[]){const type=entry?.type==='income'?'income':entry?.type==='expense'?'expense':'';const category=text(entry?.category);if(type&&category&&!rows.some(row=>row.type===type&&normalize(row.category)===normalize(category)))rows.push({type,category});}
+  return rows;
+}
+function cashflowInput(message){
+  const source=normalize(message),quoted=text(message).match(/["“”']([^"“”']+)["“”']/)?.[1],money=[...source.matchAll(/(\d+(?:[.,]\d+)?)\s*(trieu|nghin|k|ngan|dong|d)?\b/g)].map(match=>({match,amount:parsedMoney(match[1],match[2]==='ngan'?'nghin':match[2])})).filter(row=>row.amount>0).at(-1);
+  const combined=/thu\s*\/\s*chi|thu chi/.test(source);let type=!combined&&/phieu thu|khoan thu/.test(source)?'income':!combined&&/phieu chi|khoan chi/.test(source)?'expense':'';
+  const content=text(quoted||source.replace(/\b(?:tao|tap|lap|them|moi|phieu|thu\s*\/\s*chi|thu chi|thu|chi|khoan|la|voi|so tien)\b/g,' ').replace(/\d+(?:[.,]\d+)?\s*(?:trieu|nghin|ngan|k|dong|d)?\b/g,' ').replace(/\s+/g,' '));
+  const tokens=normalize(content).split(' ').filter(token=>token.length>1&&token!=='tien'),catalog=cashflowCatalog(),ranked=catalog.map(row=>{const words=normalize(row.category).split(' ');let score=0;for(const token of tokens){if(words.includes(token))score+=8;else if(words.some(word=>word.startsWith(token)||token.startsWith(word)))score+=4;else if(token.length>=4&&words.some(word=>editDistance(word,token)<=1))score+=3;}return {...row,score};}).filter(row=>(!type||row.type===type)&&row.score>0).sort((a,b)=>b.score-a.score||a.category.localeCompare(b.category,'vi'));
+  if(!type&&ranked.length&&ranked.every(row=>row.type===ranked[0].type))type=ranked[0].type;
+  let options=ranked.slice(0,5);if(!options.length){const types=type?[type]:['expense','income'];options=types.flatMap(value=>cashflowCatalog().filter(row=>row.type===value&&(normalize(row.category).includes('khac')||CASHFLOW_CATEGORIES[value].includes(row.category)))).slice(0,type?5:6);}
+  return {type,content,amount:money?.amount||null,options:[...new Map(options.map(row=>[`${row.type}:${normalize(row.category)}`,row])).values()]};
+}
 function parseDraft(message){
   const source=normalize(message),kind=businessKind(source),explicitAction=actionKind(source),action=explicitAction||(kind&&/^\s*(nhap|xuat|ban|kiem ke|kiem kho|cong thuc|nguyen lieu|dung cu|pha che)\b/.test(source)?'create':'');
   if(!action||!kind)return null;
   const draft={id:uid(),action,kind,status:'pending',created_at:now(),warehouse_id:text(window.currentWarehouseId),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name),items:[],clarifications:[]};
   if(action==='create'){
-    const creation=['recipe','prepared'].includes(kind)?creationParts(message,kind):null,itemMessage=creation?creation.components:message,extracted=extractItems(itemMessage,kind);if(creation)draft.component_text=creation.components;draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
+    const creation=['recipe','prepared'].includes(kind)?creationParts(message,kind):null,itemMessage=creation?creation.components:message,extracted=['ingredient','cashflow'].includes(kind)?{items:[],ambiguities:[]}:extractItems(itemMessage,kind);if(creation)draft.component_text=creation.components;draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
     const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
     if(kind==='import'){const pricing=importPricing(message,draft.items);draft.items.forEach(item=>item.unit_cost=pricing.unit_cost);draft.import_total=pricing.total;}
     if(kind==='sale'){const discount=discountMention(message);if(discount){const itemLevel=/\b(tung mon|moi mon|giam gia mon|chiet khau mon)\b/.test(source);if(itemLevel)draft.items.forEach(item=>item.discount={...discount});else draft.receipt_discount=discount;}}
     if(kind==='stocktake'&&!draft.items.length&&/\b(kiem ke|kiem kho|phieu kiem)\b/.test(source))draft.open_blank=true;
     if(kind==='recipe'||kind==='prepared'){draft.name=text(creation?.name);if(kind==='prepared'){const output=normalize(creation?.output).match(/(?:la\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|chai|goi|hop|cai)?/);draft.batch_output=output?parsedQuantity(output[1]):1;draft.unit=canonicalUnit(output?.[2]||'g');}}
+    if(kind==='ingredient')Object.assign(draft,ingredientCreation(message));
+    if(kind==='cashflow'){const parsed=cashflowInput(message);draft.cashflow_type=parsed.type;draft.category_query=parsed.content;draft.amount=parsed.amount;if(parsed.options.length)draft.clarifications.push({id:uid(),type:'cashflow_category',query:parsed.content||'nhóm nội dung',options:parsed.options.map(row=>({id:`${row.type}:${row.category}`,type:row.type,category:row.category,label:`${row.type==='income'?'Thu':'Chi'} · ${row.category}`})),resolved:false});}
   }
   else draft.receipt_code=receiptCode(message);
   return draft;
@@ -170,6 +196,8 @@ function draftReady(draft){
   if(!draft)return false;
   if(draft.action!=='create')return true;
   if(draft.kind==='stocktake'&&draft.open_blank)return true;
+  if(draft.kind==='ingredient')return Boolean(text(draft.name));
+  if(draft.kind==='cashflow')return Number(draft.amount)>0&&Boolean(draft.cashflow_type&&draft.category)&&!(draft.clarifications||[]).some(row=>!row.resolved);
   if(['recipe','prepared'].includes(draft.kind)&&!text(draft.name))return false;
   return draft.items?.length>0&&!(draft.clarifications||[]).some(row=>!row.resolved)&&draft.items.every(item=>item.quantity!==null&&Number.isFinite(Number(item.quantity))&&(draft.kind==='stocktake'?Number(item.quantity)>=0:Number(item.quantity)>0));
 }
@@ -182,6 +210,8 @@ function answerDraftClarification(draft,clarificationId,optionId){
   if(clarification.type==='item'){
     const converted=amountForItem({quantity:clarification.quantity,unit:clarification.unit},option),item={id:option.id,name:option.name,unit:text(option.unit||converted.unit||clarification.unit),quantity:converted.quantity,clarification_id:clarification.id};
     draft.items=(draft.items||[]).filter(row=>String(row.clarification_id)!==String(clarification.id));draft.items.push(item);clarification.selected_id=option.id;clarification.resolved=true;addQuantityClarification(draft,item);
+  }else if(clarification.type==='cashflow_category'){
+    draft.cashflow_type=option.type;draft.category=option.category;clarification.selected_id=option.id;clarification.resolved=true;
   }else{
     const item=draft.items?.find(row=>String(row.id)===String(clarification.item_id));if(!item)return false;item.quantity=Number(option.value);clarification.selected_id=option.id;clarification.resolved=true;
   }
@@ -232,6 +262,12 @@ function suggestionCandidates(message,draft){
 function clarificationReply(message,draft){
   if(draft.action!=='create')return null;
   if(draft.kind==='stocktake'&&draft.open_blank)return null;
+  if(draft.kind==='ingredient'&&!text(draft.name))return {content:'Mình chưa đọc được tên nguyên liệu cần tạo. Bạn có thể nói “Tạo nguyên liệu: Bột quế, đơn vị g” nhé.',localOnly:true};
+  if(draft.kind==='cashflow'){
+    if(!(Number(draft.amount)>0))return {content:'Mình chưa đọc được số tiền. Bạn ghi rõ, ví dụ “Tạo phiếu chi tiền điện 10 nghìn” nhé.',localOnly:true};
+    if(!draft.cashflow_type&&!draft.clarifications.some(row=>row.type==='cashflow_category'&&!row.resolved))return {content:'Bạn muốn lập phiếu Thu hay phiếu Chi ạ? Hãy nói rõ loại phiếu và số tiền để mình không chọn nhầm.',localOnly:true};
+    if(draft.clarifications.some(row=>row.type==='cashflow_category'&&!row.resolved))return {content:`Mình hiểu nội dung là “${draft.category_query||'chưa ghi rõ'}” với số tiền ${formatMoney(draft.amount)}. Bạn chọn đúng nhóm Thu/Chi bên dưới; lựa chọn sẽ được đưa thẳng vào bản nháp.`,draft};
+  }
   if(['recipe','prepared'].includes(draft.kind)&&!text(draft.name))return {content:`Mình chưa tách được tên ${kindLabel(draft.kind)} cần tạo. Bạn nói rõ theo cách tự nhiên như “Tạo ${kindLabel(draft.kind)}: Tên cần tạo, bao gồm …” nhé.`,localOnly:true};
   if(['recipe','prepared'].includes(draft.kind)&&!text(draft.component_text))return {content:`Mình đã hiểu tên cần tạo là “${draft.name}”, nhưng chưa thấy phần nguyên liệu nguồn. Bạn bổ sung bằng các từ như “bao gồm”, “từ”, “dùng”, “bằng”, hoặc đặt dấu hai chấm trước danh sách định lượng nhé.`,localOnly:true};
   if(draft.clarifications.some(row=>row.type==='item'&&!row.resolved))return {content:`Mình thấy tên bạn nói có thể khớp với nhiều mặt hàng trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn đúng mặt hàng ở bên dưới giúp mình nhé; lựa chọn sẽ được cập nhật ngay vào bản nháp.`,draft};
@@ -253,6 +289,8 @@ function draftSummary(draft){
   const warehouse=draft.warehouse_name?` tại ${draft.warehouse_name}`:'';
   if(draft.action!=='create')return `${title}${draft.receipt_code?` · ${draft.receipt_code}`:' · cần bổ sung số phiếu'}${warehouse}.`;
   if(draft.kind==='stocktake'&&draft.open_blank)return `Tạo phiếu kiểm kê${warehouse}: sẽ mở toàn bộ danh sách nguyên liệu để bạn nhập số thực tế.`;
+  if(draft.kind==='ingredient')return `Tạo nguyên liệu${warehouse}: ${draft.name||'chưa rõ tên'} · đơn vị ${draft.unit||'g'}${Number(draft.minimum_stock)>0?` · tồn tối thiểu ${formatNumber(draft.minimum_stock)}`:''}.`;
+  if(draft.kind==='cashflow')return `Tạo phiếu ${draft.cashflow_type==='income'?'thu':draft.cashflow_type==='expense'?'chi':'thu/chi'}${warehouse}: ${draft.category||draft.category_query||'chưa rõ nội dung'} · ${draft.amount?formatMoney(draft.amount):'chưa rõ số tiền'}.`;
   if(['recipe','prepared'].includes(draft.kind))return `Tạo ${kindLabel(draft.kind)}${warehouse}: ${draft.name||'chưa rõ tên'}${draft.items.length?` · ${draft.items.map(item=>`${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} ${item.name}`).join(', ')}`:''}.`;
   const lines=draft.items.length?draft.items.map(item=>{const pricing=draft.kind==='import'&&item.unit_cost!==null?` · ${formatMoney(item.unit_cost)}/${item.unit||'đv'}`:'';const discount=item.discount?` · giảm ${item.discount.type==='percent'?`${formatNumber(item.discount.value)}%`:formatMoney(item.discount.value)}`:'';return item.quantity===null?`${item.name} (chưa rõ số lượng)`: `${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} × ${item.name}${pricing}${discount}`;}).join(', '):'chưa có mặt hàng';
   const header=[draft.receipt_code&&`số ${draft.receipt_code}`,draft.receipt_date&&`ngày ${displayDate(parseReportDate(draft.receipt_date))}`].filter(Boolean).join(' · ');
@@ -320,13 +358,22 @@ function reportReply(message){
   const balances=data.inventory.filter(row=>!warehouseId||String(row.warehouse_id)===warehouseId),positive=balances.filter(row=>Number(row.quantity||0)>0),zero=balances.filter(row=>Number(row.quantity||0)<=0),topStock=positive.map(row=>({name:data.ingredients.find(item=>String(item.id)===String(row.ingredient_id))?.name||'Nguyên liệu đã xóa',quantity:Number(row.quantity||0)})).sort((a,b)=>b.quantity-a.quantity).slice(0,3);
   const imports=data.imports.filter(row=>inReport(row,period,warehouseId)),exports=data.exports.filter(row=>inReport(row,period,warehouseId));
   if(/ton kho|nguyen lieu/.test(source))return {content:balances.length?`Mình đã kiểm tra ${scope}: hiện có ${positive.length} nguyên liệu còn hàng và ${zero.length} nguyên liệu đã hết${topStock.length?`. Tồn nhiều nhất là ${topStock.map(row=>`${row.name} ${formatNumber(row.quantity)}`).join(', ')}`:''}.`:`Mình chưa thấy dữ liệu tồn kho tại ${scope}. Bạn thử đồng bộ lại dữ liệu hoặc kiểm tra đúng kho đang chọn nhé.`,report:true};
-  if(/thu chi|dong tien|chi phi/.test(source))return {content:cashflow.length?`Kết quả thu–chi của ${scope} trong ${period.label}: tổng thu ${formatMoney(income)}, tổng chi ${formatMoney(expense)}, chênh lệch ${formatMoney(income-expense)}.`:`Trong ${period.label}, mình chưa thấy khoản thu hoặc chi nào tại ${scope}.`,report:true};
-  if(/nhap xuat/.test(source))return {content:imports.length||exports.length?`Mình tìm thấy ${imports.length} phiếu nhập và ${exports.length} phiếu xuất tại ${scope} trong ${period.label}.`:`Mình chưa thấy phiếu nhập hoặc xuất nào tại ${scope} trong ${period.label}.`,report:true};
-  if(/doanh thu|ban duoc|ban hang/.test(source))return {content:sales.length?`Trong ${period.label}, ${scope} có ${sales.length} giao dịch, bán ${formatNumber(sold)} món và đạt doanh thu ${formatMoney(revenue)}${best?`. Món bán chạy nhất là ${best[0]} (${formatNumber(best[1])})`:''}.`:`Mình chưa thấy giao dịch bán hàng nào tại ${scope} trong ${period.label}.`,report:true};
+  if(/thu chi|dong tien|chi phi/.test(source))return {content:cashflow.length?`Kết quả thu–chi của ${scope} trong ${period.label}: tổng thu ${formatMoney(income)}, tổng chi ${formatMoney(expense)}, chênh lệch ${formatMoney(income-expense)}. Bạn muốn xem riêng khoản Thu, khoản Chi hay đổi khoảng thời gian?`:`Trong ${period.label}, mình chưa thấy khoản thu hoặc chi nào tại ${scope}. Bạn muốn mình kiểm tra hôm qua, tuần này hay một khoảng ngày khác?`,report:true};
+  if(/nhap xuat/.test(source))return {content:imports.length||exports.length?`Mình tìm thấy ${imports.length} phiếu nhập và ${exports.length} phiếu xuất tại ${scope} trong ${period.label}. Bạn muốn xem riêng phiếu Nhập hay phiếu Xuất?`:`Mình chưa thấy phiếu nhập hoặc xuất nào tại ${scope} trong ${period.label}. Bạn muốn mình kiểm tra hôm qua, tuần này hay một khoảng ngày khác?`,report:true};
+  if(/doanh thu|ban duoc|ban hang/.test(source))return {content:sales.length?`Trong ${period.label}, ${scope} có ${sales.length} giao dịch, bán ${formatNumber(sold)} món và đạt doanh thu ${formatMoney(revenue)}${best?`. Món bán chạy nhất là ${best[0]} (${formatNumber(best[1])})`:''}. Bạn muốn so sánh với hôm qua, tuần này hay chọn một khoảng ngày khác?`:`Mình chưa thấy giao dịch bán hàng nào tại ${scope} trong ${period.label}. Bạn muốn mình kiểm tra hôm qua, tuần này hay một khoảng ngày khác?`,report:true};
   return {content:`Mình đã tổng hợp ${scope} trong ${period.label}: doanh thu ${formatMoney(revenue)} từ ${sales.length} giao dịch; thu ${formatMoney(income)}, chi ${formatMoney(expense)}; ${positive.length} nguyên liệu còn hàng; ${imports.length} phiếu nhập và ${exports.length} phiếu xuất.`,report:true};
 }
+function contextualReportMessage(message,history=state.messages){
+  const source=normalize(message),intentPattern=/(bao cao|thong ke|tong quan|doanh thu|ton kho|thu chi|dong tien|chi phi|nhap xuat|ban duoc|ban hang)/;
+  if(intentPattern.test(source))return message;
+  const timePattern=/(hom nay|hom qua|hom kia|ngay hom truoc|hom truoc|ngay mai|ngay kia|tuan nay|tuan truoc|tuan sau|thang nay|thang truoc|thang sau|quy nay|quy truoc|nam nay|nam truoc|dau tuan|cuoi tuan|dau thang|cuoi thang|\d+\s*(ngay|tuan|thang)\s*(qua|truoc|gan day|gan nhat|vua qua)|\d{1,4}[\/-]\d{1,2}[\/-]\d{1,4})/;
+  if(!timePattern.test(source))return message;
+  const previous=[...(history||[])].reverse().find(row=>row?.role==='user'&&text(row.content)!==text(message)&&intentPattern.test(normalize(row.content)));if(!previous)return message;
+  const prior=normalize(previous.content),intent=/doanh thu|ban duoc|ban hang/.test(prior)?'Báo cáo doanh thu':/ton kho|nguyen lieu/.test(prior)?'Báo cáo tồn kho':/thu chi|dong tien|chi phi/.test(prior)?'Báo cáo thu chi':/nhap xuat/.test(prior)?'Báo cáo nhập xuất':'Báo cáo tổng quan';
+  return `${intent} ${message}`;
+}
 function assistantReply(message){
-  const source=normalize(message),draft=parseDraft(message);
+  const contextualMessage=contextualReportMessage(message),source=normalize(message),draft=parseDraft(message);
   if(draft){
     if(draft.action!=='create'&&!draft.receipt_code)return {content:`Mình hiểu bạn muốn ${actionLabel(draft.action).toLocaleLowerCase('vi')} phiếu ${kindLabel(draft.kind)}, nhưng chưa thấy số phiếu. Bạn gửi lại giúp mình theo mẫu “${actionLabel(draft.action)} phiếu ${kindLabel(draft.kind)} số PN-001” nhé.`};
     if(draft.action==='delete')return {content:`Mình đã chuẩn bị yêu cầu xóa phiếu ${kindLabel(draft.kind)} ${draft.receipt_code}. Khi bạn nhấn nút bên dưới, phần mềm sẽ tìm đúng phiếu và vẫn hỏi xác nhận lần cuối — chưa xóa ngay đâu nhé.`,draft};
@@ -334,7 +381,7 @@ function assistantReply(message){
     const clarification=clarificationReply(message,draft);if(clarification)return clarification;
     return {content:`Mình đã đọc được yêu cầu và chuẩn bị bản nháp: ${draftSummary(draft)} Bạn xem lại phần tóm tắt rồi nhấn “Mở bản nháp để kiểm tra” nhé.`,draft};
   }
-  const report=reportReply(message);if(report)return report;
+  const report=reportReply(contextualMessage);if(report)return {...report,contextual_message:contextualMessage};
   if(/^(xin chao|chao|hello|hi)\b/.test(source))return {content:'Chào bạn 👋 Mình là Trợ lý Lát Yên. Mình có thể chuẩn bị bản nháp phiếu, tra cứu báo cáo theo khoảng ngày và xem nhanh tình hình tồn kho. Bạn muốn làm việc gì trước?'};
   if(/\b(cam on|thank|thanks)\b/.test(source))return {content:'Rất vui vì đã hỗ trợ được bạn 😊 Nếu cần, bạn cứ nói tự nhiên như “Tạo phiếu nhập 10 kg Đường” hoặc “Báo cáo doanh thu từ 01/08/2026 đến 18/08/2026”.'};
   if(/\b(giup|huong dan|lam duoc gi|co the lam gi)\b/.test(source))return {content:'Mình có thể giúp bạn chuẩn bị phiếu nhập, xuất, kiểm kê, bán hàng; tìm phiếu để sửa hoặc xóa; và trả lời báo cáo doanh thu, tồn kho, nhập–xuất, thu–chi theo ngày bạn chọn. Mọi thay đổi đều phải được bạn kiểm tra và xác nhận trên form chính thức.'};
@@ -346,12 +393,12 @@ function supabaseClient(){try{return typeof sb!=='undefined'?sb:window.sb||null;
 function aiContext(localReply,reply={}){
   const data=reportState(),warehouseId=text(window.currentWarehouseId),warehouse=data.warehouses.find(row=>String(row.id)===warehouseId);
   const draft=reply.draft,interaction=draft?{mode:'business_draft',action:draft.action,receipt_kind:draft.kind,ready:draftReady(draft),summary:draftSummary(draft),choices:(draft.clarifications||[]).filter(row=>!row.resolved).map(row=>({question:row.type==='quantity'?`Số lượng ${row.item_name}`:row.query,options:row.options.map(option=>option.label||option.name)}))}:reply.report?{mode:'read_only_report'}:{mode:'conversation'};
-  return JSON.stringify({warehouse:warehouse?.name||'Kho đang chọn',available_data:{ingredients:data.ingredients.length,products:data.products.length,inventory_rows:data.inventory.length,sales:data.sales.length,imports:data.imports.length,exports:data.exports.length,cashflow_entries:data.cashflow.length},verified_local_answer:text(localReply).slice(0,3000),interaction});
+  return JSON.stringify({warehouse:warehouse?.name||'Kho đang chọn',resolved_follow_up:text(reply.contextual_message).slice(0,1000)||undefined,available_data:{ingredients:data.ingredients.length,products:data.products.length,inventory_rows:data.inventory.length,sales:data.sales.length,imports:data.imports.length,exports:data.exports.length,cashflow_entries:data.cashflow.length},verified_local_answer:text(localReply).slice(0,3000),interaction});
 }
 function recentConversation(currentMessage){
-  const rows=state.messages.filter(row=>!row.draft&&['user','assistant'].includes(row.role)).slice(-7);
+  const rows=state.messages.filter(row=>!row.draft&&['user','assistant'].includes(row.role)).slice(-11);
   if(rows.at(-1)?.role==='user'&&text(rows.at(-1)?.content)===text(currentMessage))rows.pop();
-  return rows.slice(-6).map(row=>({role:row.role,content:text(row.content).slice(0,700)}));
+  return rows.slice(-10).map(row=>({role:row.role,content:text(row.content).slice(0,900)}));
 }
 async function askAi(message,localReply,reply={}){
   const client=supabaseClient();
@@ -415,27 +462,40 @@ async function openRecipeDraft(draft){
   if(!form)throw new Error('Form công thức chưa mở được.');
   setValue('rpName',draft.name);let rows=[...form.querySelectorAll('.recipe-line')];while(rows.length>1){rows.pop().remove();}while(rows.length<draft.items.length&&typeof window.addRecipeLine==='function'){window.addRecipeLine();rows=[...form.querySelectorAll('.recipe-line')];}draft.items.forEach((item,index)=>{const row=rows[index],select=row?.querySelector('.rlIng'),quantity=row?.querySelector('.rlQty');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=String(item.quantity);signal(quantity,'input');}});return form;
 }
-async function openPreparedDraft(draft){
+async function openIngredientForm(type){
   await navigate('ingredients');
-  if(typeof window.openIngredientInline!=='function')throw new Error('Không tìm thấy form nguyên liệu pha chế.');
-  window.openIngredientInline('','prepared');
-  const panel=await waitFor(()=>document.getElementById?.('ingredientInlinePanel')?.classList.contains('open')&&document.getElementById('ingredientInlinePanel'));
-  if(!panel)throw new Error('Form nguyên liệu pha chế chưa mở được.');
+  if(typeof window.openIngredientInline==='function')window.openIngredientInline('',type);else{const button=document.getElementById?.(type==='prepared'?'btnPreparedPanel':'btnPurchasedPanel');if(!button)throw new Error('Không tìm thấy nút mở form nguyên liệu.');button.click();}
+  const panel=await waitFor(()=>{const current=document.getElementById?.('ingredientInlinePanel');return current?.classList.contains('open')&&(!current.dataset?.type||current.dataset.type===type)&&current;});
+  if(!panel)throw new Error(type==='prepared'?'Form nguyên liệu pha chế chưa mở được.':'Form tạo nguyên liệu chưa mở được.');
+  return panel;
+}
+async function openIngredientDraft(draft){
+  const panel=await openIngredientForm('purchased');setValue('igName',draft.name);const unit=document.getElementById?.('igUnit');if(unit&&draft.unit){unit.value=draft.unit;signal(unit,'change');}setValue('igMin',draft.minimum_stock||0);panel.scrollIntoView?.({behavior:'smooth',block:'start'});return panel;
+}
+async function openPreparedDraft(draft){
+  const panel=await openIngredientForm('prepared');
   setValue('igName',draft.name);setValue('igBatchOutput',draft.batch_output||1);const unit=document.getElementById?.('igUnit');if(unit&&draft.unit){unit.value=draft.unit;signal(unit,'change');}let rows=[...panel.querySelectorAll('#preparedRecipeLines .recipe-line')];while(rows.length>1){rows.pop().remove();}while(rows.length<draft.items.length&&typeof window.addPreparedLine==='function'){window.addPreparedLine();rows=[...panel.querySelectorAll('#preparedRecipeLines .recipe-line')];}draft.items.forEach((item,index)=>{const row=rows[index],select=row?.querySelector('.prSource'),quantity=row?.querySelector('.prQty');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=String(item.quantity);signal(quantity,'input');}});return panel;
+}
+async function openCashflowDraft(draft){
+  await navigate('cashflow');
+  if(typeof window.toggleCashflowForm==='function')window.toggleCashflowForm(true);else{const button=document.querySelector?.('#cashflow button[onclick*="toggleCashflowForm"]');if(!button)throw new Error('Không tìm thấy nút mở form thu/chi.');button.click();}
+  const form=await waitFor(()=>{const type=document.getElementById?.('cashflowType'),category=document.getElementById?.('cashflowCategory'),amount=document.getElementById?.('cashflowAmount');return type&&category&&amount&&{type,category,amount};});
+  if(!form)throw new Error('Form phiếu thu/chi chưa mở được.');
+  form.type.value=draft.cashflow_type;signal(form.type,'change');
+  const category=await waitFor(()=>document.getElementById?.('cashflowCategory'));if(![...(category?.options||[])].some(option=>option.value===draft.category)&&category?.appendChild){const option=document.createElement('option');option.value=draft.category;option.textContent=draft.category;category.appendChild(option);}if(category){category.value=draft.category;signal(category,'change');}
+  setValue('cashflowAmount',draft.amount);if(draft.receipt_date)setValue('cashflowDate',draft.receipt_date);setValue('cashflowNote',`Bản nháp từ Trợ lý Lát Yên${draft.category_query?` · ${draft.category_query}`:''}`);document.getElementById?.('cashflowAmount')?.scrollIntoView?.({behavior:'smooth',block:'center'});return form;
 }
 async function openCreateDraft(draft){
   if(draft.kind==='recipe')return openRecipeDraft(draft);
   if(draft.kind==='prepared')return openPreparedDraft(draft);
+  if(draft.kind==='ingredient')return openIngredientDraft(draft);
+  if(draft.kind==='cashflow')return openCashflowDraft(draft);
   const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports',contract=formContract(draft.kind);await navigate(panel);
-  const form=await waitFor(()=>document.getElementById?.(contract.form));
-  if(!form)throw new Error('Không tìm thấy form phiếu trên màn hình nghiệp vụ.');
-  if(!form.classList.contains('open')){
-    const owner=({import:'toggleImportReceiptForm',export:'toggleExportReceiptForm',stocktake:'toggleStocktakeForm',sale:'toggleSaleReceiptForm'})[draft.kind],open=window[owner];
-    if(typeof open==='function')open(true);else{const toggleButton=document.getElementById?.(contract.toggle);if(!toggleButton)throw new Error('Không tìm thấy nút mở form phiếu.');toggleButton.click();}
-  }
-  const opened=await waitFor(()=>form.classList.contains('open')&&form);
-  if(!opened)throw new Error('Form nghiệp vụ chưa mở được. Vui lòng thử lại.');
-  fillDraftItems(draft,contract,form);
+  const owner=({import:'toggleImportReceiptForm',export:'toggleExportReceiptForm',stocktake:'toggleStocktakeForm',sale:'toggleSaleReceiptForm'})[draft.kind],open=window[owner];
+  if(typeof open==='function')open(true);else{const toggleButton=document.getElementById?.(contract.toggle);if(!toggleButton)throw new Error('Không tìm thấy nút mở form phiếu.');toggleButton.click();}
+  const opened=await waitFor(()=>{const current=document.getElementById?.(contract.form);return current?.classList.contains('open')&&current;});
+  if(!opened)throw new Error(document.getElementById?.(contract.form)?'Form nghiệp vụ chưa mở được. Vui lòng thử lại.':'Không tìm thấy form phiếu trên màn hình nghiệp vụ.');
+  const form=opened;fillDraftItems(draft,contract,form);
   const header=({import:{code:'receiptNo',date:'receiptDate'},export:{code:'exportReceiptNo',date:'exportReceiptDate'},stocktake:{code:'stocktakeReceiptNo',date:'stocktakeReceiptDate'},sale:{code:'saleReceiptNo',date:'saleReceiptDate'}})[draft.kind];
   if(draft.receipt_code)setValue(header.code,draft.receipt_code);if(draft.receipt_date)setValue(header.date,draft.receipt_date);
   if(draft.kind==='import'){
@@ -531,20 +591,20 @@ function installUi(){
   if(document.getElementById?.('lyAssistantLauncher'))return;
   const style=document.createElement('style');style.id='lyAssistantStyles';style.textContent=`
 .ly-assistant-launcher{position:fixed;right:18px;bottom:18px;z-index:1000;border:0;border-radius:999px;background:#0f766e;color:#fff;padding:12px 16px;font-weight:800;box-shadow:0 12px 32px rgba(15,118,110,.28)}
-.ly-assistant-drawer{position:fixed;right:14px;bottom:72px;z-index:1001;width:min(410px,calc(100vw - 28px));height:min(620px,calc(100vh - 100px));display:none;grid-template-rows:auto auto 1fr auto;background:#fff;border:1px solid #dbe5e4;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.24);overflow:hidden}.ly-assistant-drawer.is-open{display:grid}
-.ly-assistant-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid #e5e7eb}.ly-assistant-head h3{margin:0}.ly-assistant-head button{border:0;background:transparent;font-size:22px}.ly-assistant-privacy{padding:9px 14px;background:#ecfdf5;color:#065f46;font-size:12px}.ly-assistant-messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:9px}.ly-assistant-message{max-width:88%;padding:10px 11px;border-radius:13px;background:#f1f5f9;line-height:1.4;font-size:13px}.ly-assistant-message.is-user{align-self:flex-end;background:#0f766e;color:#fff}.ly-assistant-draft{display:grid;gap:8px;margin-top:9px;padding:9px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;color:#334155}.ly-assistant-draft button{border:0;border-radius:8px;background:#0f766e;color:#fff;padding:8px;font-weight:700}.ly-assistant-done{display:block;margin-top:6px;color:#047857}.ly-assistant-empty{margin:auto;color:#64748b;text-align:center;padding:18px}.ly-assistant-compose{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px;border-top:1px solid #e5e7eb}.ly-assistant-compose textarea{resize:none;min-height:44px;max-height:100px;border:1px solid #cbd5e1;border-radius:10px;padding:9px}.ly-assistant-compose button{border:0;border-radius:10px;background:#0f766e;color:#fff;padding:0 14px;font-weight:800}.ly-assistant-send{display:flex;align-items:center;justify-content:center;gap:6px;overflow:hidden}.ly-assistant-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;animation:ly-assistant-send 2.4s ease-in-out infinite}@keyframes ly-assistant-send{0%,72%,100%{transform:translate(0,0) rotate(0);opacity:1}82%{transform:translate(4px,-4px) rotate(-5deg);opacity:.65}88%{transform:translate(-3px,3px) rotate(3deg);opacity:.35}}@media(prefers-reduced-motion:reduce){.ly-assistant-send svg{animation:none}}.ly-assistant-tools{display:flex;justify-content:flex-end;padding:0 12px 9px}.ly-assistant-tools button{border:0;background:transparent;color:#b42318;font-size:12px}
+.ly-assistant-drawer{position:fixed;right:14px;bottom:72px;z-index:1001;width:min(410px,calc(100vw - 28px));height:min(620px,calc(100vh - 100px));display:none;grid-template-rows:auto 1fr auto;background:#fff;border:1px solid #dbe5e4;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.24);overflow:hidden}.ly-assistant-drawer.is-open{display:grid}
+.ly-assistant-head{display:flex;align-items:center;justify-content:space-between;min-height:42px;padding:2px 7px 2px 12px;border-bottom:1px solid #e5e7eb}.ly-assistant-head h3{margin:0;font-size:14px}.ly-assistant-head-actions{display:flex;align-items:center;gap:2px}.ly-assistant-privacy-icon{font-size:13px;cursor:help}.ly-assistant-head button[data-assistant-close]{display:flex;align-items:center;justify-content:center;width:38px;height:38px;padding:0;border:0;border-radius:999px;background:transparent;color:#334155;font-size:30px;font-weight:500;line-height:1;cursor:pointer}.ly-assistant-head button[data-assistant-close]:hover,.ly-assistant-head button[data-assistant-close]:focus-visible{background:#f1f5f9;color:#0f172a}.ly-assistant-messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:9px}.ly-assistant-message{max-width:88%;padding:10px 11px;border-radius:13px;background:#f1f5f9;line-height:1.4;font-size:13px}.ly-assistant-message.is-user{align-self:flex-end;background:#0f766e;color:#fff}.ly-assistant-draft{display:grid;gap:8px;margin-top:9px;padding:9px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;color:#334155}.ly-assistant-draft button{border:0;border-radius:8px;background:#0f766e;color:#fff;padding:8px;font-weight:700}.ly-assistant-done{display:block;margin-top:6px;color:#047857}.ly-assistant-empty{margin:auto;color:#64748b;text-align:center;padding:18px}.ly-assistant-compose{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px;border-top:1px solid #e5e7eb}.ly-assistant-compose textarea{resize:none;min-height:44px;max-height:100px;border:1px solid #cbd5e1;border-radius:10px;padding:9px}.ly-assistant-compose button{border:0;border-radius:10px;background:#0f766e;color:#fff;padding:0 14px;font-weight:800}.ly-assistant-send{display:flex;align-items:center;justify-content:center;gap:6px;overflow:hidden}.ly-assistant-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;animation:ly-assistant-send 2.4s ease-in-out infinite}@keyframes ly-assistant-send{0%,72%,100%{transform:translate(0,0) rotate(0);opacity:1}82%{transform:translate(4px,-4px) rotate(-5deg);opacity:.65}88%{transform:translate(-3px,3px) rotate(3deg);opacity:.35}}@media(prefers-reduced-motion:reduce){.ly-assistant-send svg{animation:none}}.ly-assistant-tools{display:flex;justify-content:flex-end;padding:0 12px 9px}.ly-assistant-tools button{border:0;background:transparent;color:#b42318;font-size:12px}
 .ly-assistant-choice{display:grid;gap:7px;margin-top:9px;padding:9px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#713f12}.ly-assistant-choice>div{display:flex;flex-wrap:wrap;gap:6px}.ly-assistant-choice button{border:1px solid #d6d3d1;border-radius:999px;background:#fff;color:#334155;padding:6px 9px;font-weight:700}.ly-assistant-choice button.is-selected{border-color:#0f766e;background:#ecfdf5;color:#065f46}
 .ly-assistant-thinking span{display:inline-block;animation:ly-assistant-thinking 1s ease-in-out infinite}@keyframes ly-assistant-thinking{0%,100%{opacity:.25}50%{opacity:1}}
 @media(max-width:520px){.ly-assistant-launcher{right:10px;bottom:10px;padding:10px 13px;font-size:12px}.ly-assistant-drawer{right:8px;bottom:60px;left:auto;top:auto;width:min(360px,calc(100vw - 16px));height:min(460px,calc(100dvh - 72px));border-radius:14px}.ly-assistant-head{padding:9px 11px}.ly-assistant-head h3{font-size:16px}.ly-assistant-privacy{padding:7px 11px;font-size:10px;line-height:1.3}.ly-assistant-messages{padding:8px;gap:7px}.ly-assistant-message{max-width:96%;padding:8px 9px;font-size:12px}.ly-assistant-compose{padding:8px;gap:6px}.ly-assistant-compose textarea{min-height:40px;padding:8px;font-size:12px}.ly-assistant-compose button{padding:0 10px;font-size:12px}.ly-assistant-tools{padding:0 9px 6px}.ly-assistant-choice{padding:7px;margin-top:7px}.ly-assistant-choice button{padding:5px 7px;font-size:11px}}
 `;document.head.appendChild(style);
   const launcher=document.createElement('button');launcher.id='lyAssistantLauncher';launcher.className='ly-assistant-launcher';launcher.type='button';launcher.textContent='Trợ lý Lát Yên';launcher.setAttribute('aria-controls','lyAssistantDrawer');document.body.appendChild(launcher);
-  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><button type="button" data-assistant-close aria-label="Đóng">×</button></div><div class="ly-assistant-privacy">🔒 Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.</div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" class="ly-assistant-send" data-assistant-send aria-label="Gửi tin nhắn"><span>Gửi</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg></button></div></div>`;document.body.appendChild(drawer);
+  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><div class="ly-assistant-head-actions"><span class="ly-assistant-privacy-icon" role="img" aria-label="Thông tin bảo mật" title="Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 10 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.">🔒</span><button type="button" data-assistant-close aria-label="Đóng">×</button></div></div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" class="ly-assistant-send" data-assistant-send aria-label="Gửi tin nhắn"><span>Gửi</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg></button></div></div>`;document.body.appendChild(drawer);
   launcher.addEventListener('click',()=>toggle());drawer.querySelector('[data-assistant-close]').addEventListener('click',()=>toggle(false));drawer.querySelector('[data-assistant-send]').addEventListener('click',submit);drawer.querySelector('[data-assistant-clear]').addEventListener('click',()=>{if(confirm('Xóa toàn bộ lịch sử trợ lý trên thiết bị này?'))clearMessages();});
   drawer.querySelector('#lyAssistantInput').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit();}});
   if(!document.__lyAssistantDraftActionsV8){document.__lyAssistantDraftActionsV8=true;document.addEventListener('click',handleDraftActionClick,true);}
 }
 async function boot(){installUi();state.messages=await readMessages();state.ready=true;renderMessages();}
 
-window.__lyLocalAssistant={version:VERSION,parseDraft,draftReady,chooseDraftItem,answerDraftClarification,reportReply,assistantReply,askAi,submit,executeDraft,openDraftMessage,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'openai-responses-via-authenticated-edge-function',lastAiError:state.lastAiError,draftLinks:'delegated-capture-open-and-retire-after-success',reports:'read-only-current-snapshot',voice:'removed'})};
+window.__lyLocalAssistant={version:VERSION,parseDraft,draftReady,chooseDraftItem,answerDraftClarification,reportReply,contextualReportMessage,assistantReply,askAi,submit,executeDraft,openDraftMessage,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'openai-responses-via-authenticated-edge-function',lastAiError:state.lastAiError,draftLinks:'delegated-capture-open-and-retire-after-success',reports:'read-only-current-snapshot-with-follow-up-context',voice:'removed'})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

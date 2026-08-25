@@ -7,6 +7,7 @@ const edge=await fs.readFile(new URL('../supabase/functions/lat-yen-chat/index.t
 assert.match(edge,/OPENAI_API_KEY/);assert.match(edge,/api\.openai\.com\/v1\/responses/);assert.match(edge,/gpt-5\.6/);
 assert.match(edge,/auth\.getUser\(token\)/);assert.match(edge,/RATE_LIMITED/);assert.match(edge,/Access-Control-Allow-Origin/);
 assert.match(edge,/recent_context/);assert.match(edge,/store:false/);assert.match(edge,/không tự suy diễn/);
+assert.match(edge,/input:\[\.\.\.recentContext/,'recent turns must be sent as real Responses API role messages');assert.match(edge,/resolved_follow_up/);assert.match(edge,/tính liên tục/);
 assert.doesNotMatch(edge,/sk-[A-Za-z0-9_-]{12,}/);assert.doesNotMatch(client,/OPENAI_API_KEY/);assert.doesNotMatch(client,/api\.openai\.com/);
 
 const document={readyState:'loading',addEventListener(){},getElementById(){return null;},querySelector(){return null;}};

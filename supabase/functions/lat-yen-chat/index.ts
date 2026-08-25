@@ -32,8 +32,8 @@ Deno.serve(async request=>{
     if(userError||!user)return json({error:'INVALID_SESSION'},401);
     if(!allowed(user.id))return json({error:'RATE_LIMITED'},429);
 
-    const body=await request.json().catch(()=>({})),message=safeString(body?.message,2000),localContext=safeString(body?.local_context,4000),warehouseName=safeString(body?.warehouse_name,200);
-    const recentContext=Array.isArray(body?.recent_context)?body.recent_context.slice(-6).map((row:unknown)=>{const item=row as Record<string,unknown>;return {role:item?.role==='assistant'?'assistant':'user',content:safeString(item?.content,700)};}).filter((row:{content:string})=>row.content):[];
+    const body=await request.json().catch(()=>({})),message=safeString(body?.message,2000),localContext=safeString(body?.local_context,6000),warehouseName=safeString(body?.warehouse_name,200);
+    const recentContext=Array.isArray(body?.recent_context)?body.recent_context.slice(-10).map((row:unknown)=>{const item=row as Record<string,unknown>;return {role:item?.role==='assistant'?'assistant':'user',content:safeString(item?.content,900)};}).filter((row:{content:string})=>row.content):[];
     if(!message)return json({error:'MESSAGE_REQUIRED'},400);
     const apiKey=Deno.env.get('OPENAI_API_KEY');
     if(!apiKey)return json({error:'AI_NOT_CONFIGURED'},503);
@@ -44,10 +44,24 @@ Deno.serve(async request=>{
       body:JSON.stringify({
         model,
         reasoning:{effort:'low'},
-        max_output_tokens:700,
+        max_output_tokens:900,
         store:false,
-        instructions:`Bạn là Trợ lý Lát Yên trong phần mềm quản lý kho và bán hàng. Trả lời bằng tiếng Việt tự nhiên, thân thiện, đúng trọng tâm, thường từ 2 đến 5 câu. Dùng recent_context để hiểu câu nối tiếp và tương tác qua lại như hội thoại bình thường. Khi ý người dùng chưa rõ, hãy hỏi lại một câu ngắn và đưa 2 đến 4 lựa chọn cụ thể nếu có căn cứ; không tự suy diễn. Hãy trực tiếp trả lời câu hỏi kể cả khi không có dữ liệu nội bộ; nếu thiếu dữ liệu thì giải thích hợp lý và đề xuất bước tiếp theo, tuyệt đối không bịa số liệu. Dữ liệu trong verified_local_answer đã được phần mềm tính toán: phải giữ nguyên các con số và khoảng ngày đó. Không tuyên bố đã tạo, sửa, xóa, lưu hoặc xác nhận phiếu; các thao tác này chỉ được thực hiện bằng form chính thức ở thiết bị. Không yêu cầu hoặc tiết lộ khóa API, mật khẩu hay dữ liệu nhạy cảm.`,
-        input:JSON.stringify({question:message,recent_context:recentContext,warehouse:warehouseName||'Kho đang chọn',local_context:localContext||'Không có dữ liệu nội bộ kèm theo.'})
+        text:{verbosity:'medium'},
+        instructions:`Bạn là Trợ lý Lát Yên trong phần mềm quản lý kho và bán hàng. Hãy đối thoại bằng tiếng Việt tự nhiên, thân thiện, có tính liên tục và đúng trọng tâm, thường từ 2 đến 5 câu.
+
+Quy tắc hội thoại:
+- Luôn đọc các lượt user/assistant trước đó. Câu ngắn như “hôm qua”, “còn tuần trước?”, “thế khoản chi?” là phần tiếp nối của chủ đề gần nhất, không phải câu hỏi độc lập.
+- Nếu local_context có resolved_follow_up, dùng nó để hiểu ý hiện tại nhưng trả lời tự nhiên, không nhắc tên trường kỹ thuật.
+- Trả lời thẳng điều người dùng hỏi trước, sau đó chủ động đề nghị 2 đến 4 hướng tiếp theo có liên quan. Không lặp lại cùng một câu mẫu hoặc ví dụ chung chung.
+- Khi ý còn mơ hồ, hỏi đúng một câu ngắn và đưa lựa chọn cụ thể có căn cứ; tuyệt đối không tự suy diễn.
+- Nếu đang chuẩn bị bản nháp nghiệp vụ, xác nhận rõ các chi tiết phần mềm đã đọc được và hướng dẫn người dùng chọn phần còn thiếu.
+
+Quy tắc an toàn dữ liệu:
+- verified_local_answer và các chi tiết nghiệp vụ trong local_context do phần mềm xác minh; phải giữ nguyên số liệu, khoảng ngày, tên kho và lựa chọn, không thay bằng phỏng đoán.
+- Nếu không có dữ liệu nội bộ, vẫn trả lời hợp lý trong phạm vi hiểu biết chung và nói rõ giới hạn; tuyệt đối không bịa số liệu của cửa hàng.
+- Không tuyên bố đã tạo, sửa, xóa, lưu hoặc xác nhận phiếu. Các thao tác chỉ xảy ra khi người dùng kiểm tra và xác nhận trên form chính thức.
+- Không yêu cầu hoặc tiết lộ khóa API, mật khẩu hay dữ liệu nhạy cảm.`,
+        input:[...recentContext,{role:'user',content:`Câu hỏi hiện tại: ${message}\nKho đang chọn: ${warehouseName||'Kho đang chọn'}\nNgữ cảnh đã được phần mềm xác minh: ${localContext||'Không có dữ liệu nội bộ kèm theo.'}`}]
       })
     });
     const payload=await response.json().catch(()=>({}));

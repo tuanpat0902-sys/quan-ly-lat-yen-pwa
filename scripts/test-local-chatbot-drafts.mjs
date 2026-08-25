@@ -6,7 +6,7 @@ const source=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url)
 assert.ok(source.includes("DB_NAME='lat_yen_local_assistant_v1'"));
 assert.ok(source.includes('indexedDB.open(DB_NAME,1)'));
 assert.ok(source.includes('Lịch sử chat chỉ lưu trên thiết bị này'));
-assert.ok(source.includes('câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật'));
+assert.ok(source.includes('câu hỏi hiện tại, tối đa 10 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật'));
 assert.ok(!source.includes('localStorage'),'assistant history must not use LocalStorage');
 for(const forbidden of [".rpc(",".from(",'saveImportReceipt?.','saveExportReceipt?.','saveStocktakeReceipt?.','saveSaleReceipt?.'])assert.ok(!source.includes(forbidden),`assistant must not directly commit business data: ${forbidden}`);
 assert.ok(!source.includes('SpeechRecognition'),'voice recognition must be fully removed');
@@ -50,6 +50,8 @@ assert.match(assistant.reportReply('Báo cáo doanh thu từ 01/08/2026 đến 1
 assert.match(assistant.reportReply('Báo cáo doanh thu từ 01/08/2026 đến 18/08/2026').content,/40\.000 đ/,'custom range must include only sales inside the requested dates');
 assert.match(assistant.reportReply('Báo cáo doanh thu từ 2026-08-18 đến 2026-08-01').content,/từ 01\/08\/2026 đến 18\/08\/2026/,'reversed custom dates must be normalized');
 assert.match(assistant.reportReply('Báo cáo doanh thu ngày hôm qua').content,/hôm qua \(\d{2}\/\d{2}\/\d{4}\)/,'yesterday must resolve to one explicit date');
+const followup=assistant.contextualReportMessage('hôm qua',[{role:'user',content:'doanh thu ngày hôm nay là bao nhiêu'},{role:'assistant',content:'Không có giao dịch'}]);assert.equal(followup,'Báo cáo doanh thu hôm qua','short time-only follow-up must retain the previous report intent');assert.match(assistant.reportReply(followup).content,/hôm qua \(\d{2}\/\d{2}\/\d{4}\)/);
+assert.equal(assistant.contextualReportMessage('ngày hôm qua',[{role:'user',content:'thu chi hôm nay'}]),'Báo cáo thu chi ngày hôm qua');
 assert.match(assistant.reportReply('Báo cáo tuần này').content,/tuần này, từ \d{2}\/\d{2}\/\d{4} đến \d{2}\/\d{2}\/\d{4}/);
 assert.match(assistant.reportReply('Báo cáo tuần trước').content,/tuần trước, từ \d{2}\/\d{2}\/\d{4} đến \d{2}\/\d{2}\/\d{4}/);
 assert.match(assistant.reportReply('Báo cáo tháng trước').content,/tháng trước, từ \d{2}\/\d{2}\/\d{4} đến \d{2}\/\d{2}\/\d{4}/);
