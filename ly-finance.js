@@ -4,7 +4,7 @@
   'use strict';
   if(window.__lyFinanceUIV1)return;
   window.__lyFinanceUIV1=true;
-  const VERSION='2026.08.24.2';
+  const VERSION='2026.08.25.1';
 
   function financeViewState(){
     const now=new Date();
@@ -600,7 +600,7 @@
                           </span>
                         </td>
                         <td><b>${esc(x.category)}</b></td>
-                        <td>${esc(x.note||'')}</td>
+                        <td><span class="ly-note-compact" title="${esc(x.note||'')}">${esc(x.note||'')}</span></td>
                         <td class="right ${x.type==='income'?'profit':'neg'}">
                           <b>
                             ${x.type==='income'?'+':'−'}

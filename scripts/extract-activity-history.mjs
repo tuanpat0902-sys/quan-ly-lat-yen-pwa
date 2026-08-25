@@ -41,7 +41,7 @@ for(const b of blocks){
 const removedBytes=blocks.reduce((n,b)=>n+Buffer.byteLength(src.slice(b.start,b.end)),0);
 if(removedBytes<4500||removedBytes>7000)throw new Error(`Unexpected extraction size ${removedBytes} bytes`);
 
-const moduleSource=`/* Lát Yên — Activity History UI V1\n   Extracted from Legacy index.html. Audit persistence remains in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyActivityHistoryUIV1)return;\n  window.__lyActivityHistoryUIV1=true;\n  const VERSION='2026.08.23.1';\n\n${blocks.map(b=>b.code.split('\n').map(line=>'  '+line).join('\n')).join('\n\n')}\n\n  window.auditActionClass=auditActionClass;\n  window.auditFilterRows=auditFilterRows;\n  window.renderHistory=renderHistory;\n  window.__lyActivityHistoryModule={version:VERSION,render:renderHistory};\n})();\n`;
+const moduleSource=`/* Lát Yên — Activity History UI V1\n   Extracted from Legacy index.html. Audit persistence remains in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyActivityHistoryUIV1)return;\n  window.__lyActivityHistoryUIV1=true;\n  const VERSION='2026.08.25.1';\n\n${blocks.map(b=>b.code.split('\n').map(line=>'  '+line).join('\n')).join('\n\n')}\n\n  window.auditActionClass=auditActionClass;\n  window.auditFilterRows=auditFilterRows;\n  window.renderHistory=renderHistory;\n  window.__lyActivityHistoryModule={version:VERSION,render:renderHistory};\n})();\n`;
 fs.writeFileSync(MODULE,moduleSource);
 
 let next=src;

@@ -5,6 +5,17 @@
   const style=document.createElement('style');
   style.id='lyCompactAdminLayoutV1';
   style.textContent=`
+:root{--ly-ui-font:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--ly-font-xs:10px;--ly-font-sm:11px;--ly-font-base:12px;--ly-font-md:14px;--ly-font-lg:18px;--ly-font-kpi:20px}
+html,body,button,input,select,textarea,table{font-family:var(--ly-ui-font)!important}
+body{font-size:var(--ly-font-base)!important;line-height:1.45}
+h1{font-size:22px!important;line-height:1.25}h2{font-size:var(--ly-font-lg)!important;line-height:1.3}h3,.card h3{font-size:var(--ly-font-md)!important;line-height:1.35}h4{font-size:13px!important;line-height:1.35}
+label,.muted,small,.footer-note{font-size:var(--ly-font-sm)!important;line-height:1.4}
+button,input,select,textarea{font-size:var(--ly-font-base);line-height:1.35}
+table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-size:var(--ly-font-base)!important;line-height:1.4}
+.metric .value,.finance-kpi b,.cashflow-kpi b{font-size:var(--ly-font-kpi)!important;line-height:1.2}
+.badge,.cashflow-type{font-size:var(--ly-font-xs)!important}
+#nav button[data-panel],#nav .nav-group-toggle{font-size:var(--ly-font-base)!important}
+.ly-note-compact{display:-webkit-box;max-width:260px;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere;line-height:1.35;color:#52606d}
 #settings{max-width:1320px;margin:0 auto}
 #settings .settings-workspace-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px;padding:2px 1px}
 #settings .settings-workspace-head h2{margin:0 0 3px;font-size:20px}
@@ -57,5 +68,5 @@
 @media(max-width:700px){#settings .settings-workspace-head{align-items:flex-start;flex-direction:column}#settings .settings-head-actions{justify-content:flex-start}#settings .settings-account-pill{max-width:100%;overflow-wrap:anywhere}.supplier-page-head{align-items:flex-start;flex-direction:column}.supplier-page-head button{width:100%}.import-receipt-header-actions{width:100%}.import-receipt-header-actions button{flex:1}.supplier-list-summary{align-items:flex-start;flex-direction:column}}
 `;
   document.head.appendChild(style);
-  window.__lyCompactAdminLayout={version:'2026.08.24.1'};
+  window.__lyCompactAdminLayout={version:'2026.08.25.1'};
 })();

@@ -3,7 +3,7 @@
 (()=>{
   'use strict';
   if(window.__lyCashflowModule)return;
-  window.__lyCashflowModule={version:'2026.08.25.1'};
+  window.__lyCashflowModule={version:'2026.08.25.2'};
   if(typeof document!=='undefined'&&!document.getElementById?.('lyCashflowChartStyles')){const style=document.createElement('style');style.id='lyCashflowChartStyles';style.textContent=`.cashflow-expense-chart{display:grid;grid-template-columns:minmax(128px,.8fr) minmax(170px,1.2fr);align-items:center;gap:14px;min-height:190px;padding:8px 3px}.cashflow-expense-donut{width:min(100%,170px);aspect-ratio:1;justify-self:center;display:grid;place-items:center;border-radius:50%;background:conic-gradient(var(--cashflow-expense-gradient));box-shadow:inset 0 0 0 1px rgba(15,23,42,.06)}.cashflow-expense-donut>div{width:58%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(15,23,42,.09);text-align:center}.cashflow-expense-donut b{font-size:11px;color:#0f172a;line-height:1.2}.cashflow-expense-donut span{font-size:9px;color:#64748b;margin-top:3px}.cashflow-expense-legend{display:grid;gap:7px;min-width:0}.cashflow-expense-legend>div{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:7px}.cashflow-expense-legend i{width:10px;height:10px;border-radius:3px}.cashflow-expense-legend span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#475569;font-size:11px}.cashflow-expense-legend b{color:#b91c1c;font-size:11px}@media(max-width:750px){.cashflow-expense-chart{grid-template-columns:1fr;gap:12px}.cashflow-expense-donut{width:min(55vw,170px)}}`;document.head.appendChild(style);}
 
   function normalizeCashflowEntry(entry){
@@ -444,7 +444,7 @@
                 <td>${formatVNDate(x.date)}</td>
                 <td><span class="cashflow-type ${x.type}">${x.type==='income'?'Thu':'Chi'}</span></td>
                 <td><b>${esc(x.category)}</b></td>
-                <td>${esc(x.note||'')}</td>
+                <td><span class="ly-note-compact" title="${esc(x.note||'')}">${esc(x.note||'')}</span></td>
                 <td class="right ${x.type==='income'?'profit':'neg'}">
                   <b>${x.type==='income'?'+':'−'} ${money(x.amount)}</b>
                 </td>

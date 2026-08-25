@@ -6064,171 +6064,6 @@ table.app-aligned-table td > .muted{
   }
 }
 
-/* ===== V146 LOGO TRÊN TÊN PHẦN MỀM ===== */
-
-/* Đưa logo lên trên tên phần mềm trong khu vực menu */
-.brand-wrap{
-  display:flex!important;
-  flex-direction:column!important;
-  align-items:center!important;
-  justify-content:center!important;
-  gap:10px!important;
-  width:100%!important;
-  min-width:0!important;
-  text-align:center!important;
-}
-
-/* Logo lớn và nổi bật hơn */
-.app-logo-slot{
-  width:88px!important;
-  height:88px!important;
-  min-width:88px!important;
-  min-height:88px!important;
-  flex:0 0 88px!important;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:0 auto 2px!important;
-}
-
-.app-logo-slot img{
-  display:block!important;
-  width:88px!important;
-  height:88px!important;
-  max-width:88px!important;
-  max-height:88px!important;
-  object-fit:contain!important;
-  border-radius:14px!important;
-}
-
-/* Tên phần mềm nằm riêng bên dưới logo */
-.brand-wrap .brand{
-  width:100%!important;
-  min-width:0!important;
-  text-align:center!important;
-  line-height:1.2!important;
-}
-
-#appNameText{
-  display:inline-block;
-  max-width:100%;
-  overflow-wrap:anywhere;
-}
-
-/* Dòng mô tả phía dưới tên căn giữa */
-.brand-wrap .brand small{
-  margin-top:5px!important;
-  text-align:center!important;
-  line-height:1.35!important;
-}
-
-/* Badge phiên bản không làm tên bị lệch */
-.brand-wrap .brand > .badge{
-  vertical-align:middle;
-  margin-left:4px;
-}
-
-/* Desktop sidebar: tạo khoảng thở hợp lý ở đầu menu */
-@media(min-width:761px){
-  header .top{
-    padding-top:16px!important;
-  }
-
-  .brand-wrap{
-    margin-bottom:12px!important;
-  }
-}
-
-/* Mobile/tablet nhỏ: logo vẫn ở trên nhưng thu nhẹ */
-@media(max-width:760px){
-  .brand-wrap{
-    align-items:flex-start!important;
-    text-align:left!important;
-  }
-
-  .app-logo-slot{
-    width:68px!important;
-    height:68px!important;
-    min-width:68px!important;
-    min-height:68px!important;
-    flex-basis:68px!important;
-    margin:0 0 2px!important;
-  }
-
-  .app-logo-slot img{
-    width:68px!important;
-    height:68px!important;
-    max-width:68px!important;
-    max-height:68px!important;
-    border-radius:12px!important;
-  }
-
-  .brand-wrap .brand,
-  .brand-wrap .brand small{
-    text-align:left!important;
-  }
-}
-
-/* ===== V184 STORAGE BACKUP SIDEBAR ===== */
-
-/* Logo sử dụng tối đa chiều ngang khả dụng của menu trái */
-@media(min-width:761px){
-  .brand-wrap{
-    width:100%!important;
-    padding:0!important;
-  }
-
-  .app-logo-slot{
-    width:100%!important;
-    max-width:none!important;
-    height:auto!important;
-    min-width:0!important;
-    min-height:0!important;
-    flex:none!important;
-    margin:0 auto 8px!important;
-    padding:0!important;
-  }
-
-  .app-logo-slot img{
-    display:block!important;
-    width:100%!important;
-    max-width:100%!important;
-    height:auto!important;
-    max-height:none!important;
-    object-fit:contain!important;
-    object-position:center!important;
-    border-radius:12px!important;
-    margin:0 auto!important;
-  }
-
-  /* Sidebar rộng 240px, top có padding 14px mỗi bên:
-     logo sẽ dùng gần trọn phần chiều ngang còn lại. */
-  header .top{
-    padding-left:14px!important;
-    padding-right:14px!important;
-  }
-}
-
-/* Tablet/mobile vẫn giữ logo lớn nhưng không tràn màn hình */
-@media(max-width:760px){
-  .app-logo-slot{
-    width:min(180px,100%)!important;
-    max-width:180px!important;
-    height:auto!important;
-    min-width:0!important;
-    min-height:0!important;
-    flex:none!important;
-  }
-
-  .app-logo-slot img{
-    width:100%!important;
-    max-width:100%!important;
-    height:auto!important;
-    max-height:none!important;
-    object-fit:contain!important;
-  }
-}
-
 /* ===== V148 HIDE SIDEBAR DESCRIPTION ===== */
 .brand-wrap .brand small{
   display:none!important;
@@ -11787,7 +11622,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.59</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.60</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11819,7 +11654,7 @@ html.v257-device-locked body{
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260825.64"></script>
+<script src="./ly-module-loader.js?v=20260825.65"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -34503,7 +34338,7 @@ function drawSaleReportCharts(sales,items,mode){
 function drawNativeSalesQtyChart(canvas,rows){
   const parent=canvas.parentElement;
   const cssWidth=Math.max(720,parent?.clientWidth||0);
-  const cssHeight=Math.max(260,90+(rows.length*34));
+  const cssHeight=Math.max(230,62+(rows.length*22));
   const dpr=Math.max(1,window.devicePixelRatio||1);
 
   canvas.style.width=cssWidth+'px';
@@ -34512,10 +34347,11 @@ function drawNativeSalesQtyChart(canvas,rows){
   canvas.height=Math.floor(cssHeight*dpr);
 
   const ctx=canvas.getContext('2d');
+  const uiFont=getComputedStyle(document.body).fontFamily||'Inter, system-ui, sans-serif';
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,cssWidth,cssHeight);
 
-  ctx.font='12px Arial, sans-serif';
+  ctx.font=`12px ${uiFont}`;
   ctx.textBaseline='middle';
 
   if(!rows.length){
@@ -34525,7 +34361,7 @@ function drawNativeSalesQtyChart(canvas,rows){
     return;
   }
 
-  ctx.font='11px Arial, sans-serif';
+  ctx.font=`10px ${uiFont}`;
   const widestLabel=Math.max(...rows.map(r=>ctx.measureText(String(r.name||'')).width),120);
   const left=Math.min(280,Math.max(150,Math.ceil(widestLabel)+18));
   const right=55;
@@ -34540,7 +34376,7 @@ function drawNativeSalesQtyChart(canvas,rows){
   ctx.strokeStyle='#e5e7eb';
   ctx.fillStyle='#64748b';
   ctx.textAlign='center';
-  ctx.font='10px Arial, sans-serif';
+  ctx.font=`10px ${uiFont}`;
 
   const ticks=4;
   for(let i=0;i<=ticks;i++){
@@ -34554,13 +34390,13 @@ function drawNativeSalesQtyChart(canvas,rows){
 
   rows.forEach((r,index)=>{
     const cy=top+rowH*index+rowH/2;
-    const barH=Math.max(12,Math.min(22,rowH*.62));
+    const barH=Math.max(8,Math.min(12,rowH*.48));
     const barW=Math.max(2,plotW*(Number(r.qty||0)/maxQty));
 
     // Product label
     ctx.fillStyle='#0f172a';
     ctx.textAlign='right';
-    ctx.font='11px Arial, sans-serif';
+    ctx.font=`10px ${uiFont}`;
     ctx.fillText(String(r.name||''),left-9,cy);
 
     // Bar
@@ -34574,7 +34410,7 @@ function drawNativeSalesQtyChart(canvas,rows){
     // Quantity
     ctx.fillStyle='#0f172a';
     ctx.textAlign='left';
-    ctx.font='bold 11px Arial, sans-serif';
+    ctx.font=`700 10px ${uiFont}`;
     ctx.fillText(`${num(r.qty)}${r.unit?' '+r.unit:''}`,Math.min(left+barW+7,cssWidth-right+4),cy);
   });
 }
@@ -37742,7 +37578,7 @@ function renderSuppliers(){
     </div>
     <div class="card supplier-list-card">
       <div class="supplier-list-summary"><b>${num(db.suppliers.length)} nhà cung cấp</b><span class="muted">${num(importItems.length)} dòng nhập đã liên kết</span></div>
-      ${db.suppliers.length?`<div class="scroll"><table><tr><th>Nhà cung cấp</th><th>Điện thoại</th><th>Địa chỉ</th><th class="right">Dòng nhập</th><th>Ghi chú</th><th></th></tr>${db.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.phone||'—')}</td><td>${esc(s.address||'—')}</td><td class="right"><span class="badge">${num(usage.get(s.id)||0)}</span></td><td>${esc(s.note||'—')}</td><td class="right"><button class="secondary sm" onclick="supplierModal('${s.id}')">Sửa</button></td></tr>`).join('')}</table></div>`:'<div class="empty">Chưa có nhà cung cấp. Hãy tạo nhà cung cấp trước khi nhập kho.</div>'}
+      ${db.suppliers.length?`<div class="scroll"><table><tr><th>Nhà cung cấp</th><th>Điện thoại</th><th>Địa chỉ</th><th class="right">Dòng nhập</th><th>Ghi chú</th><th></th></tr>${db.suppliers.map(s=>`<tr><td><b>${esc(s.name)}</b></td><td>${esc(s.phone||'—')}</td><td>${esc(s.address||'—')}</td><td class="right"><span class="badge">${num(usage.get(s.id)||0)}</span></td><td><span class="ly-note-compact" title="${esc(s.note||'')}">${esc(s.note||'—')}</span></td><td class="right"><button class="secondary sm" onclick="supplierModal('${s.id}')">Sửa</button></td></tr>`).join('')}</table></div>`:'<div class="empty">Chưa có nhà cung cấp. Hãy tạo nhà cung cấp trước khi nhập kho.</div>'}
     </div>`;
 }
 function supplierModal(id=''){let s=db.suppliers.find(x=>x.id===id)||{name:'',phone:'',address:'',note:''};openModal(`<div class="modal-head"><h3>${id?'Sửa':'Thêm'} nhà cung cấp</h3><button class="x" onclick="closeModal()">×</button></div><div class="form-grid"><div><label>Tên</label><input id="spName" value="${esc(s.name)}"></div><div><label>Điện thoại</label><input id="spPhone" value="${esc(s.phone||'')}"></div><div><label>Địa chỉ</label><input id="spAddress" value="${esc(s.address||'')}"></div><div class="full"><label>Ghi chú</label><input id="spNote" value="${esc(s.note||'')}"></div></div><button class="primary section-gap" onclick="saveSupplier('${id}')">Lưu lên Cloud</button>`)}
@@ -39424,6 +39260,7 @@ function drawFinanceTrend(sales,mode='month'){
   canvas.height=Math.floor(height*dpr);
 
   const ctx=canvas.getContext('2d');
+  const uiFont=getComputedStyle(document.body).fontFamily||'Inter, system-ui, sans-serif';
 
   ctx.setTransform(
     dpr,
@@ -39443,7 +39280,7 @@ function drawFinanceTrend(sales,mode='month'){
 
   if(!rows.length){
     ctx.fillStyle='#64748b';
-    ctx.font='12px Arial';
+    ctx.font=`12px ${uiFont}`;
     ctx.textAlign='center';
 
     ctx.fillText(
@@ -39455,7 +39292,7 @@ function drawFinanceTrend(sales,mode='month'){
     return;
   }
 
-  const left=62,right=18,top=24,bottom=42;
+  const left=62,right=18,top=36,bottom=42;
   const pw=width-left-right;
   const ph=height-top-bottom;
 
@@ -39481,7 +39318,7 @@ function drawFinanceTrend(sales,mode='month'){
 
   ctx.strokeStyle='#e2e8f0';
   ctx.fillStyle='#64748b';
-  ctx.font='10px Arial';
+  ctx.font=`10px ${uiFont}`;
   ctx.textAlign='right';
 
   for(let i=0;i<=4;i++){
@@ -39500,7 +39337,8 @@ function drawFinanceTrend(sales,mode='month'){
     );
   }
 
-  const drawLine=(key,color)=>{
+  const shortValue=value=>{const amount=Math.abs(Number(value||0)),format=(number,digits=1)=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:digits}).format(number);return amount>=1e9?`${format(value/1e9,2)} tỷ`:amount>=1e6?`${format(value/1e6,2)} tr`:amount>=1e3?`${format(value/1e3)} nghìn`:format(value,0)};
+  const drawLine=(key,color,labelOffset)=>{
     ctx.strokeStyle=color;
     ctx.lineWidth=2.2;
     ctx.beginPath();
@@ -39521,14 +39359,16 @@ function drawFinanceTrend(sales,mode='month'){
       ctx.arc(x(i),y(r[key]),3,0,Math.PI*2);
       ctx.fill();
     });
+    ctx.font=`600 9px ${uiFont}`;ctx.textAlign='center';
+    rows.forEach((r,i)=>ctx.fillText(shortValue(r[key]),x(i),Math.max(22,Math.min(height-bottom-4,y(r[key])+labelOffset))));
   };
 
-  drawLine('revenue','#087f73');
-  drawLine('profit','#2563eb');
+  drawLine('revenue','#087f73',-9);
+  drawLine('profit','#2563eb',13);
 
   ctx.fillStyle='#475569';
   ctx.textAlign='center';
-  ctx.font='10px Arial';
+  ctx.font=`10px ${uiFont}`;
 
   rows.forEach((r,i)=>{
     if(mode==='year'){
@@ -39559,7 +39399,7 @@ function drawFinanceTrend(sales,mode='month'){
     }
   });
 
-  ctx.font='bold 10px Arial';
+  ctx.font=`700 10px ${uiFont}`;
   ctx.textAlign='left';
 
   ctx.fillStyle='#087f73';
@@ -40855,7 +40695,7 @@ function drawEmployeeWorkChart(rows){
 
   const parent=canvas.parentElement;
   const width=Math.max(260,(parent?.clientWidth||760)-24);
-  const height=Math.max(230,80+rows.length*34);
+  const header=parent?.querySelector?.('.employee-section-head'),available=(parent?.clientHeight||0)-(header?.offsetHeight||0)-34,height=Math.max(240,88+rows.length*40,available);
   const dpr=Math.max(1,window.devicePixelRatio||1);
 
   canvas.style.width='100%';
@@ -40864,12 +40704,13 @@ function drawEmployeeWorkChart(rows){
   canvas.height=Math.floor(height*dpr);
 
   const ctx=canvas.getContext('2d');
+  const uiFont=getComputedStyle(document.body).fontFamily||'Inter, system-ui, sans-serif';
   ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,width,height);
 
   if(!rows.length){
     ctx.fillStyle='#64748b';
-    ctx.font='12px Arial';
+    ctx.font=`12px ${uiFont}`;
     ctx.textAlign='center';
     ctx.fillText('Không có dữ liệu trong kỳ đã chọn',width/2,height/2);
     return;
@@ -40886,7 +40727,7 @@ function drawEmployeeWorkChart(rows){
 
   const max=Math.max(...data.map(x=>x.hours),1);
 
-  ctx.font='10px Arial';
+  ctx.font=`10px ${uiFont}`;
   ctx.textBaseline='middle';
 
   for(let i=0;i<=4;i++){
@@ -40905,7 +40746,7 @@ function drawEmployeeWorkChart(rows){
 
     ctx.fillStyle='#0f172a';
     ctx.textAlign='right';
-    ctx.font='11px Arial';
+    ctx.font=`600 11px ${uiFont}`;
     let label=x.name;
     const labelLimit=compact?13:22;if(label.length>labelLimit)label=label.slice(0,labelLimit-1)+'…';
     ctx.fillText(label,left-8,cy);
@@ -40915,7 +40756,7 @@ function drawEmployeeWorkChart(rows){
 
     ctx.fillStyle='#0f172a';
     ctx.textAlign='left';
-    ctx.font='bold 11px Arial';
+    ctx.font=`700 11px ${uiFont}`;
     ctx.fillText(`${num(x.hours)} giờ`,Math.min(left+bw+7,width-right+2),cy);
   });
 }
@@ -55643,9 +55484,9 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.59',REVISION='fresh-core-v2-authoritative-v60';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.60',REVISION='fresh-core-v2-authoritative-v61';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
-<script src="./ly-app-version.js?v=2.1.59"></script>
+<script src="./ly-app-version.js?v=2.1.60"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
 <script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
@@ -55654,8 +55495,8 @@ saveSaleReceipt=async function(){
 <script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
-<script src="./ly-sidebar-visuals.js?v=20260824.2"></script>
-<script src="./ly-compact-admin-layout.js?v=20260824.1"></script>
+<script src="./ly-sidebar-visuals.js?v=20260825.1"></script>
+<script src="./ly-compact-admin-layout.js?v=20260825.1"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
 <script src="./ly-data-notifications.js?v=20260825.7"></script>

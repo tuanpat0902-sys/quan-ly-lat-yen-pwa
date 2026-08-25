@@ -4,7 +4,7 @@
   'use strict';
   if(window.__lyActivityHistoryUIV1)return;
   window.__lyActivityHistoryUIV1=true;
-  const VERSION='2026.08.24.2';
+  const VERSION='2026.08.25.1';
   const cloudState={orgId:'',rows:[],loading:false,loaded:false,error:''};
 
   function cloudClient(){
@@ -194,7 +194,7 @@
                       <td><span class="badge">${esc(m.transaction_type)}</span></td>
                       <td>${esc(i?.name||'')}</td>
                       <td class="right ${Number(m.quantity)<0?'neg':'ok'}">${Number(m.quantity)>0?'+':''}${num(m.quantity)}</td>
-                      <td>${esc(m.note||'')}</td>
+                      <td><span class="ly-note-compact" title="${esc(m.note||'')}">${esc(m.note||'')}</span></td>
                     </tr>`;
                   }).join('')}
                 </table>

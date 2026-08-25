@@ -22,6 +22,10 @@ if(JSON.parse(store.get('lat_yen_employees_v1')).length!==4)throw new Error('See
 if(!/employee-salary-chart-grid[\s\S]*employeeSalaryReportArea[\s\S]*employeeWorkChart/.test(employeesUi))throw new Error('Salary table and work chart must share the same responsive grid');
 if(/<canvas id="employeeWorkChart"/.test(employeeReports))throw new Error('Employee report must not render a second work chart below the detailed report');
 if(!/employeeWorkChartPeriod/.test(employeeReports))throw new Error('Work chart must show the currently selected report period');
-if(!/\.employee-salary-chart-grid\{[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/.test(employeesUi))throw new Error('Salary and chart cards must be side by side on wide screens');
-if(!/@media\(max-width:1050px\)[\s\S]*\.employee-salary-chart-grid\{grid-template-columns:1fr\}/.test(employeesUi))throw new Error('Salary and chart cards must stack on narrow screens');
+if(!/\.employee-salary-chart-grid\{[\s\S]*grid-template-columns:minmax\(0,1\.08fr\) minmax\(0,\.92fr\)/.test(employeesUi))throw new Error('Salary and chart cards must use balanced desktop widths');
+if(!/@media\(max-width:1180px\)[\s\S]*\.employee-salary-chart-grid\{grid-template-columns:1fr\}/.test(employeesUi))throw new Error('Salary and chart cards must stack before becoming cramped');
+if(!/employee-salary-card \.salary-report-table-wrap,[\s\S]*width:100%!important;max-width:none!important/.test(employeesUi))throw new Error('Salary table must use its card width consistently');
+const workChart=indexSource.match(/function drawEmployeeWorkChart\([\s\S]*?\n}\n\nfunction openEmployeeAttendance/)?.[0]||'';
+if(!/available=\(parent\?\.clientHeight\|\|0\)/.test(workChart))throw new Error('Work chart must scale to the adjacent salary card');
+if(/Arial/.test(workChart))throw new Error('Work chart must inherit the application typeface');
 console.log('Simulation personnel seed: PASS');

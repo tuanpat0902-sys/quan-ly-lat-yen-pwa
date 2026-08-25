@@ -8,7 +8,8 @@
   header .brand-wrap{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;width:100%!important;min-width:0!important}
   header .app-logo-slot{display:flex!important;width:100%!important;max-width:none!important;height:auto!important;min-width:0!important;min-height:0!important;flex:none!important;margin:0!important;padding:0!important}
   header .app-logo-slot img{display:block!important;width:100%!important;max-width:none!important;height:auto!important;max-height:none!important;object-fit:contain!important;object-position:center!important;border-radius:10px!important}
-  header .brand-wrap .brand{text-align:left!important;width:100%!important}
+  header .brand-wrap .brand{text-align:center!important;width:100%!important}
+  header #appNameText{display:block!important;width:100%!important;text-align:center!important;font-size:14px!important;line-height:1.3!important}
   #nav{color:#18324a!important}
   #nav button[data-panel],#nav .nav-group-toggle{color:#18324a!important;background:transparent!important;border:1px solid transparent!important}
   #nav button[data-panel]:hover,#nav .nav-group-toggle:hover{background:#edf6f5!important;border-color:#d5e8e5!important;color:#0f5f59!important}
@@ -30,5 +31,5 @@
 @media(max-width:620px){.ly-password-grid,.ly-delete-counts{grid-template-columns:1fr 1fr}}
 `;
   document.head.appendChild(style);
-  window.__lySidebarVisuals={version:'2026.08.24.2'};
+  window.__lySidebarVisuals={version:'2026.08.25.1'};
 })();

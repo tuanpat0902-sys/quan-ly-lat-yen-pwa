@@ -15,4 +15,9 @@ assert.match(layout,/grid-template-areas:'cloud identity' 'notify data'/,'deskto
 assert.match(layout,/@media\(max-width:900px\)/,'settings layout must collapse responsively');
 assert.match(enhancements,/<details class="ly-version-details">/,'technical version information must be collapsed');
 assert.match(enhancements,/2026\.08\.24\.4/,'settings enhancement cache version must be current');
+assert.match(layout,/--ly-ui-font:/,'application must define one shared typeface token');
+assert.match(layout,/--ly-font-base:12px/,'application must define one shared body text size');
+assert.match(layout,/table th\{font-size:var\(--ly-font-sm\)/,'table headings must follow the shared type scale');
+assert.match(layout,/\.ly-note-compact\{/,'long notes must use the shared compact display');
+assert.match(layout,/version:'2026\.08\.25\.1'/,'compact layout cache version must be current');
 console.log('Compact responsive Settings layout: PASS');

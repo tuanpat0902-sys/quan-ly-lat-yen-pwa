@@ -37,7 +37,7 @@ const blocks=[
 const removedSpan=blocks.reduce((n,b)=>n+Buffer.byteLength(src.slice(b.start,b.end)),0);
 if(removedSpan<18000||removedSpan>26000)throw new Error(`Unexpected Finance extraction size ${removedSpan}`);
 
-const moduleSource=`/* Lát Yên — Finance UI V1\n   UI/render only. Finance calculations remain in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyFinanceUIV1)return;\n  window.__lyFinanceUIV1=true;\n  const VERSION='2026.08.23.1';\n\n${blocks.map(b=>b.code.split('\n').map(line=>'  '+line).join('\n')).join('\n\n')}\n\n  window.renderFinance=renderFinance;\n  window.renderFinanceData=renderFinanceData;\n  window.__lyFinanceModule={version:VERSION,render:renderFinance,renderData:renderFinanceData};\n})();\n`;
+const moduleSource=`/* Lát Yên — Finance UI V1\n   UI/render only. Finance calculations remain in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyFinanceUIV1)return;\n  window.__lyFinanceUIV1=true;\n  const VERSION='2026.08.25.1';\n\n${blocks.map(b=>b.code.split('\n').map(line=>'  '+line).join('\n')).join('\n\n')}\n\n  window.renderFinance=renderFinance;\n  window.renderFinanceData=renderFinanceData;\n  window.__lyFinanceModule={version:VERSION,render:renderFinance,renderData:renderFinanceData};\n})();\n`;
 fs.writeFileSync(MODULE,moduleSource);
 
 let next=src;
