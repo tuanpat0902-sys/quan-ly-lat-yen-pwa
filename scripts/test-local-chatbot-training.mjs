@@ -6,7 +6,7 @@ const source=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url)
 const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
 const appVersion=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const document={readyState:'loading',addEventListener(){},getElementById(){return null;},querySelector(){return null;}};
-const context={console,Date,Math,Promise,Intl,document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Đường',unit:'g',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Sữa',unit:'ml',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Trà',unit:'ml',ingredient_type:'purchased'},{id:'i5',warehouse_id:'w1',name:'Nước đường',unit:'g',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Yến nâu',unit:'ly'}]}},globalThis:null,setTimeout};
+const context={console,Date,Math,Promise,Intl,document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Đường',unit:'g',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Sữa',unit:'ml',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Trà',unit:'ml',ingredient_type:'purchased'},{id:'i5',warehouse_id:'w1',name:'Nước đường',unit:'g',ingredient_type:'purchased'},{id:'i6',warehouse_id:'w1',name:'Syrup me',unit:'g',ingredient_type:'prepared'}],products:[{id:'p1',warehouse_id:'w1',name:'Yến nâu',unit:'ly'}]}},globalThis:null,setTimeout};
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);const assistant=context.window.__lyLocalAssistant;
 
@@ -16,6 +16,8 @@ const importTotal=assistant.parseDraft('Nhập 10kg đá, thành tiền nhập 1
 assert.equal(importTotal.items[0].unit_cost,10000,'must derive unit cost from total import amount and quantity');
 const convertedImport=assistant.parseDraft('Nhập 1kg đường, thành tiền nhập 100.000');
 assert.equal(convertedImport.items[0].quantity,1000,'kg must be converted to the ingredient base unit g');assert.equal(convertedImport.items[0].unit_cost,100,'derived unit cost must use the converted base quantity');
+const exportedReply=assistant.assistantReply('Xuất 10kg đá đơn giá 10 nghìn'),exported=exportedReply.draft;
+assert.equal(exported.items[0].unit_cost,10000,'must understand export unit price expressed in thousands');assert.match(exportedReply.content,/10\.000 đ\/kg/,'export confirmation must show the understood price');
 
 const sale=assistant.parseDraft('Bán 10 ly yến nâu, có giảm giá tổng hóa đơn 10%');
 assert.equal(sale.receipt_discount.type,'percent');assert.equal(sale.receipt_discount.value,10,'must preserve receipt-level percent discount');
@@ -39,6 +41,8 @@ const preparedSymbols=assistant.parseDraft('Tạo nguyên liệu pha chế Syrup
 assert.equal(preparedSymbols.name,'Syrup đá');assert.deepEqual(Array.from(preparedSymbols.items,row=>[row.name,row.quantity]),[['Đường',20],['Đá',0.01]]);assert.equal(preparedSymbols.batch_output,25);assert.equal(preparedSymbols.unit,'g');
 const preparedNatural=assistant.parseDraft('Tạo nguyên liệu pha chế tên là Nền trà dùng trà 100ml, đường 15g, thu được 110ml');
 assert.equal(preparedNatural.name,'Nền trà');assert.deepEqual(Array.from(preparedNatural.items,row=>[row.name,row.quantity]),[['Đường',15],['Trà',100]]);assert.equal(preparedNatural.batch_output,110);assert.equal(preparedNatural.unit,'ml');
+const preparedFromPrepared=assistant.assistantReply('Tạo nguyên liệu pha chế: Nước mía bao gồm 10g đá và 10g syrup me');
+assert.ok(preparedFromPrepared.draft);assert.equal(assistant.draftReady(preparedFromPrepared.draft),true,'an existing prepared ingredient must be accepted as a source ingredient');assert.deepEqual(Array.from(preparedFromPrepared.draft.items,row=>[row.name,row.quantity]),[['Syrup me',10],['Đá',0.01]]);assert.match(preparedFromPrepared.content,/Nước mía/);
 const incompletePrepared=assistant.assistantReply('Tạo nguyên liệu pha chế: Syrup mới');
 assert.equal(incompletePrepared.localOnly,true);assert.match(incompletePrepared.content,/chưa thấy phần nguyên liệu nguồn/i);
 
