@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.12';
+const VERSION='2026.08.25.13';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',openingDraftId:''};
@@ -348,9 +348,25 @@ function rowDate(row){const value=row?.sold_at||row?.entry_date||row?.receipt_da
 function inReport(row,period,warehouseId){const date=rowDate(row);return (!warehouseId||String(row?.warehouse_id)===warehouseId)&&date&&date>=period.start&&date<=period.end;}
 const formatNumber=value=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2}).format(Number(value||0));
 const formatMoney=value=>`${new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(Number(value||0))} đ`;
+function salaryReportData(period){
+  const start=localDateIso(period.start),end=localDateIso(period.end);
+  try{
+    const calculate=window.financeSalaryCostInRange;
+    if(typeof calculate==='function')return calculate(start,end)||{total:0,byEmployee:[],byMonth:[]};
+  }catch(error){console.warn('Không đọc được báo cáo lương tích hợp',error);}
+  let employees=[];try{employees=typeof window.loadEmployees==='function'?window.loadEmployees().filter(row=>row.active!==false):[];}catch(_){}
+  const rows=employees.map(employee=>{let total=0;try{total=typeof window.salaryReportValue==='function'?Number(window.salaryReportValue(employee,`${period.end.getFullYear()}-${String(period.end.getMonth()+1).padStart(2,'0')}`)||0):Number(employee.base_salary||0);}catch(_){total=Number(employee.base_salary||0);}return {employee_id:employee.id,name:employee.name||'Nhân viên chưa đặt tên',total};});
+  return {total:rows.reduce((sum,row)=>sum+row.total,0),byEmployee:rows,byMonth:[],fallback:true};
+}
+function financeReportData(period){
+  const start=localDateIso(period.start),end=localDateIso(period.end);
+  try{
+    const sales=typeof window.financeSalesInRange==='function'?window.financeSalesInRange(start,end):[],revenue=sales.reduce((sum,row)=>sum+Number(row.total_amount||0),0),cogs=sales.reduce((sum,row)=>sum+(typeof window.saleCogsValue==='function'?Number(window.saleCogsValue(row)||0):0),0),salary=typeof window.financeSalaryCostInRange==='function'?Number(window.financeSalaryCostInRange(start,end)?.total||0):0,cashflow=typeof window.financeCashflowInRange==='function'?window.financeCashflowInRange(start,end):{income:0,expense:0,net:0},stocktake=typeof window.financeStocktakeInRange==='function'?window.financeStocktakeInRange(start,end):{net:0},inventory=typeof window.financeInventoryPeriod==='function'?window.financeInventoryPeriod(start,end):{closing:{netValue:0,positiveItems:0,negativeItems:0},exportExpenseValue:0},profit=revenue-cogs-salary+Number(cashflow.net||0)+Number(stocktake.net||0)-Number(inventory.exportExpenseValue||0);return {start,end,revenue,cogs,salary,cashflow,stocktake,inventory,profit};
+  }catch(error){console.warn('Không đọc được báo cáo tài chính tích hợp',error);return {start,end,revenue:0,cogs:0,salary:0,cashflow:{income:0,expense:0,net:0},stocktake:{net:0},inventory:{closing:{netValue:0,positiveItems:0,negativeItems:0},exportExpenseValue:0},profit:0,error:true};}
+}
 function reportReply(message){
-  const source=normalize(message);
-  if(!/(bao cao|thong ke|tong quan|doanh thu|ton kho|thu chi|dong tien|chi phi|nhap xuat|ban duoc|ban hang)/.test(source))return null;
+  const source=normalize(message).replace(/\bnam nat\b/g,'nam nay');
+  if(!/(bao cao|thong ke|tong quan|doanh thu|ton kho|thu chi|dong tien|chi phi|nhap xuat|ban duoc|ban hang|ban chay|mon nao ban|loi nhuan|lai rong|lai lo|bang luong|quy luong|tien luong|luong nhan vien|luong)/.test(source))return null;
   const data=reportState(),warehouseId=text(window.currentWarehouseId),warehouse=data.warehouses.find(row=>String(row.id)===warehouseId),period=reportPeriod(source),scope=warehouse?.name?`Kho ${warehouse.name}`:'Kho đang chọn';
   const sales=data.sales.filter(row=>inReport(row,period,warehouseId)),saleIds=new Set(sales.map(row=>String(row.id))),saleItems=data.saleItems.filter(row=>saleIds.has(String(row.sale_id))),revenue=sales.reduce((sum,row)=>sum+Number(row.total_amount||0),0),sold=saleItems.reduce((sum,row)=>sum+Number(row.quantity||0),0);
   const topSales=new Map();for(const item of saleItems){const product=data.products.find(row=>String(row.id)===String(item.product_id)),name=product?.name||'Món đã xóa';topSales.set(name,(topSales.get(name)||0)+Number(item.quantity||0));}
@@ -358,19 +374,25 @@ function reportReply(message){
   const cashflow=data.cashflow.filter(row=>inReport(row,period,warehouseId)),income=cashflow.filter(row=>['income','thu','in'].includes(normalize(row.entry_type??row.type))).reduce((sum,row)=>sum+Number(row.amount||0),0),expense=cashflow.filter(row=>['expense','chi','out'].includes(normalize(row.entry_type??row.type))).reduce((sum,row)=>sum+Number(row.amount||0),0);
   const balances=data.inventory.filter(row=>!warehouseId||String(row.warehouse_id)===warehouseId),positive=balances.filter(row=>Number(row.quantity||0)>0),zero=balances.filter(row=>Number(row.quantity||0)<=0),topStock=positive.map(row=>({name:data.ingredients.find(item=>String(item.id)===String(row.ingredient_id))?.name||'Nguyên liệu đã xóa',quantity:Number(row.quantity||0)})).sort((a,b)=>b.quantity-a.quantity).slice(0,3);
   const imports=data.imports.filter(row=>inReport(row,period,warehouseId)),exports=data.exports.filter(row=>inReport(row,period,warehouseId));
-  if(/ton kho|nguyen lieu/.test(source))return {content:balances.length?`Mình đã kiểm tra ${scope}: hiện có ${positive.length} nguyên liệu còn hàng và ${zero.length} nguyên liệu đã hết${topStock.length?`. Tồn nhiều nhất là ${topStock.map(row=>`${row.name} ${formatNumber(row.quantity)}`).join(', ')}`:''}.`:`Mình chưa thấy dữ liệu tồn kho tại ${scope}. Bạn thử đồng bộ lại dữ liệu hoặc kiểm tra đúng kho đang chọn nhé.`,report:true};
+  if(/bang luong|quy luong|tien luong|luong nhan vien|\bluong\b/.test(source)){const salary=salaryReportData(period),people=(salary.byEmployee||[]).filter(row=>Number(row.total||0)>0).sort((a,b)=>Number(b.total||0)-Number(a.total||0)),details=people.slice(0,5).map(row=>`${row.name}: ${formatMoney(row.total)}`).join('; ');return {content:salary.byEmployee?.length?`Báo cáo lương của ${scope} trong ${period.label}: tổng quỹ lương ${formatMoney(salary.total)} cho ${salary.byEmployee.length} nhân viên${details?`. Chi tiết: ${details}`:''}. Bạn muốn xem riêng một nhân viên hay đổi khoảng thời gian?`:`Mình chưa thấy hồ sơ hoặc dữ liệu lương nhân viên tại ${scope}. Bạn có thể kiểm tra phần Nhân viên hoặc chọn một khoảng thời gian khác nhé.`,report:true,report_kind:'salary'};}
+  if(/loi nhuan|lai rong|lai lo/.test(source)){const finance=financeReportData(period);return {content:`Lợi nhuận cuối kỳ của ${scope} trong ${period.label} là ${formatMoney(finance.profit)}. Cách tính: doanh thu ${formatMoney(finance.revenue)} − giá vốn ${formatMoney(finance.cogs)} − lương ${formatMoney(finance.salary)} + thu/chi ròng ${formatMoney(finance.cashflow.net)} + chênh lệch kiểm kê ${formatMoney(finance.stocktake.net)} − xuất kho tính chi phí ${formatMoney(finance.inventory.exportExpenseValue)}.`,report:true,report_kind:'profit'};}
+  if(/gia tri.*ton kho|ton kho.*gia tri/.test(source)){const finance=financeReportData(period),closing=finance.inventory.closing||{};return {content:`Giá trị tồn kho cuối kỳ của ${scope} tại ${displayDate(period.end)} là ${formatMoney(closing.netValue)}${Number(closing.negativeItems||0)>0?`, gồm ${closing.negativeItems} nguyên liệu âm kho`:''}. Đây là giá trị tại ngày cuối của khoảng “${period.label}”.`,report:true,report_kind:'inventory_value'};}
+  if(/ton kho|nguyen lieu/.test(source)){const detailed=/chi tiet|day du|tung nguyen lieu|danh sach/.test(source);if(detailed&&balances.length){const rows=balances.map(row=>{const ingredient=data.ingredients.find(item=>String(item.id)===String(row.ingredient_id)),quantity=Number(row.quantity||0);return {name:ingredient?.name||'Nguyên liệu đã xóa',unit:ingredient?.unit||'',quantity};}).sort((a,b)=>a.name.localeCompare(b.name,'vi')),lines=rows.map((row,index)=>`${index+1}. ${row.name}: ${formatNumber(row.quantity)}${row.unit?` ${row.unit}`:''}${row.quantity<=0?' — hết hàng':''}`).join('; ');return {content:`Chi tiết tồn kho của ${scope}: ${lines}. Tổng cộng ${positive.length} nguyên liệu còn hàng và ${zero.length} nguyên liệu đã hết.`,report:true,report_kind:'inventory_detail'};}return {content:balances.length?`Mình đã kiểm tra ${scope}: hiện có ${positive.length} nguyên liệu còn hàng và ${zero.length} nguyên liệu đã hết${topStock.length?`. Tồn nhiều nhất là ${topStock.map(row=>`${row.name} ${formatNumber(row.quantity)}`).join(', ')}`:''}. Bạn muốn xem danh sách chi tiết từng nguyên liệu không?`:`Mình chưa thấy dữ liệu tồn kho tại ${scope}. Bạn thử đồng bộ lại dữ liệu hoặc kiểm tra đúng kho đang chọn nhé.`,report:true};}
   if(/thu chi|dong tien|chi phi/.test(source))return {content:cashflow.length?`Kết quả thu–chi của ${scope} trong ${period.label}: tổng thu ${formatMoney(income)}, tổng chi ${formatMoney(expense)}, chênh lệch ${formatMoney(income-expense)}. Bạn muốn xem riêng khoản Thu, khoản Chi hay đổi khoảng thời gian?`:`Trong ${period.label}, mình chưa thấy khoản thu hoặc chi nào tại ${scope}. Bạn muốn mình kiểm tra hôm qua, tuần này hay một khoảng ngày khác?`,report:true};
   if(/nhap xuat/.test(source))return {content:imports.length||exports.length?`Mình tìm thấy ${imports.length} phiếu nhập và ${exports.length} phiếu xuất tại ${scope} trong ${period.label}. Bạn muốn xem riêng phiếu Nhập hay phiếu Xuất?`:`Mình chưa thấy phiếu nhập hoặc xuất nào tại ${scope} trong ${period.label}. Bạn muốn mình kiểm tra hôm qua, tuần này hay một khoảng ngày khác?`,report:true};
+  if(/ban chay|mon nao ban/.test(source))return {content:best?`Món bán chạy nhất của ${scope} trong ${period.label} là ${best[0]}, đã bán ${formatNumber(best[1])}. Tổng cộng kỳ này bán ${formatNumber(sold)} món từ ${sales.length} giao dịch.`:`Mình chưa thấy món nào được bán tại ${scope} trong ${period.label}.`,report:true,report_kind:'best_seller'};
   if(/doanh thu|ban duoc|ban hang/.test(source))return {content:sales.length?`Trong ${period.label}, ${scope} có ${sales.length} giao dịch, bán ${formatNumber(sold)} món và đạt doanh thu ${formatMoney(revenue)}${best?`. Món bán chạy nhất là ${best[0]} (${formatNumber(best[1])})`:''}. Bạn muốn so sánh với hôm qua, tuần này hay chọn một khoảng ngày khác?`:`Mình chưa thấy giao dịch bán hàng nào tại ${scope} trong ${period.label}. Bạn muốn mình kiểm tra hôm qua, tuần này hay một khoảng ngày khác?`,report:true};
   return {content:`Mình đã tổng hợp ${scope} trong ${period.label}: doanh thu ${formatMoney(revenue)} từ ${sales.length} giao dịch; thu ${formatMoney(income)}, chi ${formatMoney(expense)}; ${positive.length} nguyên liệu còn hàng; ${imports.length} phiếu nhập và ${exports.length} phiếu xuất.`,report:true};
 }
 function contextualReportMessage(message,history=state.messages){
-  const source=normalize(message),intentPattern=/(bao cao|thong ke|tong quan|doanh thu|ton kho|thu chi|dong tien|chi phi|nhap xuat|ban duoc|ban hang)/;
-  if(intentPattern.test(source))return message;
+  const source=normalize(message).replace(/\bnam nat\b/g,'nam nay'),intentPattern=/(bao cao|thong ke|tong quan|doanh thu|ton kho|thu chi|dong tien|chi phi|nhap xuat|ban duoc|ban hang|ban chay|mon nao ban|loi nhuan|lai rong|lai lo|bang luong|quy luong|tien luong|luong nhan vien|luong)/;
   const timePattern=/(hom nay|hom qua|hom kia|ngay hom truoc|hom truoc|ngay mai|ngay kia|tuan nay|tuan truoc|tuan sau|thang nay|thang truoc|thang sau|quy nay|quy truoc|nam nay|nam truoc|dau tuan|cuoi tuan|dau thang|cuoi thang|\d+\s*(ngay|tuan|thang)\s*(qua|truoc|gan day|gan nhat|vua qua)|\d{1,4}[\/-]\d{1,2}[\/-]\d{1,4})/;
-  if(!timePattern.test(source))return message;
+  const hasIntent=intentPattern.test(source),hasTime=timePattern.test(source);if(hasIntent&&hasTime)return message;
   const previous=[...(history||[])].reverse().find(row=>row?.role==='user'&&text(row.content)!==text(message)&&intentPattern.test(normalize(row.content)));if(!previous)return message;
-  const prior=normalize(previous.content),intent=/doanh thu|ban duoc|ban hang/.test(prior)?'Báo cáo doanh thu':/ton kho|nguyen lieu/.test(prior)?'Báo cáo tồn kho':/thu chi|dong tien|chi phi/.test(prior)?'Báo cáo thu chi':/nhap xuat/.test(prior)?'Báo cáo nhập xuất':'Báo cáo tổng quan';
+  if(!hasIntent&&!hasTime&&/chi tiet|day du|danh sach/.test(source)){const prior=normalize(previous.content),intent=/ton kho|nguyen lieu/.test(prior)?'Báo cáo chi tiết tồn kho':/bang luong|quy luong|tien luong|luong/.test(prior)?'Báo cáo chi tiết lương nhân viên':/doanh thu|ban hang/.test(prior)?'Báo cáo chi tiết doanh thu':'';return intent?`${intent} ${message}`:message;}
+  if(hasIntent&&!hasTime&&timePattern.test(normalize(previous.content)))return `${message} ${previous.content}`;
+  if(!hasTime)return message;
+  const prior=normalize(previous.content),intent=/bang luong|quy luong|tien luong|luong nhan vien|\bluong\b/.test(prior)?'Báo cáo lương nhân viên':/loi nhuan|lai rong|lai lo/.test(prior)?'Báo cáo lợi nhuận':/ban chay|mon nao ban/.test(prior)?'Báo cáo món bán chạy':/doanh thu|ban duoc|ban hang/.test(prior)?'Báo cáo doanh thu':/ton kho|nguyen lieu/.test(prior)?'Báo cáo tồn kho':/thu chi|dong tien|chi phi/.test(prior)?'Báo cáo thu chi':/nhap xuat/.test(prior)?'Báo cáo nhập xuất':'Báo cáo tổng quan';
   return `${intent} ${message}`;
 }
 function assistantReply(message){
@@ -442,7 +464,7 @@ function formContract(kind){return ({
   stocktake:{form:'inlineStocktakeForm',toggle:'toggleStocktakeBtn',holder:'stocktakeReceiptLines',row:'.stocktake-receipt-line',quantity:'.srActual'},
   sale:{form:'inlineSaleReceiptForm',toggle:'toggleSaleReceiptBtn',holder:'saleReceiptLines',row:'.sale-receipt-line',add:'button[onclick*="addSaleReceiptLine"]',select:'.srProduct',quantity:'.srQty'}
 })[kind];}
-function localDateIso(){const date=new Date();return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+function localDateIso(value=new Date()){const date=value instanceof Date?value:new Date(value);return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
 function resetReceiptForm(draft,contract,form){
   const holder=document.getElementById?.(contract.holder);if(holder&&draft.kind!=='stocktake'){for(const row of [...(holder.querySelectorAll?.(contract.row)||[])])row.remove?.();holder.innerHTML='';}
   const generated=({import:'newImportReceiptNo',export:'newExportReceiptNo',stocktake:'newStocktakeReceiptNo',sale:'newSaleReceiptNo'})[draft.kind],header=({import:{code:'receiptNo',date:'receiptDate',note:'receiptNote'},export:{code:'exportReceiptNo',date:'exportReceiptDate',note:'exportReceiptReason'},stocktake:{code:'stocktakeReceiptNo',date:'stocktakeReceiptDate',note:'stocktakeReceiptNote'},sale:{code:'saleReceiptNo',date:'saleReceiptDate',note:'saleReceiptNote'}})[draft.kind];
@@ -467,9 +489,13 @@ function fillDraftItems(draft,contract,form){
 }
 async function openRecipeDraft(draft){
   await navigate('recipes');
-  if(typeof window.openInlineRecipeForm!=='function')throw new Error('Không tìm thấy form tạo công thức.');
-  window.openInlineRecipeForm('');
-  const form=await waitFor(()=>document.getElementById?.('inlineRecipeForm')?.classList.contains('open')&&document.getElementById('inlineRecipeForm'));
+  if(typeof window.toggleRecipeForm==='function'){window.toggleRecipeForm(false);await delay(80);}
+  let form=null;
+  for(let attempt=0;attempt<4;attempt++){
+    const open=window.openInlineRecipeForm;if(typeof open!=='function')throw new Error('Không tìm thấy form tạo công thức.');open('');
+    const current=await waitFor(()=>{const latest=document.getElementById?.('inlineRecipeForm'),ready=latest?.classList.contains('open')&&document.getElementById?.('rpName')&&document.getElementById?.('recipeLines');return ready&&latest;},20);if(!current)continue;
+    await delay(220);const stable=document.getElementById?.('inlineRecipeForm');if(stable?.classList.contains('open')&&document.getElementById?.('rpName')&&document.getElementById?.('recipeLines')){form=stable;break;}
+  }
   if(!form)throw new Error('Form công thức chưa mở được.');
   setValue('rpName',draft.name);let rows=[...form.querySelectorAll('.recipe-line')];while(rows.length>1){rows.pop().remove();}while(rows.length<draft.items.length&&typeof window.addRecipeLine==='function'){window.addRecipeLine();rows=[...form.querySelectorAll('.recipe-line')];}draft.items.forEach((item,index)=>{const row=rows[index],select=row?.querySelector('.rlIng'),quantity=row?.querySelector('.rlQty');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=String(item.quantity);signal(quantity,'input');}});return form;
 }
@@ -605,7 +631,7 @@ async function handleDraftActionClick(event){
     const message=state.messages.find(row=>row.draft?.id===target.dataset.draftChoice);if(!message||!answerDraftClarification(message.draft,target.dataset.clarificationId,target.dataset.optionId))return;
     for(const item of message.draft.items||[])if(item.quantity===null)addQuantityClarification(message.draft,item);
     const remaining=(message.draft.clarifications||[]).filter(row=>!row.resolved),remainingNames=remaining.map(row=>row.item_name||row.query).filter(Boolean);
-    message.content=draftReady(message.draft)?`Cảm ơn bạn, mình đã cập nhật lựa chọn trực tiếp vào bản nháp. ${draftSummary(message.draft)} Bạn kiểm tra lại rồi mở bản nháp nhé.`:`Mình đã cập nhật lựa chọn vừa chọn. ${remainingNames.length?`Còn ${remainingNames.map(name=>`“${name}”`).join(', ')} cần bạn xác nhận bên dưới.`:'Bản nháp vẫn thiếu dữ liệu; bạn bổ sung rõ tên và số lượng giúp mình nhé.'}`;await writeMessage(message);renderMessages();return;
+    const ready=draftReady(message.draft);message.content=ready?`Cảm ơn bạn, mình đã cập nhật lựa chọn trực tiếp vào bản nháp. ${draftSummary(message.draft)} Mình đang mở form để bạn kiểm tra và xác nhận.`:`Mình đã cập nhật lựa chọn vừa chọn. ${remainingNames.length?`Còn ${remainingNames.map(name=>`“${name}”`).join(', ')} cần bạn xác nhận bên dưới.`:'Bản nháp vẫn thiếu dữ liệu; bạn bổ sung rõ tên và số lượng giúp mình nhé.'}`;await writeMessage(message);renderMessages();if(ready)await openDraftMessage(message.draft.id,target);return;
   }
   await openDraftMessage(target.dataset.confirmDraft,target);
 }

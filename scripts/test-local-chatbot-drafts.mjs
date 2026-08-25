@@ -38,13 +38,21 @@ const currentIso=new Date().toISOString();
 const context={console,Date,Math,Promise,Event:class Event{constructor(type,options){this.type=type;this.options=options;}},setTimeout(fn){fn();return 1;},confirm(){return true;},document,window:{
   currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đường',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Cà phê A',unit:'kg',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Cà phê B',unit:'kg',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w2',name:'Cà phê C',unit:'kg',ingredient_type:'purchased'},{id:'i5',warehouse_id:'w1',name:'Cà phê pha sẵn',unit:'lít',ingredient_type:'prepared'}],products:[{id:'p1',name:'Cà phê sữa'}],inventory:[{warehouse_id:'w1',ingredient_id:'i1',quantity:25}],sales:[{id:'s1',warehouse_id:'w1',sold_at:currentIso,total_amount:120000},{id:'s2',warehouse_id:'w1',sold_at:'2026-08-10T08:00:00+07:00',total_amount:40000}],saleItems:[{sale_id:'s1',product_id:'p1',quantity:3},{sale_id:'s2',product_id:'p1',quantity:1}],cashflows:[{warehouse_id:'w1',entry_type:'income',entry_date:currentIso,amount:500000},{warehouse_id:'w1',entry_type:'expense',entry_date:currentIso,amount:125000}]},
 },globalThis:null};
+let salaryRange=[];context.window.financeSalaryCostInRange=(start,end)=>{salaryRange=[start,end];return {total:36000000,byEmployee:[{employee_id:'e1',name:'An',total:20000000},{employee_id:'e2',name:'Bình',total:16000000}],byMonth:[]};};
+context.window.financeSalesInRange=()=>[{id:'finance-sale',total_amount:100000}];context.window.saleCogsValue=()=>40000;context.window.financeCashflowInRange=()=>({income:15000,expense:5000,net:10000});context.window.financeStocktakeInRange=()=>({net:5000});context.window.financeInventoryPeriod=()=>({closing:{netValue:123456,positiveItems:2,negativeItems:0},exportExpenseValue:2000});
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);
 const assistant=context.window.__lyLocalAssistant;
 
 assert.match(assistant.reportReply('Báo cáo doanh thu hôm nay').content,/120\.000 đ/);
+const bestSeller=assistant.reportReply('Món nào bán chạy nhất năm nay');assert.equal(bestSeller.report_kind,'best_seller');assert.match(bestSeller.content,/Cà phê sữa/);assert.doesNotMatch(bestSeller.content,/nguyên liệu còn hàng/);
+const profitReport=assistant.reportReply('Báo cáo lợi nhuận cuối kỳ năm nay');assert.equal(profitReport.report_kind,'profit');assert.match(profitReport.content,/-35\.927\.000 đ/);assert.match(profitReport.content,/doanh thu 100\.000 đ − giá vốn 40\.000 đ/);
+const profitTypo=assistant.reportReply('Lợi nhuận năm nat');assert.equal(profitTypo.report_kind,'profit','the common “năm nat” typo must still mean “năm nay”');assert.match(profitTypo.content,/năm nay/);
+const inventoryValue=assistant.reportReply('Báo cáo giá trị tồn kho cuối kỳ năm nay');assert.equal(inventoryValue.report_kind,'inventory_value');assert.match(inventoryValue.content,/123\.456 đ/);assert.match(inventoryValue.content,/Giá trị tồn kho cuối kỳ/);
 assert.match(assistant.reportReply('Báo cáo doanh thu hôm nay').content,/Cà phê sữa/);
 assert.match(assistant.reportReply('Tồn kho hiện tại').content,/Đường 25/);
+const inventoryDetail=assistant.reportReply('Thống kê chi tiết tồn kho');assert.equal(inventoryDetail.report_kind,'inventory_detail');assert.match(inventoryDetail.content,/1\. Đường: 25 kg/);assert.match(inventoryDetail.content,/Tổng cộng 1 nguyên liệu còn hàng/);
+assert.equal(assistant.contextualReportMessage('chi tiết hơn',[{role:'user',content:'kiểm tra tồn kho'}]),'Báo cáo chi tiết tồn kho chi tiết hơn','a short detail follow-up must retain inventory context');
 assert.match(assistant.reportReply('Thu chi hôm nay').content,/chênh lệch 375\.000 đ/i);
 assert.match(assistant.reportReply('Báo cáo doanh thu từ 01/08/2026 đến 18/08/2026').content,/từ 01\/08\/2026 đến 18\/08\/2026/);
 assert.match(assistant.reportReply('Báo cáo doanh thu từ 01/08/2026 đến 18/08/2026').content,/40\.000 đ/,'custom range must include only sales inside the requested dates');
@@ -52,6 +60,10 @@ assert.match(assistant.reportReply('Báo cáo doanh thu từ 2026-08-18 đến 2
 assert.match(assistant.reportReply('Báo cáo doanh thu ngày hôm qua').content,/hôm qua \(\d{2}\/\d{2}\/\d{4}\)/,'yesterday must resolve to one explicit date');
 const followup=assistant.contextualReportMessage('hôm qua',[{role:'user',content:'doanh thu ngày hôm nay là bao nhiêu'},{role:'assistant',content:'Không có giao dịch'}]);assert.equal(followup,'Báo cáo doanh thu hôm qua','short time-only follow-up must retain the previous report intent');assert.match(assistant.reportReply(followup).content,/hôm qua \(\d{2}\/\d{2}\/\d{4}\)/);
 assert.equal(assistant.contextualReportMessage('ngày hôm qua',[{role:'user',content:'thu chi hôm nay'}]),'Báo cáo thu chi ngày hôm qua');
+const salaryFollowup=assistant.contextualReportMessage('lương nhân viên thì bao nhiêu',[{role:'user',content:'báo cáo tài chính năm nay'}]);assert.match(salaryFollowup,/lương nhân viên thì bao nhiêu báo cáo tài chính năm nay/);assert.match(assistant.reportReply(salaryFollowup).content,/36\.000\.000 đ/,'salary follow-up must retain the previous year period and use payroll data');assert.match(assistant.reportReply(salaryFollowup).content,/An: 20\.000\.000 đ/);
+const salaryExplicit=assistant.reportReply('Báo cáo lương nhân viên năm nay');assert.equal(salaryExplicit.report_kind,'salary');assert.match(salaryExplicit.content,/tổng quỹ lương 36\.000\.000 đ/,'an explicit salary report must never fall back to the generic finance summary');
+assert.equal(salaryRange[0],`${new Date().getFullYear()}-01-01`);assert.equal(salaryRange[1],`${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`,'salary calculation must receive the full requested year-to-date range');
+assert.equal(assistant.contextualReportMessage('năm trước',[{role:'user',content:'báo cáo lương nhân viên năm nay'}]),'Báo cáo lương nhân viên năm trước');
 assert.match(assistant.reportReply('Báo cáo tuần này').content,/tuần này, từ \d{2}\/\d{2}\/\d{4} đến \d{2}\/\d{2}\/\d{4}/);
 assert.match(assistant.reportReply('Báo cáo tuần trước').content,/tuần trước, từ \d{2}\/\d{2}\/\d{4} đến \d{2}\/\d{2}\/\d{4}/);
 assert.match(assistant.reportReply('Báo cáo tháng trước').content,/tháng trước, từ \d{2}\/\d{2}\/\d{4} đến \d{2}\/\d{2}\/\d{4}/);
