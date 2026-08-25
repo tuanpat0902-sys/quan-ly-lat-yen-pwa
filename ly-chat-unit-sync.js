@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyChatUnitSync)return;
-  const VERSION='2026.08.26.1';
+  const VERSION='2026.08.26.2';
   const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const escRe=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const fmt=value=>{const n=Number(value);return Number.isInteger(n)?String(n):String(Number(n.toFixed(6)));};
@@ -53,11 +53,16 @@
     const unitPattern=[...units].sort((a,b)=>b.length-a.length).map(escRe).join('|');
     const namePattern=escRe(name).replace(/\s+/g,'\\s+');
     const number='(\\d+(?:[.,]\\d+)?)';
+    const replacement=(q,u,n,prefix='')=>{
+      const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim(),sourceCanonical=canonical(source);
+      if(!Number.isFinite(value)||sourceCanonical===rule.base)return `${prefix}${q} ${source} ${n}`.trim();
+      return prefix?`${n} ${q} ${source} (${fmt(value)} ${rule.base})`:`${q} ${source} (${fmt(value)} ${rule.base}) ${n}`;
+    };
     let out=message;
     const left=new RegExp(`${number}\\s*(${unitPattern})\\s+(${namePattern})(?=$|[\\s,;:.!?])`,'giu');
-    out=out.replace(left,(full,q,u,n)=>{const value=convert(Number(String(q).replace(',','.')),u,item);return Number.isFinite(value)?`${fmt(value)} ${rule.base} ${n}`:full;});
+    out=out.replace(left,(full,q,u,n)=>replacement(q,u,n));
     const right=new RegExp(`(${namePattern})\\s*(?:x|:)?\\s*${number}\\s*(${unitPattern})(?=$|[\\s,;:.!?])`,'giu');
-    out=out.replace(right,(full,n,q,u)=>{const value=convert(Number(String(q).replace(',','.')),u,item);return Number.isFinite(value)?`${n} ${fmt(value)} ${rule.base}`:full;});
+    out=out.replace(right,(full,n,q,u)=>{const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim();if(!Number.isFinite(value)||canonical(source)===rule.base)return full;return `${n} ${q} ${source} (${fmt(value)} ${rule.base})`;});
     return out;
   }
 
