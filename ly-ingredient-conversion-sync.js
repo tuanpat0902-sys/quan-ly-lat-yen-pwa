@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientConversionSync)return;
-  const VERSION='2026.08.25.5';
+  const VERSION='2026.08.26.1';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const fmt=v=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:6}).format(Number(v||0));
   const client=()=>{try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;};
@@ -17,7 +17,7 @@
     document.querySelectorAll('table.ingredient-stock-table:not(.prepared-virtual-table)').forEach(table=>{
       const header=table.rows?.[0];if(!header)return;const labels=[...header.cells].map(c=>String(c.textContent||'').trim());const unitIndex=labels.indexOf('Đơn vị');if(unitIndex<0)return;
       let purchaseHeader=header.querySelector('[data-ly-purchase-column]');if(!purchaseHeader){purchaseHeader=document.createElement('th');purchaseHeader.textContent='Đơn vị mua/đóng gói';purchaseHeader.dataset.lyPurchaseColumn='1';header.cells[unitIndex].after(purchaseHeader);}
-      [...table.rows].slice(1).forEach(row=>{const name=String(row.cells?.[1]?.textContent||'').trim();const ingredient=rows.find(item=>fold(item?.name)===fold(name));let cell=row.querySelector('[data-ly-purchase-cell]');if(!cell){cell=document.createElement('td');cell.dataset.lyPurchaseCell='1';row.cells?.[unitIndex]?.after(cell);}cell.style.whiteSpace='nowrap';cell.textContent=ingredient?packagingText(ingredient):'—';});
+      [...table.rows].slice(1).forEach(row=>{const name=String(row.cells?.[1]?.textContent||'').trim();const ingredient=rows.find(item=>fold(item?.name)===fold(name));let cell=row.querySelector('[data-ly-purchase-cell]');if(!cell){cell=document.createElement('td');cell.dataset.lyPurchaseCell='1';row.cells?.[unitIndex]?.after(cell);}cell.style.whiteSpace='normal';cell.textContent=ingredient?packagingText(ingredient):'—';});
     });
   }
 
@@ -49,13 +49,47 @@
   function ingredientRow(id,name=''){const needle=String(id||'').trim(),nameKey=fold(name);for(const table of document.querySelectorAll('table.ingredient-stock-table:not(.prepared-virtual-table)'))for(const row of [...table.rows].slice(1)){if(needle&&[...row.querySelectorAll('[onclick],button')].some(el=>String(el.getAttribute('onclick')||'').includes(needle)))return row;if(nameKey&&fold(row.cells?.[1]?.textContent||'')===nameKey)return row;}return null;}
   function captureScrollState(){const boxes=[...document.querySelectorAll('#ingredients .scroll')].filter(el=>el.isConnected);return {pageY:window.scrollY,pageX:window.scrollX,boxes:boxes.map(el=>({el,top:el.scrollTop,left:el.scrollLeft}))};}
   function captureViewport(id,name){const row=ingredientRow(id,name),box=row?.closest?.('.scroll')||null;return {...captureScrollState(),id:String(id||''),name:String(name||''),rowTop:row?.getBoundingClientRect?.().top??null,box,boxTop:box?.scrollTop??null,boxLeft:box?.scrollLeft??null};}
-  function ensureUXStyle(){if(document.getElementById('lyIngredientSavedUX'))return;const style=document.createElement('style');style.id='lyIngredientSavedUX';style.textContent='.ingredient-stock-table tr.ly-ingredient-saved>td{animation:lyIngredientSaved 1.6s ease-out}@keyframes lyIngredientSaved{0%,25%{background:#ecfdf3;box-shadow:inset 3px 0 0 #12b76a}100%{background:transparent;box-shadow:none}}';document.head.appendChild(style);}
+  function ensureUXStyle(){
+    let style=document.getElementById('lyIngredientSavedUX');if(!style){style=document.createElement('style');style.id='lyIngredientSavedUX';document.head.appendChild(style);}
+    style.textContent=`
+      .ingredient-stock-table tr.ly-ingredient-saved>td{animation:lyIngredientSaved 1.6s ease-out}
+      @keyframes lyIngredientSaved{0%,25%{background:#ecfdf3;box-shadow:inset 3px 0 0 #12b76a}100%{background:transparent;box-shadow:none}}
+      #ingredients .scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-gutter:stable}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){width:100%;min-width:880px;table-layout:auto;border-collapse:separate;border-spacing:0}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:9px 10px;vertical-align:middle;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th{font-size:12px;white-space:normal}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:13px}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th:first-child,
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:first-child{width:48px;min-width:48px;text-align:center}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th:nth-child(2),
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:nth-child(2){min-width:180px;width:24%}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-column],
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-cell]{min-width:150px;max-width:210px}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) button{white-space:nowrap}
+      @media(max-width:1100px){
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){min-width:820px}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:8px 8px}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:12.5px}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-column],
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-cell]{min-width:135px;max-width:180px}
+      }
+      @media(max-width:720px){
+        #ingredients .scroll{margin-inline:-4px;padding-bottom:4px}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){min-width:760px}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:7px 7px}
+      }
+      @media(prefers-reduced-motion:reduce){.ingredient-stock-table tr.ly-ingredient-saved>td{animation:none}}
+    `;
+  }
   function restoreScrollState(s){if(!s)return;(s.boxes||[]).forEach(i=>{if(i?.el?.isConnected){if(Number.isFinite(i.top))i.el.scrollTop=i.top;if(Number.isFinite(i.left))i.el.scrollLeft=i.left;}});if(Math.abs(window.scrollY-Number(s.pageY||0))>2)window.scrollTo({top:Number(s.pageY)||0,left:Number(s.pageX)||0,behavior:'auto'});}
   function restoreViewport(s){if(!s)return;const row=ingredientRow(s.id,s.name);(s.boxes||[]).forEach(i=>{if(i?.el?.isConnected){if(Number.isFinite(i.top))i.el.scrollTop=i.top;if(Number.isFinite(i.left))i.el.scrollLeft=i.left;}});if(s.box?.isConnected){if(Number.isFinite(s.boxTop))s.box.scrollTop=s.boxTop;if(Number.isFinite(s.boxLeft))s.box.scrollLeft=s.boxLeft;}if(row&&Number.isFinite(s.rowTop)){const delta=row.getBoundingClientRect().top-s.rowTop;if(Math.abs(delta)>4)window.scrollBy({top:delta,left:0,behavior:'auto'});row.classList.add('ly-ingredient-saved');setTimeout(()=>row.classList.remove('ly-ingredient-saved'),1700);}}
   function scheduleRestore(s,editMode=false){if(!s)return;requestAnimationFrame(()=>requestAnimationFrame(()=>editMode?restoreViewport(s):restoreScrollState(s)));}
   function captureCreateTrigger(event){const target=event.target?.closest?.('#btnPurchasedPanel,#btnPreparedPanel');if(!target)return;setCreateMode(target.id==='btnPreparedPanel'?'prepared':'purchased');const panel=document.getElementById('ingredientInlinePanel');const isAlreadyOpen=panel?.classList?.contains('open')&&!String(panel?.dataset?.editId||'').trim();if(!isAlreadyOpen)createViewport=captureScrollState();}
   function wrapSave(){const original=window.saveIngredient;if(typeof original!=='function'||original.__lyConversionWrapped)return false;const wrapped=async function(id){const captured=captureForm();const editId=String(id||document.getElementById('ingredientInlinePanel')?.dataset?.editId||'').trim();const viewport=editId?captureViewport(editId,captured.name):createViewport;const result=await original.apply(this,arguments);try{await persistCaptured(captured,id||'');}catch(e){console.warn('[Lát Yên] Lỗi đồng bộ quy đổi',e);}if(viewport)scheduleRestore(viewport,!!editId);if(!editId)createViewport=null;return result;};wrapped.__lyConversionWrapped=true;wrapped.__lyOriginal=original;window.saveIngredient=wrapped;return true;}
-  let timer=0;const schedule=()=>{clearTimeout(timer);timer=setTimeout(()=>{wrapSave();refreshTables();applyModeUX();},60);};
+  let timer=0;const schedule=()=>{clearTimeout(timer);timer=setTimeout(()=>{wrapSave();refreshTables();applyModeUX();ensureUXStyle();},60);};
   const boot=()=>{ensureUXStyle();wrapSave();refreshTables();applyModeUX();document.addEventListener('pointerdown',captureCreateTrigger,true);new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('latyen:v2-ingredient-saved',schedule);window.addEventListener('latyen:cloud-refreshed',schedule);setInterval(()=>{wrapSave();refreshTables();applyModeUX();},2500);};
   window.__lyIngredientConversionSync={version:VERSION,refreshTables,persistCaptured,restoreViewport,restoreScrollState,setCreateMode,getMode:()=>createMode};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
