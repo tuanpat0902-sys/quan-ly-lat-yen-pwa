@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   if(window.__lyUnitConversions)return;
-  const VERSION='2026.08.25.1';
+  const VERSION='2026.08.25.2';
   const STORAGE_KEY='__latyen_ingredient_unit_conversions_v1';
   const CATALOG=[
     {key:'mg',label:'mg — miligam',family:'mass',factor:.001},
@@ -32,7 +32,31 @@
   };
   const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const readRules=()=>{try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')||{}}catch(error){return {}}};
-  const ruleFor=ingredientId=>readRules()[String(ingredientId||'')]||null;
+  const cloudIngredientFor=ingredientId=>{
+    const id=String(ingredientId||'');
+    if(!id)return null;
+    try{
+      if(typeof db!=='undefined'&&Array.isArray(db?.ingredients)){
+        const found=db.ingredients.find(item=>String(item?.id||'')===id);
+        if(found)return found;
+      }
+    }catch(e){}
+    try{
+      const rows=window.__lyFreshCoreV2?.store?.getState?.()?.ingredients;
+      if(Array.isArray(rows))return rows.find(item=>String(item?.id||'')===id)||null;
+    }catch(e){}
+    return null;
+  };
+  const ruleFor=ingredientId=>{
+    const cloud=cloudIngredientFor(ingredientId);
+    const purchaseUnit=canonical(cloud?.purchase_unit||'');
+    const baseUnit=canonical(cloud?.unit||'');
+    const ratio=Number(cloud?.conversion_ratio);
+    if(baseUnit&&purchaseUnit&&Number.isFinite(ratio)&&ratio>0){
+      return {baseUnit,purchaseUnit,ratio,updatedAt:cloud?.updated_at||null,source:'cloud'};
+    }
+    return readRules()[String(ingredientId||'')]||null;
+  };
   const saveIngredientRule=(ingredientId,input={})=>{
     const id=String(ingredientId||'');
     if(!id)return null;
