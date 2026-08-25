@@ -23,5 +23,10 @@ assert.match(layout,/@media\(max-width:600px\)[\s\S]*html,body\{width:100%;max-w
 assert.match(layout,/main,\.panel,\.card,\.grid,\.grid2,\.form-grid,\.toolbar,\.scroll,\.inline-import-form,\.inline-import-form-inner\{min-width:0!important;max-width:100%!important\}/,'all major phone content frames must be allowed to shrink');
 assert.match(layout,/\.toolbar\{display:grid!important;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,'phone toolbars must use a balanced responsive action grid');
 assert.match(layout,/\.modal-box,\.import-receipt-modal\{width:100%!important;max-width:100%!important;max-height:calc\(100dvh - 12px\)!important/,'phone dialogs must remain inside the visible viewport');
-assert.match(layout,/version:'2026\.08\.25\.3'/,'compact layout cache version must be current');
+assert.match(layout,/\.ly-mobile-card-table tbody>tr:not\(\.ly-mobile-table-head\)/,'read-only phone tables must render as labelled cards');
+assert.match(layout,/cell\.dataset\.lyLabel=headers\[column\]\|\|''/,'responsive table cells must inherit their visible column label');
+assert.match(layout,/document\.addEventListener\('click',scheduleDecorate\)/,'tables rendered after navigation must also receive responsive labels');
+assert.doesNotMatch(layout,/new MutationObserver/,'responsive tables must not add a permanent DOM observer');
+assert.match(layout,/\.salary-report-table'/,'purpose-built compact tables must be excluded from generic card conversion');
+assert.match(layout,/version:'2026\.08\.25\.4'/,'compact layout cache version must be current');
 console.log('Compact responsive Settings layout: PASS');

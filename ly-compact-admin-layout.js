@@ -80,6 +80,21 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
   .toolbar>div>input,.toolbar>div>select{width:100%!important;min-width:0!important}
   .scroll{width:100%!important;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin}
   .scroll>table{margin:0;max-width:none}
+  .panel>h2{margin-bottom:9px!important}
+  .panel>.muted{margin-top:-5px;margin-bottom:9px}
+  .card>.toolbar:last-child{margin-bottom:0!important}
+  .form-grid{grid-template-columns:1fr!important}
+  .form-grid>.full{grid-column:1!important}
+  .primary,.secondary,.danger{min-height:38px;padding:8px 10px!important}
+  .sm{min-height:34px!important;padding:6px 8px!important}
+  input,select,textarea{max-width:100%!important;min-width:0!important}
+  textarea{resize:vertical}
+  .recipe-line{grid-template-columns:minmax(0,1fr) 84px 34px!important;gap:6px!important}
+  .receipt-history-head,.stocktake-day-head,.stocktake-session-head{gap:7px!important;align-items:flex-start!important}
+  .receipt-head-actions,.stocktake-session-actions{display:flex!important;gap:5px!important;flex-wrap:wrap!important;justify-content:flex-end!important}
+  .receipt-click-area,.stocktake-session-click{min-width:0!important}
+  .receipt-history-item,.stocktake-day,.stocktake-session{border-radius:10px!important}
+  .ly-note-compact{max-width:100%}
   canvas,svg{max-width:100%!important}
   .modal{padding:6px!important}
   .modal-box,.import-receipt-modal{width:100%!important;max-width:100%!important;max-height:calc(100dvh - 12px)!important;padding:10px!important;border-radius:12px!important}
@@ -120,9 +135,89 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
   #sales .sale-payment-summary{margin-top:9px!important;border-radius:10px!important}
   #sales .sale-payment-summary>div{padding:6px 9px!important}
   #sales .sale-payment-summary .sale-final-total b{font-size:16px!important}
+
+  /* Readable phone tables: rows become labelled cards instead of forcing a
+     page-wide horizontal scrollbar. Receipt editors keep their dedicated grid. */
+  .scroll:has(>.ly-mobile-card-table){overflow:visible!important;max-height:none!important}
+  .ly-mobile-card-table{display:block!important;width:100%!important;min-width:0!important;border-collapse:separate!important}
+  .ly-mobile-card-table thead,.ly-mobile-card-table>tbody>tr.ly-mobile-table-head{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+  .ly-mobile-card-table tbody{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;width:100%!important}
+  .ly-mobile-card-table tbody>tr:not(.ly-mobile-table-head){display:grid!important;grid-template-columns:1fr!important;width:100%!important;min-width:0!important;padding:6px 9px!important;border:1px solid #dbe5e9!important;border-radius:11px!important;background:#fff!important;box-shadow:0 2px 8px rgba(16,24,40,.035)!important}
+  .ly-mobile-card-table tbody>tr:not(.ly-mobile-table-head)>td{display:grid!important;grid-template-columns:minmax(88px,36%) minmax(0,1fr)!important;align-items:start!important;gap:8px!important;width:100%!important;min-width:0!important;max-width:none!important;padding:6px 0!important;border:0!important;border-bottom:1px solid #edf1f3!important;text-align:left!important;white-space:normal!important;overflow-wrap:anywhere!important}
+  .ly-mobile-card-table tbody>tr:not(.ly-mobile-table-head)>td:last-child{border-bottom:0!important}
+  .ly-mobile-card-table tbody>tr:not(.ly-mobile-table-head)>td::before{content:attr(data-ly-label);display:block;color:#667085;font-size:var(--ly-font-sm)!important;font-weight:700;line-height:1.35}
+  .ly-mobile-card-table tbody>tr:not(.ly-mobile-table-head)>td[data-ly-label=""]{display:block!important}
+  .ly-mobile-card-table tbody>tr:not(.ly-mobile-table-head)>td[data-ly-label=""]::before{display:none!important}
+  .ly-mobile-card-table td.right{text-align:left!important}
+  .ly-mobile-card-table td>button,.ly-mobile-card-table td>.primary,.ly-mobile-card-table td>.secondary,.ly-mobile-card-table td>.danger{width:100%!important;margin:0!important}
+  .ly-mobile-card-table td>input,.ly-mobile-card-table td>select,.ly-mobile-card-table td>textarea{width:100%!important;height:34px!important;min-height:34px!important;padding:5px 7px!important}
+  .ly-mobile-card-table td[colspan]{display:block!important;text-align:center!important}
+  .attendance-table.ly-mobile-card-table td:nth-child(3),.attendance-table.ly-mobile-card-table td:nth-child(5){display:block!important}
+  .attendance-table.ly-mobile-card-table td:nth-child(3)::before,.attendance-table.ly-mobile-card-table td:nth-child(5)::before{margin-bottom:6px}
+  .attendance-table.ly-mobile-card-table .attendance-slot-row,.attendance-table.ly-mobile-card-table .overtime-slot-row{max-width:100%!important}
+
+  /* The salary summary already has a compact purpose-built phone table. */
+  .salary-report-scroll:has(>.salary-report-table){overflow:hidden!important}
 }
 @media(max-width:420px){.toolbar{grid-template-columns:1fr!important}}
 `;
   document.head.appendChild(style);
-  window.__lyCompactAdminLayout={version:'2026.08.25.3'};
+
+  const MOBILE_TABLE_EXCLUSIONS=[
+    '.salary-report-table',
+    '.ly-version-table'
+  ].join(',');
+  const tableHeaders=(table)=>{
+    const row=table.tHead?.rows?.[table.tHead.rows.length-1]
+      ||Array.from(table.rows||[]).find(item=>item.querySelector('th'));
+    if(!row)return [];
+    const labels=[];
+    Array.from(row.cells||[]).forEach(cell=>{
+      const label=(cell.textContent||'').replace(/\s+/g,' ').trim();
+      const span=Math.max(1,Number(cell.colSpan)||1);
+      for(let index=0;index<span;index+=1)labels.push(label);
+    });
+    return labels;
+  };
+  const decorateMobileTable=(table)=>{
+    if(!(table instanceof HTMLTableElement)||table.matches(MOBILE_TABLE_EXCLUSIONS)||table.dataset.lyMobileTable==='scroll')return;
+    const headers=tableHeaders(table);
+    if(!headers.length)return;
+    table.classList.add('ly-mobile-card-table');
+    const headerRows=new Set(Array.from(table.rows||[]).filter(row=>row.querySelector('th')));
+    headerRows.forEach(row=>row.classList.add('ly-mobile-table-head'));
+    Array.from(table.rows||[]).forEach(row=>{
+      if(headerRows.has(row))return;
+      let column=0;
+      Array.from(row.cells||[]).forEach(cell=>{
+        if(cell.tagName!=='TD')return;
+        cell.dataset.lyLabel=headers[column]||'';
+        column+=Math.max(1,Number(cell.colSpan)||1);
+      });
+    });
+  };
+  const decorateTables=(root=document)=>{
+    if(root instanceof HTMLTableElement&&root.closest('.scroll'))decorateMobileTable(root);
+    root.querySelectorAll?.('.scroll table').forEach(decorateMobileTable);
+  };
+  let decorateFrame=0;
+  const scheduleDecorate=()=>{
+    if(decorateFrame)return;
+    decorateFrame=requestAnimationFrame(()=>{
+      decorateFrame=0;
+      const active=document.querySelector('.panel.active')||document;
+      decorateTables(active);
+      requestAnimationFrame(()=>decorateTables(document.querySelector('.panel.active')||active));
+    });
+  };
+  const bootResponsiveTables=()=>{
+    decorateTables(document);
+    document.addEventListener('click',scheduleDecorate);
+    document.addEventListener('change',scheduleDecorate);
+    ['latyen:v2-hydrated','latyen:v2-document-mutated','latyen:v2-cashflow-mutated','latyen:v2-sale-mutated','latyen:v2-product-saved','latyen:v2-ingredient-saved','latyen:personnel-seeded'].forEach(eventName=>window.addEventListener(eventName,scheduleDecorate));
+  };
+  document.readyState==='loading'
+    ?document.addEventListener('DOMContentLoaded',bootResponsiveTables,{once:true})
+    :bootResponsiveTables();
+  window.__lyCompactAdminLayout={version:'2026.08.25.4',decorateTables};
 })();
