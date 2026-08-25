@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientTableUX)return;
-  const VERSION='2026.08.26.3';
+  const VERSION='2026.08.26.4';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   let scheduled=false;
 
@@ -10,106 +10,49 @@
     return x.includes('nha cung cap gan nhat')||x==='nha cung cap'||x.includes('nha cung cap');
   }
 
-  function keyOf(text){
-    const x=fold(text);
-    if(x==='stt')return 'stt';
-    if(x==='ten'||x.startsWith('ten '))return 'name';
-    if(x.includes('don vi mua')||x.includes('dong goi'))return 'purchase';
-    if(x==='don vi'||x.startsWith('don vi '))return 'unit';
-    if(x==='ton'||x.startsWith('ton '))return 'stock';
-    if(x.includes('toi thieu'))return 'minimum';
-    if(x.includes('trang thai'))return 'status';
-    if(x.includes('gia von'))return 'avgcost';
-    if(x.includes('gia tri'))return 'value';
-    if(x.includes('thao tac')||x.includes('hanh dong'))return 'actions';
-    return '';
-  }
-
   function removeSupplierColumn(table){
     const header=table?.rows?.[0];
     if(!header)return false;
-    const indexes=[...header.cells].map((cell,index)=>isSupplierHeader(cell.textContent)?index:-1).filter(index=>index>=0).sort((a,b)=>b-a);
+    const indexes=[...header.cells]
+      .map((cell,index)=>isSupplierHeader(cell.textContent)?index:-1)
+      .filter(index=>index>=0)
+      .sort((a,b)=>b-a);
     if(!indexes.length)return false;
-    indexes.forEach(index=>[...table.rows].forEach(row=>{if(row.cells?.[index])row.deleteCell(index);}));
+    indexes.forEach(index=>{
+      [...table.rows].forEach(row=>{if(row.cells?.[index])row.deleteCell(index);});
+    });
     return true;
   }
 
-  function tagColumns(table){
-    const header=table?.rows?.[0];if(!header)return;
-    const keys=[...header.cells].map(cell=>keyOf(cell.textContent));
-    [...header.cells].forEach((cell,i)=>{if(keys[i])cell.dataset.lyIngredientCol=keys[i];else delete cell.dataset.lyIngredientCol;});
-    [...table.rows].slice(1).forEach(row=>[...row.cells].forEach((cell,i)=>{if(keys[i])cell.dataset.lyIngredientCol=keys[i];else delete cell.dataset.lyIngredientCol;}));
-  }
-
-  function normalizeSizing(table){
-    table.removeAttribute('width');
-    table.style.removeProperty('min-width');
-    table.style.removeProperty('max-width');
-    [...table.querySelectorAll('th,td')].forEach(cell=>{
-      cell.removeAttribute('width');
-      cell.style.removeProperty('min-width');
-      cell.style.removeProperty('max-width');
-    });
-  }
-
-  function cleanTable(table){
-    removeSupplierColumn(table);
-    tagColumns(table);
-    normalizeSizing(table);
-  }
-
-  function installStyle(){
+  function installSafetyStyle(){
     let style=document.getElementById('lyIngredientTableUXStyle');
     if(!style){style=document.createElement('style');style.id='lyIngredientTableUXStyle';document.head.appendChild(style);}
     style.textContent=`
-      #ingredients .scroll{width:100%!important;max-width:100%!important;overflow-x:hidden!important;overscroll-behavior-x:none!important;scrollbar-width:none!important}
-      #ingredients .scroll::-webkit-scrollbar:horizontal{display:none!important;height:0!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important}
+      #ingredients .scroll{width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:visible!important;scrollbar-width:auto!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){width:max-content!important;min-width:100%!important;max-width:none!important;table-layout:auto!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{box-sizing:border-box!important;min-width:0!important;max-width:none!important;padding:7px 5px!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important;line-height:1.18!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th{font-size:11px!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:11.5px!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="stt"]{width:4%!important;text-align:center!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="name"]{width:17%!important;font-weight:600!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="unit"]{width:6%!important;text-align:center!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="purchase"]{width:17%!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="stock"]{width:8%!important;text-align:right!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="minimum"]{width:8%!important;text-align:right!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="status"]{width:10%!important;text-align:center!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="avgcost"]{width:10%!important;text-align:right!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="value"]{width:8%!important;text-align:right!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="actions"]{width:12%!important;text-align:center!important;padding-left:6px!important;padding-right:6px!important;overflow:visible!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="actions"] button{display:block!important;width:100%!important;max-width:100%!important;margin:2px 0!important;padding:4px 3px!important;font-size:10px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}
-      @media(max-width:900px){
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th{font-size:9.5px!important}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:10px!important}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:6px 3px!important}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="name"]{width:16%!important}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="purchase"]{width:16%!important}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-col="actions"]{width:14%!important}
-      }
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{box-sizing:border-box!important;max-width:none!important;white-space:normal!important;overflow:visible!important;word-break:normal!important;overflow-wrap:break-word!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th:last-child,
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:last-child{min-width:112px!important;white-space:nowrap!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:last-child button{display:inline-block!important;width:auto!important;max-width:none!important;margin:2px!important;white-space:nowrap!important}
     `;
   }
 
   function apply(){
     scheduled=false;
-    document.querySelectorAll('#ingredients table.ingredient-stock-table:not(.prepared-virtual-table)').forEach(cleanTable);
+    document.querySelectorAll('#ingredients table.ingredient-stock-table:not(.prepared-virtual-table)').forEach(table=>{
+      removeSupplierColumn(table);
+    });
   }
 
-  function schedule(){
-    if(scheduled)return;
-    scheduled=true;
-    requestAnimationFrame(apply);
-  }
+  function schedule(){if(scheduled)return;scheduled=true;requestAnimationFrame(apply);}
 
   function boot(){
-    installStyle();apply();
+    installSafetyStyle();apply();
     const root=document.getElementById('ingredients')||document.body;
     new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
     window.addEventListener('latyen:v2-ingredient-saved',schedule);
     window.addEventListener('latyen:cloud-refreshed',schedule);
-    window.addEventListener('resize',schedule,{passive:true});
     setInterval(apply,3000);
   }
 
