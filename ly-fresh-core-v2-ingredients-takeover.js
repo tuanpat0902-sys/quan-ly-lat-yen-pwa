@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2IngredientsTakeoverV1)return;
   window.__lyFreshCoreV2IngredientsTakeoverV1=true;
 
-  const VERSION='2026.08.25.2';
+  const VERSION='2026.08.25.3';
   const TARGET_RPC='ly_save_ingredient';
   const TARGET_TABLE='ly_ingredients';
   const MAX_WAIT_MS=60000;
@@ -21,13 +21,19 @@
       const get=id=>document.getElementById(id);
       const unitApi=window.__lyUnitConversions;
       const rawBase=get('igUnit')?.value==='khác'?String(get('igUnitOther')?.value||'').trim():get('igUnit')?.value;
-      const rawPurchase=get('igPurchaseUnit')?.value;
-      const ratio=Number(get('igConversionRatio')?.value);
       const base=unitApi?.canonical?unitApi.canonical(rawBase||ingredient.unit||''):String(rawBase||ingredient.unit||'').trim();
-      const purchase=unitApi?.canonical?unitApi.canonical(rawPurchase||base):String(rawPurchase||base||'').trim();
       if(base)ingredient.unit=base;
-      if(purchase)ingredient.purchase_unit=purchase;
-      if(Number.isFinite(ratio)&&ratio>0)ingredient.conversion_ratio=ratio;
+      const prepared=window.__lyIngredientCreateMode==='prepared'||document.getElementById('ingredientInlinePanel')?.dataset?.lyIngredientMode==='prepared';
+      if(prepared){
+        delete ingredient.purchase_unit;
+        delete ingredient.conversion_ratio;
+      }else{
+        const rawPurchase=get('igPurchaseUnit')?.value;
+        const ratio=Number(get('igConversionRatio')?.value);
+        const purchase=unitApi?.canonical?unitApi.canonical(rawPurchase||base):String(rawPurchase||base||'').trim();
+        if(purchase)ingredient.purchase_unit=purchase;
+        if(Number.isFinite(ratio)&&ratio>0)ingredient.conversion_ratio=ratio;
+      }
     }catch(e){}
     return ingredient;
   }
