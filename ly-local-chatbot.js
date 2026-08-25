@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.5';
+const VERSION='2026.08.25.6';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:''};
@@ -361,9 +361,20 @@ async function navigate(panel){
   const button=document.querySelector?.(`#nav button[data-panel="${panel}"]`);
   if(!button)throw new Error('Không tìm thấy mục nghiệp vụ cần mở.');
   button.click();
-  const target=await waitFor(()=>{const node=document.getElementById?.(panel);return node?.classList?.contains?.('active')?node:null;});
-  if(!target)throw new Error('Màn hình nghiệp vụ chưa sẵn sàng.');
-  return target;
+  let securitySeen=false;
+  for(let attempt=0;attempt<600;attempt++){
+    const node=document.getElementById?.(panel);
+    if(node?.classList?.contains?.('active'))return node;
+    const security=document.getElementById?.('lyMenuSecurityOverlay'),securityOpen=security?.classList?.contains?.('open')===true;
+    if(securityOpen)securitySeen=true;
+    else if(securitySeen){
+      await delay(150);
+      if(node?.classList?.contains?.('active'))return node;
+      throw new Error('Chưa mở khóa menu nghiệp vụ. Hãy nhập mật khẩu rồi mở lại bản nháp.');
+    }
+    await delay(100);
+  }
+  throw new Error(securitySeen?'Quá thời gian chờ xác minh mật khẩu. Bản nháp vẫn được giữ để bạn mở lại.':'Màn hình nghiệp vụ chưa sẵn sàng.');
 }
 function setValue(id,value){const element=document.getElementById?.(id);if(element&&value!==undefined)element.value=String(value);}
 function signal(element,type){try{element?.dispatchEvent?.(new Event(type,{bubbles:true}));}catch(_){}}

@@ -12,6 +12,8 @@ const kinds={
 };
 const elements=new Map(),rows={import:[],export:[],stocktake:[],sale:[]};
 const panelNodes=new Map(['imports','stocktake','sales','recipes','ingredients'].map(id=>[id,{classList:{active:false,contains(name){return name==='active'&&this.active;}}}]));
+let securityOpen=false,securityPanel='',securityPolls=0;
+const securityOverlay={classList:{contains(name){if(name!=='open'||!securityOpen)return false;if(++securityPolls>=2){securityOpen=false;for(const [id,node] of panelNodes)node.classList.active=id===securityPanel;}return securityOpen;}}};
 function control(){return {value:'',dispatchEvent(){}};}
 function makeRow(kind,id=''){
   const spec=kinds[kind],select=spec.select?control():null,quantity=control(),unitCost=control(),itemDiscountType=control(),itemDiscountValue=control(),row={dataset:kind==='stocktake'?{ingredientId:id}:{},querySelector(selector){if(selector===spec.select)return select;if(selector===spec.quantity)return quantity;if(selector==='.irUnitCost')return unitCost;if(selector==='.srItemDiscountType')return itemDiscountType;if(selector==='.srItemDiscountValue')return itemDiscountValue;return null;},remove(){const at=rows[kind].indexOf(row);if(at>=0)rows[kind].splice(at,1);}};return row;
@@ -26,9 +28,10 @@ function mountKind(kind){
   elements.set(spec.formId,form);elements.set(spec.toggleId,toggle);elements.set(spec.holderId,holder);elements.set(spec.noteId,control());
 }
 for(const [id,panel] of panelNodes)elements.set(id,panel);
+elements.set('lyMenuSecurityOverlay',securityOverlay);
 for(const kind of Object.keys(kinds))mountKind(kind);
 for(const id of ['receiptNo','receiptDate','exportReceiptNo','exportReceiptDate','stocktakeReceiptNo','stocktakeReceiptDate','saleReceiptNo','saleReceiptDate','saleDiscountType','saleDiscountValue'])elements.set(id,control());
-const document={readyState:'loading',addEventListener(){},getElementById(id){return elements.get(id)||null;},querySelector(selector){const panel=selector.match(/data-panel="([^"]+)"/)?.[1];return panel?{click(){opened.push(`panel:${panel}`);for(const [id,node] of panelNodes)node.classList.active=id===panel;}}:null;},createElement(){return {};}};
+const document={readyState:'loading',addEventListener(){},getElementById(id){return elements.get(id)||null;},querySelector(selector){const panel=selector.match(/data-panel="([^"]+)"/)?.[1];return panel?{click(){opened.push(`panel:${panel}`);if(['recipes','ingredients'].includes(panel)){securityOpen=true;securityPanel=panel;securityPolls=0;for(const node of panelNodes.values())node.classList.active=false;return;}for(const [id,node] of panelNodes)node.classList.active=id===panel;}}:null;},createElement(){return {};}};
 const context={console,Date,Math,Promise,Intl,Event:class Event{},setTimeout(fn){fn();return 1;},document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đường',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Sữa',unit:'lít',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Bột cacao',unit:'g',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Cà phê sữa',unit:'ly'},{id:'p2',warehouse_id:'w1',name:'Cà phê đen',unit:'ly'}],recipeItems:[{product_id:'p1',ingredient_id:'i1'},{product_id:'p2',ingredient_id:'i1'}]}},globalThis:null};
 const recipeRows=[],preparedRows=[];
 const recipeName=control(),preparedName=control(),preparedOutput=control(),preparedUnit=control();
