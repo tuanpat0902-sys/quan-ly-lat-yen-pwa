@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2RealtimeV1)return;
   window.__lyFreshCoreV2RealtimeV1=true;
 
-  const VERSION='2026.08.24.7';
+  const VERSION='2026.08.25.1';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const DEBOUNCE_MS=260;
@@ -28,7 +28,10 @@
   function orgId(){try{if(typeof v261OrganizationId!=='undefined'&&v261OrganizationId)return String(v261OrganizationId);}catch(e){}return String(window.__lyFreshOrgId||'');}
   function core(){return window.__lyFreshCoreV2||null;}
 
-  function draftActive(){try{return window.v240HasActiveDraft?.()===true;}catch(e){return false;}}
+  function draftActive(){
+    try{if(window.__lyFormDraftGuard?.isActive?.()===true)return true;}catch(e){}
+    try{return window.v240HasActiveDraft?.()===true;}catch(e){return false;}
+  }
 
   function scheduleProjection(reason){
     pendingProjectionReason=reason||pendingProjectionReason||'deferred';
@@ -48,6 +51,7 @@
   }
 
   function renderVisiblePanel(){
+    if(draftActive()){state.deferredRenders++;return false;}
     const safe=typeof window.v235RequestBackgroundRender==='function'?window.v235RequestBackgroundRender:typeof window.v219SafeBackgroundRender==='function'?window.v219SafeBackgroundRender:null;
     if(safe){const rendered=safe();if(rendered===false)state.deferredRenders++;return true;}
     if(typeof window.renderAll==='function'){window.renderAll();return true;}
