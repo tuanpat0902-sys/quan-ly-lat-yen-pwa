@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyChatUnitSync)return;
-  const VERSION='2026.08.26.7';
+  const VERSION='2026.08.26.8';
   const fold=value=>String(value??'').replace(/\u2060/g,'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const escRe=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const fmt=value=>{const n=Number(value);return Number.isInteger(n)?String(n):String(Number(n.toFixed(6)));};
@@ -45,14 +45,17 @@
     return NaN;
   }
 
-  function normalizePurchasePricing(message,item){
-    const name=String(item.name||'').trim(),rule=ruleFor(item);if(!name||!rule.purchase||rule.purchase===rule.base)return message;
-    const purchaseAliases=new Set();aliasesFor(rule.purchase).forEach(v=>{purchaseAliases.add(v);purchaseAliases.add(visibleUnit(v));});
-    const purchasePattern=[...purchaseAliases].map(escRe).join('|');if(!purchasePattern)return message;
+  function normalizeConvertedPricing(message,item){
+    const name=String(item.name||'').trim(),rule=ruleFor(item);if(!name||!rule.base)return message;
+    const sourceAliases=new Set(),api=unitApi();
+    try{(api?.listFor?.(rule.base,item.id,false)||[]).forEach(row=>aliasesFor(row.key).forEach(v=>sourceAliases.add(v)));}catch(e){}
+    aliasesFor(rule.purchase).forEach(v=>sourceAliases.add(v));aliasesFor(rule.base).forEach(v=>sourceAliases.add(v));
+    const expanded=new Set();sourceAliases.forEach(v=>{expanded.add(v);expanded.add(visibleUnit(v));});
+    const sourcePattern=[...expanded].sort((a,b)=>b.length-a.length).map(escRe).join('|');if(!sourcePattern)return message;
     const namePattern=escRe(name).replace(/\s+/g,'\\s+'),basePattern=escRe(rule.base);
-    const re=new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${purchasePattern})\\s*\\((\\d+(?:[.,]\\d+)?)\\s*${basePattern}\\)\\s*(${namePattern})\\s*(?:,|;)?\\s*(?:đơn\\s*giá|don\\s*gia|giá|gia)\\s*(\\d+(?:[.,]\\d+)?)\\s*(nghìn|nghin|ngàn|ngan|k|triệu|trieu)?`,'giu');
+    const re=new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${sourcePattern})\\s*\\((\\d+(?:[.,]\\d+)?)\\s*${basePattern}\\)\\s*(${namePattern})\\s*(?:,|;)?\\s*(?:đơn\\s*giá|don\\s*gia|giá|gia)\\s*(\\d+(?:[.,]\\d+)?)\\s*(nghìn|nghin|ngàn|ngan|k|triệu|trieu)?`,'giu');
     return message.replace(re,(full,q,u,baseQty,n,price,scale)=>{
-      const purchaseQty=Number(String(q).replace(',','.')),baseQuantity=Number(String(baseQty).replace(',','.')),purchasePrice=money(price,scale),total=purchaseQty*purchasePrice;
+      const inputQty=Number(String(q).replace(',','.')),baseQuantity=Number(String(baseQty).replace(',','.')),inputPrice=money(price,scale),total=inputQty*inputPrice;
       if(!Number.isFinite(total)||!Number.isFinite(baseQuantity)||baseQuantity<=0)return full;
       const baseUnitCost=total/baseQuantity,priceText=`${price}${scale?` ${scale}`:''}`,shownUnit=visibleUnit(u);
       return `${q} ${shownUnit} (${baseQty} ${rule.base}) ${n} · giá mua ${priceText}/${shownUnit} · đơn giá ${fmt(baseUnitCost)} đ/${rule.base}`;
@@ -71,14 +74,11 @@
     out=out.replace(left,(full,q,u,n)=>{const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim();if(!Number.isFinite(value)||canonical(source)===rule.base)return full;return `${q} ${visibleUnit(source)} (${fmt(value)} ${rule.base}) ${n}`;});
     const right=new RegExp(`(${namePattern})\\s*(?:x|:)?\\s*${number}\\s*(${unitPattern})(?=$|[\\s,;:.!?])`,'giu');
     out=out.replace(right,(full,n,q,u)=>{const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim();if(!Number.isFinite(value)||canonical(source)===rule.base)return full;return `${n} ${q} ${visibleUnit(source)} (${fmt(value)} ${rule.base})`;});
-    return normalizePurchasePricing(out,item);
+    return normalizeConvertedPricing(out,item);
   }
 
   function normalizeIngredientSpelling(message){
     let out=String(message??'');
-    // Common Vietnamese input writes cacao as two words ("ca cao"). Convert it to
-    // the catalog spelling before the assistant performs partial-name matching,
-    // otherwise it creates separate ambiguities for "bột" and "ca".
     out=out.replace(/\bca\s+cao\b/giu,'cacao');
     return out;
   }
