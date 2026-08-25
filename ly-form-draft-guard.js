@@ -2,8 +2,8 @@
   'use strict';
   if(window.__lyFormDraftGuard)return;
 
-  const VERSION='2026.08.25.2';
-  const KEY='__latyen_active_form_draft_v2';
+  const VERSION='2026.08.25.3';
+  const KEY='__latyen_active_form_draft_v3';
   let hiddenSnapshot=null;
   let wasHidden=false;
   let restoring=false;
@@ -58,7 +58,7 @@
     const activePanel=document.querySelector('.panel.active');
     const state={
       at:Date.now(),pageX:window.scrollX,pageY:window.scrollY,activePanelId:activePanel?.id||'',
-      roots:roots.map(root=>({id:root.id,wasVisible:visible(root),scrollTop:root.scrollTop,scrollLeft:root.scrollLeft,fields:captureFields(root)}))
+      roots:roots.map(root=>({id:root.id,scrollTop:root.scrollTop,scrollLeft:root.scrollLeft,fields:captureFields(root)}))
     };
     hiddenSnapshot=state;
     try{sessionStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
@@ -68,6 +68,11 @@
   function readSnapshot(){
     if(hiddenSnapshot)return hiddenSnapshot;
     try{return JSON.parse(sessionStorage.getItem(KEY)||'null');}catch(e){return null;}
+  }
+
+  function hasActiveDraft(){
+    if(wasHidden&&readSnapshot()?.roots?.length)return true;
+    return candidateRoots().length>0;
   }
 
   function restoreFields(root,saved){
@@ -101,15 +106,12 @@
       let restored=false;
       (state.roots||[]).forEach(saved=>{
         const root=document.getElementById(saved.id);
-        if(!root)return;
-        /* Never rewrite class/style or reopen a form that is still healthy. */
-        if(saved.wasVisible&&!visible(root))return;
+        if(!root||!visible(root))return;
         restoreFields(root,saved);
         if(Number.isFinite(saved.scrollTop))root.scrollTop=saved.scrollTop;
         if(Number.isFinite(saved.scrollLeft))root.scrollLeft=saved.scrollLeft;
         restored=true;
       });
-      if(Number.isFinite(state.pageY))window.scrollTo({top:state.pageY,left:Number(state.pageX||0),behavior:'auto'});
       clear();
       return restored;
     }finally{restoring=false;}
@@ -119,8 +121,9 @@
   function clear(){hiddenSnapshot=null;try{sessionStorage.removeItem(KEY);}catch(e){}}
 
   function markHiddenAndSnapshot(){
-    wasHidden=true;
-    snapshot();
+    if(wasHidden)return;
+    const state=snapshot();
+    wasHidden=!!state;
   }
 
   function boot(){
@@ -130,7 +133,7 @@
     },true);
     window.addEventListener('blur',()=>{
       clearTimeout(blurTimer);
-      blurTimer=setTimeout(()=>{if(document.hidden||!document.hasFocus())markHiddenAndSnapshot();},120);
+      blurTimer=setTimeout(()=>{if(document.hidden||!document.hasFocus())markHiddenAndSnapshot();},150);
     },true);
     window.addEventListener('focus',()=>{
       clearTimeout(blurTimer);
@@ -139,6 +142,6 @@
     window.addEventListener('pagehide',markHiddenAndSnapshot,true);
   }
 
-  window.__lyFormDraftGuard={version:VERSION,snapshot,restore:restoreOnce,clear};
+  window.__lyFormDraftGuard={version:VERSION,snapshot,restore:restoreOnce,clear,isActive:hasActiveDraft};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
