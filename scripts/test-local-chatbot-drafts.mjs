@@ -73,6 +73,8 @@ assert.equal(ambiguous.items.length,0);assert.equal(ambiguous.clarifications.len
 assert.match(assistant.assistantReply('Tạo phiếu nhập 10 kg cà phê').content,/cập nhật ngay vào bản nháp/);
 await assert.rejects(()=>assistant.executeDraft(ambiguous),/cần chọn đúng mặt hàng/);
 assert.equal(assistant.chooseDraftItem(ambiguous,ambiguous.clarifications[0].id,'i3'),true);assert.equal(ambiguous.items[0].name,'Cà phê B');assert.equal(ambiguous.items[0].quantity,10);assert.equal(assistant.draftReady(ambiguous),true);
+const ambiguousPriced=assistant.parseDraft('Nhập 10 kg cà phê đơn giá 10 nghìn');assert.equal(assistant.chooseDraftItem(ambiguousPriced,ambiguousPriced.clarifications[0].id,'i2'),true);assert.equal(ambiguousPriced.items[0].unit_cost,10000,'unit price must survive the item-suggestion step');
+const ambiguousTotal=assistant.parseDraft('Nhập 10 kg cà phê thành tiền nhập 100 nghìn');assert.equal(assistant.chooseDraftItem(ambiguousTotal,ambiguousTotal.clarifications[0].id,'i3'),true);assert.equal(ambiguousTotal.items[0].unit_cost,10000,'total price must derive unit price after an ambiguous item is selected');
 const withHeader=assistant.parseDraft('Tạo phiếu nhập số PN-100 ngày 18/08/2026 10 kg Đường');
 assert.equal(withHeader.receipt_code,'PN-100');assert.equal(withHeader.receipt_date,'2026-08-18');
 const yesterdayDraft=assistant.parseDraft('Tạo phiếu nhập hôm qua 2 kg Đường');

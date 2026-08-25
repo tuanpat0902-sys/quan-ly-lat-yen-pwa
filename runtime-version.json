@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.55",
-  "revision": "fresh-core-v2-authoritative-v56",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-117",
+  "appVersion": "2.1.56",
+  "revision": "fresh-core-v2-authoritative-v57",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-118",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,

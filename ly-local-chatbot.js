@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.10';
+const VERSION='2026.08.25.11';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',openingDraftId:''};
@@ -182,7 +182,7 @@ function parseDraft(message){
   if(action==='create'){
     const creation=['recipe','prepared'].includes(kind)?creationParts(message,kind):null,itemMessage=creation?creation.components:message,extracted=['ingredient','cashflow'].includes(kind)?{items:[],ambiguities:[]}:extractItems(itemMessage,kind);if(creation)draft.component_text=creation.components;draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
     const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-    if(kind==='import'){const pricing=importPricing(message,draft.items);draft.items.forEach(item=>item.unit_cost=pricing.unit_cost);draft.import_total=pricing.total;}
+    if(kind==='import'){const pricing=importPricing(message,draft.items);draft.import_unit_cost=pricing.unit_cost;draft.import_total=pricing.total;draft.items.forEach(item=>item.unit_cost=pricing.unit_cost);}
     if(kind==='sale'){const discount=discountMention(message);if(discount){const itemLevel=/\b(tung mon|moi mon|giam gia mon|chiet khau mon)\b/.test(source);if(itemLevel)draft.items.forEach(item=>item.discount={...discount});else draft.receipt_discount=discount;}}
     if(kind==='stocktake'&&!draft.items.length&&/\b(kiem ke|kiem kho|phieu kiem)\b/.test(source))draft.open_blank=true;
     if(kind==='recipe'||kind==='prepared'){draft.name=text(creation?.name);if(kind==='prepared'){const output=normalize(creation?.output).match(/(?:la\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|chai|goi|hop|cai)?/);draft.batch_output=output?parsedQuantity(output[1]):1;draft.unit=canonicalUnit(output?.[2]||'g');}}
@@ -209,6 +209,7 @@ function answerDraftClarification(draft,clarificationId,optionId){
   const clarification=draft?.clarifications?.find(row=>String(row.id)===String(clarificationId)&&!row.resolved),option=clarification?.options?.find(row=>String(row.id)===String(optionId));if(!clarification||!option)return false;
   if(clarification.type==='item'){
     const converted=amountForItem({quantity:clarification.quantity,unit:clarification.unit},option),item={id:option.id,name:option.name,unit:text(option.unit||converted.unit||clarification.unit),quantity:converted.quantity,clarification_id:clarification.id};
+    if(draft.kind==='import'){item.unit_cost=draft.import_unit_cost!==null&&draft.import_unit_cost!==undefined?draft.import_unit_cost:(Number(draft.import_total)>0&&Number(item.quantity)>0?Number(draft.import_total)/Number(item.quantity):null);}
     draft.items=(draft.items||[]).filter(row=>String(row.clarification_id)!==String(clarification.id));draft.items.push(item);clarification.selected_id=option.id;clarification.resolved=true;addQuantityClarification(draft,item);
   }else if(clarification.type==='cashflow_category'){
     draft.cashflow_type=option.type;draft.category=option.category;clarification.selected_id=option.id;clarification.resolved=true;
@@ -495,6 +496,15 @@ async function openCashflowDraft(draft){
   const category=await waitFor(()=>document.getElementById?.('cashflowCategory'));if(![...(category?.options||[])].some(option=>option.value===draft.category)&&category?.appendChild){const option=document.createElement('option');option.value=draft.category;option.textContent=draft.category;category.appendChild(option);}if(category){category.value=draft.category;signal(category,'change');}
   setValue('cashflowAmount',draft.amount);if(draft.receipt_date)setValue('cashflowDate',draft.receipt_date);setValue('cashflowNote',`Bản nháp từ Trợ lý Lát Yên${draft.category_query?` · ${draft.category_query}`:''}`);document.getElementById?.('cashflowAmount')?.scrollIntoView?.({behavior:'smooth',block:'center'});return form;
 }
+async function waitForStableReceiptForm(contract,owner){
+  for(let attempt=0;attempt<4;attempt++){
+    let current=document.getElementById?.(contract.form);
+    if(!current?.classList.contains('open')){const open=window[owner];if(typeof open==='function')open(true);else document.getElementById?.(contract.toggle)?.click?.();}
+    const opened=await waitFor(()=>{const latest=document.getElementById?.(contract.form);return latest?.classList.contains('open')&&latest;},16);if(!opened)continue;
+    await delay(180);current=document.getElementById?.(contract.form);if(current?.classList.contains('open'))return current;
+  }
+  return null;
+}
 async function openCreateDraft(draft){
   if(draft.kind==='recipe')return openRecipeDraft(draft);
   if(draft.kind==='prepared')return openPreparedDraft(draft);
@@ -502,8 +512,8 @@ async function openCreateDraft(draft){
   if(draft.kind==='cashflow')return openCashflowDraft(draft);
   const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports',contract=formContract(draft.kind);await navigate(panel);
   const owner=({import:'toggleImportReceiptForm',export:'toggleExportReceiptForm',stocktake:'toggleStocktakeForm',sale:'toggleSaleReceiptForm'})[draft.kind],open=window[owner];
-  if(typeof open==='function'){open(false);await delay(50);open(true);}else{const current=document.getElementById?.(contract.form);current?.classList?.remove?.('open');const toggleButton=document.getElementById?.(contract.toggle);if(!toggleButton)throw new Error('Không tìm thấy nút mở form phiếu.');toggleButton.click();}
-  const opened=await waitFor(()=>{const current=document.getElementById?.(contract.form);return current?.classList.contains('open')&&current;});
+  if(typeof open==='function'){open(false);await delay(80);}else{const current=document.getElementById?.(contract.form);current?.classList?.remove?.('open');if(!document.getElementById?.(contract.toggle))throw new Error('Không tìm thấy nút mở form phiếu.');}
+  const opened=await waitForStableReceiptForm(contract,owner);
   if(!opened)throw new Error(document.getElementById?.(contract.form)?'Form nghiệp vụ chưa mở được. Vui lòng thử lại.':'Không tìm thấy form phiếu trên màn hình nghiệp vụ.');
   const form=opened;resetReceiptForm(draft,contract,form);if(draft.kind==='stocktake'&&typeof window.populateAllStocktakeLines==='function')window.populateAllStocktakeLines();fillDraftItems(draft,contract,form);
   const header=({import:{code:'receiptNo',date:'receiptDate'},export:{code:'exportReceiptNo',date:'exportReceiptDate'},stocktake:{code:'stocktakeReceiptNo',date:'stocktakeReceiptDate'},sale:{code:'saleReceiptNo',date:'saleReceiptDate'}})[draft.kind];
