@@ -49,6 +49,7 @@ const assistant=context.window.__lyLocalAssistant;
 const importDraft=assistant.assistantReply('Tạo phiếu nhập 10 kg Đường và 3 lít Sữa').draft;
 assert.ok(importDraft,'multi-item import command must produce a draft');assert.deepEqual(Array.from(importDraft.items,row=>[row.name,row.quantity]),[['Đường',10],['Sữa',3]]);await assistant.executeDraft(importDraft);
 assert.equal(rows.import[0].querySelector('.irIngredient').value,'i1');assert.equal(rows.import[0].querySelector('.irQty').value,'10');assert.equal(rows.import[1].querySelector('.irIngredient').value,'i2');assert.equal(rows.import[1].querySelector('.irQty').value,'3');
+const replacementImport=assistant.assistantReply('Tạo phiếu nhập 4 kg Đường').draft;await assistant.executeDraft(replacementImport);assert.equal(rows.import.length,1,'a new command must discard all unsaved lines from the previous open import form');assert.equal(rows.import[0].querySelector('.irIngredient').value,'i1');assert.equal(rows.import[0].querySelector('.irQty').value,'4');
 
 const pricedImport=assistant.assistantReply('Nhập 1 kg Bột cacao, thành tiền nhập 100.000').draft;
 assert.equal(pricedImport.items[0].quantity,1000,'kg must be converted to the ingredient base unit g');assert.equal(pricedImport.items[0].unit_cost,100,'total amount must derive unit cost after conversion');await assistant.executeDraft(pricedImport);assert.equal(rows.import[0].querySelector('.irQty').value,'1000');assert.equal(rows.import[0].querySelector('.irUnitCost').value,'100');
@@ -57,6 +58,7 @@ const exportDraft=assistant.assistantReply('Tạo phiếu xuất 5 kg Đường 
 assert.ok(exportDraft,'export command must produce a draft response');await assistant.executeDraft(exportDraft);
 assert.equal(rows.export[0].querySelector('.erIngredient').value,'i1');assert.equal(rows.export[0].querySelector('.erQty').value,'5');assert.equal(elements.get('exportReceiptReason').value,'Bản nháp từ Trợ lý Lát Yên');
 assert.equal(rows.export[1].querySelector('.erIngredient').value,'i2');assert.equal(rows.export[1].querySelector('.erQty').value,'2');
+const replacementExport=assistant.assistantReply('Tạo phiếu xuất 1 kg Đường').draft;await assistant.executeDraft(replacementExport);assert.equal(rows.export.length,1);assert.equal(rows.export[0].querySelector('.erIngredient').value,'i1');assert.equal(rows.export[0].querySelector('.erQty').value,'1');
 
 const stocktakeDraft=assistant.assistantReply('Tạo phiếu kiểm kê Đường 7 kg và Sữa 4 lít').draft;
 assert.ok(stocktakeDraft,'stocktake command must produce a draft response');await assistant.executeDraft(stocktakeDraft);
@@ -67,17 +69,20 @@ const saleDraft=assistant.assistantReply('Tạo phiếu bán 2 Cà phê sữa v�
 assert.ok(saleDraft,'sale command must produce a draft response');await assistant.executeDraft(saleDraft);
 assert.equal(rows.sale[0].querySelector('.srProduct').value,'p1');assert.equal(rows.sale[0].querySelector('.srQty').value,'2');assert.equal(elements.get('saleReceiptNote').value,'Bản nháp từ Trợ lý Lát Yên');
 assert.equal(rows.sale[1].querySelector('.srProduct').value,'p2');assert.equal(rows.sale[1].querySelector('.srQty').value,'3');
+const discountedSale=assistant.assistantReply('Tạo phiếu bán 1 Cà phê sữa giảm giá tổng hóa đơn 10%').draft;await assistant.executeDraft(discountedSale);assert.equal(elements.get('saleDiscountValue').value,'10');const replacementSale=assistant.assistantReply('Tạo phiếu bán 1 Cà phê đen').draft;await assistant.executeDraft(replacementSale);assert.equal(rows.sale.length,1);assert.equal(rows.sale[0].querySelector('.srProduct').value,'p2');assert.equal(elements.get('saleDiscountValue').value,'0','a new sale command must clear an unsaved discount from the previous form');
 
 const recipeDraft=assistant.assistantReply('Tạo công thức tên món là Cacao sữa gồm 20g Bột cacao và 1 lít Sữa').draft;
 await assistant.executeDraft(recipeDraft);assert.equal(recipeForm.classList.open,true);assert.equal(recipeName.value,'Cacao sữa');assert.deepEqual(recipeRows.map(row=>[row.querySelector('.rlIng').value,row.querySelector('.rlQty').value]),[['i3','20'],['i2','1']]);
 const preparedDraft=assistant.assistantReply('Tạo nguyên liệu pha chế: Đường, bao gồm 10g đá, 10g nước đường, thành phẩm 20g đường').draft;
 await assistant.executeDraft(preparedDraft);assert.equal(preparedPanel.classList.open,true);assert.equal(preparedName.value,'Đường');assert.equal(preparedOutput.value,'20');assert.equal(preparedUnit.value,'g');assert.deepEqual(preparedRows.map(row=>[row.querySelector('.prSource').value,row.querySelector('.prQty').value]),[['i5','10'],['i4','0.01']]);
+const replacementPrepared=assistant.assistantReply('Tạo nguyên liệu pha chế: Syrup sữa, gồm 20g đường, thành phẩm 20g').draft;await assistant.executeDraft(replacementPrepared);assert.equal(preparedName.value,'Syrup sữa');assert.equal(preparedRows.length,1);assert.equal(preparedRows[0].querySelector('.prSource').value,'i1');
 
 const ingredientDraft=assistant.assistantReply('Tạo nguyên liệu: Bột quế, đơn vị g, tồn tối thiểu 100g').draft;
 assert.ok(ingredientDraft);assert.equal(ingredientDraft.name,'Bột quế');await assistant.executeDraft(ingredientDraft);assert.equal(preparedPanel.dataset.type,'purchased');assert.equal(preparedName.value,'Bột quế');assert.equal(preparedUnit.value,'g');assert.equal(ingredientMinimum.value,'100');
 
 const cashflowReply=assistant.assistantReply('Tạo phiếu thu/chi "tiền điện" 10 nghìn');
 assert.ok(cashflowReply.draft);assert.equal(cashflowReply.draft.amount,10000);const categoryChoice=cashflowReply.draft.clarifications.find(row=>row.type==='cashflow_category');assert.ok(categoryChoice);assert.ok(categoryChoice.options.some(row=>row.label==='Chi · Điện'));const electric=categoryChoice.options.find(row=>row.category==='Điện');assert.equal(assistant.answerDraftClarification(cashflowReply.draft,categoryChoice.id,electric.id),true);assert.equal(assistant.draftReady(cashflowReply.draft),true);await assistant.executeDraft(cashflowReply.draft);assert.equal(cashflowType.value,'expense');assert.equal(cashflowCategory.value,'Điện');assert.equal(cashflowAmount.value,'10000');
+const waterReply=assistant.assistantReply('Tạo phiếu chi tiền nước 200k');const waterChoice=waterReply.draft.clarifications[0],water=waterChoice.options.find(row=>row.category==='Nước');assert.ok(water);assistant.answerDraftClarification(waterReply.draft,waterChoice.id,water.id);await assistant.executeDraft(waterReply.draft);assert.equal(cashflowCategory.value,'Nước','a new cashflow command must replace the category in the already-open unsaved form');assert.equal(cashflowAmount.value,'200000');
 const unknownExpense=assistant.assistantReply('Tạo phiếu chi "phí vệ sinh lạ" 20k').draft;assert.ok(unknownExpense);assert.equal(unknownExpense.category,undefined);assert.ok(unknownExpense.clarifications[0].options.some(row=>row.category==='Chi phí khác'),'unknown expense content must offer a safe fallback instead of guessing');
 const missingMoney=assistant.assistantReply('Tạo phiếu chi tiền điện');assert.equal(missingMoney.localOnly,true);assert.match(missingMoney.content,/chưa đọc được số tiền/i);
 

@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.9';
+const VERSION='2026.08.25.10';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',openingDraftId:''};
@@ -441,6 +441,16 @@ function formContract(kind){return ({
   stocktake:{form:'inlineStocktakeForm',toggle:'toggleStocktakeBtn',holder:'stocktakeReceiptLines',row:'.stocktake-receipt-line',quantity:'.srActual'},
   sale:{form:'inlineSaleReceiptForm',toggle:'toggleSaleReceiptBtn',holder:'saleReceiptLines',row:'.sale-receipt-line',add:'button[onclick*="addSaleReceiptLine"]',select:'.srProduct',quantity:'.srQty'}
 })[kind];}
+function localDateIso(){const date=new Date();return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+function resetReceiptForm(draft,contract,form){
+  const holder=document.getElementById?.(contract.holder);if(holder&&draft.kind!=='stocktake'){for(const row of [...(holder.querySelectorAll?.(contract.row)||[])])row.remove?.();holder.innerHTML='';}
+  const generated=({import:'newImportReceiptNo',export:'newExportReceiptNo',stocktake:'newStocktakeReceiptNo',sale:'newSaleReceiptNo'})[draft.kind],header=({import:{code:'receiptNo',date:'receiptDate',note:'receiptNote'},export:{code:'exportReceiptNo',date:'exportReceiptDate',note:'exportReceiptReason'},stocktake:{code:'stocktakeReceiptNo',date:'stocktakeReceiptDate',note:'stocktakeReceiptNote'},sale:{code:'saleReceiptNo',date:'saleReceiptDate',note:'saleReceiptNote'}})[draft.kind];
+  const nextCode=draft.receipt_code||(typeof window[generated]==='function'?window[generated]():'');setValue(header.code,nextCode);setValue(header.date,draft.receipt_date||localDateIso());setValue(header.note,'');
+  for(const key of ['editKey','editReferenceId','editSaleId'])delete form.dataset?.[key];form.classList?.remove?.('sale-editing');
+  if(draft.kind==='import'){setValue('importReceiptResult','');const button=document.getElementById?.('saveReceiptBtn');if(button)button.textContent='Xác nhận nhập kho';}
+  if(draft.kind==='export'){setValue('exportReceiptResult','');const button=document.getElementById?.('saveExportReceiptBtn');if(button)button.textContent='Xác nhận xuất kho';}
+  if(draft.kind==='sale'){setValue('saleDiscountType','percent');setValue('saleDiscountValue',0);const result=document.getElementById?.('saleReceiptResult');if(result)result.innerHTML='';const button=document.getElementById?.('saleReceiptSubmitBtn');if(button)button.textContent='Xác nhận bán & trừ kho';}
+}
 function fillDraftItems(draft,contract,form){
   if(!draft.items.length)return;
   const holder=document.getElementById?.(contract.holder);if(!holder)return;
@@ -478,7 +488,7 @@ async function openPreparedDraft(draft){
 }
 async function openCashflowDraft(draft){
   await navigate('cashflow');
-  if(typeof window.toggleCashflowForm==='function')window.toggleCashflowForm(true);else{const button=document.querySelector?.('#cashflow button[onclick*="toggleCashflowForm"]');if(!button)throw new Error('Không tìm thấy nút mở form thu/chi.');button.click();}
+  if(typeof window.toggleCashflowForm==='function'){window.toggleCashflowForm(false);await delay(50);window.toggleCashflowForm(true);}else{const button=document.querySelector?.('#cashflow button[onclick*="toggleCashflowForm"]');if(!button)throw new Error('Không tìm thấy nút mở form thu/chi.');button.click();}
   const form=await waitFor(()=>{const type=document.getElementById?.('cashflowType'),category=document.getElementById?.('cashflowCategory'),amount=document.getElementById?.('cashflowAmount');return type&&category&&amount&&{type,category,amount};});
   if(!form)throw new Error('Form phiếu thu/chi chưa mở được.');
   form.type.value=draft.cashflow_type;signal(form.type,'change');
@@ -492,10 +502,10 @@ async function openCreateDraft(draft){
   if(draft.kind==='cashflow')return openCashflowDraft(draft);
   const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports',contract=formContract(draft.kind);await navigate(panel);
   const owner=({import:'toggleImportReceiptForm',export:'toggleExportReceiptForm',stocktake:'toggleStocktakeForm',sale:'toggleSaleReceiptForm'})[draft.kind],open=window[owner];
-  if(typeof open==='function')open(true);else{const toggleButton=document.getElementById?.(contract.toggle);if(!toggleButton)throw new Error('Không tìm thấy nút mở form phiếu.');toggleButton.click();}
+  if(typeof open==='function'){open(false);await delay(50);open(true);}else{const current=document.getElementById?.(contract.form);current?.classList?.remove?.('open');const toggleButton=document.getElementById?.(contract.toggle);if(!toggleButton)throw new Error('Không tìm thấy nút mở form phiếu.');toggleButton.click();}
   const opened=await waitFor(()=>{const current=document.getElementById?.(contract.form);return current?.classList.contains('open')&&current;});
   if(!opened)throw new Error(document.getElementById?.(contract.form)?'Form nghiệp vụ chưa mở được. Vui lòng thử lại.':'Không tìm thấy form phiếu trên màn hình nghiệp vụ.');
-  const form=opened;fillDraftItems(draft,contract,form);
+  const form=opened;resetReceiptForm(draft,contract,form);if(draft.kind==='stocktake'&&typeof window.populateAllStocktakeLines==='function')window.populateAllStocktakeLines();fillDraftItems(draft,contract,form);
   const header=({import:{code:'receiptNo',date:'receiptDate'},export:{code:'exportReceiptNo',date:'exportReceiptDate'},stocktake:{code:'stocktakeReceiptNo',date:'stocktakeReceiptDate'},sale:{code:'saleReceiptNo',date:'saleReceiptDate'}})[draft.kind];
   if(draft.receipt_code)setValue(header.code,draft.receipt_code);if(draft.receipt_date)setValue(header.date,draft.receipt_date);
   if(draft.kind==='import'){
