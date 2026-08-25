@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyChatUnitSync)return;
-  const VERSION='2026.08.26.6';
+  const VERSION='2026.08.26.7';
   const fold=value=>String(value??'').replace(/\u2060/g,'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const escRe=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const fmt=value=>{const n=Number(value);return Number.isInteger(n)?String(n):String(Number(n.toFixed(6)));};
@@ -74,8 +74,17 @@
     return normalizePurchasePricing(out,item);
   }
 
-  function rewrite(message){
+  function normalizeIngredientSpelling(message){
     let out=String(message??'');
+    // Common Vietnamese input writes cacao as two words ("ca cao"). Convert it to
+    // the catalog spelling before the assistant performs partial-name matching,
+    // otherwise it creates separate ambiguities for "bột" and "ca".
+    out=out.replace(/\bca\s+cao\b/giu,'cacao');
+    return out;
+  }
+
+  function rewrite(message){
+    let out=normalizeIngredientSpelling(message);
     const candidates=ingredients().filter(item=>fold(out).includes(fold(item.name))).sort((a,b)=>String(b.name).length-String(a.name).length);
     candidates.forEach(item=>{out=rewriteForItem(out,item);});
     return out;
