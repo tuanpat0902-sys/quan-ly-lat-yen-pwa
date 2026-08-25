@@ -19,5 +19,5 @@ assert.match(layout,/--ly-ui-font:/,'application must define one shared typeface
 assert.match(layout,/--ly-font-base:12px/,'application must define one shared body text size');
 assert.match(layout,/table th\{font-size:var\(--ly-font-sm\)/,'table headings must follow the shared type scale');
 assert.match(layout,/\.ly-note-compact\{/,'long notes must use the shared compact display');
-assert.match(layout,/version:'2026\.08\.25\.1'/,'compact layout cache version must be current');
+assert.match(layout,/version:'2026\.08\.25\.2'/,'compact layout cache version must be current');
 console.log('Compact responsive Settings layout: PASS');

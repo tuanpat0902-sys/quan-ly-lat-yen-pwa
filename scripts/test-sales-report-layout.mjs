@@ -12,6 +12,10 @@ assert.match(index,/\.sale-analysis-grid\{[\s\S]*grid-template-columns:minmax\(0
 assert.match(index,/@media\(max-width:700px\)[\s\S]*\.sale-analysis-grid\{[\s\S]*grid-template-columns:1fr/,'mobile sales report must stack safely');
 assert.match(report,/class="sale-chart-scroll"/,'sales chart must have a horizontal safety scroller');
 assert.match(layout,/#sales \.sale-chart-scroll canvas\{width:max\(720px,100%\)!important/,'narrow screens must preserve a readable chart width');
+assert.match(layout,/@media\(max-width:600px\)[\s\S]*#inlineSaleReceiptForm \.form-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/,'phone sale metadata must use a compact two-column grid');
+assert.match(layout,/#sales \.inline-import-form \.sale-receipt-line\{[\s\S]*grid-template-rows:36px 36px!important/,'each phone sale item must stay within two compact control rows');
+assert.match(layout,/#sales \.inline-import-form \.sale-receipt-line \.srItemDiscount\{grid-column:4!important;grid-row:2!important/,'per-item discount controls must stay on the compact second row');
+assert.match(layout,/body:has\(#inlineImportReceiptForm\.open[\s\S]*#lyAssistantLauncher\{display:none!important/,'the assistant launcher must not cover an open phone business form');
 assert.match(index,/ctx\.fillText\(String\(r\.name\|\|''\),left-9,cy\)/,'product labels must remain complete');
 const salesChart=index.match(/function drawNativeSalesQtyChart\([\s\S]*?\n}\n\nfunction getCustomSaleSources/)?.[0]||'';
 assert.doesNotMatch(salesChart,/label\.slice/,'sales product labels must not be truncated');

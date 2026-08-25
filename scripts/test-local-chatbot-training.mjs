@@ -32,6 +32,10 @@ const itemSale=assistant.parseDraft('Bán 2 ly yến nâu, giảm giá từng m�
 assert.equal(itemSale.items[0].discount.type,'amount');assert.equal(itemSale.items[0].discount.value,5000,'must preserve per-item amount discount');
 const cupSale=assistant.parseDraft('Bán 15 cốc yến nâu');assert.equal(cupSale.items[0].quantity,15,'cốc must be understood as the product unit ly without asking again');
 const multiCupSale=assistant.parseDraft('Bán 15 cốc yến nâu và 15 cốc trà thanh xoài và 15 cốc yến đậm giảm giá mỗi món 5%');assert.deepEqual(Array.from(multiCupSale.items,row=>[row.name,row.quantity,row.discount?.value]),[['Trà thanh xoài',15,5],['Yến nâu',15,5],['Yến đậm',15,5]],'all cup quantities and item discounts must survive a multi-product command');
+const distinctDiscountSale=assistant.parseDraft('Bán 15 cốc yến nâu giảm giá 1% và 15 cốc trà thanh xoài giảm giá 2% và 15 cốc yến đậm giảm giá 5%');
+const distinctDiscounts=Object.fromEntries(distinctDiscountSale.items.map(item=>[item.name,[item.quantity,item.discount?.type,item.discount?.value]]));
+assert.deepEqual(distinctDiscounts,{'Trà thanh xoài':[15,'percent',2],'Yến nâu':[15,'percent',1],'Yến đậm':[15,'percent',5]},'each product must keep the discount written directly after its own name');
+assert.equal(distinctDiscountSale.receipt_discount,undefined,'per-item discounts must never be rewritten as one receipt discount');
 
 const stocktake=assistant.assistantReply('Tạo phiếu kiểm kê kho').draft;
 assert.ok(stocktake?.open_blank,'a generic stocktake request must open the real stocktake form instead of being searched as an ingredient');assert.equal(assistant.draftReady(stocktake),true);

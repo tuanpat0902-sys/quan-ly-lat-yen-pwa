@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.63';
-const REVISION='fresh-core-v2-authoritative-v64';
+const APP_VERSION='2.1.64';
+const REVISION='fresh-core-v2-authoritative-v65';
 const LOADER_VERSION='20260825.68';
-const SW_CACHE='lat-yen-fresh-core-v2-authoritative-125';
+const SW_CACHE='lat-yen-fresh-core-v2-authoritative-126';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`
@@ -17,7 +17,7 @@ const RUNTIME_BLOCK=`
 <script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
 <script src="./ly-sidebar-visuals.js?v=20260825.1"></script>
-<script src="./ly-compact-admin-layout.js?v=20260825.1"></script>
+<script src="./ly-compact-admin-layout.js?v=20260825.2"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
 <script src="./ly-data-notifications.js?v=20260825.7"></script>
@@ -28,7 +28,7 @@ const RUNTIME_BLOCK=`
 <script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>
 <script src="./ly-independent-bootstrap.js?v=20260824.4"></script>
 <script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
-<script src="./ly-local-chatbot.js?v=20260825.17"></script>
+<script src="./ly-local-chatbot.js?v=20260825.18"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 `;
 
@@ -95,7 +95,7 @@ const checks=[
   ['inventory alerts',output.includes('ly-inventory-alerts.js?v=20260824.1')],
   ['unified cloud realtime',output.includes('ly-cloud-realtime.js?v=20260824.5')],
   ['stable bootstrap',output.includes('ly-independent-bootstrap.js?v=20260824.4')],
-  ['local assistant',output.includes('ly-local-chatbot.js?v=20260825.17')],
+  ['local assistant',output.includes('ly-local-chatbot.js?v=20260825.18')],
   ['single auth owner',!output.includes('ly-auth-gate.js')],
   ['single Supabase client bootstrap',output.includes('ly-supabase-bootstrap.js?v=20260824.2')],
   ['shadow',output.includes('ly-fresh-core-v2-shadow.js?v=20260824.7')],

@@ -66,7 +66,47 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
 .import-supplier-help{margin:7px 0 9px;padding:7px 9px;border:1px solid #dbe8e6;border-radius:8px;background:#f6fbfa;color:#52636c;font-size:11.5px;line-height:1.4}
 @media(max-width:900px){#settings .settings-dashboard-grid-v2{grid-template-columns:1fr;grid-template-areas:'cloud' 'identity' 'notify' 'data'}}
 @media(max-width:700px){#settings .settings-workspace-head{align-items:flex-start;flex-direction:column}#settings .settings-head-actions{justify-content:flex-start}#settings .settings-account-pill{max-width:100%;overflow-wrap:anywhere}.supplier-page-head{align-items:flex-start;flex-direction:column}.supplier-page-head button{width:100%}.import-receipt-header-actions{width:100%}.import-receipt-header-actions button{flex:1}.supplier-list-summary{align-items:flex-start;flex-direction:column}}
+/* Phone workspace: preserve touch targets while removing unused vertical space. */
+@media(max-width:600px){
+  main{padding:8px!important}
+  .card{padding:10px!important;border-radius:12px!important}
+  .inline-import-form{margin-top:10px!important;padding-top:10px!important}
+  .inline-import-form .form-grid{gap:7px!important}
+  .inline-import-form .section-gap{margin-top:9px!important}
+  .inline-import-form input,.inline-import-form select{height:36px!important;min-height:36px!important;padding:5px 7px!important}
+  .inline-import-form .receipt-modal-actions{position:sticky;bottom:0;z-index:4;margin:10px -10px -10px!important;padding:9px 10px max(9px,env(safe-area-inset-bottom))!important;background:rgba(255,255,255,.96);backdrop-filter:blur(8px)}
+  body:has(#inlineImportReceiptForm.open,#inlineExportReceiptForm.open,#inlineStocktakeForm.open,#inlineSaleReceiptForm.open,#inlineRecipeForm.open,#ingredientInlinePanel.open) #lyAssistantLauncher{display:none!important}
+
+  #sales .import-page-toolbar{gap:8px!important}
+  #inlineSaleReceiptForm .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #inlineSaleReceiptForm .form-grid>.full,#inlineSaleReceiptForm #saleCustomSourceWrap{grid-column:1/-1!important}
+  #inlineSaleReceiptForm .import-receipt-header{min-height:36px;gap:8px}
+  #inlineSaleReceiptForm .import-receipt-header button{min-height:34px!important;white-space:nowrap}
+
+  #sales .inline-import-form .sale-receipt-line{
+    display:grid!important;
+    grid-template-columns:24px 40px minmax(54px,.65fr) minmax(106px,1.35fr) minmax(68px,.75fr) 34px!important;
+    grid-template-rows:36px 36px!important;
+    gap:5px!important;
+    min-height:82px!important;
+    padding:5px 0!important;
+  }
+  #sales .inline-import-form .sale-receipt-line .saleStt{grid-column:1!important;grid-row:1!important;width:24px!important;min-width:24px!important;max-width:24px!important}
+  #sales .inline-import-form .sale-receipt-line .srProduct{grid-column:2/5!important;grid-row:1!important}
+  #sales .inline-import-form .sale-receipt-line .srUnit{grid-column:5!important;grid-row:1!important}
+  #sales .inline-import-form .sale-receipt-line .srUnit{height:34px!important;min-height:34px!important;justify-content:flex-start;border-radius:7px!important}
+  #sales .inline-import-form .sale-receipt-line>button{grid-column:6!important;grid-row:1!important;justify-self:end!important;width:34px!important;min-width:34px!important;max-width:34px!important;height:34px!important;min-height:34px!important}
+  #sales .inline-import-form .sale-receipt-line .srQty{grid-column:1/3!important;grid-row:2!important}
+  #sales .inline-import-form .sale-receipt-line .srPrice{grid-column:3!important;grid-row:2!important;text-align:right!important;font-size:10.5px!important;overflow:hidden;text-overflow:ellipsis}
+  #sales .inline-import-form .sale-receipt-line .srItemDiscount{grid-column:4!important;grid-row:2!important}
+  #sales .inline-import-form .sale-receipt-line .srLineTotal{grid-column:5/7!important;grid-row:2!important;text-align:right!important;font-size:11px!important;overflow:hidden;text-overflow:ellipsis}
+  #sales .sale-item-discount{grid-template-columns:52px minmax(0,1fr)!important;gap:4px!important}
+  #sales .sale-item-discount select,#sales .sale-item-discount input{font-size:10.5px!important;padding:4px!important}
+  #sales .sale-payment-summary{margin-top:9px!important;border-radius:10px!important}
+  #sales .sale-payment-summary>div{padding:6px 9px!important}
+  #sales .sale-payment-summary .sale-final-total b{font-size:16px!important}
+}
 `;
   document.head.appendChild(style);
-  window.__lyCompactAdminLayout={version:'2026.08.25.1'};
+  window.__lyCompactAdminLayout={version:'2026.08.25.2'};
 })();
