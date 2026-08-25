@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.64',REVISION='fresh-core-v2-authoritative-v65';
+  const VERSION='2.1.65',REVISION='fresh-core-v2-authoritative-v66';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Trợ lý hiểu giảm giá riêng từng món và form bán hàng trên điện thoại gọn hơn.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Giao diện điện thoại, bảng lương và biểu đồ nhân viên đã được tối ưu.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();

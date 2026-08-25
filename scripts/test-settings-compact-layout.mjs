@@ -19,5 +19,9 @@ assert.match(layout,/--ly-ui-font:/,'application must define one shared typeface
 assert.match(layout,/--ly-font-base:12px/,'application must define one shared body text size');
 assert.match(layout,/table th\{font-size:var\(--ly-font-sm\)/,'table headings must follow the shared type scale');
 assert.match(layout,/\.ly-note-compact\{/,'long notes must use the shared compact display');
-assert.match(layout,/version:'2026\.08\.25\.2'/,'compact layout cache version must be current');
+assert.match(layout,/@media\(max-width:600px\)[\s\S]*html,body\{width:100%;max-width:100%;overflow-x:hidden!important\}/,'phone workspace must not create page-level horizontal overflow');
+assert.match(layout,/main,\.panel,\.card,\.grid,\.grid2,\.form-grid,\.toolbar,\.scroll,\.inline-import-form,\.inline-import-form-inner\{min-width:0!important;max-width:100%!important\}/,'all major phone content frames must be allowed to shrink');
+assert.match(layout,/\.toolbar\{display:grid!important;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/,'phone toolbars must use a balanced responsive action grid');
+assert.match(layout,/\.modal-box,\.import-receipt-modal\{width:100%!important;max-width:100%!important;max-height:calc\(100dvh - 12px\)!important/,'phone dialogs must remain inside the visible viewport');
+assert.match(layout,/version:'2026\.08\.25\.3'/,'compact layout cache version must be current');
 console.log('Compact responsive Settings layout: PASS');

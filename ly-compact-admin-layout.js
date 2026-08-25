@@ -68,8 +68,23 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
 @media(max-width:700px){#settings .settings-workspace-head{align-items:flex-start;flex-direction:column}#settings .settings-head-actions{justify-content:flex-start}#settings .settings-account-pill{max-width:100%;overflow-wrap:anywhere}.supplier-page-head{align-items:flex-start;flex-direction:column}.supplier-page-head button{width:100%}.import-receipt-header-actions{width:100%}.import-receipt-header-actions button{flex:1}.supplier-list-summary{align-items:flex-start;flex-direction:column}}
 /* Phone workspace: preserve touch targets while removing unused vertical space. */
 @media(max-width:600px){
+  html,body{width:100%;max-width:100%;overflow-x:hidden!important}
   main{padding:8px!important}
+  main,.panel,.card,.grid,.grid2,.form-grid,.toolbar,.scroll,.inline-import-form,.inline-import-form-inner{min-width:0!important;max-width:100%!important}
   .card{padding:10px!important;border-radius:12px!important}
+  .grid,.grid2{grid-template-columns:1fr!important;gap:8px!important}
+  .section-gap{margin-top:9px!important}
+  .toolbar{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px!important;align-items:end!important}
+  .toolbar .spacer{display:none!important}
+  .toolbar>input,.toolbar>select,.toolbar>button,.toolbar>div{width:100%!important;min-width:0!important;max-width:none!important}
+  .toolbar>div>input,.toolbar>div>select{width:100%!important;min-width:0!important}
+  .scroll{width:100%!important;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin}
+  .scroll>table{margin:0;max-width:none}
+  canvas,svg{max-width:100%!important}
+  .modal{padding:6px!important}
+  .modal-box,.import-receipt-modal{width:100%!important;max-width:100%!important;max-height:calc(100dvh - 12px)!important;padding:10px!important;border-radius:12px!important}
+  .modal-head{gap:8px!important;margin-bottom:9px!important}
+  .notice,.warnbox,.empty{padding:9px!important}
   .inline-import-form{margin-top:10px!important;padding-top:10px!important}
   .inline-import-form .form-grid{gap:7px!important}
   .inline-import-form .section-gap{margin-top:9px!important}
@@ -106,7 +121,8 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
   #sales .sale-payment-summary>div{padding:6px 9px!important}
   #sales .sale-payment-summary .sale-final-total b{font-size:16px!important}
 }
+@media(max-width:420px){.toolbar{grid-template-columns:1fr!important}}
 `;
   document.head.appendChild(style);
-  window.__lyCompactAdminLayout={version:'2026.08.25.2'};
+  window.__lyCompactAdminLayout={version:'2026.08.25.3'};
 })();

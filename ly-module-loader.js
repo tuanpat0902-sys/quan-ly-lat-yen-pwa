@@ -8,7 +8,7 @@
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
-    appVersion:{src:'./ly-app-version.js?v=2.1.64',test:()=>window.__lyAppVersion?.version==='2.1.64'},
+    appVersion:{src:'./ly-app-version.js?v=2.1.65',test:()=>window.__lyAppVersion?.version==='2.1.65'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260825.18',test:()=>window.__lyLocalAssistant?.version==='2026.08.25.18'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
@@ -41,7 +41,7 @@
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
     activityHistory:{src:'./ly-activity-history.js?v=20260825.1',test:()=>window.__lyActivityHistoryModule?.version==='2026.08.25.1'},
-    employeesUI:{src:'./ly-employees.js?v=20260825.3',test:()=>window.__lyEmployeesModule?.version==='2026.08.25.3'},
+    employeesUI:{src:'./ly-employees.js?v=20260825.4',test:()=>window.__lyEmployeesModule?.version==='2026.08.25.4'},
     financeUI:{src:'./ly-finance.js?v=20260825.1',test:()=>window.__lyFinanceModule?.version==='2026.08.25.1'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
     cashflowUI:{src:'./ly-cashflow.js?v=20260825.2',test:()=>window.__lyCashflowModule?.version==='2026.08.25.2'}
