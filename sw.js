@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-132';
+const CACHE='lat-yen-fresh-core-v2-authoritative-133';
 const INDEX_KEY='./index.html';
 const CORE_ASSETS=[
   INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',
@@ -6,7 +6,7 @@ const CORE_ASSETS=[
   './ly-fresh-core-v2-ingredients-takeover.js','./ly-fresh-core-v2-products-takeover.js','./ly-fresh-core-v2-documents-takeover.js',
   './ly-fresh-core-v2-sales-takeover.js','./ly-fresh-core-v2-cashflow-takeover.js','./ly-fresh-core-v2-masterdata-takeover.js',
   './ly-fresh-core-v2-read-takeover.js','./ly-fresh-core-v2-manual-refresh.js','./ly-fresh-core-v2-realtime.js','./ly-fresh-core-v2-realtime-phase2.js',
-  './ly-legacy-dom-shim.js','./ly-legacy-state-shim.js','./ly-legacy-helper-shim.js','./ly-legacy-model-shim.js','./ly-legacy-list-shim.js',
+  './ly-legacy-dom-shim.js','./ly-legacy-state-shim.js','./ly-legacy-helper-shim.js','./ly-legacy-model-shim.js','./ly-legacy-list-shim.js','./ly-form-draft-guard.js',
   './ly-ui-bootstrap-rescue.js','./ly-independent-bootstrap.js','./ly-warehouse-delete-ux.js','./ly-local-chatbot.js','./ly-settings-enhancements.js','./ly-branding-sync.js','./ly-sidebar-visuals.js','./ly-compact-admin-layout.js','./ly-unit-conversions.js','./ly-ingredient-conversion-sync.js','./ly-stock-unit-sync.js','./ly-simulation-personnel.js',
   './ly-history-bridge.js','./ly-activity-history.js','./ly-employees-bridge.js','./ly-employees.js',
   './ly-finance-bridge.js','./ly-finance.js','./ly-reports-bridge.js','./ly-reports.js',
