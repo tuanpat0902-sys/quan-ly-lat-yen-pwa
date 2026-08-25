@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV49)return;
   window.__lyModuleLoaderV49=true;
 
-  const VERSION='2026.08.25.68';
+  const VERSION='2026.08.25.69';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -18,7 +18,7 @@
     helperShim:{src:'./ly-legacy-helper-shim.js?v=20260824.2',test:()=>window.__lyLegacyHelperShim?.version==='2026.08.24.2'},
     modelShim:{src:'./ly-legacy-model-shim.js?v=20260824.2',test:()=>window.__lyLegacyModelShim?.version==='2026.08.24.2'},
     listShim:{src:'./ly-legacy-list-shim.js?v=20260824.1',test:()=>window.__lyLegacyListShim?.version==='2026.08.24.1'},
-    formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.1',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.1'},
+    formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.2',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.2'},
     menuSecurity:{src:'./ly-menu-security.js?v=20260824.3',test:()=>window.__lyMenuSecurity?.version==='2026.08.24.3'},
     ingredientsTakeover:{src:'./ly-fresh-core-v2-ingredients-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2IngredientsTakeover?.version==='2026.08.24.4'},
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
