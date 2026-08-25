@@ -1,12 +1,12 @@
 (()=>{
   'use strict';
   if(window.__lyChatUnitSync)return;
-  const VERSION='2026.08.26.4';
-  const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
+  const VERSION='2026.08.26.5';
+  const fold=value=>String(value??'').replace(/\u2060/g,'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const escRe=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const fmt=value=>{const n=Number(value);return Number.isInteger(n)?String(n):String(Number(n.toFixed(6)));};
   const money=(value,scale)=>{const n=Number(String(value).replace(',','.'));if(!Number.isFinite(n))return NaN;const s=fold(scale);return n*(s==='trieu'?1000000:(s==='nghin'||s==='ngan'||s==='k'?1000:1));};
-  const visibleUnit=value=>{const source=String(value??'').trim();return source.length>1?`${source.slice(0,1)}\u2060${source.slice(1)}`:source;};
+  const visibleUnit=value=>{const source=String(value??'').replace(/\u2060/g,'').trim();return source.length>1?`${source.slice(0,1)}\u2060${source.slice(1)}`:source;};
 
   function ingredients(){
     const rows=[];
@@ -17,7 +17,7 @@
   }
 
   function unitApi(){return window.__lyUnitConversions||null;}
-  function canonical(value){const api=unitApi();try{if(api?.canonical)return api.canonical(value);}catch(e){}return String(value??'').trim();}
+  function canonical(value){const clean=String(value??'').replace(/\u2060/g,'');const api=unitApi();try{if(api?.canonical)return api.canonical(clean);}catch(e){}return clean.trim();}
   function ruleFor(item){
     const api=unitApi();let rule=null;try{rule=api?.ruleFor?.(item?.id)||null;}catch(e){}
     const base=canonical(rule?.baseUnit||item?.unit||'');
@@ -47,13 +47,15 @@
 
   function normalizePurchasePricing(message,item){
     const name=String(item.name||'').trim(),rule=ruleFor(item);if(!name||!rule.purchase||rule.purchase===rule.base)return message;
-    const purchasePattern=aliasesFor(rule.purchase).map(escRe).join('|');if(!purchasePattern)return message;
+    const purchaseAliases=new Set();aliasesFor(rule.purchase).forEach(v=>{purchaseAliases.add(v);purchaseAliases.add(visibleUnit(v));});
+    const purchasePattern=[...purchaseAliases].map(escRe).join('|');if(!purchasePattern)return message;
     const namePattern=escRe(name).replace(/\s+/g,'\\s+'),basePattern=escRe(rule.base);
     const re=new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${purchasePattern})\\s*\\((\\d+(?:[.,]\\d+)?)\\s*${basePattern}\\)\\s*(${namePattern})\\s*(?:,|;)?\\s*(?:đơn\\s*giá|don\\s*gia|giá|gia)\\s*(\\d+(?:[.,]\\d+)?)\\s*(nghìn|nghin|ngàn|ngan|k|triệu|trieu)?`,'giu');
     return message.replace(re,(full,q,u,baseQty,n,price,scale)=>{
-      const total=Number(String(q).replace(',','.'))*money(price,scale);if(!Number.isFinite(total))return full;
-      const priceText=`${price}${scale?` ${scale}`:''}`,shownUnit=visibleUnit(u);
-      return `${q} ${shownUnit} (${baseQty} ${rule.base}) ${n} · đơn giá mua ${priceText}/${shownUnit} · thành tiền ${fmt(total)} đ`;
+      const purchaseQty=Number(String(q).replace(',','.')),baseQuantity=Number(String(baseQty).replace(',','.')),purchasePrice=money(price,scale),total=purchaseQty*purchasePrice;
+      if(!Number.isFinite(total)||!Number.isFinite(baseQuantity)||baseQuantity<=0)return full;
+      const baseUnitCost=total/baseQuantity,priceText=`${price}${scale?` ${scale}`:''}`,shownUnit=visibleUnit(u);
+      return `${q} ${shownUnit} (${baseQty} ${rule.base}) ${n} · giá mua ${priceText}/${shownUnit} · đơn giá ${fmt(baseUnitCost)} đ/${rule.base} · thành tiền ${fmt(total)} đ`;
     });
   }
 
