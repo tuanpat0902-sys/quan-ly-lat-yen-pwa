@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV49)return;
   window.__lyModuleLoaderV49=true;
 
-  const VERSION='2026.08.25.70';
+  const VERSION='2026.08.25.71';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -18,7 +18,7 @@
     helperShim:{src:'./ly-legacy-helper-shim.js?v=20260824.2',test:()=>window.__lyLegacyHelperShim?.version==='2026.08.24.2'},
     modelShim:{src:'./ly-legacy-model-shim.js?v=20260824.2',test:()=>window.__lyLegacyModelShim?.version==='2026.08.24.2'},
     listShim:{src:'./ly-legacy-list-shim.js?v=20260824.1',test:()=>window.__lyLegacyListShim?.version==='2026.08.24.1'},
-    formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.2',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.2'},
+    formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.3',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.3'},
     menuSecurity:{src:'./ly-menu-security.js?v=20260824.3',test:()=>window.__lyMenuSecurity?.version==='2026.08.24.3'},
     ingredientsTakeover:{src:'./ly-fresh-core-v2-ingredients-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2IngredientsTakeover?.version==='2026.08.24.4'},
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
@@ -28,7 +28,7 @@
     masterDataTakeover:{src:'./ly-fresh-core-v2-masterdata-takeover.js?v=20260823.5',test:()=>window.__lyFreshCoreV2MasterDataTakeover?.version==='2026.08.23.5'},
     readTakeover:{src:'./ly-fresh-core-v2-read-takeover.js?v=20260824.5',test:()=>window.__lyFreshCoreV2ReadTakeover?.version==='2026.08.24.5'},
     manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js?v=20260824.2',test:()=>window.__lyFreshCoreV2ManualRefresh?.version==='2026.08.24.2'},
-    realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.24.7'},
+    realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260825.1',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.25.1'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
     ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260825.4',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.25.4'},
     stockUnitSync:{src:'./ly-stock-unit-sync.js?v=20260825.1',test:()=>window.__lyStockUnitSync?.version==='2026.08.25.1'},
