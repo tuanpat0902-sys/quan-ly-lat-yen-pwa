@@ -2,7 +2,11 @@ export function createIngredientsRepository({ gateway }) {
   if (!gateway) throw new Error('gateway is required');
 
   async function list() {
-    return gateway.selectOrg('ly_ingredients', '*', query => query.order?.('name', { ascending: true }) ?? query);
+    return gateway.selectOrg(
+      'ly_ingredients',
+      '*',
+      query => query.order?.('created_at', { ascending: true }) ?? query
+    );
   }
 
   async function listPreparedItems() {
