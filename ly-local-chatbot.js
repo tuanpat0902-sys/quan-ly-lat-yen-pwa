@@ -1,12 +1,12 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.3';
+const VERSION='2026.08.25.4';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:''};
 const text=value=>String(value??'').trim();
 const esc=value=>text(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const normalize=value=>text(value).toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/\-\s]/g,' ').replace(/\s+/g,' ').trim();
+const normalize=value=>text(value).toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
 const uid=()=>globalThis.crypto?.randomUUID?.()||`local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const now=()=>new Date().toISOString();
 
@@ -49,6 +49,28 @@ function collectionFor(kind){
   return rows.filter(item=>item?.active!==false&&(!warehouseId||!item?.warehouse_id||String(item.warehouse_id)===warehouseId)&&(kind==='sale'||(item.ingredient_type||'purchased')==='purchased'));
 }
 function parsedQuantity(value){const token=normalize(value),words={khong:0,mot:1,hai:2,ba:3,bon:4,tu:4,nam:5,sau:6,bay:7,tam:8,chin:9,muoi:10};if(token in words)return words[token];const number=Number(token.replace(',','.'));return Number.isFinite(number)?number:null;}
+function parsedMoney(value,scale=''){
+  const raw=text(value).replace(/\s/g,''),number=/^\d{1,3}(?:\.\d{3})+$/.test(raw)?Number(raw.replace(/\./g,'')):Number(raw.replace(',','.'));
+  if(!Number.isFinite(number)||number<0)return null;
+  return number*(/trieu/.test(scale)?1000000:/(nghin|k)/.test(scale)?1000:1);
+}
+function moneyMention(message,labels){
+  const source=normalize(message),label=labels.join('|'),match=source.match(new RegExp(`(?:${label})\\s*(?:la|=|:|gia)?\\s*(\\d+(?:[.,]\\d+)?)\\s*(nghin|k|trieu)?`));
+  return match?parsedMoney(match[1],match[2]):null;
+}
+function importPricing(message,items){
+  const unitCost=moneyMention(message,['don gia nhap','gia nhap','gia moi don vi','don gia']),total=moneyMention(message,['thanh tien nhap','tong tien nhap','thanh tien']);
+  if(unitCost!==null)return {unit_cost:unitCost,total:null};
+  if(total!==null&&items.length===1&&Number(items[0].quantity)>0)return {unit_cost:total/Number(items[0].quantity),total};
+  return {unit_cost:null,total};
+}
+function discountMention(message){
+  const source=normalize(message),match=source.match(/(?:giam gia|chiet khau)(?:\s+(?:tong\s*)?(?:hoa don|bill)|\s+(?:tung\s*)?mon)?\s*(?:la|=|:|con)?\s*(\d+(?:[.,]\d+)?)\s*(%|phan tram|nghin|k|trieu)?/);
+  if(!match)return null;
+  const type=/%|phan tram/.test(match[2]||'')?'percent':'amount',value=type==='percent'?Math.min(100,Number(match[1].replace(',','.'))):parsedMoney(match[1],match[2]);
+  if(value===null||!Number.isFinite(value))return null;
+  return {type,value};
+}
 function firstQuantity(message){
   const match=normalize(message).match(/(?:^|\s)(\d+(?:[.,]\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)\s*(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?(?:\s|$)/);
   return match?{quantity:parsedQuantity(match[1]),unit:text(match[2])}:{quantity:null,unit:''};
@@ -87,6 +109,11 @@ function receiptKind(source){
   if(/nhap kho|phieu nhap|nhap hang|\bnhap\b/.test(source))return 'import';
   return '';
 }
+function businessKind(source){
+  if(/cong thuc|recipe/.test(source))return 'recipe';
+  if(/nguyen lieu.*pha che|dung cu.*pha che|pha che.*nguyen lieu|pha che.*dung cu/.test(source))return 'prepared';
+  return receiptKind(source);
+}
 function actionKind(source){
   const lead=source.match(/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(xoa|huy|sua|cap nhat|chinh|tao|lap|them|moi)\b/)?.[1]||'';
   if(['xoa','huy'].includes(lead))return 'delete';
@@ -100,19 +127,28 @@ function receiptCode(message){
   if(explicit)return text(explicit);
   return text(raw.match(/\b([A-Za-z]{1,10}[-_/]\d[A-Za-z0-9._/-]*)\b/i)?.[1]||'');
 }
-function kindLabel(kind){return ({import:'nhập kho',export:'xuất kho',stocktake:'kiểm kê',sale:'bán hàng'})[kind]||'phiếu';}
+function kindLabel(kind){return ({import:'nhập kho',export:'xuất kho',stocktake:'kiểm kê',sale:'bán hàng',recipe:'công thức',prepared:'nguyên liệu pha chế'})[kind]||'phiếu';}
 function actionLabel(action){return ({create:'Tạo',edit:'Sửa',delete:'Xóa'})[action]||'Xử lý';}
 function parseDraft(message){
-  const source=normalize(message),kind=receiptKind(source),explicitAction=actionKind(source),action=explicitAction||(kind&&/^\s*(nhap|xuat|ban|kiem ke|kiem kho)\b/.test(source)?'create':'');
+  const source=normalize(message),kind=businessKind(source),explicitAction=actionKind(source),action=explicitAction||(kind&&/^\s*(nhap|xuat|ban|kiem ke|kiem kho|cong thuc|nguyen lieu|dung cu|pha che)\b/.test(source)?'create':'');
   if(!action||!kind)return null;
   const draft={id:uid(),action,kind,status:'pending',created_at:now(),warehouse_id:text(window.currentWarehouseId),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name),items:[],clarifications:[]};
-  if(action==='create'){const extracted=extractItems(message,kind);draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;}
+  if(action==='create'){
+    const extracted=extractItems(message,kind);draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
+    const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    if(kind==='import'){const pricing=importPricing(message,draft.items);draft.items.forEach(item=>item.unit_cost=pricing.unit_cost);draft.import_total=pricing.total;}
+    if(kind==='sale'){const discount=discountMention(message);if(discount){const itemLevel=/\b(tung mon|moi mon|giam gia mon|chiet khau mon)\b/.test(source);if(itemLevel)draft.items.forEach(item=>item.discount={...discount});else draft.receipt_discount=discount;}}
+    if(kind==='stocktake'&&!draft.items.length&&/\b(kiem ke|kiem kho|phieu kiem)\b/.test(source))draft.open_blank=true;
+    if(kind==='recipe'||kind==='prepared'){const raw=text(message),nameMatch=kind==='recipe'?raw.match(/(?:tạo|tao)\s+công\s+thức(?:\s+tên\s+món)?\s*(?:là|la)?\s*([^,.]+?)(?=\s+(?:bao\s+gồm|bao\s+gom|gồm|gom|với|voi)\b|$)/i):raw.match(/(?:tạo|tao)\s+nguyên\s+liệu\s+pha\s+chế\s*(?:tên)?\s*(?:là|la)?\s*([^,.]+?)(?=\s+(?:bao\s+gồm|bao\s+gom|gồm|gom|từ|tu|với|voi)\b|$)/i);draft.name=text(nameMatch?.[1]);if(kind==='prepared'){const output=source.match(/(?:san luong|thu duoc|ra)\s*(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|chai|goi|hop|cai)?/);draft.batch_output=output?parsedQuantity(output[1]):1;draft.unit=text(output?.[2]||'g');}}
+  }
   else draft.receipt_code=receiptCode(message);
   return draft;
 }
 function draftReady(draft){
   if(!draft)return false;
   if(draft.action!=='create')return true;
+  if(draft.kind==='stocktake'&&draft.open_blank)return true;
+  if(['recipe','prepared'].includes(draft.kind)&&!text(draft.name))return false;
   return draft.items?.length>0&&!(draft.clarifications||[]).some(row=>!row.resolved)&&draft.items.every(item=>item.quantity!==null&&Number.isFinite(Number(item.quantity))&&(draft.kind==='stocktake'?Number(item.quantity)>=0:Number(item.quantity)>0));
 }
 function addQuantityClarification(draft,item){
@@ -173,9 +209,10 @@ function suggestionCandidates(message,draft){
 }
 function clarificationReply(message,draft){
   if(draft.action!=='create')return null;
+  if(draft.kind==='stocktake'&&draft.open_blank)return null;
   if(draft.clarifications.some(row=>row.type==='item'&&!row.resolved))return {content:`Mình thấy tên bạn nói có thể khớp với nhiều mặt hàng trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn đúng mặt hàng ở bên dưới giúp mình nhé; lựa chọn sẽ được cập nhật ngay vào bản nháp.`,draft};
   if(!draft.items.length){
-    const term=requestedTerm(message),displayTerm=displayRequestedTerm(message,term),candidates=suggestionCandidates(message,draft),noun=draft.kind==='sale'?'món':'nguyên liệu',amount=firstQuantity(message);
+    const term=requestedTerm(message),displayTerm=displayRequestedTerm(message,term),candidates=suggestionCandidates(message,draft),noun=draft.kind==='sale'?'món':draft.kind==='recipe'||draft.kind==='prepared'?'nguyên liệu thành phần':'nguyên liệu',amount=firstQuantity(message);
     if(!candidates.length)return {content:term?`Mình chưa tìm thấy ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}. Bạn có thể nói rõ tên ${noun} hơn được không ạ?`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Bạn nói thêm tên và số lượng giúp mình nhé.`,localOnly:true};
     draft.clarifications.push({id:uid(),type:'item',query:displayTerm||noun,quantity:draft.kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:amount.unit,options:candidates.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)})),resolved:false});
     return {content:term?`Mình chưa tìm thấy chính xác ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn một gợi ý bên dưới nhé; mình sẽ cập nhật ngay vào bản nháp, không cần gửi lại câu lệnh.`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Hãy chọn một gợi ý bên dưới; mình sẽ cập nhật ngay vào bản nháp.`,draft};
@@ -191,9 +228,12 @@ function draftSummary(draft){
   const title=`${actionLabel(draft.action)} phiếu ${kindLabel(draft.kind)}`;
   const warehouse=draft.warehouse_name?` tại ${draft.warehouse_name}`:'';
   if(draft.action!=='create')return `${title}${draft.receipt_code?` · ${draft.receipt_code}`:' · cần bổ sung số phiếu'}${warehouse}.`;
-  const lines=draft.items.length?draft.items.map(item=>item.quantity===null?`${item.name} (chưa rõ số lượng)`: `${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} × ${item.name}`).join(', '):'chưa có mặt hàng';
+  if(draft.kind==='stocktake'&&draft.open_blank)return `Tạo phiếu kiểm kê${warehouse}: sẽ mở toàn bộ danh sách nguyên liệu để bạn nhập số thực tế.`;
+  if(['recipe','prepared'].includes(draft.kind))return `Tạo ${kindLabel(draft.kind)}${warehouse}: ${draft.name||'chưa rõ tên'}${draft.items.length?` · ${draft.items.map(item=>`${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} ${item.name}`).join(', ')}`:''}.`;
+  const lines=draft.items.length?draft.items.map(item=>{const pricing=draft.kind==='import'&&item.unit_cost!==null?` · ${formatMoney(item.unit_cost)}/${item.unit||'đv'}`:'';const discount=item.discount?` · giảm ${item.discount.type==='percent'?`${formatNumber(item.discount.value)}%`:formatMoney(item.discount.value)}`:'';return item.quantity===null?`${item.name} (chưa rõ số lượng)`: `${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} × ${item.name}${pricing}${discount}`;}).join(', '):'chưa có mặt hàng';
   const header=[draft.receipt_code&&`số ${draft.receipt_code}`,draft.receipt_date&&`ngày ${displayDate(parseReportDate(draft.receipt_date))}`].filter(Boolean).join(' · ');
-  return `${title}${warehouse}${header?` · ${header}`:''}: ${lines}.`;
+  const receiptDiscount=draft.receipt_discount?` · giảm toàn hóa đơn ${draft.receipt_discount.type==='percent'?`${formatNumber(draft.receipt_discount.value)}%`:formatMoney(draft.receipt_discount.value)}`:'';
+  return `${title}${warehouse}${header?` · ${header}`:''}${receiptDiscount}: ${lines}.`;
 }
 function reportState(){
   const legacy=legacyDb(),core=window.__lyFreshCoreV2?.store?.getState?.()||{};
@@ -318,7 +358,7 @@ async function navigate(panel,formId){
 function setValue(id,value){const element=document.getElementById?.(id);if(element&&value!==undefined)element.value=String(value);}
 function signal(element,type){try{element?.dispatchEvent?.(new Event(type,{bubbles:true}));}catch(_){}}
 function formContract(kind){return ({
-  import:{form:'inlineImportReceiptForm',toggle:'toggleImportReceiptBtn',holder:'importReceiptLines',row:'.import-receipt-line',add:'button[onclick*="addImportReceiptLine"]',select:'.irIngredient',quantity:'.irQty'},
+  import:{form:'inlineImportReceiptForm',toggle:'toggleImportReceiptBtn',holder:'importReceiptLines',row:'.import-receipt-line',add:'button[onclick*="addImportReceiptLine"]',select:'.irIngredient',quantity:'.irQty',unitCost:'.irUnitCost'},
   export:{form:'inlineExportReceiptForm',toggle:'toggleExportReceiptBtn',holder:'exportReceiptLines',row:'.export-receipt-line',add:'button[onclick*="addExportReceiptLine"]',select:'.erIngredient',quantity:'.erQty'},
   stocktake:{form:'inlineStocktakeForm',toggle:'toggleStocktakeBtn',holder:'stocktakeReceiptLines',row:'.stocktake-receipt-line',quantity:'.srActual'},
   sale:{form:'inlineSaleReceiptForm',toggle:'toggleSaleReceiptBtn',holder:'saleReceiptLines',row:'.sale-receipt-line',add:'button[onclick*="addSaleReceiptLine"]',select:'.srProduct',quantity:'.srQty'}
@@ -334,9 +374,27 @@ function fillDraftItems(draft,contract,form){
   while(rows.length>1){rows.pop().remove();}
   const add=form.querySelector(contract.add);
   while(rows.length<draft.items.length&&add){add.click();rows=[...holder.querySelectorAll(contract.row)];}
-  draft.items.forEach((item,index)=>{const row=rows[index];if(!row)return;const select=row.querySelector(contract.select),quantity=row.querySelector(contract.quantity);if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=item.quantity===null?'':String(item.quantity);signal(quantity,'input');}});
+  draft.items.forEach((item,index)=>{const row=rows[index];if(!row)return;const select=row.querySelector(contract.select),quantity=row.querySelector(contract.quantity),unitCost=contract.unitCost?row.querySelector(contract.unitCost):null,itemDiscountType=row.querySelector('.srItemDiscountType'),itemDiscountValue=row.querySelector('.srItemDiscountValue');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=item.quantity===null?'':String(item.quantity);signal(quantity,'input');}if(unitCost&&item.unit_cost!==null&&item.unit_cost!==undefined){unitCost.value=String(item.unit_cost);signal(unitCost,'input');}if(item.discount&&itemDiscountType&&itemDiscountValue){itemDiscountType.value=item.discount.type;signal(itemDiscountType,'change');itemDiscountValue.value=String(item.discount.value);signal(itemDiscountValue,'input');}});
+}
+async function openRecipeDraft(draft){
+  await navigate('recipes','inlineRecipeForm');
+  if(typeof window.openInlineRecipeForm!=='function')throw new Error('Không tìm thấy form tạo công thức.');
+  window.openInlineRecipeForm('');
+  const form=await waitFor(()=>document.getElementById?.('inlineRecipeForm')?.classList.contains('open')&&document.getElementById('inlineRecipeForm'));
+  if(!form)throw new Error('Form công thức chưa mở được.');
+  setValue('rpName',draft.name);let rows=[...form.querySelectorAll('.recipe-line')];while(rows.length>1){rows.pop().remove();}while(rows.length<draft.items.length&&typeof window.addRecipeLine==='function'){window.addRecipeLine();rows=[...form.querySelectorAll('.recipe-line')];}draft.items.forEach((item,index)=>{const row=rows[index],select=row?.querySelector('.rlIng'),quantity=row?.querySelector('.rlQty');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=String(item.quantity);signal(quantity,'input');}});return form;
+}
+async function openPreparedDraft(draft){
+  await navigate('ingredients');
+  if(typeof window.openIngredientInline!=='function')throw new Error('Không tìm thấy form nguyên liệu pha chế.');
+  window.openIngredientInline('','prepared');
+  const panel=await waitFor(()=>document.getElementById?.('ingredientInlinePanel')?.classList.contains('open')&&document.getElementById('ingredientInlinePanel'));
+  if(!panel)throw new Error('Form nguyên liệu pha chế chưa mở được.');
+  setValue('igName',draft.name);setValue('igBatchOutput',draft.batch_output||1);const unit=document.getElementById?.('igUnit');if(unit&&draft.unit){unit.value=draft.unit;signal(unit,'change');}let rows=[...panel.querySelectorAll('#preparedRecipeLines .recipe-line')];while(rows.length>1){rows.pop().remove();}while(rows.length<draft.items.length&&typeof window.addPreparedLine==='function'){window.addPreparedLine();rows=[...panel.querySelectorAll('#preparedRecipeLines .recipe-line')];}draft.items.forEach((item,index)=>{const row=rows[index],select=row?.querySelector('.prSource'),quantity=row?.querySelector('.prQty');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=String(item.quantity);signal(quantity,'input');}});return panel;
 }
 async function openCreateDraft(draft){
+  if(draft.kind==='recipe')return openRecipeDraft(draft);
+  if(draft.kind==='prepared')return openPreparedDraft(draft);
   const panel=draft.kind==='sale'?'sales':draft.kind==='stocktake'?'stocktake':'imports',contract=formContract(draft.kind),form=await navigate(panel,contract.form);
   if(!form)throw new Error('Không tìm thấy form phiếu trên màn hình nghiệp vụ.');
   if(!form.classList.contains('open')){
@@ -356,6 +414,7 @@ async function openCreateDraft(draft){
     setValue('stocktakeReceiptNote','Bản nháp từ Trợ lý Lát Yên');
   }else{
     setValue('saleReceiptNote','Bản nháp từ Trợ lý Lát Yên');
+    if(draft.receipt_discount){setValue('saleDiscountType',draft.receipt_discount.type);signal(document.getElementById?.('saleDiscountType'),'change');setValue('saleDiscountValue',draft.receipt_discount.value);signal(document.getElementById?.('saleDiscountValue'),'input');}
   }
   form.scrollIntoView?.({behavior:'smooth',block:'start'});
   return form;
@@ -418,12 +477,12 @@ function toggle(force){state.open=force===undefined?!state.open:Boolean(force);d
 function installUi(){
   if(document.getElementById?.('lyAssistantLauncher'))return;
   const style=document.createElement('style');style.id='lyAssistantStyles';style.textContent=`
-.ly-assistant-launcher{position:fixed;right:18px;bottom:18px;z-index:95;border:0;border-radius:999px;background:#0f766e;color:#fff;padding:12px 16px;font-weight:800;box-shadow:0 12px 32px rgba(15,118,110,.28)}
-.ly-assistant-drawer{position:fixed;right:14px;bottom:72px;z-index:96;width:min(410px,calc(100vw - 28px));height:min(620px,calc(100vh - 100px));display:none;grid-template-rows:auto auto 1fr auto;background:#fff;border:1px solid #dbe5e4;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.24);overflow:hidden}.ly-assistant-drawer.is-open{display:grid}
+.ly-assistant-launcher{position:fixed;right:18px;bottom:18px;z-index:1000;border:0;border-radius:999px;background:#0f766e;color:#fff;padding:12px 16px;font-weight:800;box-shadow:0 12px 32px rgba(15,118,110,.28)}
+.ly-assistant-drawer{position:fixed;right:14px;bottom:72px;z-index:1001;width:min(410px,calc(100vw - 28px));height:min(620px,calc(100vh - 100px));display:none;grid-template-rows:auto auto 1fr auto;background:#fff;border:1px solid #dbe5e4;border-radius:18px;box-shadow:0 24px 70px rgba(15,23,42,.24);overflow:hidden}.ly-assistant-drawer.is-open{display:grid}
 .ly-assistant-head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid #e5e7eb}.ly-assistant-head h3{margin:0}.ly-assistant-head button{border:0;background:transparent;font-size:22px}.ly-assistant-privacy{padding:9px 14px;background:#ecfdf5;color:#065f46;font-size:12px}.ly-assistant-messages{padding:12px;overflow:auto;display:flex;flex-direction:column;gap:9px}.ly-assistant-message{max-width:88%;padding:10px 11px;border-radius:13px;background:#f1f5f9;line-height:1.4;font-size:13px}.ly-assistant-message.is-user{align-self:flex-end;background:#0f766e;color:#fff}.ly-assistant-draft{display:grid;gap:8px;margin-top:9px;padding:9px;background:#fff;border:1px solid #cbd5e1;border-radius:10px;color:#334155}.ly-assistant-draft button{border:0;border-radius:8px;background:#0f766e;color:#fff;padding:8px;font-weight:700}.ly-assistant-done{display:block;margin-top:6px;color:#047857}.ly-assistant-empty{margin:auto;color:#64748b;text-align:center;padding:18px}.ly-assistant-compose{display:grid;grid-template-columns:1fr auto;gap:8px;padding:11px;border-top:1px solid #e5e7eb}.ly-assistant-compose textarea{resize:none;min-height:44px;max-height:100px;border:1px solid #cbd5e1;border-radius:10px;padding:9px}.ly-assistant-compose button{border:0;border-radius:10px;background:#0f766e;color:#fff;padding:0 14px;font-weight:800}.ly-assistant-send{display:flex;align-items:center;justify-content:center;gap:6px;overflow:hidden}.ly-assistant-send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;animation:ly-assistant-send 2.4s ease-in-out infinite}@keyframes ly-assistant-send{0%,72%,100%{transform:translate(0,0) rotate(0);opacity:1}82%{transform:translate(4px,-4px) rotate(-5deg);opacity:.65}88%{transform:translate(-3px,3px) rotate(3deg);opacity:.35}}@media(prefers-reduced-motion:reduce){.ly-assistant-send svg{animation:none}}.ly-assistant-tools{display:flex;justify-content:flex-end;padding:0 12px 9px}.ly-assistant-tools button{border:0;background:transparent;color:#b42318;font-size:12px}
 .ly-assistant-choice{display:grid;gap:7px;margin-top:9px;padding:9px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;color:#713f12}.ly-assistant-choice>div{display:flex;flex-wrap:wrap;gap:6px}.ly-assistant-choice button{border:1px solid #d6d3d1;border-radius:999px;background:#fff;color:#334155;padding:6px 9px;font-weight:700}.ly-assistant-choice button.is-selected{border-color:#0f766e;background:#ecfdf5;color:#065f46}
 .ly-assistant-thinking span{display:inline-block;animation:ly-assistant-thinking 1s ease-in-out infinite}@keyframes ly-assistant-thinking{0%,100%{opacity:.25}50%{opacity:1}}
-@media(max-width:520px){.ly-assistant-launcher{right:12px;bottom:12px}.ly-assistant-drawer{inset:10px;width:auto;height:auto;bottom:70px}}
+@media(max-width:520px){.ly-assistant-launcher{right:10px;bottom:10px;padding:10px 13px;font-size:12px}.ly-assistant-drawer{right:8px;bottom:60px;left:auto;top:auto;width:min(360px,calc(100vw - 16px));height:min(460px,calc(100dvh - 72px));border-radius:14px}.ly-assistant-head{padding:9px 11px}.ly-assistant-head h3{font-size:16px}.ly-assistant-privacy{padding:7px 11px;font-size:10px;line-height:1.3}.ly-assistant-messages{padding:8px;gap:7px}.ly-assistant-message{max-width:96%;padding:8px 9px;font-size:12px}.ly-assistant-compose{padding:8px;gap:6px}.ly-assistant-compose textarea{min-height:40px;padding:8px;font-size:12px}.ly-assistant-compose button{padding:0 10px;font-size:12px}.ly-assistant-tools{padding:0 9px 6px}.ly-assistant-choice{padding:7px;margin-top:7px}.ly-assistant-choice button{padding:5px 7px;font-size:11px}}
 `;document.head.appendChild(style);
   const launcher=document.createElement('button');launcher.id='lyAssistantLauncher';launcher.className='ly-assistant-launcher';launcher.type='button';launcher.textContent='Trợ lý Lát Yên';launcher.setAttribute('aria-controls','lyAssistantDrawer');document.body.appendChild(launcher);
   const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><button type="button" data-assistant-close aria-label="Đóng">×</button></div><div class="ly-assistant-privacy">🔒 Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.</div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" class="ly-assistant-send" data-assistant-send aria-label="Gửi tin nhắn"><span>Gửi</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg></button></div></div>`;document.body.appendChild(drawer);

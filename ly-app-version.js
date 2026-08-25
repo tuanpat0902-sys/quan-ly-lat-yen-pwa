@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.48',REVISION='fresh-core-v2-authoritative-v49';
+  const VERSION='2.1.49',REVISION='fresh-core-v2-authoritative-v50';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false,unitNormalizerLoaded:false};
@@ -44,7 +44,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Trợ lý chỉ gợi ý mặt hàng liên quan và mở đúng form bản nháp sau khi chuyển màn hình.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Trợ lý hiểu đơn giá, giảm giá, kiểm kê, công thức và nguyên liệu pha chế tốt hơn.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
