@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyChatUnitSync)return;
-  const VERSION='2026.08.26.5';
+  const VERSION='2026.08.26.6';
   const fold=value=>String(value??'').replace(/\u2060/g,'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const escRe=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const fmt=value=>{const n=Number(value);return Number.isInteger(n)?String(n):String(Number(n.toFixed(6)));};
@@ -55,7 +55,7 @@
       const purchaseQty=Number(String(q).replace(',','.')),baseQuantity=Number(String(baseQty).replace(',','.')),purchasePrice=money(price,scale),total=purchaseQty*purchasePrice;
       if(!Number.isFinite(total)||!Number.isFinite(baseQuantity)||baseQuantity<=0)return full;
       const baseUnitCost=total/baseQuantity,priceText=`${price}${scale?` ${scale}`:''}`,shownUnit=visibleUnit(u);
-      return `${q} ${shownUnit} (${baseQty} ${rule.base}) ${n} · giá mua ${priceText}/${shownUnit} · đơn giá ${fmt(baseUnitCost)} đ/${rule.base} · thành tiền ${fmt(total)} đ`;
+      return `${q} ${shownUnit} (${baseQty} ${rule.base}) ${n} · giá mua ${priceText}/${shownUnit} · đơn giá ${fmt(baseUnitCost)} đ/${rule.base}`;
     });
   }
 
