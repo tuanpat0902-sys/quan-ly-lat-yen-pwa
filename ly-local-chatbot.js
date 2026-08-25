@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.6';
+const VERSION='2026.08.25.7';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:''};
@@ -98,11 +98,10 @@ function quantityNear(message,itemName){
 }
 function containsPhrase(source,phrase){const escaped=phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');return new RegExp(`(?:^|[^a-z0-9])${escaped}(?=$|[^a-z0-9])`).test(source);}
 function extractItems(message,kind){
-  const source=normalize(message),catalog=collectionFor(kind).filter(item=>item?.id&&normalize(item.name).length>1),exact=catalog
-    .filter(item=>containsPhrase(source,normalize(item.name)))
-    .sort((a,b)=>normalize(b.name).length-normalize(a.name).length)
-    .filter((item,index,rows)=>!rows.slice(0,index).some(parent=>normalize(parent.name).includes(normalize(item.name))))
-    ,items=exact.map(item=>{const amount=amountForItem(quantityNear(message,item.name),item),quantity=amount.quantity;return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null)};}),groups=new Map();
+  const source=normalize(message),catalog=collectionFor(kind).filter(item=>item?.id&&normalize(item.name).length>1),matched=catalog.filter(item=>containsPhrase(source,normalize(item.name))).sort((a,b)=>normalize(b.name).length-normalize(a.name).length),exact=matched.filter(item=>{
+    const name=normalize(item.name),parents=matched.filter(parent=>String(parent.id)!==String(item.id)&&normalize(parent.name).includes(name));if(!parents.length)return true;
+    let residual=source;for(const parent of parents){const phrase=normalize(parent.name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');residual=residual.replace(new RegExp(`(?:^|[^a-z0-9])${phrase}(?=$|[^a-z0-9])`,'g'),' ');}return containsPhrase(residual,name);
+  }),items=exact.map(item=>{const amount=amountForItem(quantityNear(message,item.name),item),quantity=amount.quantity;return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null)};}),groups=new Map();
   for(const item of catalog){
     if(exact.some(row=>String(row.id)===String(item.id)))continue;
     const words=normalize(item.name).split(' ');let phrase='';
@@ -143,17 +142,26 @@ function receiptCode(message){
 }
 function kindLabel(kind){return ({import:'nhập kho',export:'xuất kho',stocktake:'kiểm kê',sale:'bán hàng',recipe:'công thức',prepared:'nguyên liệu pha chế'})[kind]||'phiếu';}
 function actionLabel(action){return ({create:'Tạo',edit:'Sửa',delete:'Xóa'})[action]||'Xử lý';}
+function creationParts(message,kind){
+  const raw=text(message),marker=kind==='recipe'?raw.match(/(?:công\s+thức|cong\s+thuc)/i):raw.match(/(?:(?:nguyên\s+liệu|nguyen\s+lieu|dụng\s+cụ|dung\s+cu)\s+pha\s+chế|pha\s+chế\s+(?:nguyên\s+liệu|nguyen\s+lieu|dụng\s+cụ|dung\s+cu))/i);
+  if(!marker)return {name:'',components:'',output:''};
+  const tail=raw.slice(Number(marker.index||0)+marker[0].length),componentMarker=tail.match(/(?:(?:bao\s+gồm|bao\s+gom|gồm|gom|từ|tu|với|voi|bằng|bang|dùng|dung|sử\s+dụng|su\s+dung|cần|can)\s*[:\-]?\s*|:\s*(?=\d))/i),nameEnd=componentMarker?Number(componentMarker.index):tail.length;
+  const name=tail.slice(0,nameEnd).replace(/^[\s:;,\-]*(?:tên(?:\s+món)?\s*)?(?:là|la)?\s*/i,'').replace(/[\s:;,\-]+$/g,'').trim();
+  if(!componentMarker)return {name,components:'',output:''};
+  const after=tail.slice(Number(componentMarker.index)+componentMarker[0].length),outputMarker=after.match(/(?:[,;]\s*)?(?:(?:thành\s+phẩm|thanh\s+pham|sản\s+lượng|san\s+luong|thu\s+được|thu\s+duoc|cho\s+ra|ra\s+được|ra\s+duoc)\b\s*[:=]?|=>|->)/i),componentEnd=outputMarker?Number(outputMarker.index):after.length;
+  return {name,components:after.slice(0,componentEnd).replace(/[\s,;.]+$/g,'').trim(),output:outputMarker?after.slice(Number(outputMarker.index)+outputMarker[0].length).trim():''};
+}
 function parseDraft(message){
   const source=normalize(message),kind=businessKind(source),explicitAction=actionKind(source),action=explicitAction||(kind&&/^\s*(nhap|xuat|ban|kiem ke|kiem kho|cong thuc|nguyen lieu|dung cu|pha che)\b/.test(source)?'create':'');
   if(!action||!kind)return null;
   const draft={id:uid(),action,kind,status:'pending',created_at:now(),warehouse_id:text(window.currentWarehouseId),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name),items:[],clarifications:[]};
   if(action==='create'){
-    const extracted=extractItems(message,kind);draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
+    const creation=['recipe','prepared'].includes(kind)?creationParts(message,kind):null,itemMessage=creation?creation.components:message,extracted=extractItems(itemMessage,kind);if(creation)draft.component_text=creation.components;draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
     const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
     if(kind==='import'){const pricing=importPricing(message,draft.items);draft.items.forEach(item=>item.unit_cost=pricing.unit_cost);draft.import_total=pricing.total;}
     if(kind==='sale'){const discount=discountMention(message);if(discount){const itemLevel=/\b(tung mon|moi mon|giam gia mon|chiet khau mon)\b/.test(source);if(itemLevel)draft.items.forEach(item=>item.discount={...discount});else draft.receipt_discount=discount;}}
     if(kind==='stocktake'&&!draft.items.length&&/\b(kiem ke|kiem kho|phieu kiem)\b/.test(source))draft.open_blank=true;
-    if(kind==='recipe'||kind==='prepared'){const raw=text(message),nameMatch=kind==='recipe'?raw.match(/(?:tạo|tao)\s+công\s+thức(?:\s+tên\s+món)?\s*(?:là|la)?\s*([^,.]+?)(?=\s+(?:bao\s+gồm|bao\s+gom|gồm|gom|với|voi)\b|$)/i):raw.match(/(?:tạo|tao)\s+nguyên\s+liệu\s+pha\s+chế\s*(?:tên)?\s*(?:là|la)?\s*([^,.]+?)(?=\s+(?:bao\s+gồm|bao\s+gom|gồm|gom|từ|tu|với|voi)\b|$)/i);draft.name=text(nameMatch?.[1]);if(kind==='prepared'){const output=source.match(/(?:san luong|thu duoc|ra)\s*(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|chai|goi|hop|cai)?/);draft.batch_output=output?parsedQuantity(output[1]):1;draft.unit=text(output?.[2]||'g');}}
+    if(kind==='recipe'||kind==='prepared'){draft.name=text(creation?.name);if(kind==='prepared'){const output=normalize(creation?.output).match(/(?:la\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|chai|goi|hop|cai)?/);draft.batch_output=output?parsedQuantity(output[1]):1;draft.unit=canonicalUnit(output?.[2]||'g');}}
   }
   else draft.receipt_code=receiptCode(message);
   return draft;
@@ -224,9 +232,11 @@ function suggestionCandidates(message,draft){
 function clarificationReply(message,draft){
   if(draft.action!=='create')return null;
   if(draft.kind==='stocktake'&&draft.open_blank)return null;
+  if(['recipe','prepared'].includes(draft.kind)&&!text(draft.name))return {content:`Mình chưa tách được tên ${kindLabel(draft.kind)} cần tạo. Bạn nói rõ theo cách tự nhiên như “Tạo ${kindLabel(draft.kind)}: Tên cần tạo, bao gồm …” nhé.`,localOnly:true};
+  if(['recipe','prepared'].includes(draft.kind)&&!text(draft.component_text))return {content:`Mình đã hiểu tên cần tạo là “${draft.name}”, nhưng chưa thấy phần nguyên liệu nguồn. Bạn bổ sung bằng các từ như “bao gồm”, “từ”, “dùng”, “bằng”, hoặc đặt dấu hai chấm trước danh sách định lượng nhé.`,localOnly:true};
   if(draft.clarifications.some(row=>row.type==='item'&&!row.resolved))return {content:`Mình thấy tên bạn nói có thể khớp với nhiều mặt hàng trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn đúng mặt hàng ở bên dưới giúp mình nhé; lựa chọn sẽ được cập nhật ngay vào bản nháp.`,draft};
   if(!draft.items.length){
-    const term=requestedTerm(message),displayTerm=displayRequestedTerm(message,term),candidates=suggestionCandidates(message,draft),noun=draft.kind==='sale'?'món':draft.kind==='recipe'||draft.kind==='prepared'?'nguyên liệu thành phần':'nguyên liệu',amount=firstQuantity(message);
+    const itemMessage=['recipe','prepared'].includes(draft.kind)?draft.component_text:message,term=requestedTerm(itemMessage),displayTerm=displayRequestedTerm(itemMessage,term),candidates=suggestionCandidates(itemMessage,draft),noun=draft.kind==='sale'?'món':draft.kind==='recipe'||draft.kind==='prepared'?'nguyên liệu thành phần':'nguyên liệu',amount=firstQuantity(itemMessage);
     if(!candidates.length)return {content:term?`Mình chưa tìm thấy ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}. Bạn có thể nói rõ tên ${noun} hơn được không ạ?`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Bạn nói thêm tên và số lượng giúp mình nhé.`,localOnly:true};
     draft.clarifications.push({id:uid(),type:'item',query:displayTerm||noun,quantity:draft.kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:amount.unit,options:candidates.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)})),resolved:false});
     return {content:term?`Mình chưa tìm thấy chính xác ${noun} “${displayTerm}” trong ${draft.warehouse_name||'kho đang chọn'}. Bạn chọn một gợi ý bên dưới nhé; mình sẽ cập nhật ngay vào bản nháp, không cần gửi lại câu lệnh.`:`Bạn muốn ${kindLabel(draft.kind)} ${noun} nào ạ? Hãy chọn một gợi ý bên dưới; mình sẽ cập nhật ngay vào bản nháp.`,draft};

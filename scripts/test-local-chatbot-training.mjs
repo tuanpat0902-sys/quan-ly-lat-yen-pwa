@@ -6,7 +6,7 @@ const source=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url)
 const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
 const appVersion=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const document={readyState:'loading',addEventListener(){},getElementById(){return null;},querySelector(){return null;}};
-const context={console,Date,Math,Promise,Intl,document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Đường',unit:'g',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Sữa',unit:'ml',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Trà',unit:'ml',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Yến nâu',unit:'ly'}]}},globalThis:null,setTimeout};
+const context={console,Date,Math,Promise,Intl,document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Đường',unit:'g',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Sữa',unit:'ml',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Trà',unit:'ml',ingredient_type:'purchased'},{id:'i5',warehouse_id:'w1',name:'Nước đường',unit:'g',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Yến nâu',unit:'ly'}]}},globalThis:null,setTimeout};
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);const assistant=context.window.__lyLocalAssistant;
 
@@ -29,6 +29,18 @@ const recipe=assistant.parseDraft('Tạo công thức tên món là Yên Lát ba
 assert.equal(recipe.kind,'recipe');assert.equal(recipe.name,'Yên Lát');assert.deepEqual(Array.from(recipe.items,row=>[row.name,row.quantity]),[['Đường',10],['Sữa',10],['Trà',10]]);
 const prepared=assistant.parseDraft('Tạo nguyên liệu pha chế tên là Syrup đường bao gồm 100g Đường');
 assert.equal(prepared.kind,'prepared');assert.equal(prepared.name,'Syrup đường');assert.equal(prepared.items[0].id,'i2');
+const preparedExample=assistant.parseDraft('Tạo nguyên liệu pha chế: Đường, bao gồm 10g đá, 10g nước đường, thành phẩm 20g đường');
+assert.equal(preparedExample.name,'Đường');assert.deepEqual(Array.from(preparedExample.items,row=>[row.name,row.quantity]),[['Nước đường',10],['Đá',0.01]]);assert.equal(preparedExample.batch_output,20);assert.equal(preparedExample.unit,'g');assert.ok(!preparedExample.items.some(row=>row.id==='i2'),'output name and output phrase must not be treated as source ingredients');
+const preparedFrom=assistant.parseDraft('Tạo nguyên liệu pha chế tên là Syrup sữa từ 200ml sữa, 50g đường; sản lượng 230ml Syrup sữa');
+assert.equal(preparedFrom.name,'Syrup sữa');assert.deepEqual(Array.from(preparedFrom.items,row=>[row.name,row.quantity]),[['Đường',50],['Sữa',200]]);assert.equal(preparedFrom.batch_output,230);assert.equal(preparedFrom.unit,'ml');
+const preparedOverlap=assistant.parseDraft('Tạo nguyên liệu pha chế: Nước đường đậm, gồm 5g đường và 15g nước đường, cho ra 18g nước đường đậm');
+assert.equal(preparedOverlap.name,'Nước đường đậm');assert.deepEqual(Array.from(preparedOverlap.items,row=>row.name),['Nước đường','Đường']);assert.equal(preparedOverlap.batch_output,18);assert.ok(!preparedOverlap.items.some(row=>row.name==='Nước đường đậm'));
+const preparedSymbols=assistant.parseDraft('Tạo nguyên liệu pha chế Syrup đá: 10g đá + 20g đường => 25g');
+assert.equal(preparedSymbols.name,'Syrup đá');assert.deepEqual(Array.from(preparedSymbols.items,row=>[row.name,row.quantity]),[['Đường',20],['Đá',0.01]]);assert.equal(preparedSymbols.batch_output,25);assert.equal(preparedSymbols.unit,'g');
+const preparedNatural=assistant.parseDraft('Tạo nguyên liệu pha chế tên là Nền trà dùng trà 100ml, đường 15g, thu được 110ml');
+assert.equal(preparedNatural.name,'Nền trà');assert.deepEqual(Array.from(preparedNatural.items,row=>[row.name,row.quantity]),[['Đường',15],['Trà',100]]);assert.equal(preparedNatural.batch_output,110);assert.equal(preparedNatural.unit,'ml');
+const incompletePrepared=assistant.assistantReply('Tạo nguyên liệu pha chế: Syrup mới');
+assert.equal(incompletePrepared.localOnly,true);assert.match(incompletePrepared.content,/chưa thấy phần nguyên liệu nguồn/i);
 
 assert.match(source,/z-index:1001/,'chat drawer must stay above data tables on mobile');
 assert.match(source,/height:min\(460px,calc\(100dvh - 72px\)\)/,'mobile chat drawer must have a bounded height');
