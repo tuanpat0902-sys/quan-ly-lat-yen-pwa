@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientConversionSync)return;
-  const VERSION='2026.08.26.1';
+  const VERSION='2026.08.26.2';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const fmt=v=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:6}).format(Number(v||0));
   const client=()=>{try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;};
@@ -12,12 +12,35 @@
   const ruleFor=ingredient=>{if(!ingredient)return null;const api=window.__lyUnitConversions;const rule=api?.ruleFor?.(ingredient.id);const base=String(rule?.baseUnit||ingredient.unit||'').trim();const purchase=String(rule?.purchaseUnit||ingredient.purchase_unit||base).trim();const ratio=Number(rule?.ratio||ingredient.conversion_ratio||1);return base&&purchase&&Number.isFinite(ratio)&&ratio>0?{base,purchase,ratio}:null;};
   const packagingText=ingredient=>{const rule=ruleFor(ingredient);if(!rule)return '—';return `${rule.purchase} · 1 ${rule.purchase} = ${fmt(rule.ratio)} ${rule.base}`;};
 
+  function colKey(label){
+    const x=fold(label);
+    if(x==='stt')return 'stt';
+    if(x==='ten'||x.startsWith('ten '))return 'name';
+    if(x.includes('don vi mua')||x.includes('dong goi'))return 'purchase';
+    if(x==='don vi'||x.startsWith('don vi '))return 'unit';
+    if(x.includes('nha cung cap'))return 'supplier';
+    if(x==='ton'||x.startsWith('ton '))return 'stock';
+    if(x.includes('toi thieu'))return 'minimum';
+    if(x.includes('trang thai'))return 'status';
+    if(x.includes('gia von'))return 'avgcost';
+    if(x.includes('gia tri'))return 'value';
+    if(x.includes('thao tac')||x.includes('hanh dong'))return 'actions';
+    return '';
+  }
+  function tagColumns(table){
+    const header=table?.rows?.[0];if(!header)return;
+    [...header.cells].forEach(cell=>{const key=colKey(cell.textContent);if(key)cell.dataset.lyCol=key;else delete cell.dataset.lyCol;});
+    const keys=[...header.cells].map(cell=>cell.dataset.lyCol||'');
+    [...table.rows].slice(1).forEach(row=>[...row.cells].forEach((cell,i)=>{const key=keys[i];if(key)cell.dataset.lyCol=key;else delete cell.dataset.lyCol;}));
+  }
   function refreshTables(){
     const rows=ingredients();
     document.querySelectorAll('table.ingredient-stock-table:not(.prepared-virtual-table)').forEach(table=>{
       const header=table.rows?.[0];if(!header)return;const labels=[...header.cells].map(c=>String(c.textContent||'').trim());const unitIndex=labels.indexOf('Đơn vị');if(unitIndex<0)return;
-      let purchaseHeader=header.querySelector('[data-ly-purchase-column]');if(!purchaseHeader){purchaseHeader=document.createElement('th');purchaseHeader.textContent='Đơn vị mua/đóng gói';purchaseHeader.dataset.lyPurchaseColumn='1';header.cells[unitIndex].after(purchaseHeader);}
+      let purchaseHeader=header.querySelector('[data-ly-purchase-column]');if(!purchaseHeader){purchaseHeader=document.createElement('th');purchaseHeader.textContent='Mua/đóng gói';purchaseHeader.title='Đơn vị mua/đóng gói';purchaseHeader.dataset.lyPurchaseColumn='1';header.cells[unitIndex].after(purchaseHeader);}
+      else if(purchaseHeader.textContent!=='Mua/đóng gói'){purchaseHeader.textContent='Mua/đóng gói';purchaseHeader.title='Đơn vị mua/đóng gói';}
       [...table.rows].slice(1).forEach(row=>{const name=String(row.cells?.[1]?.textContent||'').trim();const ingredient=rows.find(item=>fold(item?.name)===fold(name));let cell=row.querySelector('[data-ly-purchase-cell]');if(!cell){cell=document.createElement('td');cell.dataset.lyPurchaseCell='1';row.cells?.[unitIndex]?.after(cell);}cell.style.whiteSpace='normal';cell.textContent=ingredient?packagingText(ingredient):'—';});
+      tagColumns(table);
     });
   }
 
@@ -54,32 +77,37 @@
     style.textContent=`
       .ingredient-stock-table tr.ly-ingredient-saved>td{animation:lyIngredientSaved 1.6s ease-out}
       @keyframes lyIngredientSaved{0%,25%{background:#ecfdf3;box-shadow:inset 3px 0 0 #12b76a}100%{background:transparent;box-shadow:none}}
-      #ingredients .scroll{max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-gutter:stable}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){width:100%;min-width:880px;table-layout:auto;border-collapse:separate;border-spacing:0}
+      #ingredients .scroll{max-width:100%;overflow-x:hidden;overscroll-behavior-x:contain}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){width:100%!important;min-width:0!important;max-width:100%!important;table-layout:fixed!important;border-collapse:separate;border-spacing:0}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:9px 10px;vertical-align:middle;line-height:1.3;white-space:normal;overflow-wrap:anywhere}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th{font-size:12px;white-space:normal}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:13px}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th:first-child,
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:first-child{width:48px;min-width:48px;text-align:center}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th:nth-child(2),
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:nth-child(2){min-width:180px;width:24%}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-column],
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-cell]{min-width:150px;max-width:210px}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) button{white-space:nowrap}
-      @media(max-width:1100px){
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){min-width:820px}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{box-sizing:border-box;padding:7px 6px!important;vertical-align:middle;line-height:1.22;min-width:0!important;max-width:none!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th{font-size:11.5px!important;white-space:normal;overflow-wrap:break-word}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:12px!important;white-space:normal;overflow-wrap:break-word}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="stt"]{width:4.5%;text-align:center;white-space:nowrap}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="name"]{width:13.5%;font-weight:600;overflow-wrap:anywhere}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="unit"]{width:6%;white-space:nowrap;text-align:center}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="purchase"]{width:16%;overflow-wrap:anywhere}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="supplier"]{width:14%;overflow-wrap:anywhere}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="stock"]{width:7%;text-align:right;white-space:nowrap}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="minimum"]{width:7.5%;text-align:right;white-space:nowrap}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="status"]{width:8.5%;text-align:center;white-space:normal}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="avgcost"]{width:10.5%;text-align:right;white-space:nowrap}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="value"]{width:8%;text-align:right;white-space:nowrap}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-col="actions"]{width:8%;text-align:center;white-space:nowrap}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) button{white-space:nowrap;padding:5px 7px!important;font-size:11px!important}
+      @media(min-width:1180px){
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th{font-size:12px!important}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:12.5px!important}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:8px 8px}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{font-size:12.5px}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-column],
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-purchase-cell]{min-width:135px;max-width:180px}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:8px 7px!important}
+      }
+      @media(max-width:900px){
+        #ingredients .scroll{overflow-x:auto;scrollbar-gutter:stable}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){min-width:900px!important}
       }
       @media(max-width:720px){
         #ingredients .scroll{margin-inline:-4px;padding-bottom:4px}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){min-width:760px}
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
-        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{padding:7px 7px}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){min-width:860px!important}
       }
       @media(prefers-reduced-motion:reduce){.ingredient-stock-table tr.ly-ingredient-saved>td{animation:none}}
     `;
