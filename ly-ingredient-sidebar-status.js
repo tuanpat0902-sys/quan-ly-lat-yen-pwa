@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientSidebarStatus)return;
-  const VERSION='2026.08.26.1';
+  const VERSION='2026.08.26.2';
   let timer=0;
 
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
@@ -53,10 +53,13 @@
       box.id='lySidebarStockStatus';
       box.className='ly-sidebar-stock-status';
       box.innerHTML=`
-        <button type="button" data-stock-filter="ok"><span class="dot ok"></span><span>Đủ hàng</span><b>0</b></button>
-        <button type="button" data-stock-filter="low"><span class="dot low"></span><span>Sắp hết</span><b>0</b></button>
-        <button type="button" data-stock-filter="critical"><span class="dot critical"></span><span>Cần nhập</span><b>0</b></button>
-        <button type="button" data-stock-filter="out"><span class="dot out"></span><span>Hết hàng</span><b>0</b></button>`;
+        <div class="ly-sidebar-stock-status-head">Trạng thái kho</div>
+        <div class="ly-sidebar-stock-status-grid">
+          <button type="button" data-stock-filter="ok"><span class="dot ok"></span><span>Đủ hàng</span><b>0</b></button>
+          <button type="button" data-stock-filter="low"><span class="dot low"></span><span>Sắp hết</span><b>0</b></button>
+          <button type="button" data-stock-filter="critical"><span class="dot critical"></span><span>Cần nhập</span><b>0</b></button>
+          <button type="button" data-stock-filter="out"><span class="dot out"></span><span>Hết hàng</span><b>0</b></button>
+        </div>`;
       box.addEventListener('click',event=>{const button=event.target.closest('button[data-stock-filter]');if(button)openIngredients(button.dataset.stockFilter);});
       label.before(box);
     }else if(box.nextElementSibling!==label){label.before(box);}
@@ -84,7 +87,9 @@
     let style=document.getElementById('lyIngredientSidebarStatusStyle');
     if(!style){style=document.createElement('style');style.id='lyIngredientSidebarStatusStyle';document.head.appendChild(style);}
     style.textContent=`
-      .ly-sidebar-stock-status{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 12px;padding:8px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}
+      .ly-sidebar-stock-status{margin:4px 0 12px;padding:8px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc}
+      .ly-sidebar-stock-status-head{font-size:12px;font-weight:800;color:#334155;margin:0 0 7px;padding:0 2px}
+      .ly-sidebar-stock-status-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
       .ly-sidebar-stock-status button{display:grid!important;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;width:100%!important;padding:7px 8px!important;margin:0!important;border:1px solid #e5e7eb!important;border-radius:9px!important;background:#fff!important;color:#334155!important;font-size:11px!important;text-align:left!important;white-space:nowrap!important}
       .ly-sidebar-stock-status button b{font-size:12px;color:#0f172a}
       .ly-sidebar-stock-status .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
