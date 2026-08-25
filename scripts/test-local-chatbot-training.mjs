@@ -6,7 +6,7 @@ const source=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url)
 const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
 const appVersion=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const document={readyState:'loading',addEventListener(){},getElementById(){return null;},querySelector(){return null;}};
-const context={console,Date,Math,Promise,Intl,document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Đường',unit:'g',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Sữa',unit:'ml',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Trà',unit:'ml',ingredient_type:'purchased'},{id:'i5',warehouse_id:'w1',name:'Nước đường',unit:'g',ingredient_type:'purchased'},{id:'i6',warehouse_id:'w1',name:'Syrup me',unit:'g',ingredient_type:'prepared'},{id:'i7',warehouse_id:'w1',name:'Đá viên tinh khiết',unit:'g',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Yến nâu',unit:'ly'}]}},globalThis:null,setTimeout};
+const context={console,Date,Math,Promise,Intl,document,window:{currentWarehouseId:'w1',db:{warehouses:[{id:'w1',name:'Kho chính'}],ingredients:[{id:'i1',warehouse_id:'w1',name:'Đá',unit:'kg',ingredient_type:'purchased'},{id:'i2',warehouse_id:'w1',name:'Đường',unit:'g',ingredient_type:'purchased'},{id:'i3',warehouse_id:'w1',name:'Sữa',unit:'ml',ingredient_type:'purchased'},{id:'i4',warehouse_id:'w1',name:'Trà',unit:'ml',ingredient_type:'purchased'},{id:'i5',warehouse_id:'w1',name:'Nước đường',unit:'g',ingredient_type:'purchased'},{id:'i6',warehouse_id:'w1',name:'Syrup me',unit:'g',ingredient_type:'prepared'},{id:'i7',warehouse_id:'w1',name:'Đá viên tinh khiết',unit:'g',ingredient_type:'purchased'}],products:[{id:'p1',warehouse_id:'w1',name:'Yến nâu',unit:'ly'},{id:'p2',warehouse_id:'w1',name:'Yến đậm',unit:'ly'},{id:'p3',warehouse_id:'w1',name:'Trà thanh xoài',unit:'ly'}]}},globalThis:null,setTimeout};
 context.globalThis=context;context.window.window=context.window;context.window.document=document;
 vm.createContext(context);vm.runInContext(source,context);const assistant=context.window.__lyLocalAssistant;
 
@@ -19,6 +19,10 @@ assert.equal(convertedImport.items[0].quantity,1000,'kg must be converted to the
 const convertedUnitPrice=assistant.assistantReply('Nhập 10kg đá viên tinh khiết đơn giá 10 nghìn');
 assert.equal(convertedUnitPrice.draft.items[0].quantity,10000);assert.equal(convertedUnitPrice.draft.items[0].unit_cost,10,'10,000 VND/kg must become 10 VND/g when the form stores grams');assert.match(convertedUnitPrice.content,/10 kg → 10\.000 g/);assert.match(convertedUnitPrice.content,/10 đ\/g · thành tiền 100\.000 đ/);
 const convertedExportPrice=assistant.parseDraft('Xuất 10kg đá viên tinh khiết giá xuất 10 nghìn');assert.equal(convertedExportPrice.items[0].unit_cost,10,'export unit prices must use the same unit conversion rule');
+const multiImportPrices=assistant.parseDraft('Nhập 15kg đá đơn giá 10 nghìn, 15kg đường giá 12 nghìn, 1,2l sữa giá 30 nghìn');
+assert.deepEqual(Array.from(multiImportPrices.items,row=>[row.name,row.quantity,row.unit_cost]),[['Đường',15000,12],['Sữa',1200,30],['Đá',15,10000]],'each import line must keep its own price and unit conversion');
+const multiExportPrices=assistant.parseDraft('Xuất 15kg đá đơn giá 10 nghìn, 15kg đường giá 12 nghìn, 5l sữa giá 8 nghìn');
+assert.deepEqual(Array.from(multiExportPrices.items,row=>[row.name,row.quantity,row.unit_cost]),[['Đường',15000,12],['Sữa',5000,8],['Đá',15,10000]],'each export line must keep its own price and unit conversion');
 const exportedReply=assistant.assistantReply('Xuất 10kg đá đơn giá 10 nghìn'),exported=exportedReply.draft;
 assert.equal(exported.items[0].unit_cost,10000,'must understand export unit price expressed in thousands');assert.match(exportedReply.content,/10\.000 đ\/kg/,'export confirmation must show the understood price');
 
@@ -26,6 +30,8 @@ const sale=assistant.parseDraft('Bán 10 ly yến nâu, có giảm giá tổng h
 assert.equal(sale.receipt_discount.type,'percent');assert.equal(sale.receipt_discount.value,10,'must preserve receipt-level percent discount');
 const itemSale=assistant.parseDraft('Bán 2 ly yến nâu, giảm giá từng món 5 nghìn');
 assert.equal(itemSale.items[0].discount.type,'amount');assert.equal(itemSale.items[0].discount.value,5000,'must preserve per-item amount discount');
+const cupSale=assistant.parseDraft('Bán 15 cốc yến nâu');assert.equal(cupSale.items[0].quantity,15,'cốc must be understood as the product unit ly without asking again');
+const multiCupSale=assistant.parseDraft('Bán 15 cốc yến nâu và 15 cốc trà thanh xoài và 15 cốc yến đậm giảm giá mỗi món 5%');assert.deepEqual(Array.from(multiCupSale.items,row=>[row.name,row.quantity,row.discount?.value]),[['Trà thanh xoài',15,5],['Yến nâu',15,5],['Yến đậm',15,5]],'all cup quantities and item discounts must survive a multi-product command');
 
 const stocktake=assistant.assistantReply('Tạo phiếu kiểm kê kho').draft;
 assert.ok(stocktake?.open_blank,'a generic stocktake request must open the real stocktake form instead of being searched as an ingredient');assert.equal(assistant.draftReady(stocktake),true);

@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.16';
+const VERSION='2026.08.25.17';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',openingDraftId:''};
@@ -49,7 +49,7 @@ function collectionFor(kind){
   return rows.filter(item=>item?.active!==false&&(!warehouseId||!item?.warehouse_id||String(item.warehouse_id)===warehouseId)&&(kind==='sale'||['recipe','prepared'].includes(kind)||(item.ingredient_type||'purchased')==='purchased'));
 }
 function parsedQuantity(value){const token=normalize(value),words={khong:0,mot:1,hai:2,ba:3,bon:4,tu:4,nam:5,sau:6,bay:7,tam:8,chin:9,muoi:10};if(token in words)return words[token];const number=Number(token.replace(',','.'));return Number.isFinite(number)?number:null;}
-const UNIT_ALIASES={ky:'kg',kilogram:'kg',gram:'g',gam:'g',lit:'l','litre':'l',coc:'ly',cup:'ly',chiec:'cai',suat:'phan'};
+const UNIT_ALIASES={ky:'kg',kilogram:'kg',gram:'g',gam:'g',lit:'l',liter:'l',litre:'l',coc:'ly',cup:'ly',chiec:'cai',suat:'phan'};
 const UNIT_DEFS={g:['mass',1],kg:['mass',1000],ml:['volume',1],l:['volume',1000],ly:['count',1],chai:['count',1],goi:['count',1],hop:['count',1],cai:['count',1],phan:['count',1],dia:['count',1]};
 function canonicalUnit(value){const unit=normalize(value);return UNIT_ALIASES[unit]||unit;}
 function amountForItem(amount,item){
@@ -69,6 +69,12 @@ function moneyMention(message,labels){
   const source=normalize(message),label=labels.join('|'),match=source.match(new RegExp(`(?:${label})\\s*(?:la|=|:|gia)?\\s*(\\d+(?:[.,]\\d+)?)\\s*(nghin|k|trieu)?`));
   return match?parsedMoney(match[1],match[2]):null;
 }
+function inventoryPricingNear(message,itemName){
+  const source=normalize(message),name=normalize(itemName),at=source.indexOf(name);
+  if(at<0)return {unit_cost:null,total:null};
+  const tail=source.slice(at+name.length),boundary=tail.search(/;|,\s+|\s+(?:va|voi)\s+(?=\d)/),segment=tail.slice(0,boundary<0?tail.length:boundary);
+  return {unit_cost:moneyMention(segment,['don gia nhap','don gia xuat','gia nhap','gia xuat','gia moi don vi','don gia','gia']),total:moneyMention(segment,['thanh tien nhap','thanh tien xuat','tong tien nhap','tong tien xuat','thanh tien'])};
+}
 function convertedUnitCost(unitCost,sourceUnit,targetUnit){
   const price=Number(unitCost),source=canonicalUnit(sourceUnit),target=canonicalUnit(targetUnit);
   if(!Number.isFinite(price)||price<0)return null;
@@ -84,18 +90,18 @@ function inventoryPricing(message,items){
   return {unit_cost:null,total};
 }
 function discountMention(message){
-  const source=normalize(message),match=source.match(/(?:giam gia|chiet khau)(?:\s+(?:tong\s*)?(?:hoa don|bill)|\s+(?:tung\s*)?mon)?\s*(?:la|=|:|con)?\s*(\d+(?:[.,]\d+)?)\s*(%|phan tram|nghin|k|trieu)?/);
+  const source=normalize(message),match=source.match(/(?:giam gia|chiet khau)(?:\s+(?:tong\s*)?(?:hoa don|bill)|\s+(?:(?:tung|moi)\s*)?mon)?\s*(?:la|=|:|con)?\s*(\d+(?:[.,]\d+)?)\s*(%|phan tram|nghin|k|trieu)?/);
   if(!match)return null;
   const type=/%|phan tram/.test(match[2]||'')?'percent':'amount',value=type==='percent'?Math.min(100,Number(match[1].replace(',','.'))):parsedMoney(match[1],match[2]);
   if(value===null||!Number.isFinite(value))return null;
   return {type,value};
 }
 function firstQuantity(message){
-  const match=normalize(message).match(/(?:^|\s)(\d+(?:[.,]\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)\s*(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?(?:\s|$)/);
+  const match=normalize(message).match(/(?:^|\s)(\d+(?:[.,]\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)\s*(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)?(?:\s|$)/);
   return match?{quantity:parsedQuantity(match[1]),unit:text(match[2])}:{quantity:null,unit:''};
 }
 function quantityNear(message,itemName){
-  const source=normalize(message),name=normalize(itemName),number='(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',unit='(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|phan|ly|dia)?';
+  const source=normalize(message),name=normalize(itemName),number='(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',unit='(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)?';
   let at=source.indexOf(name);
   while(at>=0){
     const before=source.slice(Math.max(0,at-42),at),after=source.slice(at+name.length,at+name.length+34),left=before.match(new RegExp(`${number}\\s*${unit}\\s*$`)),right=after.match(new RegExp(`^\\s*(?:x|:)?\\s*${number}\\s*${unit}`)),match=left||right;
@@ -109,7 +115,7 @@ function extractItems(message,kind){
   const source=normalize(message),catalog=collectionFor(kind).filter(item=>item?.id&&normalize(item.name).length>1),matched=catalog.filter(item=>containsPhrase(source,normalize(item.name))).sort((a,b)=>normalize(b.name).length-normalize(a.name).length),exact=matched.filter(item=>{
     const name=normalize(item.name),parents=matched.filter(parent=>String(parent.id)!==String(item.id)&&normalize(parent.name).includes(name));if(!parents.length)return true;
     let residual=source;for(const parent of parents){const phrase=normalize(parent.name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');residual=residual.replace(new RegExp(`(?:^|[^a-z0-9])${phrase}(?=$|[^a-z0-9])`,'g'),' ');}return containsPhrase(residual,name);
-  }),items=exact.map(item=>{const mentioned=quantityNear(message,item.name),amount=amountForItem(mentioned,item),quantity=amount.quantity;return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null),input_quantity:mentioned.quantity,input_unit:canonicalUnit(mentioned.unit||item.unit)};}),groups=new Map();
+  }),items=exact.map(item=>{const mentioned=quantityNear(message,item.name),amount=amountForItem(mentioned,item),quantity=amount.quantity,pricing=inventoryPricingNear(message,item.name);return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null),input_quantity:mentioned.quantity,input_unit:canonicalUnit(mentioned.unit||item.unit),quoted_unit_cost:pricing.unit_cost,quoted_total:pricing.total};}),groups=new Map();
   for(const item of catalog){
     if(exact.some(row=>String(row.id)===String(item.id)))continue;
     const words=normalize(item.name).split(' ');let phrase='';
@@ -119,7 +125,7 @@ function extractItems(message,kind){
   const ambiguities=[];
   for(const [phrase,candidates] of groups){
     const amount=quantityNear(message,phrase),unique=[...new Map(candidates.map(item=>[String(item.id),item])).values()];
-    if(unique.length)ambiguities.push({id:uid(),query:phrase,quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:text(amount.unit),selected_id:'',options:unique.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)}))});
+    if(unique.length){const pricing=inventoryPricingNear(message,phrase);ambiguities.push({id:uid(),query:phrase,quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:text(amount.unit),unit_cost:pricing.unit_cost,total:pricing.total,selected_id:'',options:unique.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)}))});}
   }
   return {items,ambiguities};
 }
@@ -194,7 +200,7 @@ function parseDraft(message){
   if(action==='create'){
     const creation=['recipe','prepared'].includes(kind)?creationParts(message,kind):null,itemMessage=creation?creation.components:message,extracted=['ingredient','cashflow'].includes(kind)?{items:[],ambiguities:[]}:extractItems(itemMessage,kind);if(creation)draft.component_text=creation.components;draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
     const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-    if(['import','export'].includes(kind)){const pricing=inventoryPricing(message,draft.items);draft.inventory_unit_cost=pricing.unit_cost;draft.inventory_total=pricing.total;draft.items.forEach(item=>{item.unit_cost=pricing.unit_cost!==null?convertedUnitCost(pricing.unit_cost,item.input_unit||item.unit,item.unit):(pricing.total!==null&&draft.items.length===1&&Number(item.quantity)>0?pricing.total/Number(item.quantity):null);});}
+    if(['import','export'].includes(kind)){const pricing=inventoryPricing(message,draft.items),itemSlots=draft.items.length+draft.clarifications.filter(row=>row.type==='item').length,single=itemSlots===1;draft.inventory_unit_cost=single?pricing.unit_cost:null;draft.inventory_total=single?pricing.total:null;draft.items.forEach(item=>{const quoted=item.quoted_unit_cost!=null?item.quoted_unit_cost:(single?pricing.unit_cost:null),total=item.quoted_total!=null?item.quoted_total:(single?pricing.total:null);item.unit_cost=quoted!=null?convertedUnitCost(quoted,item.input_unit||item.unit,item.unit):(total!=null&&Number(item.quantity)>0?total/Number(item.quantity):null);});}
     if(kind==='sale'){const discount=discountMention(message);if(discount){const itemLevel=/\b(tung mon|moi mon|giam gia mon|chiet khau mon)\b/.test(source);if(itemLevel)draft.items.forEach(item=>item.discount={...discount});else draft.receipt_discount=discount;}}
     if(kind==='stocktake'&&!draft.items.length&&/\b(kiem ke|kiem kho|phieu kiem)\b/.test(source))draft.open_blank=true;
     if(kind==='recipe'||kind==='prepared'){draft.name=text(creation?.name);if(kind==='recipe')Object.assign(draft,recipeMetadata(message,draft.name));if(kind==='prepared'){const output=normalize(creation?.output).match(/(?:la\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|chai|goi|hop|cai)?/);draft.batch_output=output?parsedQuantity(output[1]):1;draft.unit=canonicalUnit(output?.[2]||'g');}}
@@ -221,7 +227,7 @@ function answerDraftClarification(draft,clarificationId,optionId){
   const clarification=draft?.clarifications?.find(row=>String(row.id)===String(clarificationId)&&!row.resolved),option=clarification?.options?.find(row=>String(row.id)===String(optionId));if(!clarification||!option)return false;
   if(clarification.type==='item'){
     const converted=amountForItem({quantity:clarification.quantity,unit:clarification.unit},option),item={id:option.id,name:option.name,unit:text(option.unit||converted.unit||clarification.unit),quantity:converted.quantity,input_quantity:clarification.quantity,input_unit:canonicalUnit(clarification.unit||option.unit),clarification_id:clarification.id};
-    if(['import','export'].includes(draft.kind)){item.unit_cost=draft.inventory_unit_cost!==null&&draft.inventory_unit_cost!==undefined?convertedUnitCost(draft.inventory_unit_cost,item.input_unit||item.unit,item.unit):(Number(draft.inventory_total)>0&&Number(item.quantity)>0?Number(draft.inventory_total)/Number(item.quantity):null);}
+    if(['import','export'].includes(draft.kind)){const quoted=clarification.unit_cost!==null&&clarification.unit_cost!==undefined?clarification.unit_cost:draft.inventory_unit_cost,total=clarification.total!==null&&clarification.total!==undefined?clarification.total:draft.inventory_total;item.unit_cost=quoted!==null&&quoted!==undefined?convertedUnitCost(quoted,item.input_unit||item.unit,item.unit):(Number(total)>0&&Number(item.quantity)>0?Number(total)/Number(item.quantity):null);}
     draft.items=(draft.items||[]).filter(row=>String(row.clarification_id)!==String(clarification.id));draft.items.push(item);clarification.selected_id=option.id;clarification.resolved=true;addQuantityClarification(draft,item);
   }else if(clarification.type==='cashflow_category'){
     draft.cashflow_type=option.type;draft.category=option.category;clarification.selected_id=option.id;clarification.resolved=true;
