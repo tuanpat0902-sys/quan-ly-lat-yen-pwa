@@ -85,4 +85,6 @@ assert.equal(wrongExport.draft,undefined);assert.equal(wrongExport.localOnly,tru
 assert.equal(assistant.parseDraft('Xuất 3 kg Sữa').kind,'export');assert.equal(assistant.parseDraft('Bán 2 Cà phê sữa').kind,'sale');assert.equal(assistant.parseDraft('Kiểm kho 4 kg Đường').kind,'stocktake');
 assert.ok(opened.includes('import')&&opened.includes('export')&&opened.includes('stocktake')&&opened.includes('sale')&&opened.includes('recipe')&&opened.includes('prepared'));
 assert.ok(!source.includes('data-suggestion-message'),'all suggestion choices must update the draft immediately instead of refilling chat input');
+assert.ok(source.includes("closest?.('[data-draft-choice],[data-confirm-draft]')"),'draft actions must resolve clicks from the button or any nested element');
+assert.ok(source.includes("document.addEventListener('click',handleDraftActionClick,true)"),'draft actions must survive chat drawer rerenders through delegated capture handling');
 console.log('Assistant unified multi-item business form contracts: PASS');

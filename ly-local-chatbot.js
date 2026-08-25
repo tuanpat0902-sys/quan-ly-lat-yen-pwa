@@ -1,9 +1,9 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.7';
+const VERSION='2026.08.25.8';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
-const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:''};
+const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',openingDraftId:''};
 const text=value=>String(value??'').trim();
 const esc=value=>text(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const normalize=value=>text(value).toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -499,6 +499,27 @@ async function addMessage(message){state.messages.push(message);await writeMessa
 async function retireDrafts(exceptId=''){
   const retired=[];for(const message of state.messages){if(String(message.draft?.id)===String(exceptId))continue;if(!message.draft&&!message.suggestions?.length)continue;message.draft=null;message.suggestions=null;message.draft_retired_at=now();retired.push(writeMessage(message));}if(retired.length){await Promise.all(retired);renderMessages();}return retired.length;
 }
+async function openDraftMessage(id,button){
+  const draftId=text(id),message=state.messages.find(row=>String(row.draft?.id)===draftId);if(!message?.draft)return false;
+  if(state.openingDraftId)return false;
+  state.openingDraftId=draftId;if(button)button.disabled=true;
+  try{
+    await executeDraft(message.draft);message.draft=null;message.draft_retired_at=now();await writeMessage(message);renderMessages();toggle(false);return true;
+  }catch(error){
+    await addMessage({id:uid(),role:'assistant',content:error?.message||String(error),created_at:now()});return false;
+  }finally{
+    state.openingDraftId='';if(button?.isConnected)button.disabled=false;
+  }
+}
+async function handleDraftActionClick(event){
+  const target=event.target?.closest?.('[data-draft-choice],[data-confirm-draft]');if(!target)return;
+  event.preventDefault?.();event.stopImmediatePropagation?.();
+  if(target.matches?.('[data-draft-choice]')){
+    const message=state.messages.find(row=>row.draft?.id===target.dataset.draftChoice);if(!message||!answerDraftClarification(message.draft,target.dataset.clarificationId,target.dataset.optionId))return;
+    message.content=draftReady(message.draft)?`Cảm ơn bạn, mình đã cập nhật lựa chọn trực tiếp vào bản nháp. ${draftSummary(message.draft)} Bạn kiểm tra lại rồi mở bản nháp nhé.`:'Mình đã cập nhật lựa chọn trực tiếp vào bản nháp. Bạn chọn tiếp phần còn chưa rõ bên dưới nhé.';await writeMessage(message);renderMessages();return;
+  }
+  await openDraftMessage(target.dataset.confirmDraft,target);
+}
 async function submit(){
   const input=document.getElementById?.('lyAssistantInput'),content=text(input?.value);if(!content)return;
   input.value='';await retireDrafts();await addMessage({id:uid(),role:'user',content,created_at:now()});
@@ -520,10 +541,10 @@ function installUi(){
   const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.innerHTML=`<div class="ly-assistant-head"><h3>Trợ lý Lát Yên</h3><button type="button" data-assistant-close aria-label="Đóng">×</button></div><div class="ly-assistant-privacy">🔒 Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 6 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.</div><div id="lyAssistantMessages" class="ly-assistant-messages"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" class="ly-assistant-send" data-assistant-send aria-label="Gửi tin nhắn"><span>Gửi</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg></button></div></div>`;document.body.appendChild(drawer);
   launcher.addEventListener('click',()=>toggle());drawer.querySelector('[data-assistant-close]').addEventListener('click',()=>toggle(false));drawer.querySelector('[data-assistant-send]').addEventListener('click',submit);drawer.querySelector('[data-assistant-clear]').addEventListener('click',()=>{if(confirm('Xóa toàn bộ lịch sử trợ lý trên thiết bị này?'))clearMessages();});
   drawer.querySelector('#lyAssistantInput').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit();}});
-  drawer.addEventListener('click',async event=>{const choice=event.target?.closest?.('[data-draft-choice]');if(choice){const message=state.messages.find(row=>row.draft?.id===choice.dataset.draftChoice);if(!message||!answerDraftClarification(message.draft,choice.dataset.clarificationId,choice.dataset.optionId))return;message.content=draftReady(message.draft)?`Cảm ơn bạn, mình đã cập nhật lựa chọn trực tiếp vào bản nháp. ${draftSummary(message.draft)} Bạn kiểm tra lại rồi mở bản nháp nhé.`:'Mình đã cập nhật lựa chọn trực tiếp vào bản nháp. Bạn chọn tiếp phần còn chưa rõ bên dưới nhé.';await writeMessage(message);renderMessages();return;}const id=event.target?.dataset?.confirmDraft;if(!id)return;const message=state.messages.find(row=>row.draft?.id===id);if(!message)return;try{await executeDraft(message.draft);message.draft=null;message.draft_retired_at=now();await writeMessage(message);renderMessages();toggle(false);}catch(error){await addMessage({id:uid(),role:'assistant',content:error?.message||String(error),created_at:now()});}});
+  if(!document.__lyAssistantDraftActionsV8){document.__lyAssistantDraftActionsV8=true;document.addEventListener('click',handleDraftActionClick,true);}
 }
 async function boot(){installUi();state.messages=await readMessages();state.ready=true;renderMessages();}
 
-window.__lyLocalAssistant={version:VERSION,parseDraft,draftReady,chooseDraftItem,answerDraftClarification,reportReply,assistantReply,askAi,submit,executeDraft,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'openai-responses-via-authenticated-edge-function',lastAiError:state.lastAiError,draftLinks:'retired-on-open-or-next-command',reports:'read-only-current-snapshot',voice:'removed'})};
+window.__lyLocalAssistant={version:VERSION,parseDraft,draftReady,chooseDraftItem,answerDraftClarification,reportReply,assistantReply,askAi,submit,executeDraft,openDraftMessage,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'openai-responses-via-authenticated-edge-function',lastAiError:state.lastAiError,draftLinks:'delegated-capture-open-and-retire-after-success',reports:'read-only-current-snapshot',voice:'removed'})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
