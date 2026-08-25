@@ -26,7 +26,7 @@ for(const required of ['function loadEmployees(','function bindEmployeeActions('
   if(!src.includes(required))throw new Error(`Required employee dependency missing: ${required}`);
 }
 
-const moduleSource=`/* Lát Yên — Employees UI V1\n   Extracted from Legacy index.html. Employee data/payroll logic remains in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyEmployeesUIV1)return;\n  window.__lyEmployeesUIV1=true;\n  const VERSION='2026.08.25.2';\n\n${code.split('\n').map(line=>'  '+line).join('\n')}\n\n  window.renderEmployees=renderEmployees;\n  window.__lyEmployeesModule={version:VERSION,render:renderEmployees};\n})();\n`;
+const moduleSource=`/* Lát Yên — Employees UI V1\n   Extracted from Legacy index.html. Employee data/payroll logic remains in Legacy core. */\n(()=>{\n  'use strict';\n  if(window.__lyEmployeesUIV1)return;\n  window.__lyEmployeesUIV1=true;\n  const VERSION='2026.08.25.3';\n\n${code.split('\n').map(line=>'  '+line).join('\n')}\n\n  window.renderEmployees=renderEmployees;\n  window.__lyEmployeesModule={version:VERSION,render:renderEmployees};\n})();\n`;
 fs.writeFileSync(MODULE,moduleSource);
 
 const replacement='/* renderEmployees extracted to ly-employees.js */\n';

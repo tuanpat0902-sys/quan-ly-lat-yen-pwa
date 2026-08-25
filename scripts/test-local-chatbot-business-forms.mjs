@@ -53,6 +53,7 @@ const replacementImport=assistant.assistantReply('Tạo phiếu nhập 4 kg Đư
 
 const pricedImport=assistant.assistantReply('Nhập 1 kg Bột cacao, thành tiền nhập 100.000').draft;
 assert.equal(pricedImport.items[0].quantity,1000,'kg must be converted to the ingredient base unit g');assert.equal(pricedImport.items[0].unit_cost,100,'total amount must derive unit cost after conversion');await assistant.executeDraft(pricedImport);assert.equal(rows.import[0].querySelector('.irQty').value,'1000');assert.equal(rows.import[0].querySelector('.irUnitCost').value,'100');
+const convertedPriceImport=assistant.assistantReply('Nhập 10 kg Bột cacao đơn giá 10 nghìn').draft;assert.equal(convertedPriceImport.items[0].quantity,10000);assert.equal(convertedPriceImport.items[0].unit_cost,10);await assistant.executeDraft(convertedPriceImport);assert.equal(rows.import[0].querySelector('.irQty').value,'10000');assert.equal(rows.import[0].querySelector('.irUnitCost').value,'10','the real form must receive the converted base-unit price');
 
 const exportDraft=assistant.assistantReply('Tạo phiếu xuất 5 kg Đường và 2 lít Sữa').draft;
 assert.ok(exportDraft,'export command must produce a draft response');await assistant.executeDraft(exportDraft);
@@ -60,6 +61,7 @@ assert.equal(rows.export[0].querySelector('.erIngredient').value,'i1');assert.eq
 assert.equal(rows.export[1].querySelector('.erIngredient').value,'i2');assert.equal(rows.export[1].querySelector('.erQty').value,'2');
 const replacementExport=assistant.assistantReply('Tạo phiếu xuất 1 kg Đường').draft;await assistant.executeDraft(replacementExport);assert.equal(rows.export.length,1);assert.equal(rows.export[0].querySelector('.erIngredient').value,'i1');assert.equal(rows.export[0].querySelector('.erQty').value,'1');
 const pricedExportReply=assistant.assistantReply('Xuất 10 kg Đá đơn giá 10 nghìn'),pricedExport=pricedExportReply.draft;assert.equal(pricedExport.items[0].unit_cost,10000);assert.match(pricedExportReply.content,/10\.000 đ\/kg/);await assistant.executeDraft(pricedExport);assert.equal(rows.export[0].querySelector('.erUnitCost').value,'10000','export unit price must be written to the real business form');
+const convertedPriceExport=assistant.assistantReply('Xuất 10 kg Bột cacao đơn giá 10 nghìn').draft;assert.equal(convertedPriceExport.items[0].unit_cost,10);await assistant.executeDraft(convertedPriceExport);assert.equal(rows.export[0].querySelector('.erUnitCost').value,'10','export forms must receive the same converted base-unit price');
 
 const stocktakeDraft=assistant.assistantReply('Tạo phiếu kiểm kê Đường 7 kg và Sữa 4 lít').draft;
 assert.ok(stocktakeDraft,'stocktake command must produce a draft response');await assistant.executeDraft(stocktakeDraft);

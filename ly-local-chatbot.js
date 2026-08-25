@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.25.15';
+const VERSION='2026.08.25.16';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',openingDraftId:''};
@@ -69,10 +69,18 @@ function moneyMention(message,labels){
   const source=normalize(message),label=labels.join('|'),match=source.match(new RegExp(`(?:${label})\\s*(?:la|=|:|gia)?\\s*(\\d+(?:[.,]\\d+)?)\\s*(nghin|k|trieu)?`));
   return match?parsedMoney(match[1],match[2]):null;
 }
+function convertedUnitCost(unitCost,sourceUnit,targetUnit){
+  const price=Number(unitCost),source=canonicalUnit(sourceUnit),target=canonicalUnit(targetUnit);
+  if(!Number.isFinite(price)||price<0)return null;
+  if(!source||!target||source===target)return price;
+  const from=UNIT_DEFS[source],to=UNIT_DEFS[target];
+  if(!from||!to||from[0]!==to[0])return price;
+  return price*to[1]/from[1];
+}
 function inventoryPricing(message,items){
   const unitCost=moneyMention(message,['don gia nhap','don gia xuat','gia nhap','gia xuat','gia moi don vi','don gia']),total=moneyMention(message,['thanh tien nhap','thanh tien xuat','tong tien nhap','tong tien xuat','thanh tien']);
   if(unitCost!==null)return {unit_cost:unitCost,total:null};
-  if(total!==null&&items.length===1&&Number(items[0].quantity)>0)return {unit_cost:total/Number(items[0].quantity),total};
+  if(total!==null&&items.length===1&&Number(items[0].quantity)>0)return {unit_cost:null,total};
   return {unit_cost:null,total};
 }
 function discountMention(message){
@@ -101,7 +109,7 @@ function extractItems(message,kind){
   const source=normalize(message),catalog=collectionFor(kind).filter(item=>item?.id&&normalize(item.name).length>1),matched=catalog.filter(item=>containsPhrase(source,normalize(item.name))).sort((a,b)=>normalize(b.name).length-normalize(a.name).length),exact=matched.filter(item=>{
     const name=normalize(item.name),parents=matched.filter(parent=>String(parent.id)!==String(item.id)&&normalize(parent.name).includes(name));if(!parents.length)return true;
     let residual=source;for(const parent of parents){const phrase=normalize(parent.name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');residual=residual.replace(new RegExp(`(?:^|[^a-z0-9])${phrase}(?=$|[^a-z0-9])`,'g'),' ');}return containsPhrase(residual,name);
-  }),items=exact.map(item=>{const amount=amountForItem(quantityNear(message,item.name),item),quantity=amount.quantity;return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null)};}),groups=new Map();
+  }),items=exact.map(item=>{const mentioned=quantityNear(message,item.name),amount=amountForItem(mentioned,item),quantity=amount.quantity;return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null),input_quantity:mentioned.quantity,input_unit:canonicalUnit(mentioned.unit||item.unit)};}),groups=new Map();
   for(const item of catalog){
     if(exact.some(row=>String(row.id)===String(item.id)))continue;
     const words=normalize(item.name).split(' ');let phrase='';
@@ -186,7 +194,7 @@ function parseDraft(message){
   if(action==='create'){
     const creation=['recipe','prepared'].includes(kind)?creationParts(message,kind):null,itemMessage=creation?creation.components:message,extracted=['ingredient','cashflow'].includes(kind)?{items:[],ambiguities:[]}:extractItems(itemMessage,kind);if(creation)draft.component_text=creation.components;draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
     const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-    if(['import','export'].includes(kind)){const pricing=inventoryPricing(message,draft.items);draft.inventory_unit_cost=pricing.unit_cost;draft.inventory_total=pricing.total;draft.items.forEach(item=>item.unit_cost=pricing.unit_cost);}
+    if(['import','export'].includes(kind)){const pricing=inventoryPricing(message,draft.items);draft.inventory_unit_cost=pricing.unit_cost;draft.inventory_total=pricing.total;draft.items.forEach(item=>{item.unit_cost=pricing.unit_cost!==null?convertedUnitCost(pricing.unit_cost,item.input_unit||item.unit,item.unit):(pricing.total!==null&&draft.items.length===1&&Number(item.quantity)>0?pricing.total/Number(item.quantity):null);});}
     if(kind==='sale'){const discount=discountMention(message);if(discount){const itemLevel=/\b(tung mon|moi mon|giam gia mon|chiet khau mon)\b/.test(source);if(itemLevel)draft.items.forEach(item=>item.discount={...discount});else draft.receipt_discount=discount;}}
     if(kind==='stocktake'&&!draft.items.length&&/\b(kiem ke|kiem kho|phieu kiem)\b/.test(source))draft.open_blank=true;
     if(kind==='recipe'||kind==='prepared'){draft.name=text(creation?.name);if(kind==='recipe')Object.assign(draft,recipeMetadata(message,draft.name));if(kind==='prepared'){const output=normalize(creation?.output).match(/(?:la\s*)?(\d+(?:[.,]\d+)?)\s*(kg|g|l|ml|chai|goi|hop|cai)?/);draft.batch_output=output?parsedQuantity(output[1]):1;draft.unit=canonicalUnit(output?.[2]||'g');}}
@@ -212,8 +220,8 @@ function addQuantityClarification(draft,item){
 function answerDraftClarification(draft,clarificationId,optionId){
   const clarification=draft?.clarifications?.find(row=>String(row.id)===String(clarificationId)&&!row.resolved),option=clarification?.options?.find(row=>String(row.id)===String(optionId));if(!clarification||!option)return false;
   if(clarification.type==='item'){
-    const converted=amountForItem({quantity:clarification.quantity,unit:clarification.unit},option),item={id:option.id,name:option.name,unit:text(option.unit||converted.unit||clarification.unit),quantity:converted.quantity,clarification_id:clarification.id};
-    if(['import','export'].includes(draft.kind)){item.unit_cost=draft.inventory_unit_cost!==null&&draft.inventory_unit_cost!==undefined?draft.inventory_unit_cost:(Number(draft.inventory_total)>0&&Number(item.quantity)>0?Number(draft.inventory_total)/Number(item.quantity):null);}
+    const converted=amountForItem({quantity:clarification.quantity,unit:clarification.unit},option),item={id:option.id,name:option.name,unit:text(option.unit||converted.unit||clarification.unit),quantity:converted.quantity,input_quantity:clarification.quantity,input_unit:canonicalUnit(clarification.unit||option.unit),clarification_id:clarification.id};
+    if(['import','export'].includes(draft.kind)){item.unit_cost=draft.inventory_unit_cost!==null&&draft.inventory_unit_cost!==undefined?convertedUnitCost(draft.inventory_unit_cost,item.input_unit||item.unit,item.unit):(Number(draft.inventory_total)>0&&Number(item.quantity)>0?Number(draft.inventory_total)/Number(item.quantity):null);}
     draft.items=(draft.items||[]).filter(row=>String(row.clarification_id)!==String(clarification.id));draft.items.push(item);clarification.selected_id=option.id;clarification.resolved=true;addQuantityClarification(draft,item);
   }else if(clarification.type==='cashflow_category'){
     draft.cashflow_type=option.type;draft.category=option.category;clarification.selected_id=option.id;clarification.resolved=true;
@@ -297,7 +305,7 @@ function draftSummary(draft){
   if(draft.kind==='ingredient')return `Tạo nguyên liệu${warehouse}: ${draft.name||'chưa rõ tên'} · đơn vị ${draft.unit||'g'}${Number(draft.minimum_stock)>0?` · tồn tối thiểu ${formatNumber(draft.minimum_stock)}`:''}.`;
   if(draft.kind==='cashflow')return `Tạo phiếu ${draft.cashflow_type==='income'?'thu':draft.cashflow_type==='expense'?'chi':'thu/chi'}${warehouse}: ${draft.category||draft.category_query||'chưa rõ nội dung'} · ${draft.amount?formatMoney(draft.amount):'chưa rõ số tiền'}.`;
   if(['recipe','prepared'].includes(draft.kind))return `Tạo ${kindLabel(draft.kind)}${warehouse}: ${draft.name||'chưa rõ tên'}${draft.kind==='recipe'?` · đơn vị ${draft.unit||'ly'} · giá bán ${formatMoney(draft.selling_price||0)}`:''}${draft.items.length?` · ${draft.items.map(item=>`${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} ${item.name}`).join(', ')}`:''}.`;
-  const lines=draft.items.length?draft.items.map(item=>{const pricing=['import','export'].includes(draft.kind)&&item.unit_cost!==null&&item.unit_cost!==undefined?` · ${formatMoney(item.unit_cost)}/${item.unit||'đv'}`:'';const discount=item.discount?` · giảm ${item.discount.type==='percent'?`${formatNumber(item.discount.value)}%`:formatMoney(item.discount.value)}`:'';return item.quantity===null?`${item.name} (chưa rõ số lượng)`: `${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''} × ${item.name}${pricing}${discount}`;}).join(', '):'chưa có mặt hàng';
+  const lines=draft.items.length?draft.items.map(item=>{const hasPricing=['import','export'].includes(draft.kind)&&item.unit_cost!==null&&item.unit_cost!==undefined,pricing=hasPricing?` · ${formatMoney(item.unit_cost)}/${item.unit||'đv'} · thành tiền ${formatMoney(Number(item.quantity||0)*Number(item.unit_cost||0))}`:'',inputUnit=canonicalUnit(item.input_unit),targetUnit=canonicalUnit(item.unit),converted=inputUnit&&targetUnit&&inputUnit!==targetUnit&&Number(item.input_quantity)>0?`${formatNumber(item.input_quantity)} ${inputUnit} → ${formatNumber(item.quantity)} ${targetUnit}`:`${formatNumber(item.quantity)}${item.unit?` ${item.unit}`:''}`,discount=item.discount?` · giảm ${item.discount.type==='percent'?`${formatNumber(item.discount.value)}%`:formatMoney(item.discount.value)}`:'';return item.quantity===null?`${item.name} (chưa rõ số lượng)`: `${converted} × ${item.name}${pricing}${discount}`;}).join(', '):'chưa có mặt hàng';
   const header=[draft.receipt_code&&`số ${draft.receipt_code}`,draft.receipt_date&&`ngày ${displayDate(parseReportDate(draft.receipt_date))}`].filter(Boolean).join(' · ');
   const receiptDiscount=draft.receipt_discount?` · giảm toàn hóa đơn ${draft.receipt_discount.type==='percent'?`${formatNumber(draft.receipt_discount.value)}%`:formatMoney(draft.receipt_discount.value)}`:'';
   return `${title}${warehouse}${header?` · ${header}`:''}${receiptDiscount}: ${lines}.`;

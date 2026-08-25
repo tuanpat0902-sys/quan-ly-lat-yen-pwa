@@ -22,11 +22,12 @@ if(JSON.parse(store.get('lat_yen_employees_v1')).length!==4)throw new Error('See
 if(!/employee-salary-chart-grid[\s\S]*employeeSalaryReportArea[\s\S]*employeeWorkChart/.test(employeesUi))throw new Error('Salary table and work chart must share the same responsive grid');
 if(/<canvas id="employeeWorkChart"/.test(employeeReports))throw new Error('Employee report must not render a second work chart below the detailed report');
 if(!/employeeWorkChartPeriod/.test(employeeReports))throw new Error('Work chart must show the currently selected report period');
-if(!/\.employee-salary-chart-grid\{[\s\S]*grid-template-columns:minmax\(0,1\.08fr\) minmax\(0,\.92fr\)/.test(employeesUi))throw new Error('Salary and chart cards must use balanced desktop widths');
+if(!/\.employee-salary-chart-grid\{[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/.test(employeesUi))throw new Error('Salary and chart cards must use equal balanced desktop widths');
 if(!/@media\(max-width:1180px\)[\s\S]*\.employee-salary-chart-grid\{grid-template-columns:1fr\}/.test(employeesUi))throw new Error('Salary and chart cards must stack before becoming cramped');
 if(!/employee-salary-card \.salary-report-table-wrap,[\s\S]*width:100%!important;max-width:none!important/.test(employeesUi))throw new Error('Salary table must use its card width consistently');
 const workChart=indexSource.match(/function drawEmployeeWorkChart\([\s\S]*?\n}\n\nfunction openEmployeeAttendance/)?.[0]||'';
 if(!/height=lyHorizontalChartHeight\(rows\.length\)/.test(workChart))throw new Error('Work chart must use the same height rule as the sales chart');
 if(!/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/.test(workChart))throw new Error('Work chart bars must use the same thickness as sales bars');
+if(!/ctx\.roundRect\(left,cy-bh\/2,barWidth,bh,barRadius\)/.test(workChart))throw new Error('Work chart bars must use the same rounded shape as sales bars');
 if(/Arial/.test(workChart))throw new Error('Work chart must inherit the application typeface');
 console.log('Simulation personnel seed: PASS');

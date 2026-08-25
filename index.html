@@ -1854,7 +1854,7 @@ aside,
 }
 .sale-analysis-grid{
   display:grid;
-  grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   gap:10px;
   align-items:stretch;
 }
@@ -11622,7 +11622,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.61</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 2.1.62</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11654,7 +11654,7 @@ html.v257-device-locked body{
 <div id="toast" class="toast"></div>
 <!-- Lát Yên fresh-install bootstrap V1: lightweight loader + bridges only -->
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260825.66"></script>
+<script src="./ly-module-loader.js?v=20260825.67"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.1"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -40758,7 +40758,10 @@ function drawEmployeeWorkChart(rows){
     ctx.fillText(label,left-8,cy);
 
     ctx.fillStyle='#087f73';
-    ctx.fillRect(left,cy-bh/2,Math.max(2,bw),bh);
+    const barWidth=Math.max(2,bw),barRadius=Math.min(5,bh/2);
+    ctx.beginPath();
+    ctx.roundRect(left,cy-bh/2,barWidth,bh,barRadius);
+    ctx.fill();
 
     ctx.fillStyle='#0f172a';
     ctx.textAlign='left';
@@ -55490,9 +55493,9 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.61',REVISION='fresh-core-v2-authoritative-v62';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
+<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.62',REVISION='fresh-core-v2-authoritative-v63';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
 
-<script src="./ly-app-version.js?v=2.1.61"></script>
+<script src="./ly-app-version.js?v=2.1.62"></script>
 <script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
 <script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
 <script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
@@ -55513,7 +55516,7 @@ saveSaleReceipt=async function(){
 <script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>
 <script src="./ly-independent-bootstrap.js?v=20260824.4"></script>
 <script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
-<script src="./ly-local-chatbot.js?v=20260825.15"></script>
+<script src="./ly-local-chatbot.js?v=20260825.16"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 
 </body>

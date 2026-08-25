@@ -8,7 +8,7 @@ const layout=await fs.readFile(new URL('../ly-compact-admin-layout.js',import.me
 
 assert.match(report,/class="sale-analysis-grid section-gap"/,'sales chart and table must share one responsive grid');
 assert.match(report,/sale-chart-panel[\s\S]*sale-table-panel/,'chart must precede the adjacent product table');
-assert.match(index,/\.sale-analysis-grid\{[\s\S]*grid-template-columns:minmax\(0,1\.05fr\) minmax\(0,\.95fr\)/,'desktop sales report must use two columns');
+assert.match(index,/\.sale-analysis-grid\{[\s\S]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/,'sales chart and table must use balanced equal columns');
 assert.match(index,/@media\(max-width:700px\)[\s\S]*\.sale-analysis-grid\{[\s\S]*grid-template-columns:1fr/,'mobile sales report must stack safely');
 assert.match(report,/class="sale-chart-scroll"/,'sales chart must have a horizontal safety scroller');
 assert.match(layout,/#sales \.sale-chart-scroll canvas\{width:max\(720px,100%\)!important/,'narrow screens must preserve a readable chart width');
@@ -19,6 +19,7 @@ assert.match(index,/const LY_HORIZONTAL_CHART_BASE_HEIGHT=340/,'horizontal chart
 assert.match(index,/function lyHorizontalChartHeight\(rowCount\)/,'horizontal charts must share one sizing function');
 assert.match(salesChart,/lyHorizontalChartHeight\(rows\.length\)/,'sales chart must use the shared chart height');
 assert.match(salesChart,/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/,'sales bars must use the shared compact thickness');
+assert.match(salesChart,/ctx\.roundRect\(left,y,barW,barH,radius\)/,'sales bars must use the shared rounded shape');
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
 assert.match(bridge,/ly-special-reports\.js\?v=20260824\.3/,'bridge must bypass the previous cached report module');

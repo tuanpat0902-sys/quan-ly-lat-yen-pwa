@@ -15,7 +15,7 @@ assert.match(shadow,/preparedItems/);
 assert.match(shadow,/resolveContext/);
 assert.match(shadow,/__lySupabaseReady/);
 for(const forbidden of ['.innerHTML','appendChild(','insertOrg(','updateOrg(','deleteOrg(','domains.ingredients.save','domains.products.save','domains.imports.save','domains.exports.save','domains.stocktake.save','domains.sales.save','domains.cashflow.create'])assert.equal(shadow.includes(forbidden),false,`Shadow runtime must stay read-only/non-DOM: ${forbidden}`);
-assert.match(sw,/lat-yen-fresh-core-v2-authoritative-123/);
+assert.match(sw,/lat-yen-fresh-core-v2-authoritative-124/);
 const runtimeAssets=['./ly-fresh-core-v2-shadow.js','./ly-fresh-core-v2-ingredients-takeover.js','./ly-fresh-core-v2-products-takeover.js','./ly-fresh-core-v2-documents-takeover.js','./ly-fresh-core-v2-sales-takeover.js','./ly-fresh-core-v2-cashflow-takeover.js','./ly-fresh-core-v2-masterdata-takeover.js','./ly-fresh-core-v2-read-takeover.js','./ly-fresh-core-v2-manual-refresh.js','./ly-fresh-core-v2-realtime.js','./ly-fresh-core-v2-realtime-phase2.js'];
 for(const asset of [...runtimeAssets,'./ly-local-chatbot.js','./src-v2/bootstrap.js','./src-v2/domains/inventory/inventory-repository.js','./src-v2/domains/inventory/inventory-service.js','./src-v2/domains/master-data/master-data-repository.js','./src-v2/domains/master-data/master-data-service.js'])assert.ok(sw.includes(`'${asset}'`),`Service Worker must precache ${asset}`);
 for(const name of ['ingredientsTakeover','productsTakeover','documentsTakeover','salesTakeover','cashflowTakeover','masterDataTakeover','readTakeover','manualRefresh','realtime','realtimePhase2','finalOwnership'])assert.ok(loader.includes(`load('${name}')`),`Module loader must activate ${name}`);
