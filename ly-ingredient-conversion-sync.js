@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientConversionSync)return;
-  const VERSION='2026.08.25.3';
+  const VERSION='2026.08.25.4';
   const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const fmt=value=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:6}).format(Number(value||0));
   const client=()=>{try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;};
@@ -68,7 +68,6 @@
     const ratio=Number(document.getElementById('igConversionRatio')?.value||1);
     return {name,baseUnit,purchaseUnit,ratio};
   }
-
   function ingredientRow(id,name=''){
     const needle=String(id||'').trim(),nameKey=fold(name);
     for(const table of document.querySelectorAll('table.ingredient-stock-table:not(.prepared-virtual-table)')){
@@ -84,19 +83,11 @@
   }
   function captureScrollState(){
     const boxes=[...document.querySelectorAll('#ingredients .scroll')].filter(el=>el.isConnected);
-    return {
-      pageY:window.scrollY,pageX:window.scrollX,
-      boxes:boxes.map(el=>({el,top:el.scrollTop,left:el.scrollLeft}))
-    };
+    return {pageY:window.scrollY,pageX:window.scrollX,boxes:boxes.map(el=>({el,top:el.scrollTop,left:el.scrollLeft}))};
   }
   function captureViewport(id,name){
     const row=ingredientRow(id,name),box=row?.closest?.('.scroll')||null;
-    return {
-      ...captureScrollState(),
-      id:String(id||''),name:String(name||''),
-      rowTop:row?.getBoundingClientRect?.().top??null,
-      box,boxTop:box?.scrollTop??null,boxLeft:box?.scrollLeft??null
-    };
+    return {...captureScrollState(),id:String(id||''),name:String(name||''),rowTop:row?.getBoundingClientRect?.().top??null,box,boxTop:box?.scrollTop??null,boxLeft:box?.scrollLeft??null};
   }
   function ensureUXStyle(){
     if(document.getElementById('lyIngredientSavedUX'))return;
@@ -106,50 +97,30 @@
   }
   function restoreScrollState(snapshot){
     if(!snapshot)return;
-    (snapshot.boxes||[]).forEach(item=>{
-      if(item?.el?.isConnected){
-        if(Number.isFinite(item.top))item.el.scrollTop=item.top;
-        if(Number.isFinite(item.left))item.el.scrollLeft=item.left;
-      }
-    });
-    window.scrollTo({top:Number(snapshot.pageY)||0,left:Number(snapshot.pageX)||0,behavior:'auto'});
+    (snapshot.boxes||[]).forEach(item=>{if(item?.el?.isConnected){if(Number.isFinite(item.top))item.el.scrollTop=item.top;if(Number.isFinite(item.left))item.el.scrollLeft=item.left;}});
+    if(Math.abs(window.scrollY-Number(snapshot.pageY||0))>2)window.scrollTo({top:Number(snapshot.pageY)||0,left:Number(snapshot.pageX)||0,behavior:'auto'});
   }
   function restoreViewport(snapshot){
     if(!snapshot)return;
     const row=ingredientRow(snapshot.id,snapshot.name);
-    (snapshot.boxes||[]).forEach(item=>{
-      if(item?.el?.isConnected){
-        if(Number.isFinite(item.top))item.el.scrollTop=item.top;
-        if(Number.isFinite(item.left))item.el.scrollLeft=item.left;
-      }
-    });
-    if(snapshot.box?.isConnected){
-      if(Number.isFinite(snapshot.boxTop))snapshot.box.scrollTop=snapshot.boxTop;
-      if(Number.isFinite(snapshot.boxLeft))snapshot.box.scrollLeft=snapshot.boxLeft;
-    }
+    (snapshot.boxes||[]).forEach(item=>{if(item?.el?.isConnected){if(Number.isFinite(item.top))item.el.scrollTop=item.top;if(Number.isFinite(item.left))item.el.scrollLeft=item.left;}});
+    if(snapshot.box?.isConnected){if(Number.isFinite(snapshot.boxTop))snapshot.box.scrollTop=snapshot.boxTop;if(Number.isFinite(snapshot.boxLeft))snapshot.box.scrollLeft=snapshot.boxLeft;}
     if(row&&Number.isFinite(snapshot.rowTop)){
       const delta=row.getBoundingClientRect().top-snapshot.rowTop;
-      if(Math.abs(delta)>1)window.scrollBy({top:delta,left:0,behavior:'auto'});
-      row.classList.remove('ly-ingredient-saved');void row.offsetWidth;row.classList.add('ly-ingredient-saved');
-      setTimeout(()=>row.classList.remove('ly-ingredient-saved'),1700);
-    }else{
-      window.scrollTo({top:snapshot.pageY,left:snapshot.pageX,behavior:'auto'});
+      if(Math.abs(delta)>4)window.scrollBy({top:delta,left:0,behavior:'auto'});
+      row.classList.remove('ly-ingredient-saved');void row.offsetWidth;row.classList.add('ly-ingredient-saved');setTimeout(()=>row.classList.remove('ly-ingredient-saved'),1700);
     }
   }
   function scheduleRestore(snapshot,editMode=false){
     if(!snapshot)return;
-    const run=()=>editMode?restoreViewport(snapshot):restoreScrollState(snapshot);
-    requestAnimationFrame(()=>requestAnimationFrame(run));
-    setTimeout(run,80);setTimeout(run,220);setTimeout(run,500);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{editMode?restoreViewport(snapshot):restoreScrollState(snapshot);}));
   }
   function captureCreateTrigger(event){
-    const target=event.target?.closest?.('#btnPurchasedPanel,#btnPreparedPanel');
-    if(!target)return;
+    const target=event.target?.closest?.('#btnPurchasedPanel,#btnPreparedPanel');if(!target)return;
     const panel=document.getElementById('ingredientInlinePanel');
     const isAlreadyOpen=panel?.classList?.contains('open')&&!String(panel?.dataset?.editId||'').trim();
     if(!isAlreadyOpen)createViewport=captureScrollState();
   }
-
   function wrapSave(){
     const original=window.saveIngredient;
     if(typeof original!=='function'||original.__lyConversionWrapped)return false;
@@ -168,11 +139,9 @@
   let timer=0;
   const schedule=()=>{clearTimeout(timer);timer=setTimeout(()=>{wrapSave();refreshTables();},60);};
   const boot=()=>{
-    ensureUXStyle();wrapSave();refreshTables();
-    document.addEventListener('pointerdown',captureCreateTrigger,true);
+    ensureUXStyle();wrapSave();refreshTables();document.addEventListener('pointerdown',captureCreateTrigger,true);
     new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
-    window.addEventListener('latyen:v2-ingredient-saved',schedule);
-    window.addEventListener('latyen:cloud-refreshed',schedule);
+    window.addEventListener('latyen:v2-ingredient-saved',schedule);window.addEventListener('latyen:cloud-refreshed',schedule);
     setInterval(()=>{wrapSave();refreshTables();},2500);
   };
   window.__lyIngredientConversionSync={version:VERSION,refreshTables,persistCaptured,restoreViewport,restoreScrollState};
