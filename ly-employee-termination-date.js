@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   if(window.__lyEmployeeTerminationDate)return;
-  const VERSION='2026.08.26.1';
+  const VERSION='2026.08.26.2';
   const STORAGE_KEY='__latyen_employee_termination_dates_v1';
   let activeEmployeeId='';
   let timer=0;
@@ -13,15 +13,14 @@
   const getDate=id=>String(read()[String(id||'')]||'');
   const setDate=(id,value)=>{const key=String(id||'');if(!key)return;const data=read();if(value)data[key]=String(value);else delete data[key];write(data);};
   const fmt=value=>{if(!value)return '';const [y,m,d]=String(value).split('-');return y&&m&&d?`${d}/${m}/${y}`:String(value);};
+  const visible=root=>{if(!root||!root.isConnected)return false;const style=getComputedStyle(root);if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0)return false;const rect=root.getBoundingClientRect();return rect.width>0&&rect.height>0;};
 
   function statusControl(root){
     if(!root)return null;
     const direct=root.querySelector('select[id*="status" i],select[name*="status" i],select[id*="active" i],select[name*="active" i],input[type="checkbox"][id*="active" i],input[type="checkbox"][name*="active" i]');
     if(direct)return direct;
-    const labels=[...root.querySelectorAll('label')];
-    for(const label of labels){
-      const t=fold(label.textContent);
-      if(!/(trang thai|dang lam|da nghi|hoat dong)/.test(t))continue;
+    for(const label of root.querySelectorAll('label')){
+      const t=fold(label.textContent);if(!/(trang thai|dang lam|da nghi|hoat dong)/.test(t))continue;
       const forId=label.getAttribute('for');
       const control=(forId&&document.getElementById(forId))||label.parentElement?.querySelector('select,input[type="checkbox"],input[type="radio"]');
       if(control)return control;
@@ -33,28 +32,36 @@
     if(!control)return false;
     if(control.type==='checkbox')return !control.checked;
     const selected=control.options?.[control.selectedIndex];
-    const combined=fold(`${control.value||''} ${selected?.textContent||''}`);
-    return /(da nghi|nghi viec|inactive|false|0)/.test(combined);
+    return /(da nghi|nghi viec|inactive|false|0)/.test(fold(`${control.value||''} ${selected?.textContent||''}`));
   }
 
-  function employeeIdFromRoot(root){
-    return String(activeEmployeeId||root?.dataset?.employeeId||root?.dataset?.editId||root?.querySelector('[data-employee-id]')?.dataset?.employeeId||'');
-  }
+  function employeeIdFromRoot(root){return String(activeEmployeeId||root?.dataset?.employeeId||root?.dataset?.editId||root?.querySelector('[data-employee-id]')?.dataset?.employeeId||'');}
 
-  function findEmployeeForm(){
+  function findEmployeeForm(visibleOnly=false){
     const candidates=[...document.querySelectorAll('.modal.open,.modal[style*="display"],form,[role="dialog"]')];
     return candidates.find(root=>{
-      const text=fold(root.textContent);
-      return /(nhan vien|thong tin nhan vien|ho so nhan su)/.test(text)&&statusControl(root);
+      if(visibleOnly&&!visible(root))return false;
+      const t=fold(root.textContent);
+      return /(nhan vien|thong tin nhan vien|ho so nhan su)/.test(t)&&statusControl(root);
     })||null;
+  }
+
+  function syncAssistantLauncher(){
+    const launcher=document.getElementById('lyAssistantLauncher');
+    const drawer=document.getElementById('lyAssistantDrawer');
+    if(!launcher)return;
+    const mobile=window.matchMedia?.('(max-width: 700px)')?.matches??Number(window.innerWidth||0)<=700;
+    const formOpen=mobile&&!!findEmployeeForm(true);
+    launcher.style.setProperty('display',formOpen?'none':'','important');
+    launcher.setAttribute('aria-hidden',formOpen?'true':'false');
+    if(formOpen&&drawer?.classList.contains('is-open'))drawer.classList.remove('is-open');
   }
 
   function persistFromForm(root){
     if(!root)return;
     const control=statusControl(root),id=employeeIdFromRoot(root),input=root.querySelector('#lyEmployeeTerminationDate');
     if(!id||!control)return;
-    if(isInactive(control))setDate(id,input?.value||'');
-    else setDate(id,'');
+    if(isInactive(control))setDate(id,input?.value||'');else setDate(id,'');
   }
 
   function enhanceForm(){
@@ -63,10 +70,8 @@
     const id=employeeIdFromRoot(root);
     let field=root.querySelector('#lyEmployeeTerminationDateWrap');
     if(!field){
-      field=document.createElement('div');
-      field.id='lyEmployeeTerminationDateWrap';
-      field.className='ly-employee-termination-date';
-      field.innerHTML=`<label for="lyEmployeeTerminationDate">Nghỉ làm từ ngày</label><input id="lyEmployeeTerminationDate" type="date">`;
+      field=document.createElement('div');field.id='lyEmployeeTerminationDateWrap';field.className='ly-employee-termination-date';
+      field.innerHTML='<label for="lyEmployeeTerminationDate">Nghỉ làm từ ngày</label><input id="lyEmployeeTerminationDate" type="date">';
       const host=control.closest('.form-field,.field,.input-group,div')||control.parentElement;
       if(host?.parentElement)host.insertAdjacentElement('afterend',field);else root.appendChild(field);
       control.addEventListener('change',()=>{updateVisibility(root);persistFromForm(root);});
@@ -78,8 +83,7 @@
 
   function updateVisibility(root){
     const control=statusControl(root),field=root?.querySelector('#lyEmployeeTerminationDateWrap');if(!field)return;
-    const inactive=isInactive(control);
-    field.style.display=inactive?'':'none';
+    const inactive=isInactive(control);field.style.display=inactive?'':'none';
     const input=field.querySelector('input');if(input)input.required=inactive;
   }
 
@@ -89,8 +93,7 @@
       const cells=row.cells||[];if(cells.length<2)return;
       const statusCell=cells[cells.length-2];if(!statusCell)return;
       let note=statusCell.querySelector('.ly-employee-termination-note');
-      const inactive=/da nghi/.test(fold(statusCell.textContent));
-      const date=inactive?getDate(id):'';
+      const inactive=/da nghi/.test(fold(statusCell.textContent)),date=inactive?getDate(id):'';
       if(!inactive||!date){note?.remove();return;}
       if(!note){note=document.createElement('div');note.className='muted ly-employee-termination-note';statusCell.appendChild(note);}
       note.textContent=`Nghỉ từ ${fmt(date)}`;
@@ -98,14 +101,11 @@
   }
 
   function wrapEmployeeModal(){
-    const original=window.employeeModal;
-    if(typeof original!=='function'||original.__lyTerminationWrapped)return false;
+    const original=window.employeeModal;if(typeof original!=='function'||original.__lyTerminationWrapped)return false;
     const wrapped=function(employeeId,...rest){
-      activeEmployeeId=String(employeeId||'');
-      const result=original.call(this,employeeId,...rest);
-      requestAnimationFrame(()=>requestAnimationFrame(enhanceForm));
-      setTimeout(enhanceForm,100);
-      return result;
+      activeEmployeeId=String(employeeId||'');const result=original.call(this,employeeId,...rest);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{enhanceForm();syncAssistantLauncher();}));
+      setTimeout(()=>{enhanceForm();syncAssistantLauncher();},100);return result;
     };
     wrapped.__lyTerminationWrapped=true;wrapped.__lyOriginal=original;window.employeeModal=wrapped;return true;
   }
@@ -120,19 +120,20 @@
     `;document.head.appendChild(style);
   }
 
-  function install(){wrapEmployeeModal();enhanceForm();decorateTable();}
-  function schedule(){clearTimeout(timer);timer=setTimeout(install,60);}
+  function install(){wrapEmployeeModal();enhanceForm();decorateTable();syncAssistantLauncher();}
+  function schedule(){clearTimeout(timer);timer=setTimeout(install,50);}
   function boot(){
     ensureStyle();install();
-    new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
+    new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
     document.addEventListener('click',event=>{
-      const root=findEmployeeForm();if(!root)return;
-      const button=event.target.closest('button');if(!button)return;
-      if(/^(luu|cap nhat|xac nhan)/.test(fold(button.textContent)))persistFromForm(root);
+      const root=findEmployeeForm();const button=event.target.closest('button');
+      if(root&&button&&/^(luu|cap nhat|xac nhan)/.test(fold(button.textContent)))persistFromForm(root);
+      setTimeout(syncAssistantLauncher,0);
     },true);
-    setInterval(install,2000);
+    window.addEventListener('resize',syncAssistantLauncher,{passive:true});
+    setInterval(install,1500);
   }
 
-  window.__lyEmployeeTerminationDate={version:VERSION,install,getDate,setDate};
+  window.__lyEmployeeTerminationDate={version:VERSION,install,getDate,setDate,syncAssistantLauncher};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
