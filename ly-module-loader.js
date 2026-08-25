@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV49)return;
   window.__lyModuleLoaderV49=true;
 
-  const VERSION='2026.08.26.5';
+  const VERSION='2026.08.26.6';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -31,7 +31,7 @@
     realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260825.1',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.25.1'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
     ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260826.2',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.26.2'},
-    ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260826.3',test:()=>window.__lyIngredientTableUX?.version==='2026.08.26.3'},
+    ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260826.4',test:()=>window.__lyIngredientTableUX?.version==='2026.08.26.4'},
     stockUnitSync:{src:'./ly-stock-unit-sync.js?v=20260825.1',test:()=>window.__lyStockUnitSync?.version==='2026.08.25.1'},
     inAppNotifications:{src:'./ly-inapp-notifications.js?v=20260824.2',test:()=>window.__lyInAppNotifications?.version==='2026.08.24.2'},
     dataNotifications:{src:'./ly-data-notifications.js?v=20260825.7',test:()=>window.__lyDataActivityNotifications?.version==='2026.08.25.7'},
