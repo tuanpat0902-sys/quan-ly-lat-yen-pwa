@@ -1,10 +1,11 @@
 (()=>{
   'use strict';
   if(window.__lyChatUnitSync)return;
-  const VERSION='2026.08.26.2';
+  const VERSION='2026.08.26.3';
   const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const escRe=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const fmt=value=>{const n=Number(value);return Number.isInteger(n)?String(n):String(Number(n.toFixed(6)));};
+  const money=(value,scale)=>{const n=Number(String(value).replace(',','.'));if(!Number.isFinite(n))return NaN;const s=fold(scale);return n*(s==='trieu'?1000000:(s==='nghin'||s==='ngan'||s==='k'?1000:1));};
 
   function ingredients(){
     const rows=[];
@@ -43,27 +44,31 @@
     return NaN;
   }
 
+  function normalizePurchasePricing(message,item){
+    const name=String(item.name||'').trim(),rule=ruleFor(item);if(!name||!rule.purchase||rule.purchase===rule.base)return message;
+    const purchasePattern=aliasesFor(rule.purchase).map(escRe).join('|');if(!purchasePattern)return message;
+    const namePattern=escRe(name).replace(/\s+/g,'\\s+'),basePattern=escRe(rule.base);
+    const re=new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(${purchasePattern})\\s*\\((\\d+(?:[.,]\\d+)?)\\s*${basePattern}\\)\\s*(${namePattern})\\s*(?:,|;)?\\s*(?:đơn\\s*giá|don\\s*gia|giá|gia)\\s*(\\d+(?:[.,]\\d+)?)\\s*(nghìn|nghin|ngàn|ngan|k|triệu|trieu)?`,'giu');
+    return message.replace(re,(full,q,u,baseQty,n,price,scale)=>{
+      const total=Number(String(q).replace(',','.'))*money(price,scale);if(!Number.isFinite(total))return full;
+      const priceText=`${price}${scale?` ${scale}`:''}`;
+      return `${q} ${u} (${baseQty} ${rule.base}) ${n} · đơn giá mua ${priceText}/${u} · thành tiền ${fmt(total)} đ`;
+    });
+  }
+
   function rewriteForItem(message,item){
     const name=String(item.name||'').trim(),rule=ruleFor(item);if(!name||!rule.base)return message;
-    const units=new Set();
-    const api=unitApi();
+    const units=new Set(),api=unitApi();
     try{(api?.listFor?.(rule.base,item.id,false)||[]).forEach(row=>aliasesFor(row.key).forEach(v=>units.add(v)));}catch(e){}
     aliasesFor(rule.purchase).forEach(v=>units.add(v));aliasesFor(rule.base).forEach(v=>units.add(v));
     if(!units.size)return message;
-    const unitPattern=[...units].sort((a,b)=>b.length-a.length).map(escRe).join('|');
-    const namePattern=escRe(name).replace(/\s+/g,'\\s+');
-    const number='(\\d+(?:[.,]\\d+)?)';
-    const replacement=(q,u,n,prefix='')=>{
-      const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim(),sourceCanonical=canonical(source);
-      if(!Number.isFinite(value)||sourceCanonical===rule.base)return `${prefix}${q} ${source} ${n}`.trim();
-      return prefix?`${n} ${q} ${source} (${fmt(value)} ${rule.base})`:`${q} ${source} (${fmt(value)} ${rule.base}) ${n}`;
-    };
+    const unitPattern=[...units].sort((a,b)=>b.length-a.length).map(escRe).join('|'),namePattern=escRe(name).replace(/\s+/g,'\\s+'),number='(\\d+(?:[.,]\\d+)?)';
     let out=message;
     const left=new RegExp(`${number}\\s*(${unitPattern})\\s+(${namePattern})(?=$|[\\s,;:.!?])`,'giu');
-    out=out.replace(left,(full,q,u,n)=>replacement(q,u,n));
+    out=out.replace(left,(full,q,u,n)=>{const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim();if(!Number.isFinite(value)||canonical(source)===rule.base)return full;return `${q} ${source} (${fmt(value)} ${rule.base}) ${n}`;});
     const right=new RegExp(`(${namePattern})\\s*(?:x|:)?\\s*${number}\\s*(${unitPattern})(?=$|[\\s,;:.!?])`,'giu');
     out=out.replace(right,(full,n,q,u)=>{const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim();if(!Number.isFinite(value)||canonical(source)===rule.base)return full;return `${n} ${q} ${source} (${fmt(value)} ${rule.base})`;});
-    return out;
+    return normalizePurchasePricing(out,item);
   }
 
   function rewrite(message){
