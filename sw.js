@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-134';
+const CACHE='lat-yen-fresh-core-v2-authoritative-135';
 const INDEX_KEY='./index.html';
 const CORE_ASSETS=[
   INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',
@@ -19,8 +19,7 @@ const CORE_ASSETS=[
   './src-v2/domains/products/products-repository.js','./src-v2/domains/products/products-service.js',
   './src-v2/domains/documents/document-repository.js','./src-v2/domains/sales/sales-repository.js','./src-v2/domains/sales/sales-service.js',
   './src-v2/domains/cashflow/cashflow-repository.js','./src-v2/domains/cashflow/cashflow-service.js',
-  './src-v2/domains/inventory/inventory-repository.js','./src-v2/domains/inventory/inventory-service.js',
-  './src-v2/domains/master-data/master-data-repository.js','./src-v2/domains/master-data/master-data-service.js'
+  './src-v2/domains/inventory/inventory-repository.js','./src-v2/domains/inventory/inventory-service.js','./src-v2/domains/master-data/master-data-repository.js','./src-v2/domains/master-data/master-data-service.js'
 ];
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE);await Promise.allSettled(CORE_ASSETS.map(async url=>{try{const r=await fetch(url,{cache:'reload'});if(r.ok)await cache.put(url,r);}catch(e){}}));await self.skipWaiting();})());});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)));await self.clients.claim();})());});
