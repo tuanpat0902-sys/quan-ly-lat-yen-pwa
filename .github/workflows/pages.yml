@@ -42,6 +42,63 @@ jobs:
           find . -maxdepth 1 -type f -name 'ly-*.js' -exec cp {} _site/ \;
           cp -R src-v2 _site/src-v2
 
+          python - <<'PY'
+          from pathlib import Path
+
+          # Chat Box hotfix: keep the user's original Vietnamese phrase for
+          # clarification labels. The folded form is only for matching.
+          p = Path('_site/ly-local-chatbot.js')
+          s = p.read_text(encoding='utf-8')
+          old_version = "const VERSION='2026.08.25.18';"
+          if old_version not in s:
+              raise SystemExit('Unexpected local chatbot version')
+          s = s.replace(old_version, "const VERSION='2026.08.25.19';", 1)
+
+          anchor = "const uid=()=>globalThis.crypto?.randomUUID?.()||`local-${Date.now()}-${Math.random().toString(16).slice(2)}`;"
+          helper = r'''function originalPhrase(message,folded){
+  const target=normalize(folded),raw=text(message).normalize('NFC');
+  if(!target)return text(folded);
+  const words=raw.match(/[\p{L}\p{M}0-9]+/gu)||[];
+  for(let start=0;start<words.length;start++){
+    for(let end=words.length;end>start;end--){
+      const candidate=words.slice(start,end).join(' ');
+      if(normalize(candidate)===target)return candidate;
+    }
+  }
+  return text(folded);
+}
+'''
+          if 'function originalPhrase(message,folded)' not in s:
+              if anchor not in s:
+                  raise SystemExit('Missing local chatbot helper anchor')
+              s = s.replace(anchor, helper + anchor, 1)
+
+          old = "query:phrase,quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null)"
+          new = "query:originalPhrase(message,phrase),quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null)"
+          if old not in s:
+              raise SystemExit('Missing ambiguity query anchor')
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+
+          # Keep the artifact loader contract aligned with the real modules.
+          p = Path('_site/ly-module-loader.js')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace("const VERSION='2026.08.26.10';", "const VERSION='2026.08.26.11';", 1)
+          s = s.replace("ly-local-chatbot.js?v=20260825.18", "ly-local-chatbot.js?v=20260825.19", 1)
+          s = s.replace("__lyLocalAssistant?.version==='2026.08.25.18'", "__lyLocalAssistant?.version==='2026.08.25.19'", 1)
+          s = s.replace("ly-chat-unit-sync.js?v=20260826.4", "ly-chat-unit-sync.js?v=20260826.8", 1)
+          s = s.replace("__lyChatUnitSync?.version==='2026.08.26.4'", "__lyChatUnitSync?.version==='2026.08.26.8'", 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          grep -q "const VERSION='2026.08.25.19'" _site/ly-local-chatbot.js
+          grep -q "function originalPhrase(message,folded)" _site/ly-local-chatbot.js
+          grep -q "query:originalPhrase(message,phrase)" _site/ly-local-chatbot.js
+          grep -q "const VERSION='2026.08.26.11'" _site/ly-module-loader.js
+          grep -q "ly-local-chatbot.js?v=20260825.19" _site/ly-module-loader.js
+          grep -q "ly-chat-unit-sync.js?v=20260826.8" _site/ly-module-loader.js
+          grep -q "__lyChatUnitSync?.version==='2026.08.26.8'" _site/ly-module-loader.js
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
