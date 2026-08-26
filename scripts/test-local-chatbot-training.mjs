@@ -61,7 +61,7 @@ const incompletePrepared=assistant.assistantReply('Tạo nguyên liệu pha ch�
 assert.equal(incompletePrepared.localOnly,true);assert.match(incompletePrepared.content,/chưa thấy phần nguyên liệu nguồn/i);
 
 assert.match(source,/z-index:1001/,'chat drawer must stay above data tables on mobile');
-assert.match(source,/height:min\(460px,calc\(100dvh - 72px\)\)/,'mobile chat drawer must have a bounded height');
+assert.match(source,/height:min\(460px,calc\(100dvh - 72px - env\(safe-area-inset-bottom,0px\)\)\)/,'mobile chat drawer must have a bounded safe-area-aware height');
 assert.ok(!loader.includes('chatMultiItemNormalizer:{')&&!loader.includes('chatUnitNormalizer:{'),'only the local assistant may own the send interaction');
 assert.ok(!appVersion.includes('loadUnitNormalizer'),'the app version module must not inject a second chatbot command handler');
 console.log('Assistant training commands for prices, discounts, stocktake, recipes, and prepared ingredients: PASS');

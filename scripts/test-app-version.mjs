@@ -19,7 +19,7 @@ assert.ok(versionSource.includes('Ver ${VERSION}'),'compact Ver label must be us
 assert.ok(versionSource.includes('lat_yen_last_seen_app_version'),'update notice must remember last seen version');
 assert.ok(loader.includes(`ly-app-version.js?v=${runtimeVersion}`),'module loader must bootstrap current version independently of SW freshness');
 assert.ok(loader.includes('ly-warehouse-delete-ux.js?v=20260824.3'),'module loader must bootstrap current warehouse security UX');
-assert.ok(loader.includes('ly-local-chatbot.js?v=20260825.18'),'module loader must bootstrap the multi-line unit-aware contextual AI assistant');
+assert.ok(loader.includes('ly-local-chatbot.js?v=20260826.19'),'module loader must bootstrap the accessible contextual assistant with safe local fallback');
 assert.ok(loader.includes("ly-employees.js?v=20260825.4"),'module loader must bootstrap the phone-responsive employee UI');
 assert.ok(loader.includes('ly-inventory-alerts.js?v=20260824.1'),'module loader must bootstrap inventory threshold alerts');
 assert.ok(localAssistant.includes("storage:'indexeddb-device-only'"),'assistant must advertise device-only storage');
