@@ -33,6 +33,7 @@ jobs:
       - name: Verify the release files
         run: |
           node scripts/test-chat-language-plus.mjs
+          node scripts/test-chat-sales-query.mjs
           node scripts/prepare-pages-artifact.mjs --check
 
       - name: Assemble Pages site
@@ -53,8 +54,13 @@ jobs:
           grep -q "const VERSION='2026.08.27.2'" _site/ly-module-loader.js
           grep -q "ly-local-chatbot.js?v=20260826.19" _site/ly-module-loader.js
           grep -q "ly-chat-language-plus.js?v=20260827.1" _site/ly-module-loader.js
+          grep -q "const VERSION='2026.08.27.2'" _site/ly-chat-language-plus.js
           grep -q "vietnameseNormalization:true" _site/ly-chat-language-plus.js
-          grep -q "EXPLICIT_MUTATION" _site/ly-chat-language-plus.js
+          grep -q "loadSalesQueries" _site/ly-chat-language-plus.js
+          grep -q "salesQueries:Boolean" _site/ly-chat-language-plus.js
+          grep -q "const VERSION='2026.08.27.1'" _site/ly-chat-sales-query.js
+          grep -q "FOLLOWUP" _site/ly-chat-sales-query.js
+          grep -q "itemRevenue" _site/ly-chat-sales-query.js
           grep -q "ly-chat-local-only.js?v=20260827.1" _site/ly-module-loader.js
           grep -q "externalAi:false" _site/ly-chat-local-only.js
           grep -q "ly-chat-unit-sync.js?v=20260826.8" _site/ly-module-loader.js
