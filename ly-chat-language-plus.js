@@ -4,13 +4,13 @@
   if(window.__lyChatLanguagePlus?.version===VERSION)return;
 
   const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
-  const REPORT_SIGNALS=/(bao cao|thong ke|tong quan|doanh thu|doanh so|tien ban|tong ban|ban ra|ton kho|con hang|het hang|sap het hang|thu chi|tien vao tien ra|thu vao chi ra|dong tien|chi phi|nhap xuat|ban chay|top mon|mon chay nhat|mon ban nhieu nhat|loi nhuan|lai nhuan|lai rong|lai lo|profit|bang luong|quy luong|tien luong|luong nhan vien|luong nv)/;
+  const REPORT_SIGNALS=/(bao cao|thong ke|tong quan|doanh thu|doanh so|tien ban|tong ban|ban ra|ton kho|thu chi|tien vao tien ra|thu vao chi ra|dong tien|chi phi|nhap xuat|ban chay|top mon|mon chay nhat|mon ban nhieu nhat|loi nhuan|lai nhuan|lai rong|lai lo|profit|bang luong|quy luong|tien luong|luong nhan vien|luong nv)/;
   const TIME_ONLY=/(bua nay|bua qua|tuan roi|thang roi|quy roi|nam ngoai|tuan trc|thang trc|hom qia|hom qua|tuan truoc|thang truoc|quy truoc|nam truoc)/;
   const EXPLICIT_MUTATION=/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(tao|tap|lap|them|moi|sua|cap nhat|chinh|xoa|huy)\b/;
   const QUANTITY_DRAFT=/^(ban|nhap|xuat)\b[^\n]*\b\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|lit|chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)?\b/;
   const MAPPINGS=[
     ['doang thu','doanh thu'],['doan thu','doanh thu'],['doanh thuu','doanh thu'],['doanh so','doanh thu'],['tien ban','doanh thu'],['tong ban','doanh thu'],['ban ra','doanh thu'],
-    ['ton khp','tồn kho'],['ton khoo','tồn kho'],['con hang','tồn kho'],['het hang','tồn kho'],['sap het hang','tồn kho'],
+    ['ton khp','tồn kho'],['ton khoo','tồn kho'],
     ['tien vao tien ra','thu chi'],['thu vao chi ra','thu chi'],
     ['top mon','món bán chạy'],['mon chay nhat','món bán chạy'],['mon ban nhieu nhat','món bán chạy'],
     ['lai nhuan','lợi nhuận'],['loi nhan','lợi nhuận'],['profit','lợi nhuận'],
