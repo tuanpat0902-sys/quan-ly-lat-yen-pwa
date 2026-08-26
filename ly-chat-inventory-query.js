@@ -76,7 +76,7 @@
       const quantity=number(balance.quantity),minimum=Math.max(0,number(ingredient.minimum_stock??ingredient.min_stock)),level=classify(quantity,minimum);
       if(level!=='ok')rows.push({ingredient,quantity,minimum,level});
     }
-    const wantsOut=/het hang/.test(source)&&!/sap het/.test(source),wantsRestock=/can nhap/.test(source),selected=rows.filter(row=>wantsOut?row.level==='out':wantsRestock?['out','restock'].includes(row.level):true).sort((a,b)=>({out:0,restock:1,low:2}[a.level]-({out:0,restock:1,low:2}[b.level])||a.quantity-b.quantity);
+    const wantsOut=/het hang/.test(source)&&!/sap het/.test(source),wantsRestock=/can nhap/.test(source),severity={out:0,restock:1,low:2},selected=rows.filter(row=>wantsOut?row.level==='out':wantsRestock?['out','restock'].includes(row.level):true).sort((a,b)=>(severity[a.level]??9)-(severity[b.level]??9)||a.quantity-b.quantity);
     if(!selected.length)return {content:`Hiện mình chưa thấy nguyên liệu nào thuộc nhóm bạn hỏi tại ${warehouse.name}.`,report:true,report_kind:'inventory_attention'};
     const lines=selected.slice(0,10).map(row=>`${row.ingredient.name}: ${format(row.quantity)}${text(row.ingredient.unit)?` ${text(row.ingredient.unit)}`:''} (${statusText(row.level)})`),more=selected.length>10?` và ${selected.length-10} nguyên liệu khác`:'';
     return {content:`${warehouse.name} có ${selected.length} nguyên liệu cần chú ý: ${lines.join('; ')}${more}.`,report:true,report_kind:'inventory_attention'};
