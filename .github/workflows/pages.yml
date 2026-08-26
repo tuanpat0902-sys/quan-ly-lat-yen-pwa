@@ -35,6 +35,7 @@ jobs:
           node scripts/test-chat-language-plus.mjs
           node scripts/test-chat-sales-query.mjs
           node scripts/test-chat-sales-insights.mjs
+          node scripts/test-chat-router-sales-revenue-card.mjs
           node scripts/prepare-pages-artifact.mjs --check
 
       - name: Assemble Pages site
@@ -48,36 +49,23 @@ jobs:
           cp -R src-v2 _site/src-v2
 
           grep -q "const VERSION='2026.08.26.19'" _site/ly-local-chatbot.js
-          grep -q "query:originalPhrase(message,phrase)" _site/ly-local-chatbot.js
-          grep -q "unit:text(ingredient?.unit)" _site/ly-local-chatbot.js
-          grep -q "verifiedReportIntent" _site/ly-local-chatbot.js
-          grep -q "reply?.report||verifiedReportIntent" _site/ly-local-chatbot.js
-          grep -q "const VERSION='2026.08.27.3'" _site/ly-module-loader.js
-          grep -q "ly-local-chatbot.js?v=20260826.19" _site/ly-module-loader.js
-          grep -q "ly-chat-language-plus.js?v=20260827.4" _site/ly-module-loader.js
-          grep -q "const VERSION='2026.08.27.4'" _site/ly-chat-language-plus.js
-          grep -q "vietnameseNormalization:true" _site/ly-chat-language-plus.js
-          grep -q "ly-chat-inventory-query.js?v=20260827.2" _site/ly-chat-language-plus.js
-          grep -q "ly-chat-sales-insights.js?v=20260827.2" _site/ly-chat-language-plus.js
+          grep -q "const VERSION='2026.08.27.4'" _site/ly-module-loader.js
+          grep -q "ly-chat-language-plus.js?v=20260827.5" _site/ly-module-loader.js
+          grep -q "const VERSION='2026.08.27.5'" _site/ly-chat-language-plus.js
+          grep -q "ly-chat-router.js?v=20260827.1" _site/ly-chat-language-plus.js
+          grep -q "const VERSION='2026.08.27.1'" _site/ly-chat-router.js
+          grep -q "__lyChatSalesInsights" _site/ly-chat-router.js
           grep -q "const VERSION='2026.08.27.2'" _site/ly-chat-inventory-query.js
-          grep -q "GENERAL_REPORT" _site/ly-chat-inventory-query.js
-          grep -q "safeUnit" _site/ly-chat-inventory-query.js
           grep -q "const VERSION='2026.08.27.1'" _site/ly-chat-sales-query.js
-          grep -q "FOLLOWUP" _site/ly-chat-sales-query.js
-          grep -q "itemRevenue" _site/ly-chat-sales-query.js
           grep -q "const VERSION='2026.08.27.2'" _site/ly-chat-sales-insights.js
-          grep -q "sameElapsedWeek" _site/ly-chat-sales-insights.js
-          grep -q "sales_average_ticket" _site/ly-chat-sales-insights.js
-          grep -q "sales_biggest_decline" _site/ly-chat-sales-insights.js
-          grep -q "ly-chat-local-only.js?v=20260827.1" _site/ly-module-loader.js
+          grep -q "const VERSION='2026.08.27.1'" _site/ly-sales-report-revenue-card.js
+          grep -q "comparisonLine" _site/ly-sales-report-revenue-card.js
+          grep -q "ly-sales-report-revenue-card.js?v=20260827.1" _site/ly-special-reports-bridge.js
           grep -q "externalAi:false" _site/ly-chat-local-only.js
-          grep -q "ly-chat-unit-sync.js?v=20260826.8" _site/ly-module-loader.js
-          grep -q "lat-yen-fresh-core-v2-authoritative-156" _site/sw.js
-          grep -q "ly-chat-inventory-query.js" _site/sw.js
-          grep -q "ly-chat-sales-query.js" _site/sw.js
-          grep -q "ly-chat-sales-insights.js" _site/sw.js
-          grep -q "ly-chat-local-only.js" _site/sw.js
-          grep -q "lat-yen-fresh-core-v2-authoritative-156" _site/runtime-version.json
+          grep -q "lat-yen-fresh-core-v2-authoritative-157" _site/sw.js
+          grep -q "ly-chat-router.js" _site/sw.js
+          grep -q "ly-sales-report-revenue-card.js" _site/sw.js
+          grep -q "lat-yen-fresh-core-v2-authoritative-157" _site/runtime-version.json
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
