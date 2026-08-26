@@ -1,4 +1,4 @@
--- Fix iPOS receipt-number collisions and make sync health durable.
+-- Fix iPOS receipt-number collisions and preserve incident history.
 -- Also harden the remaining bootstrap RPC and optimize notification-device RLS.
 
 begin;
@@ -11,70 +11,73 @@ create unique index ly_sales_org_no_manual_uq
   on public.ly_sales(org_id, receipt_no)
   where ipos_tran_id is null;
 
--- Durable per-invocation iPOS sync history. This lives outside the exposed API.
-create table if not exists ly_private.ly_ipos_sync_attempts (
+-- Durable iPOS incident/recovery history. The existing sync-state row remains
+-- the current health snapshot; this table preserves failures that would
+-- otherwise disappear as soon as a later successful run clears last_error.
+create table if not exists ly_private.ly_ipos_sync_events (
   id bigint generated always as identity primary key,
   org_id uuid not null references public.ly_organizations(id) on delete cascade,
   store_uid text not null,
-  attempted_at timestamptz not null default now(),
-  success boolean not null,
+  event_at timestamptz not null default now(),
+  event_type text not null check (event_type in ('failure','recovery')),
   error text null
 );
 
-alter table ly_private.ly_ipos_sync_attempts enable row level security;
-revoke all on table ly_private.ly_ipos_sync_attempts from public, anon, authenticated;
-revoke all on sequence ly_private.ly_ipos_sync_attempts_id_seq from public, anon, authenticated;
-create index if not exists idx_ly_ipos_sync_attempts_org_store_time
-  on ly_private.ly_ipos_sync_attempts(org_id, store_uid, attempted_at desc);
+alter table ly_private.ly_ipos_sync_events enable row level security;
+revoke all on table ly_private.ly_ipos_sync_events from public, anon, authenticated;
+revoke all on sequence ly_private.ly_ipos_sync_events_id_seq from public, anon, authenticated;
+create index if not exists idx_ly_ipos_sync_events_org_store_time
+  on ly_private.ly_ipos_sync_events(org_id, store_uid, event_at desc);
 
--- Service-only RPC used by the Edge Function once per complete invocation.
-create or replace function public.ly_ipos_record_attempt(
-  p_org_id uuid,
-  p_store_uid text,
-  p_success boolean,
-  p_error text default null
-)
-returns void
+create or replace function ly_private.ly_capture_ipos_sync_event()
+returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-  v_now timestamptz := now();
 begin
-  if p_org_id is null or nullif(trim(p_store_uid), '') is null then
-    raise exception 'org_id and store_uid are required';
+  -- The Edge Function writes last_error once for each failed invocation.
+  -- Preserve every failure, even if the error text repeats, by comparing
+  -- last_attempt_at. Successful per-sale state updates do not create noise.
+  if new.last_error is not null
+     and (
+       tg_op = 'INSERT'
+       or old.last_attempt_at is distinct from new.last_attempt_at
+       or old.last_error is distinct from new.last_error
+     ) then
+    insert into ly_private.ly_ipos_sync_events(org_id, store_uid, event_at, event_type, error)
+    values (
+      new.org_id,
+      new.store_uid,
+      coalesce(new.last_attempt_at, now()),
+      'failure',
+      left(new.last_error, 2000)
+    );
+  elsif tg_op = 'UPDATE'
+        and old.last_error is not null
+        and new.last_error is null then
+    insert into ly_private.ly_ipos_sync_events(org_id, store_uid, event_at, event_type, error)
+    values (
+      new.org_id,
+      new.store_uid,
+      coalesce(new.last_success_at, new.last_attempt_at, now()),
+      'recovery',
+      null
+    );
   end if;
 
-  insert into public.ly_ipos_sync_state(
-    org_id, store_uid, last_success_at, last_attempt_at, last_error, updated_at
-  ) values (
-    p_org_id,
-    p_store_uid,
-    case when p_success then v_now else null end,
-    v_now,
-    case when p_success then null else left(coalesce(p_error, 'Unknown error'), 2000) end,
-    v_now
-  )
-  on conflict(org_id, store_uid) do update set
-    last_success_at = case when p_success then v_now else public.ly_ipos_sync_state.last_success_at end,
-    last_attempt_at = v_now,
-    last_error = case when p_success then null else left(coalesce(p_error, 'Unknown error'), 2000) end,
-    updated_at = v_now;
-
-  insert into ly_private.ly_ipos_sync_attempts(org_id, store_uid, attempted_at, success, error)
-  values (
-    p_org_id,
-    p_store_uid,
-    v_now,
-    p_success,
-    case when p_success then null else left(coalesce(p_error, 'Unknown error'), 2000) end
-  );
+  return new;
 end;
 $$;
 
-revoke all on function public.ly_ipos_record_attempt(uuid, text, boolean, text) from public, anon, authenticated;
-grant execute on function public.ly_ipos_record_attempt(uuid, text, boolean, text) to service_role, postgres;
+revoke all on function ly_private.ly_capture_ipos_sync_event() from public, anon, authenticated;
+
+drop trigger if exists trg_ly_capture_ipos_sync_event on public.ly_ipos_sync_state;
+create trigger trg_ly_capture_ipos_sync_event
+after insert or update of last_attempt_at, last_success_at, last_error
+on public.ly_ipos_sync_state
+for each row
+execute function ly_private.ly_capture_ipos_sync_event();
 
 -- Optimize auth/session helpers in the notification-device policy so they are
 -- evaluated once per statement instead of once per row.
