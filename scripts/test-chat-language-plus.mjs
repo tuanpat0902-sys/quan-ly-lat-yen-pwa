@@ -27,6 +27,8 @@ const cases=[
   ['Tạo phiếu nhập 10 kg Đường','Tạo phiếu nhập 10 kg Đường'],
   ['Bán ra 10 ly Cà phê sữa','Bán ra 10 ly Cà phê sữa'],
   ['Nhập 5 kg Đường tuần rồi','Nhập 5 kg Đường tuần rồi'],
+  ['Cà phê còn hàng không?','Cà phê còn hàng không?'],
+  ['Sắp hết hàng tuần này','Sắp hết hàng tuần này'],
   ['Cảm ơn bạn','Cảm ơn bạn']
 ];
 for(const [input,expected] of cases){
