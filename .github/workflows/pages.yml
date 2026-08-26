@@ -44,35 +44,18 @@ jobs:
 
           python - <<'PY'
           from pathlib import Path
-
-          # Chat Box hotfix: keep the user's original Vietnamese phrase for
-          # clarification labels. The folded form is only for matching.
           p = Path('_site/ly-local-chatbot.js')
           s = p.read_text(encoding='utf-8')
           old_version = "const VERSION='2026.08.25.18';"
           if old_version not in s:
               raise SystemExit('Unexpected local chatbot version')
           s = s.replace(old_version, "const VERSION='2026.08.25.19';", 1)
-
           anchor = "const uid=()=>globalThis.crypto?.randomUUID?.()||`local-${Date.now()}-${Math.random().toString(16).slice(2)}`;"
-          helper = r'''function originalPhrase(message,folded){
-  const target=normalize(folded),raw=text(message).normalize('NFC');
-  if(!target)return text(folded);
-  const words=raw.match(/[\p{L}\p{M}0-9]+/gu)||[];
-  for(let start=0;start<words.length;start++){
-    for(let end=words.length;end>start;end--){
-      const candidate=words.slice(start,end).join(' ');
-      if(normalize(candidate)===target)return candidate;
-    }
-  }
-  return text(folded);
-}
-'''
+          helper = "function originalPhrase(message,folded){\n  const target=normalize(folded),raw=text(message).normalize('NFC');\n  if(!target)return text(folded);\n  const words=raw.match(/[\\p{L}\\p{M}0-9]+/gu)||[];\n  for(let start=0;start<words.length;start++){\n    for(let end=words.length;end>start;end--){\n      const candidate=words.slice(start,end).join(' ');\n      if(normalize(candidate)===target)return candidate;\n    }\n  }\n  return text(folded);\n}\n"
           if 'function originalPhrase(message,folded)' not in s:
               if anchor not in s:
                   raise SystemExit('Missing local chatbot helper anchor')
               s = s.replace(anchor, helper + anchor, 1)
-
           old = "query:phrase,quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null)"
           new = "query:originalPhrase(message,phrase),quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null)"
           if old not in s:
@@ -80,7 +63,6 @@ jobs:
           s = s.replace(old, new, 1)
           p.write_text(s, encoding='utf-8')
 
-          # Keep the artifact loader contract aligned with the real modules.
           p = Path('_site/ly-module-loader.js')
           s = p.read_text(encoding='utf-8')
           s = s.replace("const VERSION='2026.08.26.10';", "const VERSION='2026.08.26.11';", 1)
