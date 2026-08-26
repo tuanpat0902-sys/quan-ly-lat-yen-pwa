@@ -7,7 +7,7 @@
   const fold=value=>text(value).toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
   const number=value=>{const parsed=Number(value);return Number.isFinite(parsed)?parsed:0;};
   const format=value=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:2}).format(number(value));
-  const MUTATION=/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(tao|tap|lap|them|moi|sua|cap nhat|chinh|xoa|huy|nhap|xuat|ban)\b/;
+  const MUTATION=/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(tao|tap|lap|them|moi|cap nhat|chinh|xoa|huy|nhap|xuat|ban)\b/;
   const ITEM_QUERY=/(con bao nhieu|ton bao nhieu|ton kho bao nhieu|so luong.*con|con hang khong|co con khong|con khong|het chua|het hang chua|ton kho cua|kiem tra ton|xem ton)/;
   const LIST_QUERY=/(nguyen lieu nao|danh sach nguyen lieu|nhung nguyen lieu|mat hang nao).*(sap het|can nhap|het hang)|(sap het|can nhap|het hang).*(nguyen lieu nao|danh sach nguyen lieu|nhung nguyen lieu)/;
 
