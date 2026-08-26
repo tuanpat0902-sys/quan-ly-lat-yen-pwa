@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-157';
+const CACHE='lat-yen-fresh-core-v2-authoritative-158';
 const INDEX_KEY='./index.html';
 const CORE_ASSETS=[
   INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',
@@ -7,7 +7,7 @@ const CORE_ASSETS=[
   './ly-fresh-core-v2-sales-takeover.js','./ly-fresh-core-v2-cashflow-takeover.js','./ly-fresh-core-v2-masterdata-takeover.js',
   './ly-fresh-core-v2-read-takeover.js','./ly-fresh-core-v2-manual-refresh.js','./ly-fresh-core-v2-realtime.js','./ly-fresh-core-v2-realtime-phase2.js',
   './ly-legacy-dom-shim.js','./ly-legacy-state-shim.js','./ly-legacy-helper-shim.js','./ly-legacy-model-shim.js','./ly-legacy-list-shim.js','./ly-form-draft-guard.js',
-  './ly-ui-bootstrap-rescue.js','./ly-independent-bootstrap.js','./ly-warehouse-delete-ux.js','./ly-local-chatbot.js','./ly-chat-language-plus.js','./ly-chat-inventory-query.js','./ly-chat-sales-query.js','./ly-chat-sales-insights.js','./ly-chat-router.js','./ly-chat-local-only.js','./ly-chat-unit-sync.js','./ly-chat-stock-unit-display.js','./ly-settings-enhancements.js','./ly-branding-sync.js','./ly-sidebar-visuals.js','./ly-compact-admin-layout.js','./ly-unit-conversions.js','./ly-ingredient-conversion-sync.js','./ly-ingredient-table-ux.js','./ly-ingredient-sidebar-status.js','./ly-stock-unit-sync.js','./ly-salary-fund-sync.js','./ly-employee-termination-date.js','./ly-simulation-personnel.js',
+  './ly-ui-bootstrap-rescue.js','./ly-independent-bootstrap.js','./ly-warehouse-delete-ux.js','./ly-local-chatbot.js','./ly-chat-language-plus.js','./ly-chat-inventory-query.js','./ly-chat-sales-query.js','./ly-chat-sales-insights.js','./ly-chat-router.js','./ly-chat-legacy-inventory-unit-guard.js','./ly-chat-response-gate.js','./ly-chat-local-only.js','./ly-chat-unit-sync.js','./ly-chat-stock-unit-display.js','./ly-settings-enhancements.js','./ly-branding-sync.js','./ly-sidebar-visuals.js','./ly-compact-admin-layout.js','./ly-unit-conversions.js','./ly-ingredient-conversion-sync.js','./ly-ingredient-table-ux.js','./ly-ingredient-sidebar-status.js','./ly-stock-unit-sync.js','./ly-salary-fund-sync.js','./ly-employee-termination-date.js','./ly-simulation-personnel.js',
   './ly-history-bridge.js','./ly-activity-history.js','./ly-employees-bridge.js','./ly-employees.js',
   './ly-finance-bridge.js','./ly-finance.js','./ly-reports-bridge.js','./ly-reports.js',
   './ly-settings-ui-bridge.js','./ly-settings-ui.js','./ly-cashflow-bridge.js','./ly-cashflow.js',
