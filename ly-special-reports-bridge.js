@@ -1,18 +1,26 @@
 /* Lát Yên — Special Reports Bridge V1 */
 (()=>{
   'use strict';
-  if(window.__lySpecialReportsBridge)return;
-  const VERSION='2026.08.24.3';
+  if(window.__lySpecialReportsBridgeV2)return;
+  window.__lySpecialReportsBridgeV2=true;
+  const VERSION='2026.08.27.1';
   let loading=null;
   const stubs={};
+  function loadRevenueCard(){
+    if(window.__lySalesReportRevenueCard?.version==='2026.08.27.1'){window.__lySalesReportRevenueCard.sync?.();return Promise.resolve(true);}
+    return new Promise(resolve=>{
+      const existing=document.querySelector?.('script[data-ly-sales-revenue-card]');if(existing){setTimeout(()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(Boolean(window.__lySalesReportRevenueCard));},0);return;}
+      const s=document.createElement('script');s.src='./ly-sales-report-revenue-card.js?v=20260827.1';s.async=true;s.dataset.lySalesRevenueCard='1';s.onload=()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(true);};s.onerror=()=>resolve(false);(document.head||document.documentElement).appendChild(s);
+    });
+  }
   function load(){
-    if(window.__lySpecialReportsModule)return Promise.resolve(true);
+    if(window.__lySpecialReportsModule){loadRevenueCard();return Promise.resolve(true);}
     if(loading)return loading;
     loading=new Promise(resolve=>{
       const s=document.createElement('script');
       s.src='./ly-special-reports.js?v=20260824.3';
       s.async=true;
-      s.onload=()=>resolve(true);
+      s.onload=()=>{loadRevenueCard();resolve(true);};
       s.onerror=()=>{loading=null;resolve(false)};
       (document.head||document.documentElement).appendChild(s);
     });
@@ -32,5 +40,6 @@
     window[name]=stub;
   }
   ['renderImportReport','renderExportReport','renderSaleReport'].forEach(install);
-  window.__lySpecialReportsBridge={version:VERSION,load,status:()=>({version:VERSION,loaded:!!window.__lySpecialReportsModule})};
+  loadRevenueCard();
+  window.__lySpecialReportsBridge={version:VERSION,load,loadRevenueCard,status:()=>({version:VERSION,loaded:!!window.__lySpecialReportsModule,revenueCard:!!window.__lySalesReportRevenueCard})};
 })();

@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.4';
+  const VERSION='2026.08.27.5';
   if(window.__lyChatLanguagePlus?.version===VERSION)return;
 
   const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -22,9 +22,10 @@
   const loadInventoryQueries=()=>loadScript('__lyChatInventoryQuery','2026.08.27.2','./ly-chat-inventory-query.js?v=20260827.2','data-ly-chat-inventory-query');
   const loadSalesQueries=()=>loadScript('__lyChatSalesQuery','2026.08.27.1','./ly-chat-sales-query.js?v=20260827.1','data-ly-chat-sales-query');
   const loadSalesInsights=()=>loadScript('__lyChatSalesInsights','2026.08.27.2','./ly-chat-sales-insights.js?v=20260827.2','data-ly-chat-sales-insights');
-  function patchAssistant(){const assistant=window.__lyLocalAssistant;if(!assistant||assistant.__lyLanguagePlusPatchedV4)return false;for(const key of ['assistantReply','reportReply','contextualReportMessage']){const original=typeof assistant[key]==='function'?assistant[key].bind(assistant):null;if(!original)continue;assistant[key]=(message,...rest)=>original(normalizeMessage(message),...rest);}const originalStatus=typeof assistant.status==='function'?assistant.status.bind(assistant):()=>({});assistant.status=()=>({...originalStatus(),languagePlus:VERSION,vietnameseNormalization:true});assistant.__lyLanguagePlusPatchedV4=true;return true;}
-  function sync(){patchAssistant();loadInventoryQueries();loadSalesQueries();loadSalesInsights();}
+  const loadRouter=()=>loadScript('__lyChatRouter','2026.08.27.1','./ly-chat-router.js?v=20260827.1','data-ly-chat-router');
+  function patchAssistant(){const assistant=window.__lyLocalAssistant;if(!assistant||assistant.__lyLanguagePlusPatchedV5)return false;for(const key of ['assistantReply','reportReply','contextualReportMessage']){const original=typeof assistant[key]==='function'?assistant[key].bind(assistant):null;if(!original)continue;assistant[key]=(message,...rest)=>original(normalizeMessage(message),...rest);}const originalStatus=typeof assistant.status==='function'?assistant.status.bind(assistant):()=>({});assistant.status=()=>({...originalStatus(),languagePlus:VERSION,vietnameseNormalization:true});assistant.__lyLanguagePlusPatchedV5=true;return true;}
+  function sync(){patchAssistant();loadInventoryQueries();loadSalesQueries();loadSalesInsights();loadRouter();}
   document.addEventListener('click',event=>{if(event.target?.closest?.('#lyAssistantDrawer [data-assistant-send]'))rewriteInput();},true);document.addEventListener('keydown',event=>{if(event.target?.id==='lyAssistantInput'&&event.key==='Enter'&&!event.shiftKey)rewriteInput();},true);window.addEventListener('latyen:hydrated',sync);window.addEventListener('latyen:v2-hydrated',sync);sync();
   const timer=setInterval(()=>{if(patchAssistant())clearInterval(timer);},250);setTimeout(()=>clearInterval(timer),30000);
-  window.__lyChatLanguagePlus={version:VERSION,normalizeMessage,rewriteInput,loadInventoryQueries,loadSalesQueries,loadSalesInsights,sync,status:()=>({version:VERSION,enabled:true,mappings:MAPPINGS.length,inventoryQueries:Boolean(window.__lyChatInventoryQuery),salesQueries:Boolean(window.__lyChatSalesQuery),salesInsights:Boolean(window.__lyChatSalesInsights)})};
+  window.__lyChatLanguagePlus={version:VERSION,normalizeMessage,rewriteInput,loadInventoryQueries,loadSalesQueries,loadSalesInsights,loadRouter,sync,status:()=>({version:VERSION,enabled:true,mappings:MAPPINGS.length,inventoryQueries:Boolean(window.__lyChatInventoryQuery),salesQueries:Boolean(window.__lyChatSalesQuery),salesInsights:Boolean(window.__lyChatSalesInsights),router:Boolean(window.__lyChatRouter)})};
 })();
