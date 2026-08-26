@@ -6,6 +6,8 @@
   const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
   const REPORT_SIGNALS=/(bao cao|thong ke|tong quan|doanh thu|doanh so|tien ban|tong ban|ban ra|ton kho|con hang|het hang|sap het hang|thu chi|tien vao tien ra|thu vao chi ra|dong tien|chi phi|nhap xuat|ban chay|top mon|mon chay nhat|mon ban nhieu nhat|loi nhuan|lai nhuan|lai rong|lai lo|profit|bang luong|quy luong|tien luong|luong nhan vien|luong nv)/;
   const TIME_ONLY=/(bua nay|bua qua|tuan roi|thang roi|quy roi|nam ngoai|tuan trc|thang trc|hom qia|hom qua|tuan truoc|thang truoc|quy truoc|nam truoc)/;
+  const EXPLICIT_MUTATION=/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(tao|tap|lap|them|moi|sua|cap nhat|chinh|xoa|huy)\b/;
+  const QUANTITY_DRAFT=/^(ban|nhap|xuat)\b[^\n]*\b\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|lit|chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)?\b/;
   const MAPPINGS=[
     ['doang thu','doanh thu'],['doan thu','doanh thu'],['doanh thuu','doanh thu'],['doanh so','doanh thu'],['tien ban','doanh thu'],['tong ban','doanh thu'],['ban ra','doanh thu'],
     ['ton khp','tồn kho'],['ton khoo','tồn kho'],['con hang','tồn kho'],['het hang','tồn kho'],['sap het hang','tồn kho'],
@@ -39,7 +41,9 @@
   }
   function normalizeMessage(value){
     const original=String(value??'').trim();if(!original)return original;
-    const source=fold(original),shouldNormalize=REPORT_SIGNALS.test(source)||TIME_ONLY.test(source);
+    const source=fold(original);
+    if(EXPLICIT_MUTATION.test(source)||QUANTITY_DRAFT.test(source))return original;
+    const shouldNormalize=REPORT_SIGNALS.test(source)||TIME_ONLY.test(source);
     if(!shouldNormalize)return original;
     let output=original;
     for(const [target,replacement] of MAPPINGS)output=replacePhrase(output,target,replacement);
