@@ -1,16 +1,16 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV52)return;
-  window.__lyModuleLoaderV52=true;
+  if(window.__lyModuleLoaderV53)return;
+  window.__lyModuleLoaderV53=true;
 
-  const VERSION='2026.08.27.3';
+  const VERSION='2026.08.27.4';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     appVersion:{src:'./ly-app-version.js?v=2.1.68',test:()=>window.__lyAppVersion?.version==='2.1.68'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260826.19',test:()=>window.__lyLocalAssistant?.version==='2026.08.26.19'},
-    chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260827.4',test:()=>window.__lyChatLanguagePlus?.version==='2026.08.27.4'},
+    chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260827.5',test:()=>window.__lyChatLanguagePlus?.version==='2026.08.27.5'},
     chatLocalOnly:{src:'./ly-chat-local-only.js?v=20260827.1',test:()=>window.__lyChatLocalOnly?.version==='2026.08.27.1'},
     chatUnitSync:{src:'./ly-chat-unit-sync.js?v=20260826.8',test:()=>window.__lyChatUnitSync?.version==='2026.08.26.8'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
