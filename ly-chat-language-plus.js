@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.3';
+  const VERSION='2026.08.27.4';
   if(window.__lyChatLanguagePlus?.version===VERSION)return;
 
   const fold=value=>String(value??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
@@ -19,10 +19,10 @@
   function normalizeMessage(value){const original=String(value??'').trim();if(!original)return original;const source=fold(original);if(EXPLICIT_MUTATION.test(source)||QUANTITY_DRAFT.test(source))return original;const shouldNormalize=REPORT_SIGNALS.test(source)||TIME_ONLY.test(source);if(!shouldNormalize)return original;let output=original;for(const [target,replacement] of MAPPINGS)output=replacePhrase(output,target,replacement);return output.replace(/\s+/g,' ').trim();}
   function rewriteInput(){const input=document.getElementById?.('lyAssistantInput');if(!input?.value)return;const normalized=normalizeMessage(input.value);if(normalized!==input.value){input.value=normalized;input.dispatchEvent(new Event('input',{bubbles:true}));}}
   function loadScript(globalName,version,src,dataKey){if(window[globalName]?.version===version)return true;if(!document?.createElement||document.querySelector?.(`script[${dataKey}]`))return false;const script=document.createElement('script');script.src=src;script.async=true;script.setAttribute(dataKey,'1');(document.head||document.documentElement)?.appendChild?.(script);return true;}
-  const loadInventoryQueries=()=>loadScript('__lyChatInventoryQuery','2026.08.27.1','./ly-chat-inventory-query.js?v=20260827.1','data-ly-chat-inventory-query');
+  const loadInventoryQueries=()=>loadScript('__lyChatInventoryQuery','2026.08.27.2','./ly-chat-inventory-query.js?v=20260827.2','data-ly-chat-inventory-query');
   const loadSalesQueries=()=>loadScript('__lyChatSalesQuery','2026.08.27.1','./ly-chat-sales-query.js?v=20260827.1','data-ly-chat-sales-query');
-  const loadSalesInsights=()=>loadScript('__lyChatSalesInsights','2026.08.27.1','./ly-chat-sales-insights.js?v=20260827.1','data-ly-chat-sales-insights');
-  function patchAssistant(){const assistant=window.__lyLocalAssistant;if(!assistant||assistant.__lyLanguagePlusPatched)return false;for(const key of ['assistantReply','reportReply','contextualReportMessage']){const original=typeof assistant[key]==='function'?assistant[key].bind(assistant):null;if(!original)continue;assistant[key]=(message,...rest)=>original(normalizeMessage(message),...rest);}const originalStatus=typeof assistant.status==='function'?assistant.status.bind(assistant):()=>({});assistant.status=()=>({...originalStatus(),languagePlus:VERSION,vietnameseNormalization:true});assistant.__lyLanguagePlusPatched=true;return true;}
+  const loadSalesInsights=()=>loadScript('__lyChatSalesInsights','2026.08.27.2','./ly-chat-sales-insights.js?v=20260827.2','data-ly-chat-sales-insights');
+  function patchAssistant(){const assistant=window.__lyLocalAssistant;if(!assistant||assistant.__lyLanguagePlusPatchedV4)return false;for(const key of ['assistantReply','reportReply','contextualReportMessage']){const original=typeof assistant[key]==='function'?assistant[key].bind(assistant):null;if(!original)continue;assistant[key]=(message,...rest)=>original(normalizeMessage(message),...rest);}const originalStatus=typeof assistant.status==='function'?assistant.status.bind(assistant):()=>({});assistant.status=()=>({...originalStatus(),languagePlus:VERSION,vietnameseNormalization:true});assistant.__lyLanguagePlusPatchedV4=true;return true;}
   function sync(){patchAssistant();loadInventoryQueries();loadSalesQueries();loadSalesInsights();}
   document.addEventListener('click',event=>{if(event.target?.closest?.('#lyAssistantDrawer [data-assistant-send]'))rewriteInput();},true);document.addEventListener('keydown',event=>{if(event.target?.id==='lyAssistantInput'&&event.key==='Enter'&&!event.shiftKey)rewriteInput();},true);window.addEventListener('latyen:hydrated',sync);window.addEventListener('latyen:v2-hydrated',sync);sync();
   const timer=setInterval(()=>{if(patchAssistant())clearInterval(timer);},250);setTimeout(()=>clearInterval(timer),30000);

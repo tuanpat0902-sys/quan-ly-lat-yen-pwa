@@ -21,12 +21,14 @@ const sandbox={
         {id:'i1',name:'Đường',unit:'kg',minimum_stock:5,active:true},
         {id:'i2',name:'Sữa tươi',unit:'l',minimum_stock:2,active:true},
         {id:'i3',name:'Sữa chua',unit:'hộp',minimum_stock:3,active:true},
-        {id:'i4',name:'Bột cacao',unit:'kg',minimum_stock:1,active:true}
+        {id:'i4',name:'Bột cacao',unit:'kg',minimum_stock:1,active:true},
+        {id:'i5',name:'Bột hạt dẻ cười',unit:'g. g g0 g0 g0 g0',minimum_stock:0,active:true}
       ],
       inventory:[
         {warehouse_id:'w1',ingredient_id:'i1',quantity:4},
         {warehouse_id:'w1',ingredient_id:'i2',quantity:0},
-        {warehouse_id:'w1',ingredient_id:'i3',quantity:4}
+        {warehouse_id:'w1',ingredient_id:'i3',quantity:4},
+        {warehouse_id:'w1',ingredient_id:'i5',quantity:5}
       ]
     }
   }
@@ -72,8 +74,11 @@ expectContains('Bột cacao còn bao nhiêu?',['Bột cacao','chưa thấy số 
 const ambiguous=inventory.inventoryReply('Sữa còn bao nhiêu?');
 if(ambiguous?.report_kind!=='inventory_item_ambiguous'||ambiguous.suggestions?.length!==2)throw new Error(`Expected ambiguous milk query, got ${JSON.stringify(ambiguous)}`);
 expectContains('Nguyên liệu nào sắp hết?',['3 nguyên liệu cần chú ý','Đường','Sữa tươi','Sữa chua']);
+const summary=expectContains('Báo cáo tồn kho',['3 nguyên liệu còn hàng','1 nguyên liệu đã hết','Bột hạt dẻ cười: 5']);
+if(/g0|g\. g/.test(summary.content))throw new Error(`Malformed unit leaked into inventory summary: ${summary.content}`);
+if(inventory.safeUnit('g. g g0 g0')!=='')throw new Error('safeUnit must reject malformed units');
 const mutation=inventory.inventoryReply('Tạo phiếu nhập 10 kg Đường');
 if(mutation!==null)throw new Error(`Mutation must bypass inventory query: ${JSON.stringify(mutation)}`);
 
 console.log(`Vietnamese chatbot normalization: PASS (${languageCases.length} cases)`);
-console.log('Inventory chatbot queries: PASS (6 cases)');
+console.log('Inventory chatbot queries: PASS (8 cases)');

@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 
 const APP_VERSION='2.1.68';
-const REVISION='fresh-core-v2-authoritative-v71';
-const LOADER_VERSION='20260827.71';
-const SW_CACHE='lat-yen-fresh-core-v2-authoritative-155';
+const REVISION='fresh-core-v2-authoritative-v72';
+const LOADER_VERSION='20260827.72';
+const SW_CACHE='lat-yen-fresh-core-v2-authoritative-156';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`
@@ -29,7 +29,7 @@ const RUNTIME_BLOCK=`
 <script src="./ly-independent-bootstrap.js?v=20260824.4"></script>
 <script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
 <script src="./ly-local-chatbot.js?v=20260826.19"></script>
-<script src="./ly-chat-language-plus.js?v=20260827.1"></script>
+<script src="./ly-chat-language-plus.js?v=20260827.4"></script>
 <script src="./ly-chat-local-only.js?v=20260827.1"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 `;
@@ -73,7 +73,10 @@ function prepareSw(source){
   if(!sw.includes("'./ly-menu-security.js'"))sw=sw.replace("'./ly-legacy-list-shim.js',","'./ly-legacy-list-shim.js','./ly-menu-security.js',");
   if(!sw.includes("'./ly-local-chatbot.js'"))sw=sw.replace("'./ly-warehouse-delete-ux.js',","'./ly-warehouse-delete-ux.js','./ly-local-chatbot.js',");
   if(!sw.includes("'./ly-chat-language-plus.js'"))sw=sw.replace("'./ly-local-chatbot.js',","'./ly-local-chatbot.js','./ly-chat-language-plus.js',");
-  if(!sw.includes("'./ly-chat-local-only.js'"))sw=sw.replace("'./ly-chat-language-plus.js',","'./ly-chat-language-plus.js','./ly-chat-local-only.js',");
+  if(!sw.includes("'./ly-chat-inventory-query.js'"))sw=sw.replace("'./ly-chat-language-plus.js',","'./ly-chat-language-plus.js','./ly-chat-inventory-query.js',");
+  if(!sw.includes("'./ly-chat-sales-query.js'"))sw=sw.replace("'./ly-chat-inventory-query.js',","'./ly-chat-inventory-query.js','./ly-chat-sales-query.js',");
+  if(!sw.includes("'./ly-chat-sales-insights.js'"))sw=sw.replace("'./ly-chat-sales-query.js',","'./ly-chat-sales-query.js','./ly-chat-sales-insights.js',");
+  if(!sw.includes("'./ly-chat-local-only.js'"))sw=sw.replace("'./ly-chat-sales-insights.js',","'./ly-chat-sales-insights.js','./ly-chat-local-only.js',");
   if(!sw.includes("'./ly-inventory-alerts.js'"))sw=sw.replace("'./ly-notification-center.js',","'./ly-notification-center.js','./ly-inventory-alerts.js',");
   return sw;
 }
@@ -100,13 +103,16 @@ const checks=[
   ['unified cloud realtime',output.includes('ly-cloud-realtime.js?v=20260824.5')],
   ['stable bootstrap',output.includes('ly-independent-bootstrap.js?v=20260824.4')],
   ['local assistant',output.includes('ly-local-chatbot.js?v=20260826.19')],
-  ['Vietnamese language plus',output.includes('ly-chat-language-plus.js?v=20260827.1')],
+  ['Vietnamese language plus',output.includes('ly-chat-language-plus.js?v=20260827.4')],
   ['local-only chat gate',output.includes('ly-chat-local-only.js?v=20260827.1')],
   ['single auth owner',!output.includes('ly-auth-gate.js')],
   ['single Supabase client bootstrap',output.includes('ly-supabase-bootstrap.js?v=20260824.2')],
   ['shadow',output.includes('ly-fresh-core-v2-shadow.js?v=20260824.7')],
   ['service worker cache',swOutput.includes(SW_CACHE)],
   ['service worker language plus',swOutput.includes("'./ly-chat-language-plus.js'")],
+  ['service worker inventory query',swOutput.includes("'./ly-chat-inventory-query.js'")],
+  ['service worker sales query',swOutput.includes("'./ly-chat-sales-query.js'")],
+  ['service worker sales insights',swOutput.includes("'./ly-chat-sales-insights.js'")],
   ['service worker local-only gate',swOutput.includes("'./ly-chat-local-only.js'")]
 ];
 for(const [name,ok]of checks)if(!ok)throw new Error(`Pages artifact check failed: ${name}`);

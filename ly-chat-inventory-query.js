@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.1';
+  const VERSION='2026.08.27.2';
   if(window.__lyChatInventoryQuery?.version===VERSION)return;
 
   const text=value=>String(value??'').trim();
@@ -10,6 +10,7 @@
   const MUTATION=/^(?:(?:hay|vui long|giup|minh|toi|cho)\s+){0,4}(tao|tap|lap|them|moi|cap nhat|chinh|xoa|huy|nhap|xuat|ban)\b/;
   const ITEM_QUERY=/(con bao nhieu|ton bao nhieu|ton kho bao nhieu|so luong.*con|con hang khong|co con khong|con khong|het chua|het hang chua|ton kho cua|kiem tra ton|xem ton)/;
   const LIST_QUERY=/(nguyen lieu nao|danh sach nguyen lieu|nhung nguyen lieu|mat hang nao).*(sap het|can nhap|het hang)|(sap het|can nhap|het hang).*(nguyen lieu nao|danh sach nguyen lieu|nhung nguyen lieu)/;
+  const GENERAL_REPORT=/(bao cao|tong quan|thong ke).*(ton kho|nguyen lieu)|(ton kho|nguyen lieu).*(bao cao|tong quan|thong ke)/;
 
   function snapshot(){
     const core=window.__lyFreshCoreV2?.store?.getState?.()||{},legacy=window.db||{};
@@ -22,6 +23,11 @@
     if(qty<=min)return 'restock';
     if(qty<=min*1.5)return 'low';
     return 'ok';
+  }
+  function safeUnit(value){
+    const raw=text(value).replace(/\s+/g,' ').trim();
+    if(!raw||raw.length>12)return '';
+    return /^[\p{L}\p{M}0-9%./-]+(?:\s+[\p{L}\p{M}0-9%./-]+)?$/u.test(raw)?raw:'';
   }
   function warehouseContext(data){
     const id=text(window.currentWarehouseId),name=text(data.warehouses.find(row=>String(row.id)===id)?.name)||'Kho đang chọn';
@@ -58,12 +64,23 @@
     return (data.balances||[]).find(row=>String(row?.ingredient_id)===String(ingredient.id)&&(!warehouseId||String(row?.warehouse_id)===warehouseId))||null;
   }
   function statusText(level){return ({out:'đã hết hàng',restock:'đã chạm/ngang mức cần nhập',low:'đang sắp hết',ok:'đang ở mức ổn'})[level]||'chưa xác định';}
+  function summaryReply(message,data=snapshot()){
+    const source=fold(message);if(MUTATION.test(source)||!GENERAL_REPORT.test(source)||/chi tiet|day du|tung nguyen lieu|danh sach/.test(source))return null;
+    const warehouse=warehouseContext(data),rows=[];
+    for(const ingredient of activeIngredients(data)){
+      const balance=balanceFor(ingredient,data,warehouse.id);if(!balance)continue;
+      rows.push({ingredient,quantity:number(balance.quantity),unit:safeUnit(ingredient.unit)});
+    }
+    if(!rows.length)return {content:`Mình chưa thấy dữ liệu tồn kho tại ${warehouse.name}. Bạn thử đồng bộ lại dữ liệu hoặc kiểm tra đúng kho đang chọn nhé.`,report:true,report_kind:'inventory_summary'};
+    const positive=rows.filter(row=>row.quantity>0),out=rows.filter(row=>row.quantity<=0),top=[...positive].sort((a,b)=>b.quantity-a.quantity).slice(0,3),topText=top.map(row=>`${row.ingredient.name}: ${format(row.quantity)}${row.unit?` ${row.unit}`:''}`).join('; ');
+    return {content:`Tồn kho tại ${warehouse.name}: ${positive.length} nguyên liệu còn hàng và ${out.length} nguyên liệu đã hết.${topText?` Một số số dư lớn: ${topText}.`:''} Bạn có thể hỏi “Nguyên liệu nào sắp hết?” hoặc “Đường còn bao nhiêu?”.`,report:true,report_kind:'inventory_summary'};
+  }
   function itemReply(message,data=snapshot()){
     const source=fold(message);if(MUTATION.test(source)||!ITEM_QUERY.test(source))return null;
     const warehouse=warehouseContext(data),ranked=rankIngredients(message,data);if(!ranked.length)return {content:`Mình chưa xác định được nguyên liệu bạn muốn kiểm tra tại ${warehouse.name}. Bạn gửi đúng tên nguyên liệu, ví dụ “Đường còn bao nhiêu?” nhé.`,report:true,report_kind:'inventory_item_unknown'};
     const topScore=ranked[0].score,candidates=ranked.filter(item=>item.score===topScore).slice(0,5);
     if(candidates.length>1)return {content:`Mình thấy nhiều nguyên liệu gần với tên bạn hỏi tại ${warehouse.name}. Bạn chọn tên cụ thể nhé.`,suggestions:candidates.map(item=>`Tồn kho ${item.row.name}`),report:true,report_kind:'inventory_item_ambiguous'};
-    const ingredient=candidates[0].row,balance=balanceFor(ingredient,data,warehouse.id),unit=text(ingredient.unit);
+    const ingredient=candidates[0].row,balance=balanceFor(ingredient,data,warehouse.id),unit=safeUnit(ingredient.unit);
     if(!balance)return {content:`Mình tìm thấy ${ingredient.name}, nhưng chưa thấy số dư tồn kho của nguyên liệu này tại ${warehouse.name}.`,report:true,report_kind:'inventory_item'};
     const quantity=number(balance.quantity),minimum=Math.max(0,number(ingredient.minimum_stock??ingredient.min_stock)),level=classify(quantity,minimum),threshold=minimum>0?` Mức tồn tối thiểu đang đặt là ${format(minimum)}${unit?` ${unit}`:''}.`:'';
     return {content:`${ingredient.name} tại ${warehouse.name} hiện còn ${format(quantity)}${unit?` ${unit}`:''} và ${statusText(level)}.${threshold}`,report:true,report_kind:'inventory_item',inventory_item_id:ingredient.id,inventory_level:level};
@@ -78,20 +95,20 @@
     }
     const wantsOut=/het hang/.test(source)&&!/sap het/.test(source),wantsRestock=/can nhap/.test(source),severity={out:0,restock:1,low:2},selected=rows.filter(row=>wantsOut?row.level==='out':wantsRestock?['out','restock'].includes(row.level):true).sort((a,b)=>(severity[a.level]??9)-(severity[b.level]??9)||a.quantity-b.quantity);
     if(!selected.length)return {content:`Hiện mình chưa thấy nguyên liệu nào thuộc nhóm bạn hỏi tại ${warehouse.name}.`,report:true,report_kind:'inventory_attention'};
-    const lines=selected.slice(0,10).map(row=>`${row.ingredient.name}: ${format(row.quantity)}${text(row.ingredient.unit)?` ${text(row.ingredient.unit)}`:''} (${statusText(row.level)})`),more=selected.length>10?` và ${selected.length-10} nguyên liệu khác`:'';
+    const lines=selected.slice(0,10).map(row=>{const unit=safeUnit(row.ingredient.unit);return `${row.ingredient.name}: ${format(row.quantity)}${unit?` ${unit}`:''} (${statusText(row.level)})`;}),more=selected.length>10?` và ${selected.length-10} nguyên liệu khác`:'';
     return {content:`${warehouse.name} có ${selected.length} nguyên liệu cần chú ý: ${lines.join('; ')}${more}.`,report:true,report_kind:'inventory_attention'};
   }
-  function inventoryReply(message,data=snapshot()){return listReply(message,data)||itemReply(message,data);}
+  function inventoryReply(message,data=snapshot()){return summaryReply(message,data)||listReply(message,data)||itemReply(message,data);}
   function patchAssistant(){
-    const assistant=window.__lyLocalAssistant;if(!assistant||assistant.__lyInventoryQueryPatched)return false;
+    const assistant=window.__lyLocalAssistant;if(!assistant||assistant.__lyInventoryQueryPatchedV2)return false;
     const original=typeof assistant.assistantReply==='function'?assistant.assistantReply.bind(assistant):null;if(!original)return false;
     assistant.assistantReply=(message,...rest)=>inventoryReply(message)||original(message,...rest);
     const originalStatus=typeof assistant.status==='function'?assistant.status.bind(assistant):()=>({});
     assistant.status=()=>({...originalStatus(),inventoryQueries:VERSION});
-    assistant.__lyInventoryQueryPatched=true;return true;
+    assistant.__lyInventoryQueryPatchedV2=true;return true;
   }
   function sync(){patchAssistant();}
   window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);sync();
   const timer=setInterval(()=>{if(patchAssistant())clearInterval(timer);},250);setTimeout(()=>clearInterval(timer),30000);
-  window.__lyChatInventoryQuery={version:VERSION,classify,itemReply,listReply,inventoryReply,rankIngredients,sync,status:()=>({version:VERSION,enabled:true})};
+  window.__lyChatInventoryQuery={version:VERSION,classify,safeUnit,summaryReply,itemReply,listReply,inventoryReply,rankIngredients,sync,status:()=>({version:VERSION,enabled:true})};
 })();
