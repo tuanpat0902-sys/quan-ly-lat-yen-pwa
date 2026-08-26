@@ -35,7 +35,7 @@ for(const f of lazy){
   if(!sw.includes(f))fail(`service worker does not precache/reference ${f}`);
 }
 
-const ctx={console,Promise,setTimeout,clearTimeout,queueMicrotask};
+const ctx={console,Promise,setTimeout,clearTimeout,setInterval:()=>0,clearInterval:()=>{},queueMicrotask};
 ctx.window=ctx;
 ctx.self=ctx;
 ctx.navigator={onLine:true};
@@ -54,7 +54,17 @@ ctx.document={
   addEventListener:()=>{},
   getElementById:()=>null,
   querySelector:()=>null,
-  createElement:(tag)=>({tagName:String(tag).toUpperCase(),dataset:{},addEventListener:()=>{}}),
+  createElement:(tag)=>{
+    const attrs={};
+    return {
+      tagName:String(tag).toUpperCase(),
+      dataset:{},
+      addEventListener:()=>{},
+      setAttribute:(name,value)=>{attrs[name]=String(value);},
+      getAttribute:name=>attrs[name]??null,
+      removeAttribute:name=>{delete attrs[name];}
+    };
+  },
   head:{appendChild:(s)=>{
     if(s.tagName==='STYLE')return s;
     scriptNodes.push(s);
