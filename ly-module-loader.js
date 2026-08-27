@@ -97,7 +97,9 @@
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
   document.addEventListener('click',event=>preparePanel(panelOf(event.target)),true);
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
-  load('runtimeErrorBoundary');load('appVersion');loadAssistant();loadCore();load('warehouseDeleteUX');
-  setTimeout(()=>{load('runtimeErrorBoundary');load('branding');load('appVersion');loadAssistant();loadCore();load('warehouseDeleteUX');},500);
+  load('runtimeErrorBoundary');load('appVersion');loadCore();load('warehouseDeleteUX');
+  const loadBackground=()=>{load('branding');loadAssistant();};
+  if(typeof requestIdleCallback==='function')requestIdleCallback(loadBackground,{timeout:1400});else setTimeout(loadBackground,900);
+  setTimeout(()=>{load('runtimeErrorBoundary');load('appVersion');load('warehouseDeleteUX');},1400);
   window.__lyModuleLoader={version:VERSION,load,loadCore,loadAssistant,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
 })();
