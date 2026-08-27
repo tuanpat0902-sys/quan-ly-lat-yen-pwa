@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.84",
-  "revision": "fresh-core-v2-authoritative-v90",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-174",
+  "appVersion": "3.0.0",
+  "revision": "fresh-core-v3-shell-authoritative-v1",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-175",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -30,7 +30,7 @@
   "maintenance": "legacy-chat-experiments-removed-minimal-service-worker-catalog-single-release-source",
   "startup": "critical-business-first-assistant-idle-deferred-no-duplicate-core-pass",
   "performance": "eager-runtime-budget-contextual-domain-loading-adaptive-timeouts-performance-v4-loader-owned",
-  "freshCoreV3": "master-data-production-shadow-soak-with-local-settings-status",
+  "freshCoreV3": "authoritative-navigation-and-application-state",
   "zeroAddedCost": true,
   "v3ShadowBudget": "one-device-read-cycle-per-24h-two-small-queries-zero-cloud-writes",
   "v3Diagnostics": "local-only-settings-card-no-cloud-telemetry",
@@ -41,6 +41,7 @@
   "menuNavigation": "menu-security-early-shell-safe-queued-protected-navigation",
   "menuStartup": "wait-for-legacy-shell-before-dependent-modules",
   "navigationRaceFix": "showTab-renderPanel-navInit-readiness-gate",
-  "navigationOwnership": "single-owner-controller-plus-security-wrapper",
-  "navigationInterceptors": "duplicate-global-click-interceptor-removed"
+  "navigationOwnership": "fresh-core-v3-router",
+  "navigationInterceptors": "duplicate-global-click-interceptor-removed",
+  "v2Compatibility": "business-data-and-legacy-renderers-only"
 }
