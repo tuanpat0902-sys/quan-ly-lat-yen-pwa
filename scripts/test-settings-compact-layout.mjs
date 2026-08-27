@@ -16,8 +16,10 @@ assert.match(layout,/@media\(max-width:900px\)/,'settings layout must collapse r
 assert.match(enhancements,/<details class="ly-version-details">/,'technical version information must be collapsed');
 assert.match(enhancements,/Fresh Core V3 · hệ thống chính/,'Settings must expose Fresh Core V3 authority status');
 assert.match(enhancements,/V3 Router/,'Settings technical diagnostics must show the V3 router instead of V2 final ownership');
-assert.match(enhancements,/1 lần \/ 24 giờ · 2 truy vấn nhỏ/,'Settings must disclose the zero-cost shadow budget');
-assert.match(enhancements,/2026\.08\.27\.3/,'settings enhancement cache version must be current');
+assert.match(enhancements,/1 lần \/ 24 giờ · 2 truy vấn nhỏ/,'Settings must disclose the Master Data zero-cost shadow budget');
+assert.match(enhancements,/V3-2 Nguyên liệu \+ Tồn kho/,'Settings must expose V3-2 parity status');
+assert.match(enhancements,/tối đa 500 dòng\/tập/,'Settings must disclose the V3-2 bounded shadow budget');
+assert.match(enhancements,/2026\.08\.27\.4/,'settings enhancement cache version must be current');
 assert.match(layout,/--ly-ui-font:/,'application must define one shared typeface token');
 assert.match(layout,/--ly-font-base:12px/,'application must define one shared body text size');
 assert.match(layout,/table th\{font-size:var\(--ly-font-sm\)/,'table headings must follow the shared type scale');
