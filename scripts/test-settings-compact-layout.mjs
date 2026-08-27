@@ -14,9 +14,10 @@ assert.doesNotMatch(active,/class="settings-device-note"/,'duplicate account dev
 assert.match(layout,/grid-template-areas:'cloud identity' 'notify data'/,'desktop settings must use a balanced two-column layout');
 assert.match(layout,/@media\(max-width:900px\)/,'settings layout must collapse responsively');
 assert.match(enhancements,/<details class="ly-version-details">/,'technical version information must be collapsed');
-assert.match(enhancements,/Fresh Core V3 · hệ thống chính/,'Settings must expose local-only V3 shadow status');
+assert.match(enhancements,/Fresh Core V3 · hệ thống chính/,'Settings must expose Fresh Core V3 authority status');
+assert.match(enhancements,/V3 Router/,'Settings technical diagnostics must show the V3 router instead of V2 final ownership');
 assert.match(enhancements,/1 lần \/ 24 giờ · 2 truy vấn nhỏ/,'Settings must disclose the zero-cost shadow budget');
-assert.match(enhancements,/2026\.08\.27\.2/,'settings enhancement cache version must be current');
+assert.match(enhancements,/2026\.08\.27\.3/,'settings enhancement cache version must be current');
 assert.match(layout,/--ly-ui-font:/,'application must define one shared typeface token');
 assert.match(layout,/--ly-font-base:12px/,'application must define one shared body text size');
 assert.match(layout,/table th\{font-size:var\(--ly-font-sm\)/,'table headings must follow the shared type scale');
