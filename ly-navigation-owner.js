@@ -23,7 +23,10 @@
     const id=norm(panel),button=btn||buttonFor(id);
     state.panel=id;state.changes++;remember(id);
     reconcile(id,button);
-    try{state.baseRenderPanel?.call(window,id);}catch(error){state.lastError=String(error?.message||error);}
+    try{
+      if(typeof state.baseShowTab==='function')state.baseShowTab.call(window,id,button);
+      else state.baseRenderPanel?.call(window,id);
+    }catch(error){state.lastError=String(error?.message||error);}
     requestAnimationFrame(()=>{
       reconcile(id,button);
       const target=document.getElementById(id);
