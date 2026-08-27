@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.69",
-  "revision": "fresh-core-v2-authoritative-v75",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-159",
+  "appVersion": "2.1.70",
+  "revision": "fresh-core-v2-authoritative-v76",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-160",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -25,5 +25,6 @@
   "attendanceDefault": "off-not-working",
   "supplierMenu": "hidden-with-functions-retained",
   "salesChart": "full-labels-scroll-safe-responsive",
-  "sidebarVisuals": "full-width-logo-and-consistent-navigation-palette"
+  "sidebarVisuals": "full-width-logo-and-consistent-navigation-palette",
+  "reloadPerformance": "cache-first-static-network-first-navigation"
 }
