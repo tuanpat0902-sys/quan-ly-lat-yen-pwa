@@ -62,6 +62,8 @@
       counts:result?.counts||{},
       ingredients:result?.parity?.ingredients??null,
       inventory:result?.parity?.inventory??null,
+      reads:2,
+      writes:0,
       history,
       gate:state.gate,
       version:VERSION
