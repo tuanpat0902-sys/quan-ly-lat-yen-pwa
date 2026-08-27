@@ -66,7 +66,7 @@ assert.equal(INGREDIENTS_INVENTORY_LOCAL_READINESS_POLICY.activationAllowed,fals
 
 const settings=await fs.readFile(new URL('../ly-settings-enhancements.js',import.meta.url),'utf8');
 assert.match(settings,/local-readiness-snapshot\.js\?v=20260827\.1/,'Settings must use the deterministic V3-2 readiness helper');
-assert.match(settings,/readiness\.pass===true&&consolidated\?\.unlockDependents===true/,'Settings must require consolidated pass plus dependency unlock');
+assert.match(settings,/consolidated\?\.readiness\?\.pass===true&&consolidated\?\.unlockDependents===true/,'Settings must require consolidated pass plus dependency unlock');
 assert.match(settings,/Đang xác minh local history · mặc định khóa/,'Settings must fail closed while readiness is unresolved');
 assert.match(settings,/V3-2 Consolidated Readiness/);
 assert.match(settings,/V3-3 dependency/);
