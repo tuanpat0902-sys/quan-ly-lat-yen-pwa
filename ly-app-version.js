@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.81',REVISION='fresh-core-v2-authoritative-v87';
+  const VERSION='2.1.82',REVISION='fresh-core-v2-authoritative-v88';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã bổ sung lớp phục hồi điều hướng toàn bộ menu, tự đồng bộ panel/active state và loại bỏ trạng thái nhấn giả trên Safari.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã sửa lỗi menu được bảo vệ không phản hồi khi lớp bảo mật tải trước hàm điều hướng; thao tác giờ được chờ đúng và vẫn giữ kiểm tra mật khẩu.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
