@@ -14,5 +14,12 @@ export function createIngredientsInventoryRepository({gateway}){
   }
   const listIngredients=()=>collectAll(C.tables.ingredients,q=>q.order?.('created_at',{ascending:true})?.order?.('id',{ascending:true})??q);
   const listInventory=()=>collectAll(C.tables.inventory,q=>q.order?.('warehouse_id',{ascending:true})?.order?.('ingredient_id',{ascending:true})??q);
-  return Object.freeze({schema:S,listIngredients,listInventory});
+  async function readControlledShadow(){
+    const [ingredients,inventory]=await Promise.all([
+      gateway.selectPage(C.tables.ingredients,{page:1,pageSize:C.shadowPageSize,configure:q=>q.order?.('created_at',{ascending:true})?.order?.('id',{ascending:true})??q}),
+      gateway.selectPage(C.tables.inventory,{page:1,pageSize:C.shadowPageSize,configure:q=>q.order?.('warehouse_id',{ascending:true})?.order?.('ingredient_id',{ascending:true})??q})
+    ]);
+    return Object.freeze({ingredients,inventory});
+  }
+  return Object.freeze({schema:S,listIngredients,listInventory,readControlledShadow});
 }
