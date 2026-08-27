@@ -75,8 +75,7 @@
 
   function boot(){
     if(install())return;
-    let tries=0;
-    const t=setInterval(()=>{tries++;if(install()||tries>20)clearInterval(t);},250);
+    let tries=0;const retry=()=>{tries++;if(install()||tries>20)return;setTimeout(retry,250);};setTimeout(retry,250);
   }
 
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
