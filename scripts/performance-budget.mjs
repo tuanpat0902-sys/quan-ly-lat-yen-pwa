@@ -20,7 +20,7 @@ if(observers>3)fail(`MutationObserver call sites increased above budget: ${obser
 if(innerHtml>170)fail(`innerHTML assignments increased above budget: ${innerHtml}`);else pass('DOM assignment budget');
 for(const marker of ['__lyPerformanceOptimizerV4','LEADER_VISIBLE_MS=4500','rebindTableObserver','tableMutationBatch'])if(!perf.includes(marker))fail(`Performance V4 marker missing: ${marker}`);
 if(coreNumber<38)fail(`Service Worker is below Core-38 performance baseline: ${coreNumber}`);else pass(`Core-${coreNumber} cache baseline`);
-if(!sw.includes('ly-performance-optimizer.js?v=20260823.4'))fail('Service Worker is not loading Performance V4');else pass('Performance V4 SW wiring');
+if(!runtime.includes('ly-performance-optimizer.js?v=20260823.4'))fail('Performance V4 is not wired into the production runtime');else pass('Performance V4 runtime wiring');
 if(/setInterval\s*\(\s*schedule\s*,\s*700/.test(runtime))fail('700ms cloud render interval regression detected');
 if(failed){console.error('\nPerformance budget failed. Deployment must stop.');process.exit(1)}
 console.log('\nPerformance budget passed.');
