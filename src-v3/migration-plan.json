@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-12",
+  "version": "3.0-migration-plan-13",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -124,11 +124,43 @@
     {
       "id": "V3-3",
       "name": "Recipes / Products",
-      "status": "planned",
+      "status": "shadow-gate-prepared",
       "authoritative": "v2",
       "dependsOn": [
         "V3-2"
-      ]
+      ],
+      "evidence": {
+        "schemaAudit": "production-schema-reviewed",
+        "productionBaseline": "captured",
+        "contract": "implemented-read-only",
+        "repository": "read-only",
+        "service": "shadow-only",
+        "parity": "local-compare",
+        "controlledShadow": "implemented-not-activated",
+        "migrationGate": "implemented-dependency-locked",
+        "activationBlockedBy": "V3-2",
+        "tables": [
+          "ly_products",
+          "ly_recipe_items"
+        ],
+        "productionBaselineCounts": {
+          "products": 62,
+          "recipeItems": 4
+        },
+        "promotionGate": {
+          "requiredConsecutivePasses": 3,
+          "parity": true,
+          "completeDataset": true,
+          "readsPerRun": 2,
+          "cloudWrites": 0,
+          "maxDurationMs": 5000,
+          "autoPromotion": false
+        },
+        "productionActivation": false,
+        "cloudWrites": 0,
+        "dualWrite": false,
+        "nextGate": "wait-for-v3-2-pass-then-review-controlled-shadow-activation"
+      }
     },
     {
       "id": "V3-4",
