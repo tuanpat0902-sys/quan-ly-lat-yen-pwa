@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='3.0.8',REVISION='fresh-core-v3-shell-authoritative-v9';
+  const VERSION='3.0.9',REVISION='fresh-core-v3-shell-authoritative-v10';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã sửa lỗi menu chỉ phản hồi lần đầu: V3 Router giữ quyền điều hướng duy nhất, Menu Security chỉ xác thực quyền truy cập và không còn bọc showTab.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã bật kiểm tra nền V3-2 Nguyên liệu + Tồn kho ở chế độ chỉ đọc, giới hạn 2 truy vấn mỗi 24 giờ trên mỗi thiết bị và không ghi dữ liệu Cloud.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V3.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
