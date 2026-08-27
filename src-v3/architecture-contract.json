@@ -1,5 +1,5 @@
 {
-  "version": "3.0-contract-1",
+  "version": "3.0-contract-2",
   "authoritativeSource": "supabase",
   "rules": {
     "forbidDirectSupabaseFrom": [
@@ -16,7 +16,9 @@
     "realtimeManagerOwnsSubscriptions": true,
     "globalStoreLargeCollections": false,
     "requireFeatureLifecycle": true,
-    "requireRollbackSwitchPerDomain": true
+    "requireRollbackSwitchPerDomain": true,
+    "v2CompatibilityOnly": true,
+    "noNewV2NavigationOwnership": true
   },
   "allowedLayers": [
     "app",
@@ -43,5 +45,11 @@
     "finance-cashflow",
     "reports-notifications",
     "legacy-retirement"
-  ]
+  ],
+  "productionAuthority": {
+    "shell": "v3",
+    "navigation": "v3",
+    "applicationState": "v3",
+    "businessData": "compatibility-until-domain-migrated"
+  }
 }
