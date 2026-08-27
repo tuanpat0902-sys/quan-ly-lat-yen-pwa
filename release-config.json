@@ -1,8 +1,7 @@
 {
-  "appVersion": "2.1.84",
-  "revision": "fresh-core-v2-authoritative-v90",
-  "loaderAssetVersion": "20260827.90",
-  "moduleLoaderVersion": "2026.08.27.23",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-174",
-  "redeploy": "2026-08-27-menu-single-owner-gate-fix"
+  "appVersion": "3.0.0",
+  "revision": "fresh-core-v3-shell-authoritative-v1",
+  "loaderAssetVersion": "20260827.91",
+  "moduleLoaderVersion": "2026.08.27.24",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-175"
 }
