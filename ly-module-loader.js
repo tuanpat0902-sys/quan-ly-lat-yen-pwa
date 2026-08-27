@@ -138,7 +138,6 @@
   }
 
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
-  document.addEventListener('click',event=>preparePanel(panelOf(event.target)),true);
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
   load('runtimeErrorBoundary');load('appVersion');loadCore();load('warehouseDeleteUX');
   const loadBackground=()=>{load('branding');load('ingredientSidebarStatus');load('stockUnitSync');load('cloudRealtime');load('freshCoreV3ShadowSoak');loadAssistant();};
