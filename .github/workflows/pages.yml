@@ -50,7 +50,7 @@ jobs:
           cp -R src-v2 _site/src-v2
 
           grep -q "const VERSION='2026.08.26.19'" _site/ly-local-chatbot.js
-          grep -q "const VERSION='2026.08.27.6'" _site/ly-module-loader.js
+          grep -q "const VERSION='2026.08.27.7'" _site/ly-module-loader.js
           grep -q "ly-chat-legacy-inventory-unit-guard.js?v=20260827.1" _site/ly-module-loader.js
           grep -q "ly-chat-response-gate.js?v=20260827.1" _site/ly-module-loader.js
           grep -q "const VERSION='2026.08.27.1'" _site/ly-chat-legacy-inventory-unit-guard.js
@@ -64,8 +64,12 @@ jobs:
           grep -q "const VERSION='2026.08.27.2'" _site/ly-chat-sales-insights.js
           grep -q "const VERSION='2026.08.27.1'" _site/ly-sales-report-revenue-card.js
           grep -q "ly-sales-report-revenue-card.js?v=20260827.1" _site/ly-special-reports-bridge.js
+          grep -q "ly-app-version.js?v=2.1.69" _site/ly-module-loader.js
+          grep -q "ly-notification-center.js?v=20260827.4" _site/ly-module-loader.js
+          grep -q "const VERSION='2026.08.27.4'" _site/ly-notification-center.js
+          grep -q "\"appVersion\": \"2.1.69\"" _site/runtime-version.json
           grep -q "externalAi:false" _site/ly-chat-local-only.js
-          grep -q "lat-yen-fresh-core-v2-authoritative-158" _site/sw.js
+          grep -q "lat-yen-fresh-core-v2-authoritative-159" _site/sw.js
           grep -q "ly-chat-legacy-inventory-unit-guard.js" _site/sw.js
           grep -q "ly-chat-response-gate.js" _site/sw.js
           grep -q "ly-chat-router.js" _site/sw.js
