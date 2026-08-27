@@ -5,11 +5,32 @@
 -- still required before generating a real migration.
 --
 -- Current authority remains legacy-local. This package creates no runtime path and grants no writes.
--- Tenant integrity is enforced here with composite foreign keys only; no trigger/function is required.
+-- Tenant integrity is enforced with composite foreign keys; authorization is scoped per org membership.
 
 -- Required so employee rows can prove warehouse_id belongs to the same org_id.
 alter table public.ly_warehouses
   add constraint ly_warehouses_id_org_uniq unique (id, org_id);
+
+-- Employee-specific authorization helper. This intentionally does not replace the production
+-- ly_is_admin() helper used by other domains, avoiding cross-domain blast radius.
+create or replace function ly_private.ly_is_org_admin(p_org_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select exists(
+    select 1
+    from public.ly_org_members m
+    where m.user_id = auth.uid()
+      and m.org_id = p_org_id
+      and lower(m.role) = 'admin'
+  );
+$function$;
+
+revoke all on function ly_private.ly_is_org_admin(uuid) from public, anon, authenticated;
+grant execute on function ly_private.ly_is_org_admin(uuid) to authenticated;
 
 create table public.ly_employees (
   id uuid primary key default gen_random_uuid(),
@@ -128,32 +149,31 @@ create policy ly_employees_admin_org_select
   on public.ly_employees
   for select
   to authenticated
-  using (ly_private.ly_is_admin() and org_id = ly_private.ly_current_org());
+  using (ly_private.ly_is_org_admin(org_id));
 
 create policy ly_employee_attendance_admin_org_select
   on public.ly_employee_attendance
   for select
   to authenticated
-  using (ly_private.ly_is_admin() and org_id = ly_private.ly_current_org());
+  using (ly_private.ly_is_org_admin(org_id));
 
 create policy ly_employee_payroll_admin_org_select
   on public.ly_employee_payroll
   for select
   to authenticated
-  using (ly_private.ly_is_admin() and org_id = ly_private.ly_current_org());
+  using (ly_private.ly_is_org_admin(org_id));
 
 -- Deliberately absent in this review package:
 --   * INSERT / UPDATE / DELETE grants or policies
---   * anon grants
---   * SECURITY DEFINER functions
+--   * anon table grants
 --   * views exposing sensitive fields
 --   * import/backfill statements
 --   * authority or runtime switches
 --
 -- Before converting this file into a migration:
 --   1. approve the warehouse composite-key addition and verify it on production metadata;
---   2. resolve the remaining authorization-helper blocker;
+--   2. review/approve the org-membership authorization helper and its execution grants;
 --   3. resolve/approve sensitive-field projection strategy;
 --   4. create the real migration through the repository's approved Supabase migration workflow;
 --   5. apply schema only, with zero employee business-data writes;
---   6. verify constraints, RLS and grants before implementing any read-only repository.
+--   6. verify constraints, helper grants, RLS and table grants before implementing any read-only repository.
