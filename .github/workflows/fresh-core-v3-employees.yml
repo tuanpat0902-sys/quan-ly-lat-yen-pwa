@@ -8,24 +8,28 @@ on:
       - 'src-v3/app/bootstrap.js'
       - 'src-v3/domains/employees/**'
       - 'src-v3/data/supabase/employees-directory-source.js'
+      - 'src-v3/migration-plan.json'
       - 'ly-fresh-core-v3-employees-parity-runner.js'
       - 'ly-module-loader.js'
       - 'scripts/test-fresh-core-v3-employees-runtime-parity.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-parity-observation.mjs'
       - 'scripts/test-fresh-core-v3-employees-manual-device-runner.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
+      - 'scripts/test-fresh-core-v3-employees-migration-plan.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   pull_request:
     paths:
       - 'src-v3/app/bootstrap.js'
       - 'src-v3/domains/employees/**'
       - 'src-v3/data/supabase/employees-directory-source.js'
+      - 'src-v3/migration-plan.json'
       - 'ly-fresh-core-v3-employees-parity-runner.js'
       - 'ly-module-loader.js'
       - 'scripts/test-fresh-core-v3-employees-runtime-parity.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-parity-observation.mjs'
       - 'scripts/test-fresh-core-v3-employees-manual-device-runner.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
+      - 'scripts/test-fresh-core-v3-employees-migration-plan.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   workflow_dispatch:
 
@@ -50,3 +54,5 @@ jobs:
         run: node scripts/test-fresh-core-v3-employees-manual-device-runner.mjs
       - name: Test manual device runner UI guard
         run: node scripts/test-fresh-core-v3-employees-device-runner-ui.mjs
+      - name: Test V3-6 migration-plan gate
+        run: node scripts/test-fresh-core-v3-employees-migration-plan.mjs

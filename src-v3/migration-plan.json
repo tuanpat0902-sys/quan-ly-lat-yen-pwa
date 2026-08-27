@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-18",
+  "version": "3.0-migration-plan-19",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -185,7 +185,7 @@
     {
       "id": "V3-6",
       "name": "Employees",
-      "status": "read-only-repository-prepared-not-activated",
+      "status": "manual-device-parity-runner-ready-awaiting-real-observation",
       "authoritative": "legacy-local",
       "dependsOn": [
         "V3-0"
@@ -198,7 +198,7 @@
         "legacyDataLoader": "loadEmployees",
         "legacyAttendance": "renderEmployeeAttendance",
         "legacyPayroll": "renderEmployeeSalaryReport",
-        "v3Contract": "read-only-repository-prepared-not-activated",
+        "v3Contract": "manual-device-parity-runner-ready-not-activated",
         "schemaProposal": "approved-for-migration-generation",
         "formalSecurityReview": "approved-and-production-verified",
         "sensitiveDataPolicy": "approved-for-safe-directory-only",
@@ -211,7 +211,7 @@
         "directBaseTableSelect": false,
         "repository": "implemented-read-only-safe-rpc",
         "repositoryRuntimeActivated": false,
-        "service": "manual-read-only-shadow-not-activated",
+        "service": "manual-device-parity-runner-ready-not-activated",
         "autoShadow": false,
         "parityGate": {
           "implemented": true,
@@ -223,6 +223,30 @@
           "syntheticCredit": 0,
           "activationAllowed": false,
           "autoPromotion": false
+        },
+        "manualDeviceParityRunner": {
+          "implemented": true,
+          "surface": "settings-explicit-click",
+          "autoRun": false,
+          "requiresExplicitUserAction": true,
+          "readsPerRun": 1,
+          "cloudWritesPerRun": 0,
+          "storage": "localStorage-only",
+          "containsEmployeeRows": false,
+          "realDeviceOnly": true,
+          "syntheticCredit": 0,
+          "seedAllowed": false,
+          "authorityChange": false,
+          "activationAllowed": false,
+          "autoPromotion": false
+        },
+        "controlledCloudDirectorySeedReview": {
+          "eligible": false,
+          "requiresRealDeviceObservation": true,
+          "requiresCloudSeedRequired": true,
+          "autoSeed": false,
+          "businessDataWriteIncluded": false,
+          "activationAllowed": false
         },
         "productionParityObservations": 0,
         "cloudSchemaPresent": true,
@@ -244,7 +268,7 @@
         "schemaApproved": true,
         "migrationAllowed": false,
         "repositoryAllowed": true,
-        "nextGate": "obtain-device-v2-v3-directory-parity-before-shadow-activation"
+        "nextGate": "run-manual-device-parity-on-real-production-device-before-any-seed-or-shadow-review"
       }
     },
     {
