@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.68',REVISION='fresh-core-v2-authoritative-v69';
+  const VERSION='2.1.69',REVISION='fresh-core-v2-authoritative-v70';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Chatbox đã được tối ưu trạng thái, thao tác và trải nghiệm trên điện thoại.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Trung tâm thông báo đã được chuẩn hóa trạng thái đã đọc, kiểu chữ và bổ sung thao tác xóa thông báo.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
