@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lySettingsEnhancementsV5)return;
-  window.__lySettingsEnhancementsV5=true;
+  if(window.__lySettingsEnhancementsV6)return;
+  window.__lySettingsEnhancementsV6=true;
 
-  const VERSION='2026.08.27.3';
+  const VERSION='2026.08.27.4';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const LEGACY_PREF_KEY='lat_yen_notify_pref_v226';
   const PAGE_LOADED_AT=new Date();
@@ -148,6 +148,31 @@
     };
   }
 
+  function readV32Local(){
+    try{
+      const raw=JSON.parse(localStorage.getItem('lat_yen_v3_ingredients_inventory_shadow_soak_v1')||'{}')||{};
+      const orgId=String(window.__lyFreshCoreV2?.store?.getState?.()?.orgId||window.__lyFreshOrgId||'');
+      return {orgId,entry:orgId?raw?.orgs?.[orgId]||null:null};
+    }catch(e){return {orgId:'',entry:null};}
+  }
+
+  function v32Snapshot(){
+    const api=window.__lyFreshCoreV3IngredientsInventorySoak;
+    const live=api?.status?.()||{};
+    const local=readV32Local();
+    const entry=local.entry||{};
+    return {
+      available:!!api,
+      phase:live.phase||'chưa chạy',
+      parity:live.parityReady??entry.parityReady??null,
+      complete:live.complete??entry.complete??null,
+      lastAt:Number(live.lastAt||entry.lastAt||0),
+      counts:live.counts||entry.counts||{},
+      reads:Number(live.reads||0),
+      writes:Number(live.writes||0)
+    };
+  }
+
   function ensureV3Card(){
     const root=document.getElementById('settings');
     if(!root)return false;
@@ -159,7 +184,11 @@
       root.appendChild(card);
     }
     const v=v3Snapshot();
+    const v32=v32Snapshot();
     const parityText=v.parity===true?'Khớp V2':v.parity===false?'Có chênh lệch':'Chưa kiểm tra';
+    const v32ParityText=v32.parity===true?'Khớp V2':v32.parity===false?'Có chênh lệch':'Chưa kiểm tra';
+    const v32ParityClass=v32.parity===true?'ly-v3-ok':v32.parity===false?'ly-v3-bad':'ly-v3-warn';
+    const v32LastAtText=v32.lastAt?new Date(v32.lastAt).toLocaleString('vi-VN'):'Chưa có kết quả';
     const parityClass=v.parity===true?'ly-v3-ok':v.parity===false?'ly-v3-bad':'ly-v3-warn';
     const phaseText=v.available?v.phase:'Đang chờ module V3';
     card.innerHTML=`
@@ -171,9 +200,13 @@
         <div class="ly-v3-metric"><b>Độ khớp dữ liệu</b><span class="${parityClass}">${esc(parityText)}</span></div>
         <div class="ly-v3-metric"><b>Lần kiểm tra gần nhất</b><span>${esc(v.lastAtText)}</span></div>
         <div class="ly-v3-metric"><b>Đọc / Ghi Cloud</b><span>${esc(String(v.reads))} / ${esc(String(v.writes))}</span></div>
-        <div class="ly-v3-metric"><b>Giới hạn</b><span>1 lần / 24 giờ · 2 truy vấn nhỏ</span></div>
+        <div class="ly-v3-metric"><b>Giới hạn Master Data</b><span>1 lần / 24 giờ · 2 truy vấn nhỏ</span></div>
+        <div class="ly-v3-metric"><b>V3-2 Nguyên liệu + Tồn kho</b><span class="${v32ParityClass}">${esc(v32ParityText)}</span></div>
+        <div class="ly-v3-metric"><b>V3-2 kiểm tra gần nhất</b><span>${esc(v32LastAtText)}</span></div>
+        <div class="ly-v3-metric"><b>V3-2 Đọc / Ghi Cloud</b><span>${esc(String(v32.reads))} / ${esc(String(v32.writes))}</span></div>
+        <div class="ly-v3-metric"><b>V3-2 giới hạn</b><span>1 lần / 24 giờ · 2 truy vấn · tối đa 500 dòng/tập</span></div>
       </div>
-      <div class="ly-v3-note">Master Data vẫn được đối chiếu chỉ đọc trong nền. Không thêm dịch vụ trả phí; dữ liệu nghiệp vụ tiếp tục được bảo vệ qua lớp tương thích trong thời gian chuyển dần sang V3.</div>`;
+      <div class="ly-v3-note">Master Data và V3-2 Ingredients + Inventory đều đang được đối chiếu chỉ đọc trong nền. Không thêm dịch vụ trả phí, không ghi dữ liệu Cloud và không dual-write.</div>`;
     return true;
   }
 
@@ -269,6 +302,7 @@
     document.addEventListener('click',e=>{if(isSettingsClick(e.target))reconcileSoon();},true);
     window.addEventListener('focus',()=>{if(document.getElementById('settings'))reconcile();});
     window.addEventListener('latyen:v3-master-data-soak',()=>{if(document.getElementById('settings'))ensureV3Card();});
+    window.addEventListener('latyen:v3-ingredients-inventory-soak',()=>{if(document.getElementById('settings'))ensureV3Card();});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden&&document.getElementById('settings'))reconcile();});
   }
 
