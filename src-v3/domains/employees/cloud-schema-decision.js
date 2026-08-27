@@ -1,0 +1,99 @@
+export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
+  domain:'employees',
+  wave:'V3-6',
+  status:'proposed-not-approved',
+  currentAuthority:'legacy-local',
+  approvalRequired:true,
+  migrationAllowed:false,
+  repositoryAllowed:false,
+  productionActivation:false,
+  dualWrite:false,
+  cloudWrites:0,
+  sourceEvidence:Object.freeze({
+    employeeStorageKey:'lat_yen_employees_v1',
+    attendanceStorageKey:'lat_yen_employee_attendance_v1',
+    payrollStorageKey:'lat_yen_employee_payroll_v1',
+    attendanceKeyShape:'warehouse_id|employee_id|date',
+    payrollKeyShape:'warehouse_id|employee_id|month'
+  }),
+  tenancy:Object.freeze({
+    requiredColumns:Object.freeze(['org_id','warehouse_id']),
+    employeeOwnership:'org-and-warehouse',
+    childOwnership:'employee-with-org-and-warehouse-defense-in-depth'
+  }),
+  candidates:Object.freeze({
+    employees:Object.freeze({
+      candidateName:'ly_employees',
+      approved:false,
+      primaryKey:'id',
+      uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','code'])]),
+      fields:Object.freeze([
+        'id','org_id','warehouse_id','code','name','role','phone','hire_date','shift','attendance_mode',
+        'base_salary','hourly_rate','standard_days','address','emergency_contact','note','bank_account',
+        'id_number','active','created_at','updated_at'
+      ])
+    }),
+    attendance:Object.freeze({
+      candidateName:'ly_employee_attendance',
+      approved:false,
+      primaryKey:'id',
+      foreignKey:'employee_id -> ly_employees.id',
+      uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','employee_id','work_date'])]),
+      fields:Object.freeze([
+        'id','org_id','warehouse_id','employee_id','work_date','status','full_day','time_slots','hours',
+        'overtime_slots','overtime_hours','pay_type','pay_multiplier','overtime_multiplier','daily_bonus',
+        'daily_penalty','note','created_at','updated_at'
+      ])
+    }),
+    payroll:Object.freeze({
+      candidateName:'ly_employee_payroll',
+      approved:false,
+      primaryKey:'id',
+      foreignKey:'employee_id -> ly_employees.id',
+      uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','employee_id','payroll_month'])]),
+      fields:Object.freeze([
+        'id','org_id','warehouse_id','employee_id','payroll_month','allowance','bonus','deduction','note',
+        'created_at','updated_at'
+      ])
+    })
+  }),
+  sensitiveDataPolicy:Object.freeze({
+    restrictedFields:Object.freeze(['bank_account','id_number']),
+    confidentialFields:Object.freeze(['phone','address','emergency_contact','base_salary','hourly_rate']),
+    payrollFields:Object.freeze(['allowance','bonus','deduction','daily_bonus','daily_penalty']),
+    defaultListProjection:Object.freeze(['id','warehouse_id','code','name','role','shift','attendance_mode','active']),
+    requirements:Object.freeze([
+      'row-level-security-required-before-any-production-read',
+      'no-anonymous-access',
+      'restricted-fields-excluded-from-default-list-projection',
+      'explicit-role-review-required-before-sensitive-field-read',
+      'audit-sensitive-writes-before-enabling-mutations'
+    ])
+  }),
+  migrationSequence:Object.freeze([
+    'approve-schema-and-sensitive-data-policy',
+    'create-ddl-and-rls-migration-in-review-only-branch',
+    'verify-schema-with-zero-business-data-writes',
+    'implement-read-only-repository',
+    'run-local-v2-v3-parity-without-authority-change',
+    'approve-controlled-shadow-read',
+    'design-explicit-import-or-dual-write-plan-separately'
+  ]),
+  nextGate:'explicit-schema-and-sensitive-data-policy-approval'
+});
+
+export function evaluateEmployeesSchemaDecision(decision=EMPLOYEES_CLOUD_SCHEMA_DECISION){
+  const candidates=Object.values(decision?.candidates||{});
+  const approved=decision?.status==='approved'&&
+    decision?.approvalRequired===true&&
+    candidates.length===3&&
+    candidates.every(table=>table?.approved===true)&&
+    decision?.sensitiveDataPolicy?.requirements?.length>=5;
+  return Object.freeze({
+    approved,
+    migrationAllowed:approved&&decision?.migrationAllowed===true,
+    repositoryAllowed:approved&&decision?.repositoryAllowed===true,
+    authoritative:false,
+    recommendation:approved?'eligible-for-ddl-review':'keep-legacy-local-and-block-cloud-repository'
+  });
+}
