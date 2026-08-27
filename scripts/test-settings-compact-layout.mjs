@@ -23,7 +23,9 @@ assert.match(enhancements,/V3-2 Migration Gate/,'Settings must expose V3-2 migra
 assert.match(enhancements,/V2 mặc định · không tự chuyển quyền · không dual-write/,'Settings must disclose V3-2 rollback safety');
 assert.match(enhancements,/Chạy kiểm tra nhanh V3-2/,'Settings must expose the bounded V3-2 technical validation action');
 assert.match(enhancements,/không cộng vào 3 lần production soak/,'Settings must keep technical validation separate from production observations');
-assert.match(enhancements,/2026\.08\.27\.6/,'settings enhancement cache version must be current');
+assert.match(enhancements,/V3-2 Read Candidate/,'Settings must expose non-authoritative V3-2 read candidate readiness');
+assert.match(enhancements,/Chưa kích hoạt · V2 vẫn là mặc định/,'Settings must keep V2 authoritative until all gates pass');
+assert.match(enhancements,/2026\.08\.27\.7/,'settings enhancement cache version must be current');
 assert.match(layout,/--ly-ui-font:/,'application must define one shared typeface token');
 assert.match(layout,/--ly-font-base:12px/,'application must define one shared body text size');
 assert.match(layout,/table th\{font-size:var\(--ly-font-sm\)/,'table headings must follow the shared type scale');
