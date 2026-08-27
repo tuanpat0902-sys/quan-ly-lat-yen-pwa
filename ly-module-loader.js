@@ -1,15 +1,15 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV83)return;
-  window.__lyModuleLoaderV83=true;
+  if(window.__lyModuleLoaderV84)return;
+  window.__lyModuleLoaderV84=true;
 
-  const VERSION='2026.08.27.34';
+  const VERSION='2026.08.27.35';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.10',test:()=>window.__lyAppVersion?.version==='3.0.10'},
+    appVersion:{src:'./ly-app-version.js?v=3.0.11',test:()=>window.__lyAppVersion?.version==='3.0.11'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.1',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.1'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.1',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.1'},
