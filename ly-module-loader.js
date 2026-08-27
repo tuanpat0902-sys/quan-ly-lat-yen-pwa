@@ -49,7 +49,6 @@
     inventoryAlerts:{src:'./ly-inventory-alerts.js?v=20260824.1',test:()=>window.__lyInventoryAlerts?.version==='2026.08.24.1'},
     performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260823.4',test:()=>window.__lyPerformanceOptimizer?.version==='2026.08.23.4'},
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
-    finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.4',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.4'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.3',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.3'},
     settingsUIBridge:{src:'./ly-settings-ui-bridge.js?v=20260827.2',test:()=>window.__lySettingsUIBridge?.version==='2026.08.27.2'},
     settings:{src:'./ly-settings-enhancements.js?v=20260827.2',test:()=>window.__lyNotificationMaster?.version==='2026.08.27.2'},
@@ -112,7 +111,7 @@
     try{await window.__lyFreshCoreV3Runtime?.boot?.();}catch(e){}
     await load('menuSecurity');await load('settingsUIBridge');
     await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
-    await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');if(!window.__lyFreshCoreV3?.authoritative)await load('finalOwnership');await load('performanceOptimizer');
+    await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('performanceOptimizer');
   }
 
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
