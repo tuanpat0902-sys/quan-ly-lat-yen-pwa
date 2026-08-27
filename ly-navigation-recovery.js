@@ -4,6 +4,10 @@
   window.__lyNavigationRecoveryV1=true;
   const VERSION='2026.08.27.1';
   const state={clicks:0,recoveries:0,lastPanel:'',lastError:''};
+  const style=document.createElement('style');
+  style.id='lyNavigationRecoveryStyles';
+  style.textContent=`#nav button[data-panel]:not(.active):focus,#nav button[data-panel]:not(.active):focus-visible,#nav button[data-panel]:not(.active):active{background:#fff!important;color:var(--text)!important;border-color:var(--border)!important;box-shadow:none!important}`;
+  document.head?.appendChild(style);
 
   const panelButton=target=>target?.closest?.('#nav button[data-panel]')||null;
   const activePanel=()=>document.querySelector('.panel.active')?.id||'';
