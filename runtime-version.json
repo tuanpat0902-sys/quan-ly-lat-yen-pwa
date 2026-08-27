@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.78",
-  "revision": "fresh-core-v2-authoritative-v84",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-168",
+  "appVersion": "2.1.79",
+  "revision": "fresh-core-v2-authoritative-v85",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-169",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -26,12 +26,14 @@
   "supplierMenu": "hidden-with-functions-retained",
   "salesChart": "full-labels-scroll-safe-responsive",
   "sidebarVisuals": "full-width-logo-and-consistent-navigation-palette",
-  "reloadPerformance": "bounded-precache-cache-first-static-ignore-version-query-network-first-navigation",
+  "reloadPerformance": "version-query-aware-static-cache-network-first-release-manifest",
   "maintenance": "legacy-chat-experiments-removed-minimal-service-worker-catalog-single-release-source",
   "startup": "critical-business-first-assistant-idle-deferred-no-duplicate-core-pass",
   "performance": "eager-runtime-budget-contextual-domain-loading-adaptive-timeouts-performance-v4-loader-owned",
   "freshCoreV3": "master-data-production-shadow-soak-with-local-settings-status",
   "zeroAddedCost": true,
   "v3ShadowBudget": "one-device-read-cycle-per-24h-two-small-queries-zero-cloud-writes",
-  "v3Diagnostics": "local-only-settings-card-no-cloud-telemetry"
+  "v3Diagnostics": "local-only-settings-card-no-cloud-telemetry",
+  "releaseEnforcement": "service-worker-activate-client-navigation-plus-early-release-gate",
+  "latestVersionPriority": true
 }
