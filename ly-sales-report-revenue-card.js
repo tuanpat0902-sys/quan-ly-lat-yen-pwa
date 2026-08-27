@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.1';
+  const VERSION='2026.08.27.2';
   if(window.__lySalesReportRevenueCard?.version===VERSION)return;
   const text=value=>String(value??'').trim();
   const number=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
@@ -8,6 +8,8 @@
   const pct=value=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(Math.abs(number(value)));
   const localISO=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   const previousDay=iso=>{const [y,m,d]=text(iso).split('-').map(Number),date=new Date(y,m-1,d);if(!Number.isFinite(date.getTime()))return '';date.setDate(date.getDate()-1);return localISO(date);};
+  const previousMonthRange=iso=>{const [y,m]=text(iso).slice(0,7).split('-').map(Number),date=new Date(y,m-2,1);if(!Number.isFinite(date.getTime()))return null;const month=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`,last=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();return {start:`${month}-01`,end:`${month}-${String(last).padStart(2,'0')}`};};
+  const previousYearRange=iso=>{const y=Number(text(iso).slice(0,4));return Number.isFinite(y)?{start:`${y-1}-01-01`,end:`${y-1}-12-31`}:null;};
   function saleRevenue(row){for(const key of ['total_amount','net_amount','total','amount']){const v=Number(row?.[key]);if(Number.isFinite(v))return v;}const subtotal=Number(row?.subtotal),discount=number(row?.discount_amount??row?.discount_total);return Number.isFinite(subtotal)?Math.max(0,subtotal-discount):0;}
   function rowsFor(start,end){
     try{if(typeof window.saleReportRows==='function')return window.saleReportRows(start,end)||[];}catch(_){}
@@ -19,21 +21,29 @@
     const mode=document.getElementById('saleReportMode')?.value||'day';
     if(mode==='day'){const day=document.getElementById('saleReportDate')?.value||localISO(new Date());return {mode,start:day,end:day};}
     if(mode==='month'){const month=document.getElementById('saleReportMonth')?.value||localISO(new Date()).slice(0,7),[y,m]=month.split('-').map(Number),last=new Date(y,m,0).getDate();return {mode,start:`${month}-01`,end:`${month}-${String(last).padStart(2,'0')}`};}
+    if(mode==='year'){const year=document.getElementById('saleReportYear')?.value||String(new Date().getFullYear());return {mode,start:`${year}-01-01`,end:`${year}-12-31`};}
     const start=document.getElementById('saleReportFrom')?.value||localISO(new Date()),end=document.getElementById('saleReportTo')?.value||start;return {mode,start,end};
   }
-  function comparisonLine(current,previous){
-    if(previous===0)return current===0?'Không đổi 0% so với ngày trước':'';
+  function comparisonLine(current,previous,label='ngày hôm qua'){
+    if(previous===0)return current===0?`Không đổi 0% so với ${label}`:'';
     const change=(current-previous)/previous*100;
-    if(Math.abs(change)<0.05)return 'Không đổi 0% so với ngày trước';
-    return `${change>0?'Tăng':'Giảm'} ${pct(change)}% so với ngày trước`;
+    if(Math.abs(change)<0.05)return `Không đổi 0% so với ${label}`;
+    return `${change>0?'Tăng':'Giảm'} ${pct(change)}% so với ${label}`;
   }
   function inject(){
     const area=document.getElementById('saleReportArea'),grid=area?.querySelector?.('.sale-qty-summary');if(!grid)return false;
     grid.querySelector?.('[data-ly-sales-revenue-card]')?.remove?.();
     const range=reportRange(),current=revenueFor(range.start,range.end),card=document.createElement('div');card.className='card metric';card.dataset.lySalesRevenueCard='1';
-    const line=range.mode==='day'?comparisonLine(current,revenueFor(previousDay(range.start),previousDay(range.start))):'';
+    let line='';
+    if(range.mode==='day'){
+      const prev=previousDay(range.start);line=comparisonLine(current,revenueFor(prev,prev),'ngày hôm qua');
+    }else if(range.mode==='month'){
+      const prev=previousMonthRange(range.start);if(prev)line=comparisonLine(current,revenueFor(prev.start,prev.end),'tháng trước');
+    }else if(range.mode==='year'){
+      const prev=previousYearRange(range.start);if(prev)line=comparisonLine(current,revenueFor(prev.start,prev.end),'năm trước');
+    }
     card.innerHTML=`<span class="muted">Doanh thu</span><div class="value" style="font-size:20px">${money(current)}</div>${line?`<div class="muted" style="margin-top:6px;font-size:13px;font-weight:700">${line}</div>`:''}`;
-    grid.appendChild(card);return true;
+    grid.prepend(card);return true;
   }
   function patch(){
     const current=window.renderSaleReport;if(typeof current!=='function')return false;if(current.__lyRevenueCardPatched)return true;
