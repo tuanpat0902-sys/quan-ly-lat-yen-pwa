@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã sửa lỗi đệ quy khởi động Fresh Core V3 gây Maximum call stack size exceeded; router V3 giờ chỉ được khởi tạo đúng một lần.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã sửa lỗi menu chỉ phản hồi lần đầu: V3 Router giữ quyền điều hướng duy nhất, Menu Security chỉ xác thực quyền truy cập và không còn bọc showTab.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V3.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
