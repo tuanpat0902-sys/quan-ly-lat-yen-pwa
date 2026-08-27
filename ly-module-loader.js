@@ -26,7 +26,7 @@
     modelShim:{src:'./ly-legacy-model-shim.js?v=20260824.2',test:()=>window.__lyLegacyModelShim?.version==='2026.08.24.2'},
     listShim:{src:'./ly-legacy-list-shim.js?v=20260824.1',test:()=>window.__lyLegacyListShim?.version==='2026.08.24.1'},
     formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.3',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.3'},
-    menuSecurity:{src:'./ly-menu-security.js?v=20260827.2',test:()=>window.__lyMenuSecurity?.version==='2026.08.27.2'},
+    menuSecurity:{src:'./ly-menu-security.js?v=20260827.3',test:()=>window.__lyMenuSecurity?.version==='2026.08.27.3'},
     ingredientsTakeover:{src:'./ly-fresh-core-v2-ingredients-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2IngredientsTakeover?.version==='2026.08.24.4'},
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
     documentsTakeover:{src:'./ly-fresh-core-v2-documents-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2DocumentsTakeover?.version==='2026.08.24.3'},
