@@ -41,6 +41,20 @@ assert.equal(failed.entry.containsEmployeeRows,false);
 assert.equal(failed.entry.cloudWrites,0);
 assert.equal(failed.entry.activationAllowed,false);
 
+const empty=persistEmployeesDeviceParityObservation({
+  storage,orgId,warehouseId,
+  observation:{source:'device-local',complete:true,parityReady:true,reads:1,writes:0,durationMs:128,legacyCount:0,cloudCount:0},
+  now:2500
+});
+assert.equal(empty.persisted,true);
+assert.equal(empty.gate.pass,false,'0/0 must never count as migration parity evidence');
+assert.equal(empty.gate.emptyDataset,true);
+assert.equal(empty.gate.hasLegacyEvidence,false);
+assert.equal(empty.gate.unlockControlledShadowReview,false);
+assert.equal(empty.gate.recommendation,'no-legacy-directory-evidence');
+assert.equal(empty.entry.productionObservationCredit,0);
+assert.equal(empty.entry.gate.emptyDataset,true);
+
 const passed=persistEmployeesDeviceParityObservation({
   storage,orgId,warehouseId,
   observation:{source:'device-local',complete:true,parityReady:true,reads:1,writes:0,durationMs:130,legacyCount:2,cloudCount:2},
@@ -48,6 +62,8 @@ const passed=persistEmployeesDeviceParityObservation({
 });
 assert.equal(passed.persisted,true);
 assert.equal(passed.gate.pass,true);
+assert.equal(passed.gate.hasLegacyEvidence,true);
+assert.equal(passed.gate.emptyDataset,false);
 assert.equal(passed.gate.unlockControlledShadowReview,true);
 assert.equal(passed.gate.activationAllowed,false);
 assert.equal(passed.entry.productionObservationCredit,1);
@@ -73,6 +89,7 @@ assert.deepEqual(EMPLOYEES_DEVICE_PARITY_OBSERVATION_POLICY,{
   cloudReadsAdded:0,
   cloudWrites:0,
   syntheticCredit:0,
+  emptyDatasetCredit:0,
   authoritative:false,
   activationAllowed:false,
   autoPromotion:false
