@@ -1,5 +1,5 @@
 {
-  "version": "3.0-zero-added-cost-2",
+  "version": "3.0-zero-added-cost-3",
   "policy": "zero-added-cost",
   "paidServicesAllowed": false,
   "paidInfrastructureAllowed": false,
@@ -25,5 +25,18 @@
     "ingredientsInventoryQueriesPerRun": 2,
     "ingredientsInventoryMaxRowsPerDataset": 500,
     "ingredientsInventoryCloudWrites": 0
+  },
+  "technicalValidation": {
+    "ingredientsInventory": {
+      "manualOnly": true,
+      "rounds": 3,
+      "queriesPerRound": 2,
+      "totalQueriesPerSession": 6,
+      "maxSessionsPerDevicePerDay": 1,
+      "cloudWrites": 0,
+      "diagnosticsStorage": "localStorage",
+      "productionObservationCredit": 0,
+      "autoPromotion": false
+    }
   }
 }
