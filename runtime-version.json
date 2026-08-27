@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.80",
-  "revision": "fresh-core-v2-authoritative-v86",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-170",
+  "appVersion": "2.1.81",
+  "revision": "fresh-core-v2-authoritative-v87",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-171",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -36,5 +36,6 @@
   "v3Diagnostics": "local-only-settings-card-no-cloud-telemetry",
   "releaseEnforcement": "service-worker-activate-client-navigation-plus-early-release-gate",
   "latestVersionPriority": true,
-  "settingsNavigation": "lazy-module-bridge-await-render-recovery"
+  "settingsNavigation": "lazy-module-bridge-await-render-recovery",
+  "navigationRecovery": "global-menu-active-panel-retry-and-mobile-focus-reset"
 }
