@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {createEmployeesDirectorySource,EMPLOYEES_DIRECTORY_RPC} from '../src-v3/data/supabase/employees-directory-source.js';
 import {createEmployeesRepository,EMPLOYEES_DIRECTORY_FIELDS} from '../src-v3/domains/employees/employees-repository.js';
 import {createEmployeesService} from '../src-v3/domains/employees/employees-service.js';
 import {compareEmployeeDirectory} from '../src-v3/domains/employees/parity.js';
@@ -6,7 +7,9 @@ import {EMPLOYEES_CONTRACT} from '../src-v3/domains/employees/employees-contract
 
 const calls=[];
 const gateway={rpc:async(name,params)=>{calls.push({name,params});return [{id:'cloud-1',warehouse_id:'w1',code:'E01',name:'An',role:'staff',shift:'day',attendance_mode:'day',active:true,phone:'must-not-leak'}];}};
-const repository=createEmployeesRepository({gateway});
+const source=createEmployeesDirectorySource({gateway});
+assert.equal(source.rpcName,EMPLOYEES_DIRECTORY_RPC);
+const repository=createEmployeesRepository({source});
 const rows=await repository.listDirectory({orgId:'o1',warehouseId:'w1'});
 assert.deepEqual(calls,[{name:'ly_list_employee_directory',params:{p_org_id:'o1',p_warehouse_id:'w1'}}]);
 assert.deepEqual(Object.keys(rows[0]),EMPLOYEES_DIRECTORY_FIELDS);
@@ -14,7 +17,7 @@ assert.equal(rows[0].phone,undefined);
 assert.throws(()=>repository.insertEmployee({}),/read-only/);
 assert.throws(()=>repository.saveAttendance({}),/read-only/);
 assert.throws(()=>repository.savePayroll({}),/read-only/);
-assert.rejects(()=>repository.listDirectory({orgId:'',warehouseId:'w1'}),/orgId is required/);
+await assert.rejects(()=>repository.listDirectory({orgId:'',warehouseId:'w1'}),/orgId is required/);
 
 const legacy=[{id:'legacy-1',warehouse_id:'w1',code:'E01',name:'An',role:'staff',shift:'day',attendance_mode:'day',active:true,phone:'secret'}];
 const parity=compareEmployeeDirectory(legacy,rows,{warehouseId:'w1'});
