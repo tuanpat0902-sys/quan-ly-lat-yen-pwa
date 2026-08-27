@@ -6,6 +6,15 @@ on:
       - main
     paths:
       - 'release-config.json'
+      - 'runtime-version.json'
+      - 'index.html'
+      - 'sw.js'
+      - 'manifest.webmanifest'
+      - 'ly-*.js'
+      - 'src-v3/**'
+      - 'scripts/prepare-pages-artifact.mjs'
+      - 'scripts/copy-pages-runtime.mjs'
+      - 'scripts/runtime-assets.mjs'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
