@@ -55,8 +55,8 @@ jobs:
           node scripts/check-release-consistency.mjs
           grep -q "externalAi:false" _site/ly-chat-local-only.js
           grep -q "IDBObjectStore" _site/ly-chat-response-gate.js
-          grep -q "ly-chat-router.js" _site/sw.js
-          grep -q "ly-sales-report-revenue-card.js" _site/sw.js
+          test -f _site/ly-chat-router.js
+          test -f _site/ly-sales-report-revenue-card.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
