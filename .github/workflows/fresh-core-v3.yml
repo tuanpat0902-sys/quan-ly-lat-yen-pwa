@@ -18,6 +18,8 @@ on:
       - 'scripts/test-fresh-core-v3-employees-schema-decision.mjs'
       - 'scripts/test-fresh-core-v3-employees-review-ddl.mjs'
       - 'scripts/test-fresh-core-v3-employees-formal-security-review.mjs'
+      - 'scripts/test-fresh-core-v3-employees-migration.mjs'
+      - 'supabase/migrations/20260827155000_fresh_core_v3_employees_schema.sql'
       - 'ly-fresh-core-v3-ingredients-inventory-validation.js'
       - 'ly-fresh-core-v3-ingredients-inventory-soak.js'
       - 'scripts/test-fresh-core-v3-shadow-soak.mjs'
@@ -86,6 +88,9 @@ jobs:
 
       - name: Test V3 Employees formal security review gate
         run: node scripts/test-fresh-core-v3-employees-formal-security-review.mjs
+
+      - name: Test V3 Employees generated schema-only migration
+        run: node scripts/test-fresh-core-v3-employees-migration.mjs
 
       - name: Test V3 production shell
         run: npm run v3:production-shell
