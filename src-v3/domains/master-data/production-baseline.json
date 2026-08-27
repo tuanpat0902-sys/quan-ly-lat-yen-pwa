@@ -1,0 +1,31 @@
+{
+  "capturedAt": "2026-08-27T07:23:00Z",
+  "source": "Supabase schema/data audit",
+  "projectRef": "isfotiyxufvsmlkqsgez",
+  "counts": {
+    "warehouses": 1,
+    "suppliers": 4
+  },
+  "schema": {
+    "warehouses": [
+      "id",
+      "org_id",
+      "name",
+      "address",
+      "active",
+      "created_at",
+      "updated_at"
+    ],
+    "suppliers": [
+      "id",
+      "org_id",
+      "name",
+      "phone",
+      "address",
+      "note",
+      "created_at",
+      "updated_at"
+    ]
+  },
+  "note": "Counts are diagnostic only and must never be used as business logic or a deployment invariant."
+}
