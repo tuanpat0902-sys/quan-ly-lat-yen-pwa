@@ -5,7 +5,7 @@
 
   const VERSION='2026.08.27.1';
   const STORAGE_KEY='lat_yen_v3_master_data_shadow_soak_v1';
-  const MIN_INTERVAL_MS=12*60*60*1000;
+  const MIN_INTERVAL_MS=24*60*60*1000;
   const state={
     version:VERSION,
     phase:'idle',
@@ -98,7 +98,7 @@
   window.__lyFreshCoreV3ShadowSoak={
     version:VERSION,
     run,
-    status:()=>({...state,policy:{readOnly:true,maxRunsPerDay:2,cloudWrites:0}})
+    status:()=>({...state,policy:{readOnly:true,maxRunsPerDay:1,cloudWrites:0}})
   };
 
   window.addEventListener?.('latyen:fresh-core-v2-authoritative',schedule,{once:true});
