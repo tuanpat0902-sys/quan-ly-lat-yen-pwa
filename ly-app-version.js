@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='3.0.10',REVISION='fresh-core-v3-shell-authoritative-v11';
+  const VERSION='3.0.11',REVISION='fresh-core-v3-shell-authoritative-v12';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã bổ sung Migration Gate V3-2: yêu cầu 3 lần parity liên tiếp, kiểm tra hiệu năng, giữ rollback về V2 và không tự chuyển quyền đọc.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã bổ sung kiểm tra kỹ thuật nhanh V3-2: 3 vòng chỉ đọc trong một phiên, tách riêng production soak, không ghi Cloud và không tự chuyển quyền.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V3.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
