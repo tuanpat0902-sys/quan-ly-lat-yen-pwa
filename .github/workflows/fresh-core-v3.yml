@@ -11,6 +11,7 @@ on:
       - 'scripts/test-fresh-core-v3-master-data.mjs'
       - 'scripts/test-fresh-core-v3-ingredients-inventory.mjs'
       - 'scripts/test-fresh-core-v3-ingredients-inventory-soak.mjs'
+      - 'scripts/test-fresh-core-v3-ingredients-inventory-migration-gate.mjs'
       - 'ly-fresh-core-v3-ingredients-inventory-soak.js'
       - 'scripts/test-fresh-core-v3-shadow-soak.mjs'
       - 'scripts/test-fresh-core-v3-production-shell.mjs'
@@ -57,6 +58,9 @@ jobs:
 
       - name: Test V3 Ingredients + Inventory controlled soak
         run: npm run v3:ingredients-inventory-soak
+
+      - name: Test V3 Ingredients + Inventory migration gate
+        run: npm run v3:ingredients-inventory-gate
 
       - name: Test V3 production shell
         run: npm run v3:production-shell
