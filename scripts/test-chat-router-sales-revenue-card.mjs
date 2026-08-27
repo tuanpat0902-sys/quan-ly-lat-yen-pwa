@@ -28,9 +28,9 @@ vm.createContext(cardSandbox);
 vm.runInContext(cardSource,cardSandbox,{filename:'ly-sales-report-revenue-card.js'});
 const card=cardSandbox.window.__lySalesReportRevenueCard;
 if(typeof card?.comparisonLine!=='function')throw new Error('comparisonLine is not exposed');
-if(card.comparisonLine(150,100)!=='Tăng 50% so với ngày trước')throw new Error(`Unexpected increase text: ${card.comparisonLine(150,100)}`);
-if(card.comparisonLine(75,100)!=='Giảm 25% so với ngày trước')throw new Error(`Unexpected decrease text: ${card.comparisonLine(75,100)}`);
-if(card.comparisonLine(100,100)!=='Không đổi 0% so với ngày trước')throw new Error('equal revenue comparison failed');
+if(card.comparisonLine(150,100)!=='Tăng 50% so với ngày hôm qua')throw new Error(`Unexpected increase text: ${card.comparisonLine(150,100)}`);
+if(card.comparisonLine(75,100)!=='Giảm 25% so với ngày hôm qua')throw new Error(`Unexpected decrease text: ${card.comparisonLine(75,100)}`);
+if(card.comparisonLine(100,100)!=='Không đổi 0% so với ngày hôm qua')throw new Error('equal revenue comparison failed');
 if(card.comparisonLine(100,0)!=='')throw new Error('previous zero revenue must not produce a misleading percentage');
 
 console.log('Local chatbot router: PASS (3 priority cases)');
