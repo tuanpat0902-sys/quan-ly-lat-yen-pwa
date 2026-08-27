@@ -1,14 +1,14 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV79)return;
-  window.__lyModuleLoaderV79=true;
+  if(window.__lyModuleLoaderV80)return;
+  window.__lyModuleLoaderV80=true;
 
-  const VERSION='2026.08.27.30';
+  const VERSION='2026.08.27.31';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
-    freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.4',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.4'},
+    freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.5',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.5'},
     appVersion:{src:'./ly-app-version.js?v=3.0.6',test:()=>window.__lyAppVersion?.version==='3.0.6'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.1',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.1'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260826.19',test:()=>window.__lyLocalAssistant?.version==='2026.08.26.19'},
@@ -26,7 +26,7 @@
     modelShim:{src:'./ly-legacy-model-shim.js?v=20260824.2',test:()=>window.__lyLegacyModelShim?.version==='2026.08.24.2'},
     listShim:{src:'./ly-legacy-list-shim.js?v=20260824.1',test:()=>window.__lyLegacyListShim?.version==='2026.08.24.1'},
     formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.3',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.3'},
-    menuSecurity:{src:'./ly-menu-security.js?v=20260827.3',test:()=>window.__lyMenuSecurity?.version==='2026.08.27.3'},
+    menuSecurity:{src:'./ly-menu-security.js?v=20260827.4',test:()=>window.__lyMenuSecurity?.version==='2026.08.27.4'},
     ingredientsTakeover:{src:'./ly-fresh-core-v2-ingredients-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2IngredientsTakeover?.version==='2026.08.24.4'},
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
     documentsTakeover:{src:'./ly-fresh-core-v2-documents-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2DocumentsTakeover?.version==='2026.08.24.3'},
