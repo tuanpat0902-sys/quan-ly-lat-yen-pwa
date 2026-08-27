@@ -28,10 +28,12 @@ assert.match(ddl,/revoke all on function ly_private\.ly_is_org_admin\(uuid\) fro
 assert.doesNotMatch(ddl,/grant execute on function ly_private\.ly_is_org_admin/);
 assert.equal((ddl.match(/grant select on table public\.ly_employee/g)||[]).length,0);
 assert.match(ddl,/grant execute on function public\.ly_list_employee_directory\(uuid, uuid\) to authenticated/);
-assert.equal(EMPLOYEES_CONTRACT.status,'production-schema-applied-readonly-empty');
+assert.equal(EMPLOYEES_CONTRACT.status,'read-only-repository-prepared-not-activated');
 assert.equal(EMPLOYEES_CONTRACT.cloud.schemaPresent,true);
 assert.equal(EMPLOYEES_CONTRACT.cloud.migrationApplied,true);
+assert.equal(EMPLOYEES_CONTRACT.cloud.repositoryImplemented,true);
+assert.equal(EMPLOYEES_CONTRACT.cloud.repositoryRuntimeActivated,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.safeProjection,'public.ly_list_employee_directory(uuid,uuid)');
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
-assert.equal(EMPLOYEES_CONTRACT.nextGate,'implement-read-only-repository-against-safe-rpc');
+assert.equal(EMPLOYEES_CONTRACT.nextGate,'obtain-device-v2-v3-directory-parity-before-shadow-activation');
 console.log('Fresh Core V3-6 formal security review gate: PASS');
