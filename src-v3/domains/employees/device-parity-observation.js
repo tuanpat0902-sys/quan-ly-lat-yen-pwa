@@ -5,6 +5,7 @@ export const EMPLOYEES_DEVICE_PARITY_STORAGE_KEY='lat_yen_v3_employees_directory
 function text(value){return String(value??'').trim();}
 function count(value){const n=Number(value);return Number.isFinite(n)&&n>=0?Math.trunc(n):0;}
 function duration(value){const n=Number(value);return Number.isFinite(n)&&n>0?Math.round(n):0;}
+function resolveNow(value){const raw=typeof value==='function'?value():value;const n=Number(raw);return Number.isFinite(n)&&n>0?n:Date.now();}
 
 export function createEmployeesDeviceParityObservation({source,complete,parityReady,reads,writes,durationMs,legacyCount,cloudCount}={}){
   return Object.freeze({
@@ -38,9 +39,8 @@ export function persistEmployeesDeviceParityObservation({storage,orgId,warehouse
   try{saved=JSON.parse(storage.getItem(EMPLOYEES_DEVICE_PARITY_STORAGE_KEY)||'{}')||{};}catch(_){saved={};}
   const orgs=saved.orgs&&typeof saved.orgs==='object'?saved.orgs:{};
   const warehouses=orgs[oid]?.warehouses&&typeof orgs[oid].warehouses==='object'?orgs[oid].warehouses:{};
-  const at=Number(now());
   warehouses[wid]={
-    lastAt:Number.isFinite(at)&&at>0?at:Date.now(),
+    lastAt:resolveNow(now),
     observation:normalized,
     gate:{
       pass:gate.pass===true,
