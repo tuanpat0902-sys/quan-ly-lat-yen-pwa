@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.77",
-  "revision": "fresh-core-v2-authoritative-v83",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-167",
+  "appVersion": "2.1.78",
+  "revision": "fresh-core-v2-authoritative-v84",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-168",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -30,7 +30,8 @@
   "maintenance": "legacy-chat-experiments-removed-minimal-service-worker-catalog-single-release-source",
   "startup": "critical-business-first-assistant-idle-deferred-no-duplicate-core-pass",
   "performance": "eager-runtime-budget-contextual-domain-loading-adaptive-timeouts-performance-v4-loader-owned",
-  "freshCoreV3": "master-data-production-shadow-soak-read-only",
+  "freshCoreV3": "master-data-production-shadow-soak-with-local-settings-status",
   "zeroAddedCost": true,
-  "v3ShadowBudget": "one-device-read-cycle-per-24h-two-small-queries-zero-cloud-writes"
+  "v3ShadowBudget": "one-device-read-cycle-per-24h-two-small-queries-zero-cloud-writes",
+  "v3Diagnostics": "local-only-settings-card-no-cloud-telemetry"
 }
