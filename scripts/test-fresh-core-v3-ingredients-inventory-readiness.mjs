@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {
   INGREDIENTS_INVENTORY_READINESS_POLICY,
   evaluateIngredientsInventoryReadiness
-} from '../src-v3/domains/ingredients-inventory/index.js';
+} from '../src-v3/domains/ingredients-inventory/readiness.js';
 
 const passObservation=(lastAt)=>({lastAt,parityReady:true,complete:true,writes:0,reads:2,durationMs:800});
 const production=[passObservation(1),passObservation(2),passObservation(3)];
