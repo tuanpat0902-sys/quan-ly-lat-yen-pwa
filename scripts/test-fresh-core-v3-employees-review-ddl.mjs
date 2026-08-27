@@ -10,11 +10,10 @@ assert.match(ddl,/intentionally outside supabase\/migrations/);
 for(const table of ['ly_employees','ly_employee_attendance','ly_employee_payroll']){
   assert.match(ddl,new RegExp(`create table public\\.${table} \\(`));
   assert.match(ddl,new RegExp(`alter table public\\.${table} enable row level security;`));
-  assert.match(ddl,new RegExp(`revoke all on table public\\.${table} from anon, authenticated;`));
-  assert.match(ddl,new RegExp(`grant select on table public\\.${table} to authenticated;`));
+  assert.match(ddl,new RegExp(`revoke all on table public\\.${table} from public, anon, authenticated;`));
+  assert.doesNotMatch(ddl,new RegExp(`grant select on table public\\.${table}`));
 }
-assert.equal((ddl.match(/for select\s+to authenticated/g)||[]).length,3);
-assert.equal((ddl.match(/using \(ly_private\.ly_is_org_admin\(org_id\)\)/g)||[]).length,3);
+assert.equal((ddl.match(/for select\s+to authenticated/g)||[]).length,0);
 assert.doesNotMatch(ddl,/grant\s+(insert|update|delete|all)\b/i);
 assert.doesNotMatch(ddl,/for\s+(insert|update|delete|all)\b/i);
 assert.doesNotMatch(ddl,/create\s+view/i);
@@ -23,8 +22,6 @@ assert.doesNotMatch(ddl,/update\s+public\.ly_employee/i);
 assert.doesNotMatch(ddl,/delete\s+from\s+public\.ly_employee/i);
 
 assert.match(ddl,/create or replace function ly_private\.ly_is_org_admin\(p_org_id uuid\)/);
-assert.equal((ddl.match(/security definer/g)||[]).length,1);
-assert.match(ddl,/set search_path = ''/);
 assert.match(ddl,/from public\.ly_org_members m/);
 assert.match(ddl,/m\.user_id = auth\.uid\(\)/);
 assert.match(ddl,/m\.org_id = p_org_id/);
@@ -35,11 +32,32 @@ assert.doesNotMatch(ddl,/admin@latyen\.vn/i);
 assert.doesNotMatch(ddl,/ly_private\.ly_is_admin\(\)/);
 assert.doesNotMatch(ddl,/ly_private\.ly_current_org\(\)/);
 
+assert.match(ddl,/create or replace function ly_private\.ly_list_employee_directory\(/);
+assert.match(ddl,/p_org_id uuid,\s+p_warehouse_id uuid/);
+assert.match(ddl,/returns table \(\s+id uuid,\s+warehouse_id uuid,\s+code text,\s+name text,\s+role text,\s+shift text,\s+attendance_mode text,\s+active boolean\s+\)/);
+assert.match(ddl,/where ly_private\.ly_is_org_admin\(p_org_id\)/);
+assert.match(ddl,/e\.org_id = p_org_id/);
+assert.match(ddl,/e\.warehouse_id = p_warehouse_id/);
+assert.match(ddl,/revoke all on function ly_private\.ly_list_employee_directory\(uuid, uuid\) from public, anon, authenticated/);
+assert.match(ddl,/grant execute on function ly_private\.ly_list_employee_directory\(uuid, uuid\) to authenticated/);
+
+const projection=ddl.match(/create or replace function ly_private\.ly_list_employee_directory[\s\S]*?\$function\$;/)?.[0]||'';
+for(const field of DECISION.sensitiveDataPolicy.defaultListProjection){
+  assert.match(projection,new RegExp(`\\b${field}\\b`));
+}
+for(const forbidden of ['phone','address','emergency_contact','bank_account','id_number','base_salary','hourly_rate','standard_days','note','legacy_id','allowance','bonus','deduction','daily_bonus','daily_penalty']){
+  assert.doesNotMatch(projection,new RegExp(`\\b${forbidden}\\b`),`safe projection must exclude ${forbidden}`);
+}
+assert.doesNotMatch(projection,/ly_employee_attendance|ly_employee_payroll/);
+
 assert.match(ddl,/legacy_id text not null/);
 assert.match(ddl,/unique \(org_id, warehouse_id, legacy_id\)/);
 assert.match(ddl,/add constraint ly_warehouses_id_org_uniq unique \(id, org_id\)/);
 assert.match(ddl,/foreign key \(warehouse_id, org_id\) references public\.ly_warehouses\(id, org_id\)/);
 assert.equal((ddl.match(/foreign key \(employee_id, org_id, warehouse_id\)/g)||[]).length,2);
+assert.equal((ddl.match(/security definer/g)||[]).length,2);
+assert.equal((ddl.match(/set search_path = ''/g)||[]).length,2);
+
 assert.equal(DECISION.status,'proposed-not-approved');
 assert.equal(DECISION.migrationAllowed,false);
 assert.equal(DECISION.repositoryAllowed,false);
@@ -47,9 +65,12 @@ assert.equal(EMPLOYEES_CONTRACT.currentAuthority,'legacy-local');
 assert.equal(EMPLOYEES_CONTRACT.cloud.schemaPresent,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.reviewDdlPrepared,true);
 assert.equal(EMPLOYEES_CONTRACT.cloud.reviewDdlApplied,false);
+assert.equal(EMPLOYEES_CONTRACT.cloud.directBaseTableSelect,false);
+assert.equal(EMPLOYEES_CONTRACT.cloud.safeProjection,'ly_private.ly_list_employee_directory(uuid,uuid)');
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireSensitiveDataReview,true);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireTenantIntegrity,true);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireOrgScopedAuthorization,true);
+assert.equal(EMPLOYEES_MIGRATION_GUARD.requireDbEnforcedSafeProjection,true);
 
 console.log('Fresh Core V3-6 review-only DDL/RLS security guard: PASS');
