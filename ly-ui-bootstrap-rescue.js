@@ -1,65 +1,64 @@
 (()=>{
 'use strict';
 if(window.__lyUiBootstrapRescue)return;
-const VERSION='2026.08.27.3';
-const state={version:VERSION,attempts:0,success:false,lastError:'',lastAt:0};
-function call(name,...args){try{const fn=window[name];if(typeof fn==='function'){fn(...args);return true;}}catch(e){state.lastError=String(e?.message||e);}return false;}
-function ensureV3Navigation(){
+const VERSION='2026.08.27.4';
+const state={version:VERSION,attempts:0,success:false,lastError:'',lastAt:0,targetedRenders:0};
+
+function activePanel(){
+  return window.__lyFreshCoreV3?.store?.getState?.()?.activePanel||document.querySelector('.panel.active')?.id||window.activePanelId||'sales';
+}
+function activeButton(id){
+  try{return document.querySelector(`#nav button[data-panel="${CSS.escape(id)}"]`);}catch(_){return null;}
+}
+function shellReady(id=activePanel()){
+  const nav=document.getElementById('nav');
+  const panel=document.getElementById(id);
+  return !!(nav?.querySelector('button[data-panel]')&&panel?.classList.contains('active')&&panel.innerHTML.trim());
+}
+function targetedRender(id){
   try{
     const router=window.__lyFreshCoreV3?.router;
-    if(router?.authoritative===true){
-      router.install?.();
-      const active=window.__lyFreshCoreV3?.store?.getState?.()?.activePanel||document.querySelector('.panel.active')?.id||'sales';
-      router.reconcile?.(active,document.querySelector(`#nav button[data-panel="${CSS.escape(active)}"]`));
-      return true;
+    router?.reconcile?.(id,activeButton(id));
+    if(shellReady(id))return true;
+    if(typeof window.renderPanel==='function'){
+      window.renderPanel(id);
+      state.targetedRenders++;
     }
-    window.__lyFreshCoreV3Runtime?.boot?.();
-  }catch(e){state.lastError=String(e?.message||e);}
-  return false;
-}
-function hydrateFromV2(){
-  try{
-    const core=window.__lyFreshCoreV2;
-    const hydration=window.__lyFreshCoreV2LegacyHydration;
-    const snapshot=core?.store?.getState?.();
-    if(snapshot&&typeof hydration?.hydrate==='function')return hydration.hydrate(snapshot)!==false;
-  }catch(e){state.lastError=String(e?.message||e);}
-  return false;
+    router?.ensureRendered?.(id,activeButton(id),0);
+    return shellReady(id);
+  }catch(e){
+    state.lastError=String(e?.message||e);
+    return false;
+  }
 }
 function rescue(){
   state.attempts++;state.lastAt=Date.now();
   try{
-    ensureV3Navigation();
-    hydrateFromV2();
-    call('applyAppBrand');
-    call('navInit');
-    call('restoreNavGroupStateV238');
-    call('installSaleHandler');
-    call('invalidateDataIndexes');
-    call('invalidateDerivedCaches');
-    call('renderWarehouseSelect');
-    const active=window.__lyFreshCoreV3?.store?.getState?.()?.activePanel||window.activePanelId||'ingredients';
-    if(typeof window.renderAll==='function')window.renderAll();
-    else call('renderPanel',active);
-    window.__lyFreshCoreV3?.router?.reconcile?.(active,document.querySelector(`#nav button[data-panel="${CSS.escape(active)}"]`));
+    const router=window.__lyFreshCoreV3?.router;
+    if(router?.authoritative!==true){
+      window.__lyFreshCoreV3Runtime?.boot?.();
+      return false;
+    }
+    const id=activePanel();
+    router.install?.();
+    router.reconcile?.(id,activeButton(id));
+    if(!shellReady(id))targetedRender(id);
     window.__lyVersionInfo?.render?.();
     window.__lyAppVersion?.mount?.();
-    const nav=document.getElementById('nav');
-    const panel=document.querySelector('.panel.active');
-    state.success=!!(nav&&nav.children.length&&panel&&panel.innerHTML.trim());
+    state.success=shellReady(id);
     if(state.success){
       document.documentElement.setAttribute('data-ly-ui-ready','1');
-      window.dispatchEvent?.(new CustomEvent('latyen:ui-rescued',{detail:{version:VERSION,attempts:state.attempts}}));
+      window.dispatchEvent?.(new CustomEvent('latyen:ui-rescued',{detail:{version:VERSION,attempts:state.attempts,panel:id}}));
     }
   }catch(e){state.lastError=String(e?.message||e);}
   return state.success;
 }
 function boot(){
-  const delays=[0,100,300,700,1200,2000,3500,6000,10000];
-  delays.forEach(ms=>setTimeout(()=>{if(!state.success)rescue();},ms));
+  [0,120,350,800,1600,3000,6000].forEach(ms=>setTimeout(()=>{if(!state.success)rescue();},ms));
 }
-window.__lyUiBootstrapRescue={version:VERSION,rescue,status:()=>({...state})};
+window.__lyUiBootstrapRescue={version:VERSION,rescue,status:()=>({...state,activePanel:activePanel()})};
 window.addEventListener?.('latyen:fresh-core-v3-authoritative',()=>setTimeout(rescue,0));
-window.addEventListener?.('latyen:v2-shadow-ready',()=>setTimeout(rescue,0));
+window.addEventListener?.('latyen:panel',event=>{const id=event?.detail?.panel;if(id)setTimeout(()=>targetedRender(id),35);});
+window.addEventListener?.('latyen:panel-render-failed',event=>{const id=event?.detail?.panel;if(id)setTimeout(()=>targetedRender(id),0);});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
