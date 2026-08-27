@@ -2,7 +2,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   domain:'employees',
   wave:'V3-6',
   dependsOn:Object.freeze(['V3-0']),
-  status:'production-schema-applied-readonly-empty',
+  status:'read-only-repository-prepared-not-activated',
   currentAuthority:'legacy-local',
   v3Authoritative:false,
   productionActivation:false,
@@ -19,12 +19,17 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     productionMigrationVersion:'20260827155709',
     formalSecurityReview:'approved-for-migration-generation',
     safeProjection:'public.ly_list_employee_directory(uuid,uuid)',
+    safeRpcName:'ly_list_employee_directory',
     directBaseTableSelect:false,
     tables:Object.freeze(['ly_employees','ly_employee_attendance','ly_employee_payroll']),
     baselineRows:Object.freeze({employees:0,attendance:0,payroll:0}),
     rlsVerified:true,
     clientTableSelect:false,
     safeRpcVerified:true,
+    repositoryImplemented:true,
+    repositoryRuntimeActivated:false,
+    serviceMode:'manual-read-only-shadow',
+    autoShadow:false,
     reads:0,
     writes:0
   }),
@@ -49,7 +54,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   sensitiveData:Object.freeze([
     'phone','address','emergency_contact','bank_account','id_number','base_salary','hourly_rate','attendance','payroll'
   ]),
-  nextGate:'implement-read-only-repository-against-safe-rpc'
+  nextGate:'obtain-device-v2-v3-directory-parity-before-shadow-activation'
 });
 
 export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
