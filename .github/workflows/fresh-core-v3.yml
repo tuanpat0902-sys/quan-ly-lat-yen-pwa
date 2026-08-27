@@ -1,0 +1,38 @@
+name: Fresh Core V3 CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src-v3/**'
+      - 'scripts/check-fresh-core-v3-architecture.mjs'
+      - 'scripts/test-fresh-core-v3-foundation.mjs'
+      - 'package.json'
+      - '.github/workflows/fresh-core-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fresh-core-v3-ci
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check V3 architecture contract
+        run: npm run v3:architecture
+
+      - name: Test V3 foundation
+        run: npm run v3:foundation
