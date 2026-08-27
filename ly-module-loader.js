@@ -43,7 +43,7 @@
     employeeTerminationDate:{src:'./ly-employee-termination-date.js?v=20260826.2',test:()=>window.__lyEmployeeTerminationDate?.version==='2026.08.26.2'},
     inAppNotifications:{src:'./ly-inapp-notifications.js?v=20260827.4',test:()=>window.__lyInAppNotifications?.version==='2026.08.27.4'},
     dataNotifications:{src:'./ly-data-notifications.js?v=20260825.7',test:()=>window.__lyDataActivityNotifications?.version==='2026.08.25.7'},
-    notificationCenter:{src:'./ly-notification-center.js?v=20260827.4',test:()=>window.__lyNotificationCenter?.version==='2026.08.27.4'},
+    notificationCenter:{src:'./ly-notification-center.js?v=20260827.5',test:()=>window.__lyNotificationCenter?.version==='2026.08.27.5'},
     inventoryAlerts:{src:'./ly-inventory-alerts.js?v=20260824.1',test:()=>window.__lyInventoryAlerts?.version==='2026.08.24.1'},
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
     finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.4',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.4'},
