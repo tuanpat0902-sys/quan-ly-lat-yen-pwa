@@ -39,3 +39,6 @@ jobs:
 
       - name: Test V3 Master Data shadow
         run: npm run v3:master-data
+
+      - name: Test V3 zero-cost shadow soak
+        run: npm run v3:shadow-soak
