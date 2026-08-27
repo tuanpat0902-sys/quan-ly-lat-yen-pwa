@@ -4,7 +4,7 @@ import path from 'node:path';
 const root='src-v3';
 const required=[
   'ARCHITECTURE.md','architecture-contract.json','migration-plan.json','cost-policy.json','COST_POLICY.md','README.md',
-  'app/bootstrap.js','app/feature-registry.js',
+  'app/bootstrap.js','app/feature-registry.js','app/router.js',
   'core/events/event-bus.js','core/store/store.js','core/scheduler/scheduler.js',
   'core/cache/query-cache.js','core/realtime/realtime-manager.js','core/diagnostics/health.js',
   'data/supabase/gateway.js','compatibility/v2-adapter.js',
@@ -35,7 +35,10 @@ if(costPolicy.shadowSoak?.cloudWrites!==0)failures.push('V3 shadow diagnostics m
 if(Number(costPolicy.shadowSoak?.maxRunsPerDevicePerDay)>2)failures.push('V3 Master Data shadow soak exceeds free-tier read budget');
 
 const bootstrap=fs.readFileSync(path.join(root,'app/bootstrap.js'),'utf8');
-if(!bootstrap.includes("mode:'shadow'")||!bootstrap.includes("authoritative:false"))failures.push('V3 bootstrap must remain shadow-only');
+if(!bootstrap.includes("mode='shadow'"))failures.push('V3 bootstrap must default to shadow mode');
+if(!bootstrap.includes("const authoritative=mode==='v3-shell'"))failures.push('V3 bootstrap must explicitly gate authoritative shell mode');
+const router=fs.readFileSync(path.join(root,'app/router.js'),'utf8');
+if(!router.includes("authoritative:true"))failures.push('V3 router must declare authoritative navigation ownership');
 const plan=JSON.parse(fs.readFileSync(path.join(root,'migration-plan.json'),'utf8'));
 if(plan.dualWrite!==false)failures.push('migration plan must forbid dual-write');
 if(plan.rollback?.required!==true)failures.push('migration plan must require per-domain rollback');
