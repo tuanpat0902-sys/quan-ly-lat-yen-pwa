@@ -2,7 +2,7 @@
    Read-only report renderers extracted from Legacy index.html. Core business/save/chart helpers remain resident. */
 (()=>{
   'use strict';
-  if(window.__lySpecialReportsModule)return;
+  if(window.__lySpecialReportsModule?.version==='2026.08.27.4')return;
   function renderImportReport(){
     const area=$('importReportArea');
     if(!area)return;
@@ -541,5 +541,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.24.3'};
+  window.__lySpecialReportsModule={version:'2026.08.27.4'};
 })();
