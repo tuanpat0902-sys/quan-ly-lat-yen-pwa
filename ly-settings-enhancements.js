@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lySettingsEnhancementsV3)return;
-  window.__lySettingsEnhancementsV3=true;
+  if(window.__lySettingsEnhancementsV4)return;
+  window.__lySettingsEnhancementsV4=true;
 
-  const VERSION='2026.08.27.1';
+  const VERSION='2026.08.27.2';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const LEGACY_PREF_KEY='lat_yen_notify_pref_v226';
   const PAGE_LOADED_AT=new Date();
@@ -97,9 +97,9 @@
 
   function versionSnapshot(){
     const app=window.__lyAppVersion||{};
-    const core=window.__lyFreshCoreV2||{};
+    const core=window.__lyFreshCoreV3||window.__lyFreshCoreV2||{};
     const loader=window.__lyModuleLoader||{};
-    const finalOwnership=window.__lyFreshCoreV2FinalOwnership||{};
+    const finalOwnership=window.__lyFreshCoreV3?.router||window.__lyFreshCoreV2FinalOwnership||{};
     const sw=navigator.serviceWorker?.controller;
     return {
       appLabel:app.label||window.__LY_APP_VERSION_LABEL||'Không xác định',
@@ -163,7 +163,7 @@
     const phaseText=v.available?v.phase:'Đang chờ module V3';
     card.innerHTML=`
       <div class="ly-version-head">
-        <div><h3>Fresh Core V3 · kiểm tra nền</h3><div class="muted">Master Data đang chạy ở chế độ chỉ đọc, V2 vẫn là hệ thống chính.</div></div>
+        <div><h3>Fresh Core V3 · hệ thống chính</h3><div class="muted">V3 đang quản lý điều hướng và trạng thái ứng dụng; dữ liệu nghiệp vụ còn lại đang dùng lớp tương thích V2 trong thời gian migration.</div></div>
         <span class="ly-version-state">${esc(phaseText)}</span>
       </div>
       <div class="ly-v3-grid">
@@ -172,7 +172,7 @@
         <div class="ly-v3-metric"><b>Đọc / Ghi Cloud</b><span>${esc(String(v.reads))} / ${esc(String(v.writes))}</span></div>
         <div class="ly-v3-metric"><b>Giới hạn</b><span>1 lần / 24 giờ · 2 truy vấn nhỏ</span></div>
       </div>
-      <div class="ly-v3-note">Không thay đổi giao diện nghiệp vụ, không ghi dữ liệu và không dùng dịch vụ trả phí. Kết quả chỉ lưu trên thiết bị này.</div>`;
+      <div class="ly-v3-note">Master Data vẫn được đối chiếu chỉ đọc trong nền. Không thêm dịch vụ trả phí; dữ liệu nghiệp vụ tiếp tục được bảo vệ qua lớp tương thích trong thời gian chuyển dần sang V3.</div>`;
     return true;
   }
 
