@@ -7,7 +7,10 @@ const required=[
   'app/bootstrap.js','app/feature-registry.js',
   'core/events/event-bus.js','core/store/store.js','core/scheduler/scheduler.js',
   'core/cache/query-cache.js','core/realtime/realtime-manager.js','core/diagnostics/health.js',
-  'data/supabase/gateway.js','compatibility/v2-adapter.js'
+  'data/supabase/gateway.js','compatibility/v2-adapter.js',
+  'domains/master-data/master-data-contract.js','domains/master-data/schema-contract.js',
+  'domains/master-data/parity.js','domains/master-data/master-data-repository.js',
+  'domains/master-data/master-data-service.js','domains/master-data/units.js','domains/master-data/index.js'
 ];
 const failures=[];
 const walk=dir=>fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{
