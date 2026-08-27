@@ -1,10 +1,10 @@
 (()=>{
   'use strict';
-  if(window.__lyIndependentBootstrapV4)return;
-  window.__lyIndependentBootstrapV4=true;
+  if(window.__lyIndependentBootstrapV5)return;
+  window.__lyIndependentBootstrapV5=true;
 
-  const VERSION=window.__LY_APP_VERSION||window.__lyAppVersion?.version||'3.0.4';
-  const REVISION=window.__lyAppVersion?.revision||'fresh-core-v3-shell-authoritative-v5';
+  const VERSION=window.__LY_APP_VERSION||window.__lyAppVersion?.version||'3.0.6';
+  const REVISION=window.__lyAppVersion?.revision||'fresh-core-v3-shell-authoritative-v7';
   const state={version:VERSION,revision:REVISION,startedAt:Date.now(),attempts:0,ready:false,shellRepairs:0,diagnosticRenders:0,lastDiagnosticKey:'',lastError:'',firstError:'',lastAt:0};
   const text=value=>String(value??'');
 
@@ -85,9 +85,11 @@
       try{window.navInit?.();repaired=true;}catch(error){recordError(error);}
       if(minimalNav())repaired=true;
     }
-    if(window.__lyFreshCoreV2&&!document.querySelector('.panel.active')?.innerHTML?.trim()){
-      try{window.__lyFreshCoreV2LegacyHydration?.hydrate?.(window.__lyFreshCoreV2.store?.getState?.());}catch(error){recordError(error);}
-      try{window.renderWarehouseSelect?.();window.renderAll?.();repaired=true;}catch(error){recordError(error);}
+    const active=window.__lyFreshCoreV3?.store?.getState?.()?.activePanel||document.querySelector('.panel.active')?.id||'sales';
+    const panel=document.getElementById(active);
+    if(panel&&!panel.innerHTML.trim()){
+      try{window.renderPanel?.(active);repaired=true;}catch(error){recordError(error);}
+      try{window.__lyFreshCoreV3?.router?.ensureRendered?.(active,document.querySelector(`#nav button[data-panel="${CSS.escape(active)}"]`),0);}catch(error){recordError(error);}
     }
     if(repaired)state.shellRepairs++;
     return repaired;
