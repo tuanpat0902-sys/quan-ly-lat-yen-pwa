@@ -33,6 +33,7 @@ jobs:
       - name: Verify the release files
         run: |
           node scripts/check-release-consistency.mjs
+          node scripts/maintenance-audit.mjs
           node scripts/test-chat-language-plus.mjs
           node scripts/test-chat-sales-query.mjs
           node scripts/test-chat-sales-insights.mjs
@@ -48,7 +49,7 @@ jobs:
           rm -rf _site
           mkdir -p _site
           cp index.html sw.js manifest.webmanifest icon.svg .nojekyll runtime-version.json _site/
-          find . -maxdepth 1 -type f -name 'ly-*.js' -exec cp {} _site/ \;
+          node scripts/copy-pages-runtime.mjs _site
           cp -R src-v2 _site/src-v2
 
           node scripts/check-release-consistency.mjs
