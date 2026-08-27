@@ -11,10 +11,11 @@ const failures=[];
 for(const file of UNUSED_ROOT_RUNTIME_FILES){
   if(productionSource.includes(file))failures.push(`unused experiment still wired into production: ${file}`);
 }
-const precacheMatch=sw.match(/const PRECACHE_ASSETS=CORE_ASSETS\.filter[\s\S]*?\.includes\(url\)\);/);
-if(!precacheMatch)failures.push('service worker must keep a bounded PRECACHE_ASSETS subset');
+const precacheMatch=sw.match(/const PRECACHE_ASSETS=\[[\s\S]*?\];/);
+if(!precacheMatch)failures.push('service worker must declare a bounded PRECACHE_ASSETS list');
 const critical=(precacheMatch?.[0].match(/\.\/[A-Za-z0-9_.?/-]+/g)||[]).length;
-if(critical>12)failures.push(`service worker critical precache grew too large: ${critical}`);
+if(critical>8)failures.push(`service worker critical precache grew too large: ${critical}`);
+if(sw.includes('CORE_ASSETS'))failures.push('dead service-worker full-runtime asset catalog must stay removed');
 if(!sw.includes("cacheFirstStatic(request)"))failures.push('static assets must use cache-first path');
 if(!sw.includes("ignoreSearch:true"))failures.push('versioned static requests must reuse same-release cached assets');
 if(failures.length){
