@@ -3,8 +3,8 @@
   if(window.__lyIndependentBootstrapV4)return;
   window.__lyIndependentBootstrapV4=true;
 
-  const VERSION=window.__LY_APP_VERSION||window.__lyAppVersion?.version||'2.1.30';
-  const REVISION=window.__lyAppVersion?.revision||'fresh-core-v2-authoritative-v31';
+  const VERSION=window.__LY_APP_VERSION||window.__lyAppVersion?.version||'3.0.4';
+  const REVISION=window.__lyAppVersion?.revision||'fresh-core-v3-shell-authoritative-v5';
   const state={version:VERSION,revision:REVISION,startedAt:Date.now(),attempts:0,ready:false,shellRepairs:0,diagnosticRenders:0,lastDiagnosticKey:'',lastError:'',firstError:'',lastAt:0};
   const text=value=>String(value??'');
 
@@ -21,9 +21,20 @@
   window.addEventListener?.('unhandledrejection',event=>recordError(event?.reason));
 
   function status(){
+    const runtime=window.__lyFreshCoreV3Runtime?.status?.()||{};
+    const core=window.__lyFreshCoreV3||{};
+    const router=core.router?.status?.()||{};
     const shadow=window.__lyFreshCoreV2Shadow?.status?.()||{};
-    const final=window.__lyFreshCoreV2FinalOwnership?.status?.()||{};
-    return{shadow,final,hasCore:!!window.__lyFreshCoreV2,hasHydration:!!window.__lyFreshCoreV2LegacyHydration,hasNavInit:typeof window.navInit==='function',hasRenderAll:typeof window.renderAll==='function'};
+    return{
+      runtime,
+      router,
+      shadow,
+      hasV3:!!window.__lyFreshCoreV3,
+      routerAuthoritative:core.router?.authoritative===true&&window.showTab===core.router.navigate,
+      hasHydration:!!window.__lyFreshCoreV2LegacyHydration,
+      hasNavInit:typeof window.navInit==='function',
+      hasRenderAll:typeof window.renderAll==='function'
+    };
   }
 
   function ensureHost(){
@@ -41,12 +52,14 @@
     const snapshot=status();
     const live=window.__LY_APP_VERSION||window.__lyAppVersion?.version||VERSION;
     const shadowDetail=snapshot.shadow.error?`${text(snapshot.shadow.phase)} · ${text(snapshot.shadow.error)}`:text(snapshot.shadow.phase||'chưa khởi tạo');
-    const key=[live,snapshot.hasCore,snapshot.hasHydration,shadowDetail,snapshot.final.phase||'waiting',snapshot.hasNavInit,snapshot.hasRenderAll,state.firstError].join('|');
+    const runtimeDetail=snapshot.runtime.error?`${text(snapshot.runtime.phase)} · ${text(snapshot.runtime.error)}`:text(snapshot.runtime.phase||'chưa khởi tạo');
+    const routerDetail=snapshot.routerAuthoritative?'authoritative':text(snapshot.router.phase||'waiting');
+    const key=[live,snapshot.hasV3,snapshot.hasHydration,shadowDetail,runtimeDetail,routerDetail,snapshot.hasNavInit,snapshot.hasRenderAll,state.firstError].join('|');
     if(key===state.lastDiagnosticKey)return;
     state.lastDiagnosticKey=key;
     state.diagnosticRenders++;
     const host=ensureHost();
-    host.innerHTML=`<div style="font-weight:800;font-size:17px;margin-bottom:6px">QUẢN LÝ LÁT YÊN · Ver ${live}</div><div style="color:#667085;margin-bottom:10px">Đang khởi động Fresh Core V2…</div><div style="display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:12px"><b>Core</b><span>${snapshot.hasCore?'đã tải':'chưa tải'}</span><b>Hydration</b><span>${snapshot.hasHydration?'đã tải':'chưa tải'}</span><b>Shadow</b><span>${shadowDetail}</span><b>Final ownership</b><span>${text(snapshot.final.phase||'waiting')}</span><b>Legacy shell</b><span>${snapshot.hasNavInit&&snapshot.hasRenderAll?'sẵn sàng':'chưa sẵn sàng'}</span>${state.firstError?`<b>Lỗi đầu tiên</b><span style="color:#b42318;word-break:break-word">${state.firstError.replace(/[&<>]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[character]))}</span>`:''}</div><button id="lyBootstrapRetryBtn" style="margin-top:12px;padding:8px 11px;border:1px solid #0f766e;border-radius:9px;background:#0f766e;color:#fff">Thử khởi động lại</button>`;
+    host.innerHTML=`<div style="font-weight:800;font-size:17px;margin-bottom:6px">QUẢN LÝ LÁT YÊN · Ver ${live}</div><div style="color:#667085;margin-bottom:10px">Đang khởi động Fresh Core V3…</div><div style="display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:12px"><b>V3 runtime</b><span>${runtimeDetail}</span><b>V3 router</b><span>${routerDetail}</span><b>Hydration compatibility</b><span>${snapshot.hasHydration?'đã tải':'chưa tải'}</span><b>V2 data compatibility</b><span>${shadowDetail}</span><b>Legacy renderer</b><span>${snapshot.hasNavInit&&snapshot.hasRenderAll?'sẵn sàng':'chưa sẵn sàng'}</span>${state.firstError?`<b>Lỗi đầu tiên</b><span style="color:#b42318;word-break:break-word">${state.firstError.replace(/[&<>]/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[character]))}</span>`:''}</div><button id="lyBootstrapRetryBtn" style="margin-top:12px;padding:8px 11px;border:1px solid #0f766e;border-radius:9px;background:#0f766e;color:#fff">Thử khởi động lại</button>`;
     host.querySelector('#lyBootstrapRetryBtn')?.addEventListener('click',()=>attempt(true));
   }
 
@@ -84,15 +97,10 @@
     if(state.ready&&!force)return true;
     state.attempts++;
     state.lastAt=Date.now();
-    if(!window.__lyFreshCoreV2){
-      try{await(window.__lyFreshCoreV2Shadow?.boot?.()||window.__lyFreshCoreV2Shadow?.refresh?.());}catch(error){recordError(error);}
-    }
-    if(window.__lyFreshCoreV2){
-      try{await window.__lyFreshCoreV2FinalOwnership?.install?.();}catch(error){recordError(error);}
-    }
+    try{await window.__lyFreshCoreV3Runtime?.boot?.();}catch(error){recordError(error);}
     if(!shellReady())repairShell();
     const snapshot=status();
-    const ok=!!(snapshot.hasCore&&snapshot.shadow.phase==='ready'&&snapshot.final.active&&shellReady());
+    const ok=!!(snapshot.hasV3&&snapshot.routerAuthoritative&&shellReady());
     if(ok){
       state.ready=true;
       document.getElementById('lyIndependentBootstrapStatus')?.remove();
@@ -109,7 +117,7 @@
   }
 
   window.__lyIndependentBootstrap={version:VERSION,revision:REVISION,attempt,status:()=>({...state,...status()})};
+  window.addEventListener?.('latyen:fresh-core-v3-authoritative',()=>{if(!state.ready)setTimeout(()=>attempt(false),0);});
   window.addEventListener?.('latyen:v2-shadow-ready',()=>{if(!state.ready)setTimeout(()=>attempt(false),0);});
-  window.addEventListener?.('latyen:fresh-core-v2-authoritative',()=>{if(!state.ready)setTimeout(()=>attempt(false),0);});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
