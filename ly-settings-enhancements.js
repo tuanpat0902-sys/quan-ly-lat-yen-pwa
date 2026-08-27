@@ -132,8 +132,8 @@
     const phase=live.phase||'chưa chạy';
     const parity=live.parityReady??entry.parityReady??null;
     const lastAt=Number(live.lastAt||entry.lastAt||0);
-    const reads=Number(live.reads||0);
-    const writes=Number(live.writes||0);
+    const reads=Number(live.reads||entry.reads||0);
+    const writes=Number(live.writes||entry.writes||0);
     return {
       available:!!api,
       phase,
