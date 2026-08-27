@@ -112,7 +112,7 @@
     try{await window.__lyFreshCoreV3Runtime?.boot?.();}catch(e){}
     await load('menuSecurity');await load('settingsUIBridge');
     await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
-    await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('finalOwnership');await load('performanceOptimizer');
+    await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');if(!window.__lyFreshCoreV3?.authoritative)await load('finalOwnership');await load('performanceOptimizer');
   }
 
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
