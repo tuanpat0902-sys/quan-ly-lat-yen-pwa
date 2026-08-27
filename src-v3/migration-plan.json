@@ -1,0 +1,126 @@
+{
+  "version": "3.0-migration-plan-1",
+  "productionMode": "v2-authoritative",
+  "v3Mode": "shadow",
+  "waves": [
+    {
+      "id": "V3-0",
+      "name": "Foundation",
+      "status": "in-progress",
+      "authoritative": "v2",
+      "gates": [
+        "architecture",
+        "foundation-tests",
+        "startup-non-regression",
+        "no-production-writes"
+      ]
+    },
+    {
+      "id": "V3-1",
+      "name": "Master Data",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-0"
+      ]
+    },
+    {
+      "id": "V3-2",
+      "name": "Ingredients + Inventory",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-1"
+      ]
+    },
+    {
+      "id": "V3-3",
+      "name": "Recipes / Products",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-2"
+      ]
+    },
+    {
+      "id": "V3-4",
+      "name": "Documents",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-2"
+      ]
+    },
+    {
+      "id": "V3-5",
+      "name": "Sales",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-2",
+        "V3-3",
+        "V3-4"
+      ]
+    },
+    {
+      "id": "V3-6",
+      "name": "Employees",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-0"
+      ]
+    },
+    {
+      "id": "V3-7",
+      "name": "Finance / Cashflow",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-5",
+        "V3-6"
+      ]
+    },
+    {
+      "id": "V3-8",
+      "name": "Reports + Notifications",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-5",
+        "V3-7"
+      ]
+    },
+    {
+      "id": "V3-9",
+      "name": "Legacy retirement",
+      "status": "planned",
+      "authoritative": "mixed",
+      "dependsOn": [
+        "V3-1",
+        "V3-2",
+        "V3-3",
+        "V3-4",
+        "V3-5",
+        "V3-6",
+        "V3-7",
+        "V3-8"
+      ]
+    }
+  ],
+  "domainGate": [
+    "contract",
+    "repository",
+    "service",
+    "parity",
+    "performance",
+    "smoke",
+    "rollback",
+    "production-soak"
+  ],
+  "rollback": {
+    "required": true,
+    "scope": "per-domain"
+  },
+  "dualWrite": false
+}
