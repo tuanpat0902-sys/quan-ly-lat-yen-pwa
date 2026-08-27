@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-8",
+  "version": "3.0-migration-plan-9",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -47,7 +47,7 @@
     {
       "id": "V3-2",
       "name": "Ingredients + Inventory",
-      "status": "schema-parity-audit-completed",
+      "status": "controlled-production-shadow-soak",
       "authoritative": "v2",
       "dependsOn": [
         "V3-1"
@@ -58,9 +58,9 @@
         "service": "shadow-only",
         "parity": "local-compare",
         "writes": "disabled",
-        "productionActivation": "not-enabled",
+        "productionActivation": "controlled-shadow-read-only",
         "zeroAddedCost": true,
-        "nextGate": "controlled-production-shadow-read-soak",
+        "nextGate": "confirm-production-parity-and-capacity-from-device",
         "productionSchema": "audited-read-only",
         "productionBaseline": "captured",
         "tables": [
@@ -71,7 +71,17 @@
           "ingredients": "state.ingredients",
           "inventory": "state.inventoryData.balances"
         },
-        "repositoryTablesCorrected": true
+        "repositoryTablesCorrected": true,
+        "controlledShadow": {
+          "enabled": true,
+          "readOnly": true,
+          "runsPerDevicePer24h": 1,
+          "queriesPerRun": 2,
+          "maxRowsPerDataset": 500,
+          "cloudWrites": 0,
+          "diagnostics": "localStorage-only"
+        },
+        "localObservation": "settings-status-card"
       }
     },
     {
