@@ -14,7 +14,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     proposalStatus:'proposed-not-approved',
     reviewDdlPrepared:true,
     reviewDdlApplied:false,
-    formalSecurityReview:'blocked',
+    formalSecurityReview:'blocked-sensitive-projection',
     tables:Object.freeze([]),
     reads:0,
     writes:0
@@ -40,7 +40,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   sensitiveData:Object.freeze([
     'phone','address','emergency_contact','bank_account','id_number','base_salary','hourly_rate','attendance','payroll'
   ]),
-  nextGate:'resolve-formal-security-review-blockers-before-migration'
+  nextGate:'resolve-sensitive-projection-before-migration'
 });
 
 export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
@@ -48,6 +48,7 @@ export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
   requireSensitiveDataReview:true,
   requireFormalSecurityReviewPass:true,
   requireTenantIntegrity:true,
+  requireOrgScopedAuthorization:true,
   requireReadOnlyShadowBeforeWrites:true,
   requireRollbackPlan:true,
   allowSyntheticCloudSource:false,
