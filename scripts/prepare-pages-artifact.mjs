@@ -56,15 +56,7 @@ const checks=[
   ['stable bootstrap',output.includes('ly-independent-bootstrap.js?v=20260824.4')],
   ['single auth owner',!output.includes('ly-auth-gate.js')],
   ['service worker cache',swOutput.includes(SW_CACHE)],
-  ['service worker language plus',swOutput.includes("'./ly-chat-language-plus.js'")],
-  ['service worker inventory query',swOutput.includes("'./ly-chat-inventory-query.js'")],
-  ['service worker sales query',swOutput.includes("'./ly-chat-sales-query.js'")],
-  ['service worker sales insights',swOutput.includes("'./ly-chat-sales-insights.js'")],
-  ['service worker chat router',swOutput.includes("'./ly-chat-router.js'")],
-  ['service worker legacy inventory unit guard',swOutput.includes("'./ly-chat-legacy-inventory-unit-guard.js'")],
-  ['service worker chat response gate',swOutput.includes("'./ly-chat-response-gate.js'")],
-  ['service worker sales revenue card',swOutput.includes("'./ly-sales-report-revenue-card.js'")],
-  ['service worker local-only gate',swOutput.includes("'./ly-chat-local-only.js'")]
+  ['bounded critical precache',swOutput.includes("const PRECACHE_ASSETS=[")&&!swOutput.includes('CORE_ASSETS')],
 ];
 for(const [name,ok]of checks)if(!ok)throw new Error(`Pages artifact check failed: ${name}`);
 
