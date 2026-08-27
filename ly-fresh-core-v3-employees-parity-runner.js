@@ -6,21 +6,26 @@
   let running=false,lastResult=null,observer=null;
 
   const text=value=>String(value??'').trim();
-  const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]));
 
-  function context(){
+  function identity(){
     const core=window.__lyFreshCoreV3;
     const v2=window.__lyFreshCoreV2;
     const orgId=text(v2?.store?.getState?.()?.orgId||core?.store?.getState?.()?.orgId||window.__lyFreshOrgId);
     let warehouseId='';
     try{warehouseId=text(window.warehouse?.()?.id);}catch(_){warehouseId='';}
+    return {core,orgId,warehouseId};
+  }
+
+  function deviceContext(){
+    const ctx=identity();
     let legacyRows=null;
     try{const rows=window.loadEmployees?.();legacyRows=Array.isArray(rows)?rows:null;}catch(_){legacyRows=null;}
-    return {core,orgId,warehouseId,legacyRows};
+    return {...ctx,legacyRows};
   }
 
   function readLocal(){
-    const {orgId,warehouseId}=context();
+    const {orgId,warehouseId}=identity();
     if(!orgId||!warehouseId)return null;
     try{
       const saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')||{};
@@ -30,7 +35,7 @@
 
   async function run(){
     if(running)return lastResult;
-    const ctx=context();
+    const ctx=deviceContext();
     if(!ctx.core?.gateway)throw new Error('Fresh Core V3 gateway chưa sẵn sàng');
     if(!ctx.orgId)throw new Error('Chưa xác định organization hiện tại');
     if(!ctx.warehouseId)throw new Error('Chưa xác định kho/chi nhánh hiện tại');
@@ -86,7 +91,7 @@
   function start(){
     render();
     if(observer)return;
-    observer=new MutationObserver(()=>{if(document.getElementById('settings'))render();});
+    observer=new MutationObserver(()=>{if(document.getElementById('settings')&&!document.getElementById('lyV36EmployeesParityBox'))render();});
     observer.observe(document.documentElement,{childList:true,subtree:true});
     window.addEventListener('latyen:panel',event=>{if(event?.detail?.panel==='settings')setTimeout(render,0);});
   }
