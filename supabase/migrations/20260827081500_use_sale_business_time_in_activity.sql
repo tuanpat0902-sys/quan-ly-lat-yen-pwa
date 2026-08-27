@@ -1,20 +1,10 @@
-alter table public.ly_activity_events
-  add column if not exists occurred_at timestamptz;
-
 update public.ly_activity_events e
-set occurred_at = s.sold_at
+set created_at = s.sold_at
 from public.ly_sales s
 where e.entity_table = 'ly_sales'
   and e.entity_id = s.id
-  and e.occurred_at is null
-  and s.sold_at is not null;
-
-update public.ly_activity_events
-set occurred_at = created_at
-where occurred_at is null;
-
-alter table public.ly_activity_events
-  alter column occurred_at set default now();
+  and s.sold_at is not null
+  and e.created_at is distinct from s.sold_at;
 
 create or replace function ly_private.ly_capture_activity_event()
 returns trigger
@@ -28,7 +18,7 @@ declare
   v_id uuid;
   v_name text;
   v_amount numeric;
-  v_occurred_at timestamptz;
+  v_created_at timestamptz;
 begin
   if tg_op = 'UPDATE' and tg_table_schema = 'public' and tg_table_name = 'ly_sales' then
     if (
@@ -68,19 +58,19 @@ begin
 
   if tg_table_schema = 'public' and tg_table_name = 'ly_sales' then
     begin
-      v_occurred_at := nullif(v_row->>'sold_at','')::timestamptz;
+      v_created_at := nullif(v_row->>'sold_at','')::timestamptz;
     exception when others then
-      v_occurred_at := null;
+      v_created_at := null;
     end;
   end if;
-  v_occurred_at := coalesce(v_occurred_at, now());
+  v_created_at := coalesce(v_created_at, now());
 
   insert into public.ly_activity_events(
     org_id, actor_user_id, entity_table, entity_id, event_type,
-    entity_name, amount, occurred_at
+    entity_name, amount, created_at
   ) values (
     v_org, auth.uid(), tg_table_name, v_id, tg_op,
-    v_name, v_amount, v_occurred_at
+    v_name, v_amount, v_created_at
   );
 
   if tg_op = 'DELETE' then return old; else return new; end if;
