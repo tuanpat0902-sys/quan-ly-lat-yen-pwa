@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV3EmployeesParityRunner)return;
   const VERSION='2026.08.28.1';
   const STORAGE_KEY='lat_yen_v3_employees_directory_parity_v1';
-  let running=false,lastResult=null,observer=null;
+  let running=false,lastResult=null;
 
   const text=value=>String(value??'').trim();
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -92,9 +92,6 @@
 
   function start(){
     render();
-    if(observer)return;
-    observer=new MutationObserver(()=>{if(document.getElementById('settings')&&!document.getElementById('lyV36EmployeesParityBox'))render();});
-    observer.observe(document.documentElement,{childList:true,subtree:true});
     window.addEventListener('latyen:panel',event=>{if(event?.detail?.panel==='settings')setTimeout(render,0);});
   }
 
