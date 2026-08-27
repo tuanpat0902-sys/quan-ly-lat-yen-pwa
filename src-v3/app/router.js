@@ -44,7 +44,7 @@ export function createRouter({store,events,legacyNavigate,legacyRender,panels=DE
     return false;
   }
 
-  function navigate(panel,button){
+  function navigateNow(panel,button){
     const id=normalize(panel),btn=button||buttonFor(id);
     if(state.inNavigate){
       reconcile(id,btn);
@@ -70,6 +70,16 @@ export function createRouter({store,events,legacyNavigate,legacyRender,panels=DE
     }
   }
 
+  function navigate(panel,button){
+    const id=normalize(panel),btn=button||buttonFor(id);
+    const security=window.__lyMenuSecurity;
+    if(typeof security?.authorize==='function'){
+      const allowed=security.authorize(id,btn,()=>navigateNow(id,btn));
+      if(allowed===false)return false;
+    }
+    return navigateNow(id,btn);
+  }
+
   function install({windowObject=window}={}){
     if(state.installed)return true;
     if(typeof windowObject.showTab!=='function')return false;
@@ -86,7 +96,7 @@ export function createRouter({store,events,legacyNavigate,legacyRender,panels=DE
   return Object.freeze({
     version:'3.0.0-router.3',
     authoritative:true,
-    navigate,install,reconcile,ensureRendered,
+    navigate,navigateNow,install,reconcile,ensureRendered,
     status:()=>({...state,activePanel:store?.getState?.()?.activePanel||''})
   });
 }
