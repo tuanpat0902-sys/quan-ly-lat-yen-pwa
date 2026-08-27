@@ -36,3 +36,6 @@ jobs:
 
       - name: Test V3 foundation
         run: npm run v3:foundation
+
+      - name: Test V3 Master Data shadow
+        run: npm run v3:master-data
