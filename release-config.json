@@ -3,6 +3,6 @@
   "revision": "fresh-core-v3-shell-authoritative-v14",
   "loaderAssetVersion": "20260828.104",
   "moduleLoaderVersion": "2026.08.28.37",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-191",
-  "redeploy": "2026-08-28-v3-6-device-parity-runner-delivery"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-192",
+  "redeploy": "2026-08-28-v3-6-empty-parity-fail-closed"
 }
