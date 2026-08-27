@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.84',REVISION='fresh-core-v2-authoritative-v90';
+  const VERSION='3.0.0',REVISION='fresh-core-v3-shell-authoritative-v1';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,8 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã hợp nhất quyền điều hướng về một controller duy nhất, bỏ chặn click trùng của lớp bảo mật và đồng bộ menu/panel qua showTab gốc để loại bỏ lệch trạng thái.`
-      :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
+      ?`Đã chuyển quyền điều hướng và trạng thái ứng dụng sang Fresh Core V3; V2 chỉ còn làm lớp tương thích cho dữ liệu nghiệp vụ trong giai đoạn migration.
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
     state.updateNoticeShown=true;
