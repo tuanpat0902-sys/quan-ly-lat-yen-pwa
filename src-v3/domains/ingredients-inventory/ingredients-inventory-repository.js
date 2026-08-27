@@ -1,4 +1,5 @@
 import {INGREDIENTS_INVENTORY_CONTRACT as C} from './ingredients-inventory-contract.js';
+import {INGREDIENTS_INVENTORY_SCHEMA as S} from './schema-contract.js';
 
 export function createIngredientsInventoryRepository({gateway}){
   if(!gateway)throw new Error('gateway is required');
@@ -11,7 +12,7 @@ export function createIngredientsInventoryRepository({gateway}){
     }
     return rows;
   }
-  const listIngredients=()=>collectAll(C.tables.ingredients,q=>q.order?.('created_at',{ascending:true})??q);
-  const listInventory=()=>collectAll(C.tables.inventory,q=>q.order?.('ingredient_id',{ascending:true})??q);
-  return Object.freeze({listIngredients,listInventory});
+  const listIngredients=()=>collectAll(C.tables.ingredients,q=>q.order?.('created_at',{ascending:true})?.order?.('id',{ascending:true})??q);
+  const listInventory=()=>collectAll(C.tables.inventory,q=>q.order?.('warehouse_id',{ascending:true})?.order?.('ingredient_id',{ascending:true})??q);
+  return Object.freeze({schema:S,listIngredients,listInventory});
 }
