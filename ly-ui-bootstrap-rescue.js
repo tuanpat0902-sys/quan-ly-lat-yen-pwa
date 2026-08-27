@@ -1,9 +1,22 @@
 (()=>{
 'use strict';
 if(window.__lyUiBootstrapRescue)return;
-const VERSION='2026.08.24.2';
+const VERSION='2026.08.27.3';
 const state={version:VERSION,attempts:0,success:false,lastError:'',lastAt:0};
 function call(name,...args){try{const fn=window[name];if(typeof fn==='function'){fn(...args);return true;}}catch(e){state.lastError=String(e?.message||e);}return false;}
+function ensureV3Navigation(){
+  try{
+    const router=window.__lyFreshCoreV3?.router;
+    if(router?.authoritative===true){
+      router.install?.();
+      const active=window.__lyFreshCoreV3?.store?.getState?.()?.activePanel||document.querySelector('.panel.active')?.id||'sales';
+      router.reconcile?.(active,document.querySelector(`#nav button[data-panel="${CSS.escape(active)}"]`));
+      return true;
+    }
+    window.__lyFreshCoreV3Runtime?.boot?.();
+  }catch(e){state.lastError=String(e?.message||e);}
+  return false;
+}
 function hydrateFromV2(){
   try{
     const core=window.__lyFreshCoreV2;
@@ -16,6 +29,7 @@ function hydrateFromV2(){
 function rescue(){
   state.attempts++;state.lastAt=Date.now();
   try{
+    ensureV3Navigation();
     hydrateFromV2();
     call('applyAppBrand');
     call('navInit');
@@ -24,8 +38,10 @@ function rescue(){
     call('invalidateDataIndexes');
     call('invalidateDerivedCaches');
     call('renderWarehouseSelect');
+    const active=window.__lyFreshCoreV3?.store?.getState?.()?.activePanel||window.activePanelId||'ingredients';
     if(typeof window.renderAll==='function')window.renderAll();
-    else call('renderPanel',window.activePanelId||'ingredients');
+    else call('renderPanel',active);
+    window.__lyFreshCoreV3?.router?.reconcile?.(active,document.querySelector(`#nav button[data-panel="${CSS.escape(active)}"]`));
     window.__lyVersionInfo?.render?.();
     window.__lyAppVersion?.mount?.();
     const nav=document.getElementById('nav');
@@ -43,7 +59,7 @@ function boot(){
   delays.forEach(ms=>setTimeout(()=>{if(!state.success)rescue();},ms));
 }
 window.__lyUiBootstrapRescue={version:VERSION,rescue,status:()=>({...state})};
+window.addEventListener?.('latyen:fresh-core-v3-authoritative',()=>setTimeout(rescue,0));
 window.addEventListener?.('latyen:v2-shadow-ready',()=>setTimeout(rescue,0));
-window.addEventListener?.('latyen:fresh-core-v2-authoritative',()=>setTimeout(rescue,0));
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
