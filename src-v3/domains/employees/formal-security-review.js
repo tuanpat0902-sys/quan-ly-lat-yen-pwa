@@ -23,10 +23,10 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
       evidence:'ly_employee_attendance_employee_tenant_fkey + ly_employee_payroll_employee_tenant_fkey'
     }),
     authorizationHelper:Object.freeze({
-      severity:'blocker',
-      pass:false,
-      finding:'current admin authorization is coupled to the existing ly_private.ly_is_admin helper whose production implementation identifies the administrator by a fixed email',
-      requiredResolution:'explicitly-approve-or-replace-admin-authorization-assumption-before-sensitive-production-read'
+      severity:'pass',
+      pass:true,
+      finding:'review-only DDL introduces an employee-scoped ly_is_org_admin(org_id) helper based on auth.uid() + org membership role, with no fixed-email dependency and no replacement of the existing cross-domain helper',
+      evidence:'ly_private.ly_is_org_admin(uuid) + authenticated-only execute grant + org-scoped RLS policies'
     }),
     sensitiveProjection:Object.freeze({
       severity:'review-required',
@@ -50,7 +50,7 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
       finding:'review package enables RLS for all three employee candidate tables'
     })
   }),
-  nextGate:'resolve-authorization-helper-and-sensitive-projection-before-migration'
+  nextGate:'resolve-sensitive-projection-before-migration'
 });
 
 export function evaluateEmployeesFormalSecurityReview(review=EMPLOYEES_FORMAL_SECURITY_REVIEW){
@@ -65,6 +65,6 @@ export function evaluateEmployeesFormalSecurityReview(review=EMPLOYEES_FORMAL_SE
     migrationAllowed:pass&&review?.migrationAllowed===true,
     repositoryAllowed:pass&&review?.repositoryAllowed===true,
     authoritative:false,
-    recommendation:pass?'eligible-for-migration-generation-review':'keep-legacy-local-and-resolve-security-review-blockers'
+    recommendation:pass?'eligible-for-migration-generation-review':blockers.length>0?'keep-legacy-local-and-resolve-security-review-blockers':'keep-legacy-local-and-resolve-sensitive-projection'
   });
 }
