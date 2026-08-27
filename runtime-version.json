@@ -1,7 +1,7 @@
 {
-  "appVersion": "3.0.6",
-  "revision": "fresh-core-v3-shell-authoritative-v7",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-181",
+  "appVersion": "3.0.7",
+  "revision": "fresh-core-v3-shell-authoritative-v8",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-182",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -17,7 +17,7 @@
   "localAssistant": "local-only-storage-boundary-deterministic-routing-and-canonical-inventory-units",
   "salesReportRevenue": "revenue-first-kpi-and-vietnamese-day-month-year-comparison",
   "supabaseKeepalive": "daily-external-read-only-rpc-with-verified-response",
-  "menuSecurity": "restored-six-protected-menus",
+  "menuSecurity": "authorization-hook-no-showtab-wrapper",
   "supplierManagement": "visible-linked-supplier-directory-and-import-guidance",
   "settingsLayout": "compact-responsive-essential-controls",
   "responsiveLayout": "screen-specific-desktop-and-phone-safe-without-global-table-transforms",
@@ -55,5 +55,7 @@
   "v3RouterAuthority": "installed-state-behind-security-wrapper",
   "menuSecurityComposition": "security-wraps-router-without-router-recapture",
   "panelRendering": "v3-router-targeted-render-verification",
-  "broadRenderAllRecovery": false
+  "broadRenderAllRecovery": false,
+  "menuOwnership": "v3-router-only",
+  "repeatedMenuClicks": "regression-guarded"
 }
