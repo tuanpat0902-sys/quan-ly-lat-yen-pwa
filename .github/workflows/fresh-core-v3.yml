@@ -10,6 +10,8 @@ on:
       - 'scripts/test-fresh-core-v3-foundation.mjs'
       - 'scripts/test-fresh-core-v3-master-data.mjs'
       - 'scripts/test-fresh-core-v3-shadow-soak.mjs'
+      - 'scripts/test-fresh-core-v3-production-shell.mjs'
+      - 'ly-fresh-core-v3-runtime.js'
       - 'scripts/copy-pages-runtime.mjs'
       - 'ly-fresh-core-v3-shadow-soak.js'
       - 'package.json'
@@ -46,3 +48,6 @@ jobs:
 
       - name: Test V3 zero-cost shadow soak
         run: npm run v3:shadow-soak
+
+      - name: Test V3 production shell
+        run: npm run v3:production-shell
