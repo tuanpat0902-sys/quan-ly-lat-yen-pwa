@@ -16,10 +16,12 @@ assert.equal(REVIEW.repositoryAllowed,false);
 assert.equal(REVIEW.productionActivation,false);
 assert.equal(REVIEW.cloudWrites,0);
 
-for(const key of ['warehouseOrgIntegrity','childWarehouseIntegrity','authorizationHelper']){
-  assert.equal(REVIEW.findings[key].severity,'blocker');
-  assert.equal(REVIEW.findings[key].pass,false);
+for(const key of ['warehouseOrgIntegrity','childWarehouseIntegrity']){
+  assert.equal(REVIEW.findings[key].severity,'pass');
+  assert.equal(REVIEW.findings[key].pass,true);
 }
+assert.equal(REVIEW.findings.authorizationHelper.severity,'blocker');
+assert.equal(REVIEW.findings.authorizationHelper.pass,false);
 assert.equal(REVIEW.findings.sensitiveProjection.severity,'review-required');
 assert.equal(REVIEW.findings.sensitiveProjection.pass,false);
 assert.equal(REVIEW.findings.writeSurface.pass,true);
@@ -28,19 +30,21 @@ assert.equal(REVIEW.findings.rlsCoverage.pass,true);
 
 const blocked=evaluateEmployeesFormalSecurityReview();
 assert.equal(blocked.pass,false);
-assert.equal(blocked.blockers,3);
-assert.equal(blocked.unresolved,4);
+assert.equal(blocked.blockers,1);
+assert.equal(blocked.unresolved,2);
 assert.equal(blocked.migrationAllowed,false);
 assert.equal(blocked.repositoryAllowed,false);
 assert.equal(blocked.authoritative,false);
 assert.equal(blocked.recommendation,'keep-legacy-local-and-resolve-security-review-blockers');
 
-assert.match(ddl,/warehouse_id uuid not null references public\.ly_warehouses\(id\)/);
-assert.doesNotMatch(ddl,/foreign key \(warehouse_id, org_id\) references public\.ly_warehouses\(id, org_id\)/);
-assert.match(ddl,/foreign key \(employee_id, org_id\) references public\.ly_employees\(id, org_id\)/);
-assert.doesNotMatch(ddl,/foreign key \(employee_id, org_id, warehouse_id\)/);
+assert.match(ddl,/add constraint ly_warehouses_id_org_uniq unique \(id, org_id\)/);
+assert.match(ddl,/foreign key \(warehouse_id, org_id\) references public\.ly_warehouses\(id, org_id\)/);
+assert.match(ddl,/unique \(id, org_id, warehouse_id\)/);
+assert.equal((ddl.match(/foreign key \(employee_id, org_id, warehouse_id\)/g)||[]).length,2);
+assert.equal((ddl.match(/references public\.ly_employees\(id, org_id, warehouse_id\)/g)||[]).length,2);
 assert.match(ddl,/grant select on table public\.ly_employees to authenticated/);
 assert.doesNotMatch(ddl,/create\s+view/i);
+assert.doesNotMatch(ddl,/create\s+(or\s+replace\s+)?function/i);
 
 assert.equal(EMPLOYEES_CONTRACT.currentAuthority,'legacy-local');
 assert.equal(EMPLOYEES_CONTRACT.cloud.schemaPresent,false);
