@@ -13431,10 +13431,6 @@ function v220OpenCombo(
 
   v220CreateCombo();
 
-  /*
-    Opening another select simply retargets the existing searchable
-    dropdown instead of forcing the previous value to be selected.
-  */
   v220ComboSelect=
     select;
 
@@ -13514,10 +13510,6 @@ function v220CloseCombo(
   ){
     setTimeout(
       ()=>{
-        /*
-          Do not steal focus back if the user already moved to a
-          different control.
-        */
         const active=
           document.activeElement;
 
@@ -53240,9 +53232,6 @@ function v268StartCloudHeartbeat(){
     clearInterval(v268HeartbeatTimer);
   }
 
-  /*
-    Run immediately after login/bootstrap; do not wait for the first timer.
-  */
   setTimeout(
     ()=>v268RunCloudCycle({
       forcePull:true,
@@ -53265,10 +53254,6 @@ function v268StartCloudHeartbeat(){
           reason:'heartbeat'
         }).catch(console.warn);
 
-        /*
-          If websocket has been unavailable for a while, rebuild the channel.
-          Smart Pull still operates during this period.
-        */
         if(
           !v268RealtimeReady &&
           (
@@ -53308,10 +53293,6 @@ document.addEventListener(
       v260Session &&
       v261OrganizationId
     ){
-      /*
-        Browser/mobile may throttle timers while backgrounded.
-        Pull immediately on resume to close the gap.
-      */
       v268RunCloudCycle({
         forcePull:true,
         reason:'resume'
