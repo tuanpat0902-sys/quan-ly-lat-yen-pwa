@@ -24,7 +24,7 @@
   }
   function persist(orgId,result,durationMs,observations){
     const saved=readLocal(),orgs=saved.orgs&&typeof saved.orgs==='object'?saved.orgs:{};
-    orgs[orgId]={lastAt:now(),durationMs,result,observations,version:VERSION};
+    orgs[orgId]={lastAt:now(),durationMs,result,observations,reads:ROUNDS*2,writes:0,version:VERSION};
     saveLocal({version:1,orgs});
   }
 
