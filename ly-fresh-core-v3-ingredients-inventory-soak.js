@@ -6,6 +6,7 @@
   const VERSION='2026.08.27.1';
   const STORAGE_KEY='lat_yen_v3_ingredients_inventory_shadow_soak_v1';
   const MIN_INTERVAL_MS=24*60*60*1000;
+  const HISTORY_LIMIT=7;
   const state={
     version:VERSION,
     phase:'idle',
@@ -19,7 +20,8 @@
     parityReady:null,
     complete:null,
     counts:{ingredients:0,inventory:0},
-    lastError:''
+    lastError:'',
+    gate:null
   };
   let running=false;
 
@@ -41,6 +43,17 @@
   }
   function record(id,result){
     const saved=readLocal(),orgs=saved.orgs&&typeof saved.orgs==='object'?saved.orgs:{};
+    const history=Array.isArray(orgs[id]?.history)?orgs[id].history.slice(-HISTORY_LIMIT+1):[];
+    const observation={
+      lastAt:state.lastAt,
+      durationMs:state.lastDurationMs,
+      parityReady:!!result?.parityReady,
+      complete:!!result?.complete,
+      counts:result?.counts||{},
+      reads:2,
+      writes:0
+    };
+    history.push(observation);
     orgs[id]={
       lastAt:state.lastAt,
       durationMs:state.lastDurationMs,
@@ -49,6 +62,8 @@
       counts:result?.counts||{},
       ingredients:result?.parity?.ingredients??null,
       inventory:result?.parity?.inventory??null,
+      history,
+      gate:state.gate,
       version:VERSION
     };
     saveLocal({version:1,orgs});
@@ -87,6 +102,7 @@
         v2Adapter:core.v2
       });
       const result=await instance.refreshControlledShadow();
+      const gateMod=await import('./src-v3/domains/ingredients-inventory/migration-gate.js?v=20260827.1');
 
       state.runs++;
       state.reads+=2;
@@ -97,7 +113,11 @@
       state.parityReady=!!result.parityReady;
       state.complete=!!result.complete;
       state.counts={...result.counts};
-      state.phase=!result.complete?'capacity-guard':result.parityReady?'parity-ready':'mismatch';
+      const savedBefore=readLocal();
+      const historyBefore=Array.isArray(savedBefore?.orgs?.[id]?.history)?savedBefore.orgs[id].history:[];
+      const observation={lastAt:state.lastAt,durationMs:state.lastDurationMs,parityReady:!!result.parityReady,complete:!!result.complete,reads:2,writes:0};
+      state.gate=gateMod.evaluateIngredientsInventoryMigrationGate([...historyBefore,observation]);
+      state.phase=!result.complete?'capacity-guard':result.parityReady?(state.gate.pass?'candidate-ready':'parity-ready'):'mismatch';
 
       record(id,result);
       window.dispatchEvent?.(new CustomEvent('latyen:v3-ingredients-inventory-soak',{
@@ -123,7 +143,7 @@
   window.__lyFreshCoreV3IngredientsInventorySoak={
     version:VERSION,
     run,
-    status:()=>({...state,counts:{...state.counts},policy:{readOnly:true,maxRunsPerDay:1,queriesPerRun:2,maxRowsPerDataset:500,cloudWrites:0}})
+    status:()=>({...state,counts:{...state.counts},policy:{readOnly:true,maxRunsPerDay:1,queriesPerRun:2,maxRowsPerDataset:500,cloudWrites:0,autoPromotion:false,rollbackTarget:'v2'}})
   };
 
   window.addEventListener?.('latyen:v2-shadow-ready',schedule,{once:true});
