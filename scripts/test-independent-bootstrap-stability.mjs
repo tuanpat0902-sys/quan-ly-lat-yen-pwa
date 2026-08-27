@@ -33,7 +33,7 @@ const context={
   document,
   setTimeout(callback){timers.push(callback);return timers.length;},
   window:{
-    __LY_APP_VERSION:'3.0.4',
+    __LY_APP_VERSION:'3.0.6',
     __lyFreshCoreV3:{version:'3.0.0-shell.1',authoritative:true,router,store:{getState(){return {activePanel:'sales'};}}},
     __lyFreshCoreV3Runtime:{async boot(){v3Boots++;return true;},status(){return {phase:'ready',navigationAuthoritative:true};}},
     __lyFreshCoreV2Shadow:{status(){return {phase:'ready'};}},
@@ -55,6 +55,7 @@ assert.equal(status.attempts,1,'once V3 is authoritative, queued rescue attempts
 assert.equal(status.shellRepairs,0,'a healthy V3 shell must never be rebuilt');
 assert.equal(navInitializations,0,'bootstrap must preserve the current menu instead of rebuilding navigation');
 assert.equal(renders,0,'bootstrap must not continuously render an already populated active panel');
+assert.doesNotMatch(source,/window\.renderAll\?\.\(\)/,'V3 bootstrap repair must not use broad renderAll recovery');
 assert.equal(hydrations,0,'bootstrap must not re-hydrate an already healthy shell');
 assert.equal(v3Boots,1,'bootstrap may confirm V3 boot once without invoking V2 final ownership');
 assert.equal(host,null,'startup diagnostic must be removed after V3 readiness');
