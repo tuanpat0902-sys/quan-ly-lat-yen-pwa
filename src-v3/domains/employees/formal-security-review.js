@@ -11,16 +11,16 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
   cloudWrites:0,
   findings:Object.freeze({
     warehouseOrgIntegrity:Object.freeze({
-      severity:'blocker',
-      pass:false,
-      finding:'warehouse_id and org_id are independently referenced; the proposed schema does not structurally prove that the warehouse belongs to the same org',
-      requiredResolution:'approve-and-implement-a-warehouse-org-integrity-strategy-before-ddl'
+      severity:'pass',
+      pass:true,
+      finding:'review-only DDL adds ly_warehouses(id, org_id) uniqueness and binds employee warehouse_id + org_id through a composite foreign key',
+      evidence:'ly_warehouses_id_org_uniq + ly_employees_warehouse_org_fkey'
     }),
     childWarehouseIntegrity:Object.freeze({
-      severity:'blocker',
-      pass:false,
-      finding:'attendance/payroll bind employee_id + org_id but do not structurally prove child warehouse_id matches the employee warehouse_id',
-      requiredResolution:'approve-and-implement-child-employee-warehouse-integrity-before-ddl'
+      severity:'pass',
+      pass:true,
+      finding:'attendance/payroll bind employee_id + org_id + warehouse_id to the exact employee tenant tuple',
+      evidence:'ly_employee_attendance_employee_tenant_fkey + ly_employee_payroll_employee_tenant_fkey'
     }),
     authorizationHelper:Object.freeze({
       severity:'blocker',
@@ -50,7 +50,7 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
       finding:'review package enables RLS for all three employee candidate tables'
     })
   }),
-  nextGate:'resolve-formal-security-review-blockers-before-migration'
+  nextGate:'resolve-authorization-helper-and-sensitive-projection-before-migration'
 });
 
 export function evaluateEmployeesFormalSecurityReview(review=EMPLOYEES_FORMAL_SECURITY_REVIEW){
