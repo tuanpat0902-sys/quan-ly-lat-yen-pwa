@@ -53,7 +53,6 @@
     new MutationObserver(schedule).observe(root,{childList:true,subtree:true});
     window.addEventListener('latyen:v2-ingredient-saved',schedule);
     window.addEventListener('latyen:cloud-refreshed',schedule);
-    setInterval(apply,3000);
   }
 
   window.__lyIngredientTableUX={version:VERSION,apply};
