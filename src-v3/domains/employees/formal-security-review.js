@@ -32,7 +32,7 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
       severity:'pass',
       pass:true,
       finding:'authenticated receives no direct SELECT on employee base tables; the only proposed read surface is an org/warehouse-scoped safe directory function returning the exact default-list allowlist',
-      evidence:'ly_private.ly_list_employee_directory(uuid,uuid) + no base-table SELECT grants + no attendance/payroll read functions'
+      evidence:'public.ly_list_employee_directory(uuid,uuid) + no base-table SELECT grants + no attendance/payroll read functions'
     }),
     writeSurface:Object.freeze({
       severity:'pass',
