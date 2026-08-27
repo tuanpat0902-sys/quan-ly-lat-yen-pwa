@@ -5,7 +5,7 @@ const VERSION='2026.08.27.4',UNLOCK_MS=600000,RPC_TIMEOUT_MS=12000,CACHE='lat_ye
 const IDS=new Set(['ingredients','recipes','finance','employees','warehouses','history']);
 const LABELS=[/nguyên\s*liệu.*dụng\s*cụ/i,/thực\s*đơn.*công\s*thức/i,/báo\s*cáo\s*tài\s*chính/i,/nhân\s*viên/i,/kho\s*\/?\s*chi\s*nhánh/i,/lịch\s*sử\s*hoạt\s*động/i];
 let cached=false;try{cached=localStorage.getItem(CACHE)==='1'}catch(e){}
-const st={enabled:cached,loaded:false,unlockUntil:0,pending:null,baseShowTab:null,guard:null,busy:false,timer:null};
+const st={enabled:cached,loaded:false,unlockUntil:0,pending:null,baseShowTab:null,guard:null,busy:false,statusPromise:null,timer:null};
 const text=v=>String(v??'').trim(),norm=v=>text(v).replace(/\s+/g,' '),client=()=>{try{return typeof sb!=='undefined'&&sb?.rpc?sb:null}catch(e){return null}},unlocked=()=>st.enabled&&Date.now()<st.unlockUntil;
 const svg=open=>open?'<svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 9.6-2"/><rect x="5" y="11" width="14" height="9" rx="2"/></svg>':'<svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
 function timeout(p,label){let t;return Promise.race([p,new Promise((_,r)=>t=setTimeout(()=>r(new Error(label+' quá thời gian chờ')),RPC_TIMEOUT_MS))]).finally(()=>clearTimeout(t))}
@@ -26,7 +26,34 @@ function toast(msg,ok=true){try{window.__lyInAppNotifications?.show?.(msg,ok?'B�
 function modal(){let o=document.getElementById('lyMenuSecurityOverlay');if(o)return o;o=document.createElement('div');o.id='lyMenuSecurityOverlay';o.innerHTML=`<div class="ly-sec-modal"><h3>Khu vực được bảo vệ</h3><p>Nhập mật khẩu để mở khóa trong 10 phút.</p><input id="lyMenuSecurityPassword" type="password" maxlength="64" autocomplete="current-password" placeholder="Nhập mật khẩu"><div id="lyMenuSecurityError" class="ly-sec-error"></div><div class="ly-sec-modal-actions"><button id="lyMenuSecurityCancel" type="button">Hủy</button><button id="lyMenuSecuritySubmit" class="primary" type="button">Mở khóa</button></div></div>`;o.onclick=e=>{if(e.target===o)close()};o.querySelector('#lyMenuSecurityCancel').onclick=close;o.querySelector('#lyMenuSecuritySubmit').onclick=verify;o.querySelector('input').onkeydown=e=>{if(e.key==='Enter')verify()};document.body.appendChild(o);return o}
 function open(id,btn,proceed){st.pending={id,btn,proceed:typeof proceed==='function'?proceed:null};const o=modal(),i=o.querySelector('input'),e=o.querySelector('#lyMenuSecurityError');e.textContent='';i.value='';o.classList.add('open');setTimeout(()=>i.focus(),30)}function close(){document.getElementById('lyMenuSecurityOverlay')?.classList.remove('open');st.pending=null}
 async function verify(){const c=client(),i=document.getElementById('lyMenuSecurityPassword'),e=document.getElementById('lyMenuSecurityError'),b=document.getElementById('lyMenuSecuritySubmit');if(!c||!i)return;if(!i.value){e.textContent='Vui lòng nhập mật khẩu.';return}b.disabled=true;b.textContent='Đang kiểm tra…';try{const {data,error}=await timeout(c.rpc('ly_verify_menu_password',{p_password:i.value}),'Xác minh mật khẩu');if(error)throw error;if(data!==true){e.textContent='Mật khẩu không đúng.';i.select();return}st.unlockUntil=Date.now()+UNLOCK_MS;const p=st.pending;close();marks();render(true);toast('Đã mở khóa các menu được bảo vệ trong 10 phút.');if(p){if(typeof p.proceed==='function')p.proceed();else navigateWhenReady(p.id,p.btn)}}catch(x){e.textContent='Không thể xác minh lúc này.';console.warn('[Lát Yên] verify password',x)}finally{if(b?.isConnected){b.disabled=false;b.textContent='Mở khóa'}}}
-async function status(force=false){if(st.busy||st.loaded&&!force)return st.enabled;const c=client();if(!c)return st.enabled;st.busy=true;try{const {data,error}=await timeout(c.rpc('ly_menu_password_status'),'Kiểm tra mật khẩu');if(error)throw error;const r=Array.isArray(data)?data[0]:data;st.enabled=typeof r==='boolean'?r:!!r?.enabled;st.loaded=true;try{localStorage.setItem(CACHE,st.enabled?'1':'0')}catch(e){}if(!st.enabled)st.unlockUntil=0;marks();render(true);return st.enabled}catch(e){console.warn('[Lát Yên] password status',e);return st.enabled}finally{st.busy=false}}
+async function status(force=false){
+  if(st.loaded&&!force)return st.enabled;
+  if(st.statusPromise)return st.statusPromise;
+  const c=client();
+  if(!c)return st.enabled;
+  st.busy=true;
+  st.statusPromise=(async()=>{
+    try{
+      const {data,error}=await timeout(c.rpc('ly_menu_password_status'),'Kiểm tra mật khẩu');
+      if(error)throw error;
+      const r=Array.isArray(data)?data[0]:data;
+      st.enabled=typeof r==='boolean'?r:!!r?.enabled;
+      st.loaded=true;
+      try{localStorage.setItem(CACHE,st.enabled?'1':'0')}catch(e){}
+      if(!st.enabled)st.unlockUntil=0;
+      marks();
+      render(true);
+      return st.enabled;
+    }catch(e){
+      console.warn('[Lát Yên] password status',e);
+      return st.enabled;
+    }finally{
+      st.busy=false;
+      st.statusPromise=null;
+    }
+  })();
+  return st.statusPromise;
+}
 function settingsPanel(){const d=document.getElementById('settings');if(d)return d;return [...document.querySelectorAll('section,.panel,.tab-content,main>div,main section,main')].find(e=>{const t=norm(e.innerText);return /Cloud\s*&\s*tài khoản/i.test(t)&&/Nhận diện phần mềm/i.test(t)})||null}
 function card(){styles();const p=settingsPanel();if(!p)return null;let c=document.getElementById('lyMenuSecuritySettings');if(c&&!p.contains(c)){c.remove();c=null}if(!c){c=document.createElement('div');c.id='lyMenuSecuritySettings';c.className='card';p.appendChild(c)}return c}
 function render(force=false){const c=card();if(!c)return;const openNow=unlocked(),key=`${st.loaded?1:0}:${st.enabled?1:0}:${openNow?1:0}`;if(!force&&c.dataset.key===key&&c.querySelector('.ly-sec-title'))return;const keep={cur:document.getElementById('lySecCurrent')?.value||'',n:document.getElementById('lySecNew')?.value||'',cf:document.getElementById('lySecConfirm')?.value||''};c.dataset.key=key;c.innerHTML=`<div class="ly-sec-head"><div class="ly-sec-icon">${svg(openNow)}</div><div><div class="ly-sec-title">Bảo vệ menu bằng mật khẩu</div><div class="ly-sec-desc">Áp dụng cho Nguyên liệu & dụng cụ, Thực đơn & công thức, Báo cáo tài chính, Nhân viên, Kho / Chi nhánh và Lịch sử hoạt động.</div><span class="ly-sec-status ${st.enabled?(openNow?'open':'on'):''}">${!st.loaded?'Đang kiểm tra…':!st.enabled?'Chưa thiết lập':openNow?'Đang mở khóa tạm thời':'Đang bảo vệ'}</span></div></div><div class="ly-sec-fields">${st.enabled?'<label>Mật khẩu hiện tại<input id="lySecCurrent" type="password" maxlength="64"></label>':''}<label>Mật khẩu mới<input id="lySecNew" type="password" maxlength="64"></label><label>Xác nhận mật khẩu<input id="lySecConfirm" type="password" maxlength="64"></label></div><div class="ly-sec-actions"><button id="lySecSave" class="primary" type="button">${st.enabled?'Đổi mật khẩu':'Thiết lập mật khẩu'}</button>${st.enabled?'<button id="lySecLockNow" type="button">Khóa ngay</button><button id="lySecDisable" class="danger" type="button">Tắt bảo vệ</button>':''}</div><div class="ly-sec-note">Mật khẩu được băm và lưu trong vùng private của Supabase. Mở khóa có hiệu lực 10 phút trên thiết bị hiện tại.</div>`;if(document.getElementById('lySecCurrent'))document.getElementById('lySecCurrent').value=keep.cur;document.getElementById('lySecNew').value=keep.n;document.getElementById('lySecConfirm').value=keep.cf;c.querySelector('#lySecSave').onclick=save;c.querySelector('#lySecLockNow')?.addEventListener('click',()=>{st.unlockUntil=0;marks();render(true);toast('Đã khóa lại các menu được bảo vệ.')});c.querySelector('#lySecDisable')?.addEventListener('click',disable)}
