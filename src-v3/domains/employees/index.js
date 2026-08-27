@@ -8,19 +8,8 @@ export function createEmployeesDomain({source,v2Adapter,events}={}){
   return Object.freeze({id:EMPLOYEES_CONTRACT.domain,contract:EMPLOYEES_CONTRACT,repository,service});
 }
 
-export function activate({gateway,v2Adapter,events}={}){
-  if(!gateway?.rpc)throw new Error('gateway.rpc is required');
-  const source=Object.freeze({
-    listDirectory:async({orgId,warehouseId}={})=>{
-      if(!orgId)throw new Error('orgId is required');
-      if(!warehouseId)throw new Error('warehouseId is required');
-      const rows=await gateway.rpc('ly_list_employee_directory',{
-        p_org_id:orgId,
-        p_warehouse_id:warehouseId
-      });
-      return Array.isArray(rows)?rows:[];
-    }
-  });
+export function activate({source,v2Adapter,events}={}){
+  if(!source?.listDirectory)throw new Error('source.listDirectory is required');
   return createEmployeesDomain({source,v2Adapter,events});
 }
 
