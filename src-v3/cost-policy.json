@@ -16,7 +16,7 @@
   },
   "shadowSoak": {
     "masterDataReadOnly": true,
-    "maxRunsPerDevicePerDay": 2,
+    "maxRunsPerDevicePerDay": 1,
     "queriesPerRun": 2,
     "cloudWrites": 0,
     "diagnosticsStorage": "localStorage"
