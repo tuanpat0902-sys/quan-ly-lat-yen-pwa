@@ -1,7 +1,7 @@
 {
-  "appVersion": "3.0.3",
-  "revision": "fresh-core-v3-shell-authoritative-v4",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-178",
+  "appVersion": "3.0.4",
+  "revision": "fresh-core-v3-shell-authoritative-v5",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-179",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -48,5 +48,8 @@
   "maxCallStackFix": "prevent-concurrent-router-self-capture",
   "navigationRecursion": "hard-reentrancy-guard-plus-security-self-wrap-guard",
   "v3ShellBoot": "independent-from-v2-core",
-  "v2FinalOwnership": "disabled-when-v3-authoritative"
+  "v2FinalOwnership": "removed-from-production",
+  "bootstrapOwnership": "fresh-core-v3-router-authoritative",
+  "diagnostics": "v3-runtime-router-first",
+  "uiRescue": "v3-router-aware"
 }
