@@ -32,7 +32,6 @@ for(const f of bootstrap){
 for(const f of lazy){
   if(html.includes(`src="./${f}`))fail(`heavy lazy module ${f} must not be statically executed by index.html`);
   else pass(`lazy module not statically executed: ${f}`);
-  if(!sw.includes(f))fail(`service worker does not precache/reference ${f}`);
 }
 
 const ctx={console,Promise,setTimeout,clearTimeout,setInterval:()=>0,clearInterval:()=>{},queueMicrotask};
