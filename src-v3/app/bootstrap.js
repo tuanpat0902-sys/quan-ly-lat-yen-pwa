@@ -8,14 +8,14 @@ import {createHealth} from '../core/diagnostics/health.js';
 import {createV2Adapter} from '../compatibility/v2-adapter.js';
 import {createGateway} from '../data/supabase/gateway.js';
 
-export function createFreshCoreV3({supabase,v2Runtime,legacyShowTab,getOrgId,initialState={}}={}){
+export function createFreshCoreV3({supabase,v2Runtime,legacyShowTab,getOrgId,mode='shadow',initialState={}}={}){
   const events=new EventBus();
   const store=createStore({
     session:null,
     orgId:null,
     activePanel:'ingredients',
     connectivity:{online:true,realtime:false},
-    migration:{mode:'v3-shell'},
+    migration:{mode},
     ...initialState
   });
   const scheduler=createScheduler();
@@ -33,17 +33,19 @@ export function createFreshCoreV3({supabase,v2Runtime,legacyShowTab,getOrgId,ini
   });
   const realtime=createRealtimeManager({client:supabase,getOrgId:getOrgId??(()=>store.getState().orgId),events});
   const v2=v2Runtime?createV2Adapter({v2:v2Runtime,events,legacyShowTab}):null;
-  const health=createHealth({version:'3.0.0-shell.1',store,scheduler,cache,realtime,features});
+  const authoritative=mode==='v3-shell';
+  const version=authoritative?'3.0.0-shell.1':'3.0.0-shadow.2';
+  const health=createHealth({version,store,scheduler,cache,realtime,features});
 
   function setOrg(orgId){store.patch({orgId},{source:'organization'});events.emit('org:changed',orgId);}
   function setPanel(activePanel){store.patch({activePanel},{source:'navigation'});events.emit('panel:changed',activePanel);}
   function destroy(){scheduler.stopAll();realtime.stopAll();events.clear();cache.clear();}
 
   return Object.freeze({
-    version:'3.0.0-shell.1',
-    mode:'v3-shell',
-    authoritative:true,
-    authoritativeScope:Object.freeze(['application-state','navigation']),
+    version,
+    mode,
+    authoritative,
+    authoritativeScope:Object.freeze(authoritative?['application-state','navigation']:[]),
     compatibilityScope:Object.freeze(['business-data','legacy-renderers']),
     events,store,scheduler,cache,realtime,features,gateway,v2,health,setOrg,setPanel,destroy
   });
