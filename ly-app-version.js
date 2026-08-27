@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.73',REVISION='fresh-core-v2-authoritative-v79';
+  const VERSION='2.1.74',REVISION='fresh-core-v2-authoritative-v80';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Hệ thống đã được tối ưu tải lại, lọc module thử nghiệm khỏi production và bổ sung kiểm tra bảo trì tự động.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Tải khởi động đã được ưu tiên cho nghiệp vụ chính; Trợ lý được nạp nền khi trình duyệt rảnh để giảm độ trễ thao tác ban đầu.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
