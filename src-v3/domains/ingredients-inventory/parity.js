@@ -1,8 +1,19 @@
-function norm(v){return v==null?'':String(v)}
-function stableRows(rows=[]){
-  return [...rows].map(row=>Object.fromEntries(Object.entries(row||{}).filter(([k])=>!['updated_at','created_at'].includes(k)).sort(([a],[b])=>a.localeCompare(b)))).sort((a,b)=>norm(a.id||a.ingredient_id).localeCompare(norm(b.id||b.ingredient_id)));
+import {normalizeIngredientsInventoryRows} from './schema-contract.js';
+
+function comparable(kind,rows){
+  return normalizeIngredientsInventoryRows(kind,rows).map(row=>{
+    const copy={...row};
+    delete copy.updated_at;
+    delete copy.created_at;
+    return copy;
+  });
 }
-export function compareIngredientsInventory(v2={},v3={}){
-  const a=stableRows(v2),b=stableRows(v3);
-  return Object.freeze({equal:JSON.stringify(a)===JSON.stringify(b),v2Count:a.length,v3Count:b.length});
+
+export function compareIngredientsInventory(kind,v2Rows,v3Rows){
+  const a=comparable(kind,v2Rows),b=comparable(kind,v3Rows);
+  return Object.freeze({
+    equal:JSON.stringify(a)===JSON.stringify(b),
+    v2Count:a.length,
+    v3Count:b.length
+  });
 }
