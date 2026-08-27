@@ -82,9 +82,30 @@
 
   async function loadAssistant(){await load('localAssistant');await load('chatLanguagePlus');await load('chatLegacyInventoryUnitGuard');await load('chatResponseGate');await load('chatLocalOnly');await load('chatUnitSync');}
 
+  function legacyShellReady(){
+    return typeof window.showTab==='function'&&typeof window.renderPanel==='function'&&typeof window.navInit==='function';
+  }
+
+  async function waitForLegacyShell(timeoutMs=5000){
+    if(legacyShellReady())return true;
+    const started=Date.now();
+    return new Promise(resolve=>{
+      let done=false;
+      const finish=value=>{if(done)return;done=true;resolve(value);};
+      const check=()=>{
+        if(legacyShellReady())return finish(true);
+        if(Date.now()-started>=timeoutMs)return finish(false);
+        setTimeout(check,25);
+      };
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check,{once:true});
+      setTimeout(check,0);
+    });
+  }
+
   async function loadCore(){
     await load('supabaseBootstrap');
     try{await window.__lySupabaseReady;}catch(e){}
+    await waitForLegacyShell();
     await load('hydration');await load('shadow');await load('domShim');await load('stateShim');await load('helperShim');await load('modelShim');await load('listShim');await load('formDraftGuard');await load('menuSecurity');await load('settingsUIBridge');
     await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
     await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('finalOwnership');await load('performanceOptimizer');
