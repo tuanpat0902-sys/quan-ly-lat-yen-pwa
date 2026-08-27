@@ -1,0 +1,34 @@
+name: Fresh Core V3 Employees CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src-v3/app/bootstrap.js'
+      - 'src-v3/domains/employees/**'
+      - 'scripts/test-fresh-core-v3-employees-runtime-parity.mjs'
+      - '.github/workflows/fresh-core-v3-employees.yml'
+  pull_request:
+    paths:
+      - 'src-v3/app/bootstrap.js'
+      - 'src-v3/domains/employees/**'
+      - 'scripts/test-fresh-core-v3-employees-runtime-parity.mjs'
+      - '.github/workflows/fresh-core-v3-employees.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test manual employees runtime parity
+        run: node scripts/test-fresh-core-v3-employees-runtime-parity.mjs
