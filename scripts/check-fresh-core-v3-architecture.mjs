@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root='src-v3';
 const required=[
-  'ARCHITECTURE.md','architecture-contract.json','migration-plan.json','README.md',
+  'ARCHITECTURE.md','architecture-contract.json','migration-plan.json','cost-policy.json','COST_POLICY.md','README.md',
   'app/bootstrap.js','app/feature-registry.js',
   'core/events/event-bus.js','core/store/store.js','core/scheduler/scheduler.js',
   'core/cache/query-cache.js','core/realtime/realtime-manager.js','core/diagnostics/health.js',
@@ -27,6 +27,13 @@ for(const file of files){
   const dataOwned=rel.includes('/data/')||rel.includes('/core/realtime/');
   if(!dataOwned&&/(?:\.from\s*\(|\.rpc\s*\(|\.channel\s*\()/.test(src))failures.push(`direct Supabase transport outside data/realtime layer: ${file}`);
 }
+const costPolicy=JSON.parse(fs.readFileSync(path.join(root,'cost-policy.json'),'utf8'));
+if(costPolicy.policy!=='zero-added-cost')failures.push('V3 cost policy must remain zero-added-cost');
+if(costPolicy.paidServicesAllowed!==false||costPolicy.paidInfrastructureAllowed!==false||costPolicy.paidApiAllowed!==false)failures.push('V3 paid services/infrastructure/APIs must remain forbidden');
+if(costPolicy.newSupabaseProjectAllowed!==false||costPolicy.newSupabaseBranchAllowed!==false)failures.push('V3 must not create paid/new Supabase projects or branches');
+if(costPolicy.shadowSoak?.cloudWrites!==0)failures.push('V3 shadow diagnostics must not write to cloud');
+if(Number(costPolicy.shadowSoak?.maxRunsPerDevicePerDay)>2)failures.push('V3 Master Data shadow soak exceeds free-tier read budget');
+
 const bootstrap=fs.readFileSync(path.join(root,'app/bootstrap.js'),'utf8');
 if(!bootstrap.includes("mode:'shadow'")||!bootstrap.includes("authoritative:false"))failures.push('V3 bootstrap must remain shadow-only');
 const plan=JSON.parse(fs.readFileSync(path.join(root,'migration-plan.json'),'utf8'));
