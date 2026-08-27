@@ -2,8 +2,8 @@ const MAX_DURATION_MS=5000;
 const REQUIRED_CONSECUTIVE_PASSES=3;
 const REQUIRED_READS_PER_RUN=2;
 
-export function evaluateRecipesProductsMigrationGate({dependencyGate,observations}={}){
-  const dependencyPass=dependencyGate?.pass===true;
+export function evaluateRecipesProductsMigrationGate({dependencyReadiness,observations}={}){
+  const dependencyPass=dependencyReadiness?.pass===true&&dependencyReadiness?.unlockDependents===true;
   const list=(Array.isArray(observations)?observations:[]).filter(Boolean).sort((a,b)=>Number(a.lastAt||0)-Number(b.lastAt||0));
   const recent=list.slice(-REQUIRED_CONSECUTIVE_PASSES);
   const checks=recent.map(item=>Object.freeze({
@@ -19,6 +19,7 @@ export function evaluateRecipesProductsMigrationGate({dependencyGate,observation
   return Object.freeze({
     pass,
     dependencyPass,
+    dependencySource:'v3-2-consolidated-readiness',
     ownGatePass,
     authoritative:false,
     activationAllowed:false,
@@ -27,12 +28,14 @@ export function evaluateRecipesProductsMigrationGate({dependencyGate,observation
     readsPerRun:REQUIRED_READS_PER_RUN,
     maxDurationMs:MAX_DURATION_MS,
     checks:Object.freeze(checks),
-    recommendation:pass?'eligible-for-controlled-shadow-review':dependencyPass?'continue-v3-3-observation':'blocked-by-v3-2'
+    recommendation:pass?'eligible-for-controlled-shadow-review':dependencyPass?'continue-v3-3-observation':'blocked-by-v3-2-readiness'
   });
 }
 
 export const RECIPES_PRODUCTS_MIGRATION_GATE=Object.freeze({
   dependency:'V3-2',
+  dependencyContract:'consolidated-readiness',
+  requireDependencyUnlock:true,
   requiredConsecutivePasses:REQUIRED_CONSECUTIVE_PASSES,
   readsPerRun:REQUIRED_READS_PER_RUN,
   maxDurationMs:MAX_DURATION_MS,
