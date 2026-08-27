@@ -1,18 +1,17 @@
 -- FRESH CORE V3-6 EMPLOYEES — REVIEW ONLY
 -- DO NOT APPLY TO PRODUCTION.
 -- This file is intentionally outside supabase/migrations and uses .sql.txt so it cannot be
--- mistaken for an approved migration. Schema approval + sensitive-data policy approval are
+-- mistaken for an approved migration. Explicit schema + sensitive-data policy approval is
 -- still required before generating a real migration.
 --
 -- Current authority remains legacy-local. This package creates no runtime path and grants no writes.
 -- Tenant integrity is enforced with composite foreign keys; authorization is scoped per org membership.
+-- Direct SELECT on employee base tables is deliberately not granted. The only proposed read surface is
+-- a DB-enforced safe directory projection with an explicit allowlist of non-sensitive fields.
 
--- Required so employee rows can prove warehouse_id belongs to the same org_id.
 alter table public.ly_warehouses
   add constraint ly_warehouses_id_org_uniq unique (id, org_id);
 
--- Employee-specific authorization helper. This intentionally does not replace the production
--- ly_is_admin() helper used by other domains, avoiding cross-domain blast radius.
 create or replace function ly_private.ly_is_org_admin(p_org_id uuid)
 returns boolean
 language sql
@@ -137,43 +136,65 @@ alter table public.ly_employees enable row level security;
 alter table public.ly_employee_attendance enable row level security;
 alter table public.ly_employee_payroll enable row level security;
 
-revoke all on table public.ly_employees from anon, authenticated;
-revoke all on table public.ly_employee_attendance from anon, authenticated;
-revoke all on table public.ly_employee_payroll from anon, authenticated;
+revoke all on table public.ly_employees from public, anon, authenticated;
+revoke all on table public.ly_employee_attendance from public, anon, authenticated;
+revoke all on table public.ly_employee_payroll from public, anon, authenticated;
 
-grant select on table public.ly_employees to authenticated;
-grant select on table public.ly_employee_attendance to authenticated;
-grant select on table public.ly_employee_payroll to authenticated;
+-- Public RPC is intentionally the only client-facing read surface. It is SECURITY DEFINER so the
+-- caller needs no SELECT privilege on the base table, while authorization and projection remain
+-- enforced inside the function.
+create or replace function public.ly_list_employee_directory(
+  p_org_id uuid,
+  p_warehouse_id uuid
+)
+returns table (
+  id uuid,
+  warehouse_id uuid,
+  code text,
+  name text,
+  role text,
+  shift text,
+  attendance_mode text,
+  active boolean
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select
+    e.id,
+    e.warehouse_id,
+    e.code,
+    e.name,
+    e.role,
+    e.shift,
+    e.attendance_mode,
+    e.active
+  from public.ly_employees e
+  where ly_private.ly_is_org_admin(p_org_id)
+    and e.org_id = p_org_id
+    and e.warehouse_id = p_warehouse_id
+  order by e.name, e.code;
+$function$;
 
-create policy ly_employees_admin_org_select
-  on public.ly_employees
-  for select
-  to authenticated
-  using (ly_private.ly_is_org_admin(org_id));
-
-create policy ly_employee_attendance_admin_org_select
-  on public.ly_employee_attendance
-  for select
-  to authenticated
-  using (ly_private.ly_is_org_admin(org_id));
-
-create policy ly_employee_payroll_admin_org_select
-  on public.ly_employee_payroll
-  for select
-  to authenticated
-  using (ly_private.ly_is_org_admin(org_id));
+revoke all on function public.ly_list_employee_directory(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.ly_list_employee_directory(uuid, uuid) to authenticated;
 
 -- Deliberately absent in this review package:
+--   * direct SELECT grants on employee base tables
+--   * SELECT policies that could expose full employee rows if a future table grant is added
 --   * INSERT / UPDATE / DELETE grants or policies
---   * anon table grants
---   * views exposing sensitive fields
+--   * anon table/function access
+--   * employee-detail / sensitive / attendance / payroll read functions
 --   * import/backfill statements
 --   * authority or runtime switches
 --
 -- Before converting this file into a migration:
---   1. approve the warehouse composite-key addition and verify it on production metadata;
---   2. review/approve the org-membership authorization helper and its execution grants;
---   3. resolve/approve sensitive-field projection strategy;
+--   1. explicitly approve the schema + sensitive-data policy package;
+--   2. verify the warehouse composite-key addition on production metadata;
+--   3. review/approve both SECURITY DEFINER helpers and their execution grants;
 --   4. create the real migration through the repository's approved Supabase migration workflow;
 --   5. apply schema only, with zero employee business-data writes;
---   6. verify constraints, helper grants, RLS and table grants before implementing any read-only repository.
+--   6. verify constraints, helper grants, RLS and absence of base-table SELECT grants;
+--   7. only then implement a read-only repository against public.ly_list_employee_directory().

@@ -1,7 +1,7 @@
 export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
   domain:'employees',
   wave:'V3-6',
-  status:'blocked',
+  status:'review-complete-awaiting-explicit-approval',
   reviewedAt:'2026-08-27',
   currentAuthority:'legacy-local',
   productionSchemaPresent:false,
@@ -26,13 +26,13 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
       severity:'pass',
       pass:true,
       finding:'review-only DDL introduces an employee-scoped ly_is_org_admin(org_id) helper based on auth.uid() + org membership role, with no fixed-email dependency and no replacement of the existing cross-domain helper',
-      evidence:'ly_private.ly_is_org_admin(uuid) + authenticated-only execute grant + org-scoped RLS policies'
+      evidence:'ly_private.ly_is_org_admin(uuid) + authenticated-only execute grant + org-scoped authorization checks'
     }),
     sensitiveProjection:Object.freeze({
-      severity:'review-required',
-      pass:false,
-      finding:'table-level SELECT exposes full employee rows to an authorized admin; restricted/default-list field separation is currently an application projection rather than a database-enforced projection',
-      requiredResolution:'approve-admin-full-row-read-or-design-a-db-enforced-safe-list-projection'
+      severity:'pass',
+      pass:true,
+      finding:'authenticated receives no direct SELECT on employee base tables; the only proposed read surface is an org/warehouse-scoped safe directory function returning the exact default-list allowlist',
+      evidence:'public.ly_list_employee_directory(uuid,uuid) + no base-table SELECT grants + no attendance/payroll read functions'
     }),
     writeSurface:Object.freeze({
       severity:'pass',
@@ -42,29 +42,31 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
     anonymousAccess:Object.freeze({
       severity:'pass',
       pass:true,
-      finding:'review package grants no anonymous table access'
+      finding:'review package grants no anonymous table or function access'
     }),
     rlsCoverage:Object.freeze({
       severity:'pass',
       pass:true,
-      finding:'review package enables RLS for all three employee candidate tables'
+      finding:'review package enables RLS for all three employee candidate tables as defense in depth while direct table reads remain revoked'
     })
   }),
-  nextGate:'resolve-sensitive-projection-before-migration'
+  nextGate:'explicit-schema-and-sensitive-data-policy-approval'
 });
 
 export function evaluateEmployeesFormalSecurityReview(review=EMPLOYEES_FORMAL_SECURITY_REVIEW){
   const findings=Object.values(review?.findings||{});
   const blockers=findings.filter(item=>item?.severity==='blocker'&&item?.pass!==true);
   const unresolved=findings.filter(item=>item?.pass!==true);
-  const pass=review?.status==='approved'&&blockers.length===0&&unresolved.length===0;
+  const reviewApproved=review?.status==='approved';
+  const pass=reviewApproved&&blockers.length===0&&unresolved.length===0;
   return Object.freeze({
     pass,
+    technicalReviewComplete:blockers.length===0&&unresolved.length===0,
     blockers:blockers.length,
     unresolved:unresolved.length,
     migrationAllowed:pass&&review?.migrationAllowed===true,
     repositoryAllowed:pass&&review?.repositoryAllowed===true,
     authoritative:false,
-    recommendation:pass?'eligible-for-migration-generation-review':blockers.length>0?'keep-legacy-local-and-resolve-security-review-blockers':'keep-legacy-local-and-resolve-sensitive-projection'
+    recommendation:pass?'eligible-for-migration-generation-review':blockers.length>0?'keep-legacy-local-and-resolve-security-review-blockers':unresolved.length>0?'keep-legacy-local-and-resolve-security-review-findings':'await-explicit-schema-and-sensitive-data-policy-approval'
   });
 }
