@@ -3,7 +3,7 @@ const DEFAULT_PANELS=Object.freeze(['dashboard','ingredients','imports','recipes
 export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,storageKey='lat_yen_active_panel_v1'}={}){
   const allowed=new Set(panels);
   let legacy=typeof legacyNavigate==='function'?legacyNavigate:null;
-  const state={installed:false,navigations:0,reconciles:0,lastPanel:'',lastError:''};
+  const state={installed:false,navigations:0,reconciles:0,lastPanel:'',lastError:'',inNavigate:false,lastAt:0};
   const normalize=id=>allowed.has(String(id||''))?String(id):'sales';
   const buttonFor=id=>document.querySelector(`#nav button[data-panel="${CSS.escape(id)}"]`);
 
@@ -20,21 +20,35 @@ export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,
 
   function navigate(panel,button){
     const id=normalize(panel),btn=button||buttonFor(id);
-    state.navigations++;state.lastPanel=id;
-    store?.patch?.({activePanel:id},{source:'v3-router'});
-    remember(id);
-    try{legacy?.call(window,id,btn);}catch(error){state.lastError=String(error?.message||error);}
-    reconcile(id,btn);
-    requestAnimationFrame(()=>reconcile(id,btn));
-    events?.emit?.('panel:changed',{panel:id,source:'v3-router'});
-    try{window.dispatchEvent(new CustomEvent('latyen:panel',{detail:{panel:id,source:'v3'}}));}catch(_){}
-    return true;
+    if(state.inNavigate){
+      reconcile(id,btn);
+      return true;
+    }
+    state.inNavigate=true;
+    state.navigations++;state.lastPanel=id;state.lastAt=Date.now();
+    try{
+      store?.patch?.({activePanel:id},{source:'v3-router'});
+      remember(id);
+      if(typeof legacy==='function'&&legacy!==navigate)legacy.call(window,id,btn);
+      reconcile(id,btn);
+      requestAnimationFrame(()=>reconcile(id,btn));
+      events?.emit?.('panel:changed',{panel:id,source:'v3-router'});
+      try{window.dispatchEvent(new CustomEvent('latyen:panel',{detail:{panel:id,source:'v3'}}));}catch(_){}
+      return true;
+    }catch(error){
+      state.lastError=String(error?.message||error);
+      reconcile(id,btn);
+      return false;
+    }finally{
+      state.inNavigate=false;
+    }
   }
 
   function install({windowObject=window}={}){
     if(state.installed&&windowObject.showTab===navigate)return true;
     if(typeof windowObject.showTab!=='function')return false;
-    if(windowObject.showTab!==navigate)legacy=windowObject.showTab;
+    if(windowObject.showTab!==navigate&&windowObject.showTab!==legacy)legacy=windowObject.showTab;
+    if(legacy===navigate)legacy=null;
     windowObject.showTab=navigate;
     state.installed=true;
     const current=normalize(document.querySelector('.panel.active')?.id||store?.getState?.()?.activePanel||'sales');
