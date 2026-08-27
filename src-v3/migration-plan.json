@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-16",
+  "version": "3.0-migration-plan-15",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -8,15 +8,29 @@
       "name": "Foundation",
       "status": "completed",
       "authoritative": "v2",
-      "gates": ["architecture","foundation-tests","startup-non-regression","no-production-writes"]
+      "gates": [
+        "architecture",
+        "foundation-tests",
+        "startup-non-regression",
+        "no-production-writes"
+      ]
     },
     {
       "id": "V3-1",
       "name": "Master Data",
       "status": "production-shadow-soak",
       "authoritative": "v2",
-      "dependsOn": ["V3-0"],
-      "gates": ["contract","repository","service","unit-catalog","v2-v3-parity","no-production-writes"],
+      "dependsOn": [
+        "V3-0"
+      ],
+      "gates": [
+        "contract",
+        "repository",
+        "service",
+        "unit-catalog",
+        "v2-v3-parity",
+        "no-production-writes"
+      ],
       "evidence": {
         "schemaAudit": "production-schema-reviewed",
         "productionBaseline": "captured",
@@ -35,7 +49,9 @@
       "name": "Ingredients + Inventory",
       "status": "controlled-production-shadow-soak",
       "authoritative": "v2",
-      "dependsOn": ["V3-1"],
+      "dependsOn": [
+        "V3-1"
+      ],
       "evidence": {
         "contract": "implemented",
         "repository": "read-only",
@@ -47,15 +63,61 @@
         "nextGate": "continue-production-soak-until-3-consecutive-passes",
         "productionSchema": "audited-read-only",
         "productionBaseline": "captured",
-        "tables": ["ly_ingredients","ly_inventory"],
-        "v2StateMapping": {"ingredients":"state.ingredients","inventory":"state.inventoryData.balances"},
+        "tables": [
+          "ly_ingredients",
+          "ly_inventory"
+        ],
+        "v2StateMapping": {
+          "ingredients": "state.ingredients",
+          "inventory": "state.inventoryData.balances"
+        },
         "repositoryTablesCorrected": true,
-        "controlledShadow": {"enabled":true,"readOnly":true,"runsPerDevicePer24h":1,"queriesPerRun":2,"maxRowsPerDataset":500,"cloudWrites":0,"diagnostics":"localStorage-only"},
+        "controlledShadow": {
+          "enabled": true,
+          "readOnly": true,
+          "runsPerDevicePer24h": 1,
+          "queriesPerRun": 2,
+          "maxRowsPerDataset": 500,
+          "cloudWrites": 0,
+          "diagnostics": "localStorage-only"
+        },
         "localObservation": "settings-status-card",
-        "promotionGate": {"requiredConsecutivePasses":3,"parity":true,"completeDataset":true,"readsPerRun":2,"cloudWrites":0,"maxDurationMs":5000,"autoPromotion":false},
-        "rollback": {"defaultAuthority":"v2","localRuntimeSwitch":true,"dualWrite":false,"autoRollbackAllowed":true},
-        "acceleratedValidation": {"mode":"manual-bounded-technical-validation","rounds":3,"queriesPerRound":2,"totalQueries":6,"cooldownHours":24,"cloudWrites":0,"advisoryOnly":true,"productionObservationCredit":0,"autoPromotion":false},
-        "readCandidatePreparation": {"implemented":true,"activated":false,"requiresProductionGate":true,"requiresTechnicalPass":true,"defaultMode":"v2","candidateMode":"v3-candidate","autoPromotion":false,"dualWrite":false},
+        "promotionGate": {
+          "requiredConsecutivePasses": 3,
+          "parity": true,
+          "completeDataset": true,
+          "readsPerRun": 2,
+          "cloudWrites": 0,
+          "maxDurationMs": 5000,
+          "autoPromotion": false
+        },
+        "rollback": {
+          "defaultAuthority": "v2",
+          "localRuntimeSwitch": true,
+          "dualWrite": false,
+          "autoRollbackAllowed": true
+        },
+        "acceleratedValidation": {
+          "mode": "manual-bounded-technical-validation",
+          "rounds": 3,
+          "queriesPerRound": 2,
+          "totalQueries": 6,
+          "cooldownHours": 24,
+          "cloudWrites": 0,
+          "advisoryOnly": true,
+          "productionObservationCredit": 0,
+          "autoPromotion": false
+        },
+        "readCandidatePreparation": {
+          "implemented": true,
+          "activated": false,
+          "requiresProductionGate": true,
+          "requiresTechnicalPass": true,
+          "defaultMode": "v2",
+          "candidateMode": "v3-candidate",
+          "autoPromotion": false,
+          "dualWrite": false
+        },
         "diagnosticsPersistence": "localStorage-survives-reload"
       }
     },
@@ -64,70 +126,151 @@
       "name": "Recipes / Products",
       "status": "shadow-gate-prepared",
       "authoritative": "v2",
-      "dependsOn": ["V3-2"],
+      "dependsOn": [
+        "V3-2"
+      ],
       "evidence": {
-        "schemaAudit":"production-schema-reviewed",
-        "productionBaseline":"captured",
-        "contract":"implemented-read-only",
-        "repository":"read-only",
-        "service":"shadow-only",
-        "parity":"local-compare",
-        "controlledShadow":"implemented-not-activated",
-        "migrationGate":"implemented-dependency-locked",
-        "activationBlockedBy":"V3-2",
-        "tables":["ly_products","ly_recipe_items"],
-        "productionBaselineCounts":{"products":62,"recipeItems":4},
-        "promotionGate":{"requiredConsecutivePasses":3,"parity":true,"completeDataset":true,"readsPerRun":2,"cloudWrites":0,"maxDurationMs":5000,"autoPromotion":false},
-        "productionActivation":false,
-        "cloudWrites":0,
-        "dualWrite":false,
-        "nextGate":"wait-for-v3-2-pass-then-review-controlled-shadow-activation"
+        "schemaAudit": "production-schema-reviewed",
+        "productionBaseline": "captured",
+        "contract": "implemented-read-only",
+        "repository": "read-only",
+        "service": "shadow-only",
+        "parity": "local-compare",
+        "controlledShadow": "implemented-not-activated",
+        "migrationGate": "implemented-dependency-locked",
+        "activationBlockedBy": "V3-2",
+        "tables": [
+          "ly_products",
+          "ly_recipe_items"
+        ],
+        "productionBaselineCounts": {
+          "products": 62,
+          "recipeItems": 4
+        },
+        "promotionGate": {
+          "requiredConsecutivePasses": 3,
+          "parity": true,
+          "completeDataset": true,
+          "readsPerRun": 2,
+          "cloudWrites": 0,
+          "maxDurationMs": 5000,
+          "autoPromotion": false
+        },
+        "productionActivation": false,
+        "cloudWrites": 0,
+        "dualWrite": false,
+        "nextGate": "wait-for-v3-2-pass-then-review-controlled-shadow-activation"
       }
     },
-    {"id":"V3-4","name":"Documents","status":"planned","authoritative":"v2","dependsOn":["V3-2"]},
-    {"id":"V3-5","name":"Sales","status":"planned","authoritative":"v2","dependsOn":["V3-2","V3-3","V3-4"]},
+    {
+      "id": "V3-4",
+      "name": "Documents",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-2"
+      ]
+    },
+    {
+      "id": "V3-5",
+      "name": "Sales",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-2",
+        "V3-3",
+        "V3-4"
+      ]
+    },
     {
       "id": "V3-6",
       "name": "Employees",
-      "status": "security-review-blocked",
+      "status": "cloud-schema-proposed",
       "authoritative": "legacy-local",
-      "dependsOn": ["V3-0"],
+      "dependsOn": [
+        "V3-0"
+      ],
       "evidence": {
-        "productionSchemaAudit":"no-employee-cloud-table-present",
-        "allLyTablesReviewed":true,
-        "currentSourceOfTruth":"legacy-local",
-        "legacyUi":"ly-employees.js",
-        "legacyDataLoader":"loadEmployees",
-        "legacyAttendance":"renderEmployeeAttendance",
-        "legacyPayroll":"renderEmployeeSalaryReport",
-        "v3Contract":"implemented-formal-review-linked",
-        "schemaProposal":"implemented-not-approved",
-        "reviewDdl":"prepared-not-applied",
-        "formalSecurityReview":"blocked",
-        "formalSecurityBlockers":["warehouse-org-integrity","child-warehouse-integrity","admin-authorization-helper-assumption"],
-        "sensitiveProjectionReview":"required",
-        "candidateTables":["ly_employees","ly_employee_attendance","ly_employee_payroll"],
-        "repository":"blocked-until-security-review-pass",
-        "service":"blocked-until-security-review-pass",
-        "cloudSchemaPresent":false,
-        "cloudReads":0,
-        "cloudWrites":0,
-        "productionActivation":false,
-        "dualWrite":false,
-        "sensitiveDataReviewRequired":true,
-        "schemaDecisionRequired":true,
-        "schemaApproved":false,
-        "migrationAllowed":false,
-        "repositoryAllowed":false,
-        "nextGate":"resolve-formal-security-review-blockers-before-migration"
+        "productionSchemaAudit": "no-employee-cloud-table-present",
+        "allLyTablesReviewed": true,
+        "currentSourceOfTruth": "legacy-local",
+        "legacyUi": "ly-employees.js",
+        "legacyDataLoader": "loadEmployees",
+        "legacyAttendance": "renderEmployeeAttendance",
+        "legacyPayroll": "renderEmployeeSalaryReport",
+        "v3Contract": "implemented-proposal-linked",
+        "schemaProposal": "implemented-not-approved",
+        "candidateTables": [
+          "ly_employees",
+          "ly_employee_attendance",
+          "ly_employee_payroll"
+        ],
+        "repository": "blocked-until-schema-approval",
+        "service": "blocked-until-schema-approval",
+        "cloudSchemaPresent": false,
+        "cloudReads": 0,
+        "cloudWrites": 0,
+        "productionActivation": false,
+        "dualWrite": false,
+        "sensitiveDataReviewRequired": true,
+        "schemaDecisionRequired": true,
+        "schemaApproved": false,
+        "migrationAllowed": false,
+        "repositoryAllowed": false,
+        "nextGate": "explicit-schema-and-sensitive-data-policy-approval"
       }
     },
-    {"id":"V3-7","name":"Finance / Cashflow","status":"planned","authoritative":"v2","dependsOn":["V3-5","V3-6"]},
-    {"id":"V3-8","name":"Reports + Notifications","status":"planned","authoritative":"v2","dependsOn":["V3-5","V3-7"]},
-    {"id":"V3-9","name":"Legacy retirement","status":"planned","authoritative":"mixed","dependsOn":["V3-1","V3-2","V3-3","V3-4","V3-5","V3-6","V3-7","V3-8"]}
+    {
+      "id": "V3-7",
+      "name": "Finance / Cashflow",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-5",
+        "V3-6"
+      ]
+    },
+    {
+      "id": "V3-8",
+      "name": "Reports + Notifications",
+      "status": "planned",
+      "authoritative": "v2",
+      "dependsOn": [
+        "V3-5",
+        "V3-7"
+      ]
+    },
+    {
+      "id": "V3-9",
+      "name": "Legacy retirement",
+      "status": "planned",
+      "authoritative": "mixed",
+      "dependsOn": [
+        "V3-1",
+        "V3-2",
+        "V3-3",
+        "V3-4",
+        "V3-5",
+        "V3-6",
+        "V3-7",
+        "V3-8"
+      ]
+    }
   ],
-  "domainGate": ["contract","repository","service","parity","performance","smoke","rollback","production-soak"],
-  "rollback": {"required":true,"scope":"per-domain"},
+  "domainGate": [
+    "contract",
+    "repository",
+    "service",
+    "parity",
+    "performance",
+    "smoke",
+    "rollback",
+    "production-soak"
+  ],
+  "rollback": {
+    "required": true,
+    "scope": "per-domain"
+  },
   "dualWrite": false,
   "v2Role": "business-data-and-legacy-renderer-compatibility",
   "navigationAuthority": "v3",
