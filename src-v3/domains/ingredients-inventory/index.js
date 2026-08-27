@@ -2,3 +2,4 @@ export {INGREDIENTS_INVENTORY_CONTRACT} from './ingredients-inventory-contract.j
 export {createIngredientsInventoryRepository} from './ingredients-inventory-repository.js';
 export {createIngredientsInventoryService} from './ingredients-inventory-service.js';
 export {compareIngredientsInventory} from './parity.js';
+export {INGREDIENTS_INVENTORY_SCHEMA,normalizeIngredientsInventoryRow,normalizeIngredientsInventoryRows} from './schema-contract.js';
