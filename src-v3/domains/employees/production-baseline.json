@@ -1,12 +1,18 @@
 {
   "capturedAt": "2026-08-27",
-  "mode": "source-of-truth-audit-only",
+  "mode": "schema-applied-readonly-empty",
   "currentAuthority": "legacy-local",
   "productionCloudWrites": 0,
   "cloudSchema": {
-    "employeeNamedTables": [],
+    "employeeNamedTables": ["ly_employees","ly_employee_attendance","ly_employee_payroll"],
     "allLyTablesReviewed": true,
-    "schemaPresent": false
+    "schemaPresent": true,
+    "migrationVersion": "20260827155709",
+    "rows": {"employees":0,"attendance":0,"payroll":0},
+    "rlsVerified": true,
+    "directClientSelect": false,
+    "safeRpc": "public.ly_list_employee_directory(uuid,uuid)",
+    "safeRpcVerified": true
   },
   "legacyEvidence": {
     "uiModule": "ly-employees.js",
@@ -16,10 +22,10 @@
     "persistence": "legacy-core-opaque"
   },
   "constraints": {
-    "noSupabaseMigration": true,
-    "noInferredCloudTable": true,
+    "schemaOnlyMigrationApplied": true,
+    "noEmployeeImport": true,
     "noRuntimeActivation": true,
     "noDualWrite": true,
-    "sensitiveDataReviewRequired": true
+    "repositoryNotImplemented": true
   }
 }

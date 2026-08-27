@@ -2,24 +2,29 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   domain:'employees',
   wave:'V3-6',
   dependsOn:Object.freeze(['V3-0']),
-  status:'migration-generation-approved',
+  status:'production-schema-applied-readonly-empty',
   currentAuthority:'legacy-local',
   v3Authoritative:false,
   productionActivation:false,
   autoPromotion:false,
   dualWrite:false,
   cloud:Object.freeze({
-    schemaPresent:false,
+    schemaPresent:true,
     proposalPresent:true,
     proposalStatus:'approved-for-migration-generation',
     reviewDdlPrepared:true,
     reviewDdlApplied:false,
     migrationGenerated:true,
-    migrationApplied:false,
+    migrationApplied:true,
+    productionMigrationVersion:'20260827155709',
     formalSecurityReview:'approved-for-migration-generation',
     safeProjection:'public.ly_list_employee_directory(uuid,uuid)',
     directBaseTableSelect:false,
-    tables:Object.freeze([]),
+    tables:Object.freeze(['ly_employees','ly_employee_attendance','ly_employee_payroll']),
+    baselineRows:Object.freeze({employees:0,attendance:0,payroll:0}),
+    rlsVerified:true,
+    clientTableSelect:false,
+    safeRpcVerified:true,
     reads:0,
     writes:0
   }),
@@ -44,7 +49,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   sensitiveData:Object.freeze([
     'phone','address','emergency_contact','bank_account','id_number','base_salary','hourly_rate','attendance','payroll'
   ]),
-  nextGate:'review-schema-only-migration-before-production-apply'
+  nextGate:'implement-read-only-repository-against-safe-rpc'
 });
 
 export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
