@@ -2,7 +2,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   domain:'employees',
   wave:'V3-6',
   dependsOn:Object.freeze(['V3-0']),
-  status:'cloud-schema-proposed',
+  status:'security-review-blocked',
   currentAuthority:'legacy-local',
   v3Authoritative:false,
   productionActivation:false,
@@ -14,6 +14,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     proposalStatus:'proposed-not-approved',
     reviewDdlPrepared:true,
     reviewDdlApplied:false,
+    formalSecurityReview:'blocked',
     tables:Object.freeze([]),
     reads:0,
     writes:0
@@ -39,12 +40,14 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   sensitiveData:Object.freeze([
     'phone','address','emergency_contact','bank_account','id_number','base_salary','hourly_rate','attendance','payroll'
   ]),
-  nextGate:'explicit-schema-and-sensitive-data-policy-approval'
+  nextGate:'resolve-formal-security-review-blockers-before-migration'
 });
 
 export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
   requireCloudSchemaDecision:true,
   requireSensitiveDataReview:true,
+  requireFormalSecurityReviewPass:true,
+  requireTenantIntegrity:true,
   requireReadOnlyShadowBeforeWrites:true,
   requireRollbackPlan:true,
   allowSyntheticCloudSource:false,
