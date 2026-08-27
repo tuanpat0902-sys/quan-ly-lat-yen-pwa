@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lySettingsEnhancementsV7)return;
-  window.__lySettingsEnhancementsV7=true;
+  if(window.__lySettingsEnhancementsV8)return;
+  window.__lySettingsEnhancementsV8=true;
 
-  const VERSION='2026.08.27.5';
+  const VERSION='2026.08.27.6';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const LEGACY_PREF_KEY='lat_yen_notify_pref_v226';
   const PAGE_LOADED_AT=new Date();
@@ -174,6 +174,35 @@
     };
   }
 
+  function readV32ValidationLocal(){
+    try{
+      const raw=JSON.parse(localStorage.getItem('lat_yen_v3_ingredients_inventory_validation_v1')||'{}')||{};
+      const orgId=String(window.__lyFreshCoreV2?.store?.getState?.()?.orgId||window.__lyFreshOrgId||'');
+      return {orgId,entry:orgId?raw?.orgs?.[orgId]||null:null};
+    }catch(e){return {orgId:'',entry:null};}
+  }
+
+  function v32ValidationSnapshot(){
+    const api=window.__lyFreshCoreV3IngredientsInventoryValidation;
+    const live=api?.status?.()||{};
+    const local=readV32ValidationLocal();
+    const entry=local.entry||{};
+    const result=live.result||entry.result||null;
+    const eligibility=api?.eligibility?.()||{};
+    return {
+      available:!!api,
+      phase:live.phase||'chưa chạy',
+      result,
+      lastAt:Number(live.lastAt||entry.lastAt||0),
+      durationMs:Number(live.lastDurationMs||entry.durationMs||0),
+      reads:Number(live.reads||0),
+      writes:Number(live.writes||0),
+      running:!!live.running,
+      eligible:eligibility.eligible!==false,
+      retryAt:Number(eligibility.retryAt||0)
+    };
+  }
+
   function ensureV3Card(){
     const root=document.getElementById('settings');
     if(!root)return false;
@@ -186,6 +215,7 @@
     }
     const v=v3Snapshot();
     const v32=v32Snapshot();
+    const validation=v32ValidationSnapshot();
     const parityText=v.parity===true?'Khớp V2':v.parity===false?'Có chênh lệch':'Chưa kiểm tra';
     const v32ParityText=v32.parity===true?'Khớp V2':v32.parity===false?'Có chênh lệch':'Chưa kiểm tra';
     const v32ParityClass=v32.parity===true?'ly-v3-ok':v32.parity===false?'ly-v3-bad':'ly-v3-warn';
@@ -193,6 +223,11 @@
     const gate=v32.gate||{};
     const gateText=gate.pass===true?'Đủ điều kiện xem xét quyền đọc':`${Number(gate.observedPasses||0)}/${Number(gate.requiredConsecutivePasses||3)} lần đạt liên tiếp`;
     const gateClass=gate.pass===true?'ly-v3-ok':'ly-v3-warn';
+    const validationText=validation.result?.pass===true?'PASS kỹ thuật':validation.result?.pass===false?'FAIL kỹ thuật':'Chưa chạy';
+    const validationClass=validation.result?.pass===true?'ly-v3-ok':validation.result?.pass===false?'ly-v3-bad':'ly-v3-warn';
+    const validationLast=validation.lastAt?new Date(validation.lastAt).toLocaleString('vi-VN'):'Chưa có kết quả';
+    const validationButtonText=validation.running?'Đang kiểm tra…':validation.eligible?'Chạy kiểm tra nhanh V3-2':'Đã chạy trong 24 giờ';
+
     const parityClass=v.parity===true?'ly-v3-ok':v.parity===false?'ly-v3-bad':'ly-v3-warn';
     const phaseText=v.available?v.phase:'Đang chờ module V3';
     card.innerHTML=`
@@ -211,8 +246,24 @@
         <div class="ly-v3-metric"><b>V3-2 giới hạn</b><span>1 lần / 24 giờ · 2 truy vấn · tối đa 500 dòng/tập</span></div>
         <div class="ly-v3-metric"><b>V3-2 Migration Gate</b><span class="${gateClass}">${esc(gateText)}</span></div>
         <div class="ly-v3-metric"><b>Rollback</b><span>V2 mặc định · không tự chuyển quyền · không dual-write</span></div>
+        <div class="ly-v3-metric"><b>V3-2 kiểm tra kỹ thuật nhanh</b><span class="${validationClass}">${esc(validationText)}</span></div>
+        <div class="ly-v3-metric"><b>Lần kiểm tra nhanh gần nhất</b><span>${esc(validationLast)}</span></div>
       </div>
-      <div class="ly-v3-note">Master Data và V3-2 Ingredients + Inventory đều đang được đối chiếu chỉ đọc trong nền. Không thêm dịch vụ trả phí, không ghi dữ liệu Cloud và không dual-write.</div>`;
+      <div style="margin-top:10px"><button id="lyV32ValidationBtn" type="button" ${validation.running||!validation.eligible?'disabled':''}>${esc(validationButtonText)}</button></div>
+      <div class="ly-v3-note">Kiểm tra nhanh chạy 3 vòng chỉ đọc (6 truy vấn tổng cộng), tối đa 1 phiên/24 giờ trên mỗi thiết bị. Kết quả chỉ mang tính kỹ thuật, không cộng vào 3 lần production soak và không tự chuyển quyền đọc. Master Data và V3-2 vẫn không ghi dữ liệu Cloud và không dual-write.</div>`;
+    const validationBtn=card.querySelector('#lyV32ValidationBtn');
+    if(validationBtn&&!validationBtn.dataset.bound){
+      validationBtn.dataset.bound='1';
+      validationBtn.addEventListener('click',async()=>{
+        validationBtn.disabled=true;
+        validationBtn.textContent='Đang kiểm tra…';
+        try{
+          await window.__lyModuleLoader?.load?.('freshCoreV3IngredientsInventoryValidation');
+          await window.__lyFreshCoreV3IngredientsInventoryValidation?.run?.();
+        }catch(e){console.warn('[Lát Yên] V3-2 technical validation',e);}
+        ensureV3Card();
+      });
+    }
     return true;
   }
 
@@ -309,6 +360,7 @@
     window.addEventListener('focus',()=>{if(document.getElementById('settings'))reconcile();});
     window.addEventListener('latyen:v3-master-data-soak',()=>{if(document.getElementById('settings'))ensureV3Card();});
     window.addEventListener('latyen:v3-ingredients-inventory-soak',()=>{if(document.getElementById('settings'))ensureV3Card();});
+    window.addEventListener('latyen:v3-ingredients-inventory-validation',()=>{if(document.getElementById('settings'))ensureV3Card();});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden&&document.getElementById('settings'))reconcile();});
   }
 
