@@ -18,6 +18,31 @@ export function createIngredientsInventoryService({repository,cache,events,v2Ada
     if(!parityReady)events.emit('ingredients-inventory:parity-mismatch',parity);
     return snapshot;
   }
+  async function refreshControlledShadow(){
+    const result=await repository.readControlledShadow();
+    const completeIngredients=result.ingredients.rows.length>=result.ingredients.count;
+    const completeInventory=result.inventory.rows.length>=result.inventory.count;
+    const complete=completeIngredients&&completeInventory;
+    const v2=v2Adapter?.getState?.()||{};
+    const parity=Object.freeze({
+      ingredients:compareIngredientsInventory('ingredients',v2.ingredients,result.ingredients.rows),
+      inventory:compareIngredientsInventory('inventory',v2.inventoryData?.balances,result.inventory.rows)
+    });
+    const parityReady=complete&&parity.ingredients.equal&&parity.inventory.equal;
+    const snapshot=Object.freeze({
+      ingredients:result.ingredients.rows,
+      inventory:result.inventory.rows,
+      counts:Object.freeze({ingredients:result.ingredients.count,inventory:result.inventory.count}),
+      complete,
+      parity,
+      parityReady,
+      authoritative:false,
+      mode:'controlled-shadow'
+    });
+    events.emit('ingredients-inventory:controlled-shadow-refreshed',snapshot);
+    if(!parityReady)events.emit('ingredients-inventory:parity-mismatch',snapshot);
+    return snapshot;
+  }
   const readOnly=()=>{throw new Error('Fresh Core V3 Ingredients + Inventory is shadow read-only');};
-  return Object.freeze({mode:'shadow',authoritative:false,refreshShadow,saveIngredient:readOnly,saveInventory:readOnly});
+  return Object.freeze({mode:'shadow',authoritative:false,refreshShadow,refreshControlledShadow,saveIngredient:readOnly,saveInventory:readOnly});
 }
