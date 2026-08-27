@@ -11,6 +11,7 @@
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.5',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.5'},
     appVersion:{src:'./ly-app-version.js?v=3.0.8',test:()=>window.__lyAppVersion?.version==='3.0.8'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.1',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.1'},
+    freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260827.1',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.27.1'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260826.19',test:()=>window.__lyLocalAssistant?.version==='2026.08.26.19'},
     chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260827.5',test:()=>window.__lyChatLanguagePlus?.version==='2026.08.27.5'},
     chatLegacyInventoryUnitGuard:{src:'./ly-chat-legacy-inventory-unit-guard.js?v=20260827.1',test:()=>window.__lyChatLegacyInventoryUnitGuard?.version==='2026.08.27.1'},
@@ -140,7 +141,7 @@
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
   load('runtimeErrorBoundary');load('appVersion');loadCore();load('warehouseDeleteUX');
-  const loadBackground=()=>{load('branding');load('ingredientSidebarStatus');load('stockUnitSync');load('cloudRealtime');load('freshCoreV3ShadowSoak');loadAssistant();};
+  const loadBackground=()=>{load('branding');load('ingredientSidebarStatus');load('stockUnitSync');load('cloudRealtime');load('freshCoreV3ShadowSoak');load('freshCoreV3IngredientsInventorySoak');loadAssistant();};
   if(typeof requestIdleCallback==='function')requestIdleCallback(loadBackground,{timeout:1400});else setTimeout(loadBackground,900);
   setTimeout(()=>{load('runtimeErrorBoundary');load('appVersion');load('warehouseDeleteUX');},1400);
   window.__lyModuleLoader={version:VERSION,load,loadCore,loadAssistant,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
