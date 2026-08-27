@@ -8,6 +8,7 @@
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
+    navigationRecovery:{src:'./ly-navigation-recovery.js?v=20260827.1',test:()=>window.__lyNavigationRecovery?.version==='2026.08.27.1'},
     appVersion:{src:'./ly-app-version.js?v=2.1.80',test:()=>window.__lyAppVersion?.version==='2.1.80'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.1',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.1'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260826.19',test:()=>window.__lyLocalAssistant?.version==='2026.08.26.19'},
@@ -116,7 +117,7 @@
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
   document.addEventListener('click',event=>preparePanel(panelOf(event.target)),true);
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
-  load('runtimeErrorBoundary');load('appVersion');loadCore();load('warehouseDeleteUX');
+  load('runtimeErrorBoundary');load('navigationRecovery');load('appVersion');loadCore();load('warehouseDeleteUX');
   const loadBackground=()=>{load('branding');load('ingredientSidebarStatus');load('stockUnitSync');load('cloudRealtime');load('freshCoreV3ShadowSoak');loadAssistant();};
   if(typeof requestIdleCallback==='function')requestIdleCallback(loadBackground,{timeout:1400});else setTimeout(loadBackground,900);
   setTimeout(()=>{load('runtimeErrorBoundary');load('appVersion');load('warehouseDeleteUX');},1400);
