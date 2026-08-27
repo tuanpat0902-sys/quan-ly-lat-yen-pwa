@@ -24,3 +24,4 @@ export {createIngredientsInventoryService} from './ingredients-inventory-service
 export {compareIngredientsInventory} from './parity.js';
 export {INGREDIENTS_INVENTORY_SCHEMA,normalizeIngredientsInventoryRow,normalizeIngredientsInventoryRows} from './schema-contract.js';
 export {INGREDIENTS_INVENTORY_READ_CANDIDATE,resolveIngredientsInventoryCandidate} from './read-authority-candidate.js';
+export {INGREDIENTS_INVENTORY_READINESS_POLICY,evaluateIngredientsInventoryReadiness} from './readiness.js';
