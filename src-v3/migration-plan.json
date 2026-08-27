@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-11",
+  "version": "3.0-migration-plan-12",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -60,7 +60,7 @@
         "writes": "disabled",
         "productionActivation": "controlled-shadow-read-only",
         "zeroAddedCost": true,
-        "nextGate": "run-accelerated-validation-while-production-soak-continues",
+        "nextGate": "continue-production-soak-until-3-consecutive-passes",
         "productionSchema": "audited-read-only",
         "productionBaseline": "captured",
         "tables": [
@@ -107,7 +107,18 @@
           "advisoryOnly": true,
           "productionObservationCredit": 0,
           "autoPromotion": false
-        }
+        },
+        "readCandidatePreparation": {
+          "implemented": true,
+          "activated": false,
+          "requiresProductionGate": true,
+          "requiresTechnicalPass": true,
+          "defaultMode": "v2",
+          "candidateMode": "v3-candidate",
+          "autoPromotion": false,
+          "dualWrite": false
+        },
+        "diagnosticsPersistence": "localStorage-survives-reload"
       }
     },
     {
