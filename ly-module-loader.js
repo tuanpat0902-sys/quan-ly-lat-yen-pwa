@@ -45,6 +45,7 @@
     dataNotifications:{src:'./ly-data-notifications.js?v=20260825.7',test:()=>window.__lyDataActivityNotifications?.version==='2026.08.25.7'},
     notificationCenter:{src:'./ly-notification-center.js?v=20260827.5',test:()=>window.__lyNotificationCenter?.version==='2026.08.27.5'},
     inventoryAlerts:{src:'./ly-inventory-alerts.js?v=20260824.1',test:()=>window.__lyInventoryAlerts?.version==='2026.08.24.1'},
+    performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260823.4',test:()=>window.__lyPerformanceOptimizer?.version==='2026.08.23.4'},
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
     finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.4',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.4'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.3',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.3'},
@@ -85,7 +86,7 @@
     await load('hydration');await load('shadow');await load('domShim');await load('stateShim');await load('helperShim');await load('modelShim');await load('listShim');await load('formDraftGuard');await load('menuSecurity');
     await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
     await load('ingredientConversionSync');await load('chatUnitSync');await load('ingredientTableUX');await load('ingredientSidebarStatus');await load('stockUnitSync');await load('salaryFundSync');await load('employeeTerminationDate');
-    await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('cloudRealtime');await load('finalOwnership');
+    await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('cloudRealtime');await load('finalOwnership');await load('performanceOptimizer');
   }
 
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
