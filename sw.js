@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-189';
+const CACHE='lat-yen-fresh-core-v3-authoritative-190';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
   INDEX_KEY,
@@ -27,7 +27,7 @@ self.addEventListener('activate',event=>{event.waitUntil((async()=>{
   }
 })());});
 async function networkFirst(request){try{const response=await fetch(request,{cache:'no-store'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(request,response.clone()).catch(()=>{});}return response;}catch(e){return caches.match(request,{ignoreSearch:true})||caches.match(new URL(request.url).pathname.replace(/^\/quan-ly-lat-yen-pwa\//,'./'));}}
-async function cacheFirstStatic(request){const exact=await caches.match(request,{ignoreSearch:false});if(exact)return exact;try{const response=await fetch(request,{cache:'default'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(request,response.clone()).catch(()=>{});}return response;}catch(e){const url=new URL(request.url);return caches.match(url.pathname.replace(/^\/quan-ly-lat-yen-pwa\//,'./'));}}
+async function cacheFirstStatic(request){const exact=await caches.match(request,{ignoreSearch:false});if(exact)return exact;try{const response=await fetch(request,{cache:'reload'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(request,response.clone()).catch(()=>{});}return response;}catch(e){const url=new URL(request.url);return caches.match(url.pathname.replace(/^\/quan-ly-lat-yen-pwa\//,'./'));}}
 async function navigationSource(request){try{const response=await fetch(request,{cache:'no-store'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(INDEX_KEY,response.clone()).catch(()=>{});}return response;}catch(e){return caches.match(INDEX_KEY);}}
 const RPC_TABLE={ly_save_import:'ly_import_receipts',ly_save_export:'ly_export_receipts',ly_save_stocktake:'ly_stocktake_receipts',ly_save_sale:'ly_sales',ly_save_ingredient:'ly_ingredients',ly_save_product:'ly_products',ly_save_warehouse_secure:'ly_warehouses',ly_delete_warehouse_secure:'ly_warehouses'};
 function isSupabaseOrigin(url){return url.protocol==='https:'&&/^[a-z0-9-]+\.supabase\.co$/i.test(url.hostname);}
