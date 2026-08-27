@@ -72,7 +72,8 @@ assert.throws(()=>service.saveWarehouse({id:'x'}),/shadow read-only/);
 assert.equal(canonicalUnit('kilo'),'kg');
 assert.equal(unitsCompatible('g','kg'),true);
 assert.equal(convertStandardUnit(1,'kg','g'),1000);
-assert.ok(UNIT_CATALOG.length>=20);
+const expectedUnits=['mg','g','kg','tấn','ml','cl','dl','l','cái','chiếc','bộ','đôi','ly','cốc','chai','lon','hũ','lọ','gói','túi','hộp','thùng','bao','khay','vỉ','cuộn','tờ','mét','phần','suất'];
+assert.deepEqual(UNIT_CATALOG.map(item=>item.key),expectedUnits);
 
 const mismatchService=createMasterDataService({
   repository,
