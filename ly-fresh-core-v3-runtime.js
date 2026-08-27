@@ -11,7 +11,7 @@
       state.navigationAuthoritative=true;
       return true;
     }
-    if(typeof window.showTab!=='function'||typeof window.renderPanel!=='function'||!window.__lyFreshCoreV2)return false;
+    if(typeof window.showTab!=='function'||typeof window.renderPanel!=='function'||!window.sb)return false;
     state.phase='loading';
     try{
       const legacyShowTab=window.showTab;
@@ -24,7 +24,7 @@
         state.navigationAuthoritative=true;
         return true;
       }
-      const v2=window.__lyFreshCoreV2;
+      const v2=window.__lyFreshCoreV2||null;
       const orgId=String(v2?.store?.getState?.()?.orgId||window.__lyFreshOrgId||'');
       const core=createFreshCoreV3({
         supabase:window.sb,
