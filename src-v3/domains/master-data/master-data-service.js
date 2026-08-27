@@ -1,25 +1,7 @@
 import {MASTER_DATA_CONTRACT} from './master-data-contract.js';
+import {compareMasterData} from './parity.js';
 
-const normalizeRow=row=>{
-  const out={};
-  for(const key of Object.keys(row||{}).sort())if(key!=='updated_at'&&key!=='created_at')out[key]=row[key]??null;
-  return out;
-};
-const normalizeRows=rows=>(Array.isArray(rows)?rows:[]).map(normalizeRow).sort((a,b)=>String(a.id??a.name??'').localeCompare(String(b.id??b.name??''),'vi'));
-
-function compareRows(v2Rows,v3Rows){
-  const left=normalizeRows(v2Rows),right=normalizeRows(v3Rows);
-  const leftText=JSON.stringify(left),rightText=JSON.stringify(right);
-  return Object.freeze({
-    equal:leftText===rightText,
-    v2Count:left.length,
-    v3Count:right.length,
-    onlyV2:left.filter(row=>!rightText.includes(JSON.stringify(row))).length,
-    onlyV3:right.filter(row=>!leftText.includes(JSON.stringify(row))).length
-  });
-}
-
-export function createMasterDataService({repository,cache,events,v2Adapter}){
+export function createMasterDataService({repository,cache,events,v2Adapter,getOrgId}){
   if(!repository||!cache||!events)throw new Error('repository, cache and events are required');
 
   async function refreshShadow(){
@@ -28,12 +10,15 @@ export function createMasterDataService({repository,cache,events,v2Adapter}){
     cache.set(MASTER_DATA_CONTRACT.cache.suppliers,suppliers,{ttlMs:60000,meta:{domain:'master-data'}});
 
     const v2State=v2Adapter?.getState?.()||{};
+    const orgId=getOrgId?.()??v2State.orgId??null;
     const parity=Object.freeze({
-      warehouses:compareRows(v2State.warehouses,warehouses),
-      suppliers:compareRows(v2State.suppliers,suppliers)
+      warehouses:compareMasterData('warehouses',v2State.warehouses,warehouses,{orgId}),
+      suppliers:compareMasterData('suppliers',v2State.suppliers,suppliers,{orgId})
     });
-    const snapshot=Object.freeze({warehouses,suppliers,parity,authoritative:false,mode:'shadow'});
+    const parityReady=parity.warehouses.equal&&parity.suppliers.equal;
+    const snapshot=Object.freeze({warehouses,suppliers,parity,parityReady,authoritative:false,mode:'shadow'});
     events.emit('master-data:shadow-refreshed',snapshot);
+    if(!parityReady)events.emit('master-data:parity-mismatch',parity);
     return snapshot;
   }
 
