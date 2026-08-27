@@ -1,8 +1,8 @@
 {
-  "appVersion": "3.0.7",
-  "revision": "fresh-core-v3-shell-authoritative-v8",
-  "loaderAssetVersion": "20260827.98",
-  "moduleLoaderVersion": "2026.08.27.31",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-182",
-  "redeploy": "2026-08-27-router-owned-menu-security"
+  "appVersion": "3.0.8",
+  "revision": "fresh-core-v3-shell-authoritative-v9",
+  "loaderAssetVersion": "20260827.99",
+  "moduleLoaderVersion": "2026.08.27.32",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-183",
+  "redeploy": "2026-08-27-navigation-latent-risk-hardening"
 }
