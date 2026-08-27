@@ -9,6 +9,8 @@
   const PAGE_LOADED_AT=new Date();
   let originalShowNotification=null;
   let reconcileTimer=null;
+  let v32ReadinessModule=null;
+  let v32ReadinessPromise=null;
 
   const text=v=>String(v??'').trim();
   const enabled=()=>{try{return localStorage.getItem(MASTER_KEY)!=='0';}catch(e){return true;}};
@@ -203,9 +205,44 @@
     };
   }
 
+  function readLocalJson(key){
+    try{return JSON.parse(localStorage.getItem(key)||'{}')||{};}catch(e){return {};}
+  }
+
+  function currentOrgId(){return String(window.__lyFreshCoreV2?.store?.getState?.()?.orgId||window.__lyFreshOrgId||'');}
+
+  function loadV32ReadinessModule(){
+    if(v32ReadinessModule||v32ReadinessPromise)return;
+    v32ReadinessPromise=import('./src-v3/domains/ingredients-inventory/local-readiness-snapshot.js?v=20260827.1')
+      .then(mod=>{
+        v32ReadinessModule=mod;
+        if(document.getElementById('settings'))ensureV3Card();
+        return mod;
+      })
+      .catch(error=>{
+        console.warn('[Lát Yên] V3-2 local readiness helper',error);
+        return null;
+      });
+  }
+
+  function v32ConsolidatedReadiness(){
+    if(!v32ReadinessModule?.createIngredientsInventoryLocalReadinessSnapshot)return null;
+    try{
+      return v32ReadinessModule.createIngredientsInventoryLocalReadinessSnapshot({
+        orgId:currentOrgId(),
+        soakStored:readLocalJson('lat_yen_v3_ingredients_inventory_shadow_soak_v1'),
+        validationStored:readLocalJson('lat_yen_v3_ingredients_inventory_validation_v1')
+      });
+    }catch(error){
+      console.warn('[Lát Yên] V3-2 readiness snapshot',error);
+      return null;
+    }
+  }
+
   function ensureV3Card(){
     const root=document.getElementById('settings');
     if(!root)return false;
+    loadV32ReadinessModule();
     let card=document.getElementById('lyV3ShadowStatusCard');
     if(!card){
       card=document.createElement('div');
@@ -216,20 +253,26 @@
     const v=v3Snapshot();
     const v32=v32Snapshot();
     const validation=v32ValidationSnapshot();
+    const consolidated=v32ConsolidatedReadiness();
     const parityText=v.parity===true?'Khớp V2':v.parity===false?'Có chênh lệch':'Chưa kiểm tra';
     const v32ParityText=v32.parity===true?'Khớp V2':v32.parity===false?'Có chênh lệch':'Chưa kiểm tra';
     const v32ParityClass=v32.parity===true?'ly-v3-ok':v32.parity===false?'ly-v3-bad':'ly-v3-warn';
     const v32LastAtText=v32.lastAt?new Date(v32.lastAt).toLocaleString('vi-VN'):'Chưa có kết quả';
     const gate=v32.gate||{};
-    const gateText=gate.pass===true?'Đủ điều kiện xem xét quyền đọc':`${Number(gate.observedPasses||0)}/${Number(gate.requiredConsecutivePasses||3)} lần đạt liên tiếp`;
+    const gateText=gate.pass===true?'Đủ điều kiện production gate':`${Number(gate.observedPasses||0)}/${Number(gate.requiredConsecutivePasses||3)} lần đạt liên tiếp`;
     const gateClass=gate.pass===true?'ly-v3-ok':'ly-v3-warn';
     const validationText=validation.result?.pass===true?'PASS kỹ thuật':validation.result?.pass===false?'FAIL kỹ thuật':'Chưa chạy';
     const validationClass=validation.result?.pass===true?'ly-v3-ok':validation.result?.pass===false?'ly-v3-bad':'ly-v3-warn';
     const validationLast=validation.lastAt?new Date(validation.lastAt).toLocaleString('vi-VN'):'Chưa có kết quả';
     const validationButtonText=validation.running?'Đang kiểm tra…':validation.eligible?'Chạy kiểm tra nhanh V3-2':'Đã chạy trong 24 giờ';
-    const candidateReady=gate.pass===true&&validation.result?.pass===true;
-    const candidateText=candidateReady?'Sẵn sàng review quyền đọc':'Chưa kích hoạt · V2 vẫn là mặc định';
-    const candidateClass=candidateReady?'ly-v3-ok':'ly-v3-warn';
+    const readinessReady=consolidated?.readiness?.pass===true&&consolidated?.unlockDependents===true;
+    const readinessText=!consolidated?'Đang xác minh local history · mặc định khóa':readinessReady?'PASS · đủ điều kiện review':'LOCKED · '+String(consolidated.readiness?.recommendation||'chưa đủ bằng chứng');
+    const readinessClass=readinessReady?'ly-v3-ok':'ly-v3-warn';
+    const observationText=consolidated?`${Number(consolidated.productionObservationCount||0)} production · ${Number(consolidated.technicalObservationCount||0)} technical`:'Chưa xác minh';
+    const v33DependencyText=readinessReady?'Mở cho review controlled shadow':'Khóa bởi V3-2 consolidated readiness';
+    const v33DependencyClass=readinessReady?'ly-v3-ok':'ly-v3-warn';
+    const candidateText=readinessReady?'Sẵn sàng review quyền đọc':'Chưa kích hoạt · V2 vẫn là mặc định';
+    const candidateClass=readinessReady?'ly-v3-ok':'ly-v3-warn';
 
     const parityClass=v.parity===true?'ly-v3-ok':v.parity===false?'ly-v3-bad':'ly-v3-warn';
     const phaseText=v.available?v.phase:'Đang chờ module V3';
@@ -247,14 +290,17 @@
         <div class="ly-v3-metric"><b>V3-2 kiểm tra gần nhất</b><span>${esc(v32LastAtText)}</span></div>
         <div class="ly-v3-metric"><b>V3-2 Đọc / Ghi Cloud</b><span>${esc(String(v32.reads))} / ${esc(String(v32.writes))}</span></div>
         <div class="ly-v3-metric"><b>V3-2 giới hạn</b><span>1 lần / 24 giờ · 2 truy vấn · tối đa 500 dòng/tập</span></div>
-        <div class="ly-v3-metric"><b>V3-2 Migration Gate</b><span class="${gateClass}">${esc(gateText)}</span></div>
+        <div class="ly-v3-metric"><b>V3-2 Production Gate</b><span class="${gateClass}">${esc(gateText)}</span></div>
         <div class="ly-v3-metric"><b>Rollback</b><span>V2 mặc định · không tự chuyển quyền · không dual-write</span></div>
         <div class="ly-v3-metric"><b>V3-2 kiểm tra kỹ thuật nhanh</b><span class="${validationClass}">${esc(validationText)}</span></div>
         <div class="ly-v3-metric"><b>Lần kiểm tra nhanh gần nhất</b><span>${esc(validationLast)}</span></div>
+        <div class="ly-v3-metric"><b>V3-2 Consolidated Readiness</b><span class="${readinessClass}">${esc(readinessText)}</span></div>
+        <div class="ly-v3-metric"><b>Bằng chứng local</b><span>${esc(observationText)}</span></div>
         <div class="ly-v3-metric"><b>V3-2 Read Candidate</b><span class="${candidateClass}">${esc(candidateText)}</span></div>
+        <div class="ly-v3-metric"><b>V3-3 dependency</b><span class="${v33DependencyClass}">${esc(v33DependencyText)}</span></div>
       </div>
       <div style="margin-top:10px"><button id="lyV32ValidationBtn" type="button" ${validation.running||!validation.eligible?'disabled':''}>${esc(validationButtonText)}</button></div>
-      <div class="ly-v3-note">Kiểm tra nhanh chạy 3 vòng chỉ đọc (6 truy vấn tổng cộng), tối đa 1 phiên/24 giờ trên mỗi thiết bị. Kết quả chỉ mang tính kỹ thuật, không cộng vào 3 lần production soak và không tự chuyển quyền đọc. Master Data và V3-2 vẫn không ghi dữ liệu Cloud và không dual-write.</div>`;
+      <div class="ly-v3-note">Consolidated readiness được tính lại từ production history và technical observations trong localStorage; cờ pass persisted không được dùng làm authority. Kiểm tra nhanh chạy 3 vòng chỉ đọc (6 truy vấn tổng cộng), tối đa 1 phiên/24 giờ trên mỗi thiết bị, không cộng vào production soak và không tự chuyển quyền đọc.</div>`;
     const validationBtn=card.querySelector('#lyV32ValidationBtn');
     if(validationBtn&&!validationBtn.dataset.bound){
       validationBtn.dataset.bound='1';
