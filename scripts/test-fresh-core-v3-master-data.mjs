@@ -56,13 +56,16 @@ const v2Adapter={getState:()=>({
   warehouses:rowsByTable.ly_warehouses,
   suppliers:rowsByTable.ly_suppliers
 })};
-const service=createMasterDataService({repository,cache,events,v2Adapter});
+const service=createMasterDataService({repository,cache,events,v2Adapter,getOrgId:()=> 'org-1'});
 const snapshot=await service.refreshShadow();
 assert.equal(snapshot.authoritative,false);
 assert.equal(snapshot.mode,'shadow');
+assert.equal(snapshot.parityReady,true);
 assert.equal(snapshot.parity.warehouses.equal,true);
 assert.equal(snapshot.parity.suppliers.equal,true);
 assert.equal(emitted.parity.warehouses.equal,true);
+assert.deepEqual(snapshot.parity.warehouses.missingInV3,[]);
+assert.deepEqual(snapshot.parity.suppliers.changed,[]);
 assert.equal(service.cached().warehouses.length,2);
 assert.throws(()=>service.saveWarehouse({id:'x'}),/shadow read-only/);
 
@@ -70,5 +73,27 @@ assert.equal(canonicalUnit('kilo'),'kg');
 assert.equal(unitsCompatible('g','kg'),true);
 assert.equal(convertStandardUnit(1,'kg','g'),1000);
 assert.ok(UNIT_CATALOG.length>=20);
+
+const mismatchService=createMasterDataService({
+  repository,
+  cache:createQueryCache(),
+  events:new EventBus(),
+  getOrgId:()=> 'org-1',
+  v2Adapter:{getState:()=>({warehouses:[...rowsByTable.ly_warehouses,{id:'missing',org_id:'org-1',name:'Kho thiếu'}],suppliers:rowsByTable.ly_suppliers})}
+});
+const mismatch=await mismatchService.refreshShadow();
+assert.equal(mismatch.parityReady,false);
+assert.deepEqual(mismatch.parity.warehouses.missingInV3,['missing']);
+
+const wrongOrgService=createMasterDataService({
+  repository:{listWarehouses:async()=>[{...rowsByTable.ly_warehouses[0],org_id:'other-org'}],listSuppliers:async()=>rowsByTable.ly_suppliers},
+  cache:createQueryCache(),
+  events:new EventBus(),
+  getOrgId:()=> 'org-1',
+  v2Adapter:{getState:()=>({warehouses:rowsByTable.ly_warehouses,suppliers:rowsByTable.ly_suppliers})}
+});
+const wrongOrg=await wrongOrgService.refreshShadow();
+assert.equal(wrongOrg.parity.warehouses.equal,false);
+assert.deepEqual(wrongOrg.parity.warehouses.invalidOrgRows,['w1']);
 
 console.log('Fresh Core V3 Master Data shadow: PASS');
