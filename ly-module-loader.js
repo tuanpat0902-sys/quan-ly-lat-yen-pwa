@@ -8,6 +8,7 @@
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
+    navigationOwner:{src:'./ly-navigation-owner.js?v=20260827.1',test:()=>window.__lyNavigationOwner?.version==='2026.08.27.1'},
     appVersion:{src:'./ly-app-version.js?v=2.1.83',test:()=>window.__lyAppVersion?.version==='2.1.83'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.1',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.1'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260826.19',test:()=>window.__lyLocalAssistant?.version==='2026.08.26.19'},
@@ -106,6 +107,7 @@
     await load('supabaseBootstrap');
     try{await window.__lySupabaseReady;}catch(e){}
     await waitForLegacyShell();
+    await load('navigationOwner');
     await load('hydration');await load('shadow');await load('domShim');await load('stateShim');await load('helperShim');await load('modelShim');await load('listShim');await load('formDraftGuard');await load('menuSecurity');await load('settingsUIBridge');
     await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
     await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('finalOwnership');await load('performanceOptimizer');
