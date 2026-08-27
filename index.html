@@ -26799,6 +26799,17 @@ function flushDeferredRenders(){
     scheduleRender(key,fn);
   }
 }
+
+document.addEventListener(
+  'visibilitychange',
+  ()=>{
+    if(!document.hidden){
+      flushDeferredRenders();
+    }
+  }
+);
+window.addEventListener('pageshow',flushDeferredRenders);
+window.addEventListener('focus',flushDeferredRenders);
 function renderPanel(id){
   const map={
     dashboard:renderDashboard,
