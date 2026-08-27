@@ -15,7 +15,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     reviewDdlPrepared:true,
     reviewDdlApplied:false,
     formalSecurityReview:'complete-awaiting-explicit-approval',
-    safeProjection:'ly_private.ly_list_employee_directory(uuid,uuid)',
+    safeProjection:'public.ly_list_employee_directory(uuid,uuid)',
     directBaseTableSelect:false,
     tables:Object.freeze([]),
     reads:0,
