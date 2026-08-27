@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-3",
+  "version": "3.0-migration-plan-4",
   "productionMode": "v2-authoritative",
   "v3Mode": "shadow",
   "waves": [
@@ -18,7 +18,7 @@
     {
       "id": "V3-1",
       "name": "Master Data",
-      "status": "parity-ready",
+      "status": "production-shadow-soak",
       "authoritative": "v2",
       "dependsOn": [
         "V3-0"
@@ -36,7 +36,10 @@
         "productionBaseline": "captured",
         "shadowTests": "passing",
         "writes": "disabled",
-        "nextGate": "production-shadow-soak"
+        "nextGate": "production-soak-observation",
+        "zeroAddedCost": true,
+        "readCycle": "once-per-device-per-24h",
+        "cloudWrites": 0
       }
     },
     {
