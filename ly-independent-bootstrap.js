@@ -30,7 +30,7 @@
       router,
       shadow,
       hasV3:!!window.__lyFreshCoreV3,
-      routerAuthoritative:core.router?.authoritative===true&&window.showTab===core.router.navigate,
+      routerAuthoritative:core.router?.authoritative===true&&router.installed===true,
       hasHydration:!!window.__lyFreshCoreV2LegacyHydration,
       hasNavInit:typeof window.navInit==='function',
       hasRenderAll:typeof window.renderAll==='function'
