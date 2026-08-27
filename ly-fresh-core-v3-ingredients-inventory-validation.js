@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV3IngredientsInventoryValidationV1)return;
   window.__lyFreshCoreV3IngredientsInventoryValidationV1=true;
 
-  const VERSION='2026.08.27.1';
+  const VERSION='2026.08.27.2';
   const STORAGE_KEY='lat_yen_v3_ingredients_inventory_validation_v1';
   const COOLDOWN_MS=24*60*60*1000;
   const ROUNDS=3;
