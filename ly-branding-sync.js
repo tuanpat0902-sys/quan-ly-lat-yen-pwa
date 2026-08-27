@@ -98,7 +98,7 @@
     window.addEventListener('latyen:v2-hydrated',()=>load(true));
     window.addEventListener('latyen:cloud-refreshed',()=>load(true));
   }
-  function boot(){installEvents();start();setInterval(()=>{if(!document.hidden)load(false);},15000);}
+  function boot(){installEvents();start();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
   window.__lyBrandingSync={version:VERSION,refresh:()=>load(true),save:()=>persist(undefined),status:()=>({version:VERSION,orgId:state.orgId,hasCloudRow:!!state.row,hasLogo:!!state.row?.logo_data,softwareName:state.row?.software_name||'',lastLoadAt:state.lastLoadAt})};
 })();
