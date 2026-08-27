@@ -16,6 +16,7 @@ on:
       - 'scripts/test-fresh-core-v3-ingredients-inventory-read-candidate.mjs'
       - 'scripts/test-fresh-core-v3-employees-audit.mjs'
       - 'scripts/test-fresh-core-v3-employees-schema-decision.mjs'
+      - 'scripts/test-fresh-core-v3-employees-review-ddl.mjs'
       - 'ly-fresh-core-v3-ingredients-inventory-validation.js'
       - 'ly-fresh-core-v3-ingredients-inventory-soak.js'
       - 'scripts/test-fresh-core-v3-shadow-soak.mjs'
@@ -78,6 +79,9 @@ jobs:
 
       - name: Test V3 Employees cloud schema decision guard
         run: node scripts/test-fresh-core-v3-employees-schema-decision.mjs
+
+      - name: Test V3 Employees review-only DDL/RLS guard
+        run: node scripts/test-fresh-core-v3-employees-review-ddl.mjs
 
       - name: Test V3 production shell
         run: npm run v3:production-shell
