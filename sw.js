@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v2-authoritative-171';
+const CACHE='lat-yen-fresh-core-v2-authoritative-172';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
   INDEX_KEY,
