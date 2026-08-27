@@ -29,3 +29,11 @@ export {createEmployeesRepository,normalizeEmployeeDirectoryRow,EMPLOYEES_DIRECT
 export {createEmployeesService} from './employees-service.js';
 export {compareEmployeeDirectory,EMPLOYEES_PARITY_FIELDS} from './parity.js';
 export {evaluateEmployeesDirectoryParityGate,EMPLOYEES_DIRECTORY_PARITY_GATE_POLICY} from './parity-gate.js';
+export {
+  createEmployeesDeviceParityObservation,
+  evaluateEmployeesDeviceParityObservation,
+  persistEmployeesDeviceParityObservation,
+  readEmployeesDeviceParityObservation,
+  EMPLOYEES_DEVICE_PARITY_STORAGE_KEY,
+  EMPLOYEES_DEVICE_PARITY_OBSERVATION_POLICY
+} from './device-parity-observation.js';
