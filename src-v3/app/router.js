@@ -45,7 +45,7 @@ export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,
   }
 
   function install({windowObject=window}={}){
-    if(state.installed&&windowObject.showTab===navigate)return true;
+    if(state.installed)return true;
     if(typeof windowObject.showTab!=='function')return false;
     if(windowObject.showTab!==navigate&&windowObject.showTab!==legacy)legacy=windowObject.showTab;
     if(legacy===navigate)legacy=null;
@@ -58,7 +58,7 @@ export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,
   }
 
   return Object.freeze({
-    version:'3.0.0-router.1',
+    version:'3.0.0-router.2',
     authoritative:true,
     navigate,install,reconcile,
     status:()=>({...state,activePanel:store?.getState?.()?.activePanel||''})
