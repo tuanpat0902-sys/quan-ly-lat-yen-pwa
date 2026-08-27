@@ -20,6 +20,7 @@
         supabase:window.sb,
         v2Runtime:v2,
         legacyShowTab,
+        mode:'v3-shell',
         getOrgId:()=>String(v2?.store?.getState?.()?.orgId||window.__lyFreshOrgId||orgId),
         initialState:{orgId,activePanel:document.querySelector('.panel.active')?.id||'sales',migration:{mode:'v3-shell'}}
       });
