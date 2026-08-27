@@ -1,9 +1,10 @@
 const DEFAULT_PANELS=Object.freeze(['dashboard','ingredients','imports','recipes','sales','stocktake','finance','cashflow','employees','warehouses','history','settings']);
 
-export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,storageKey='lat_yen_active_panel_v1'}={}){
+export function createRouter({store,events,legacyNavigate,legacyRender,panels=DEFAULT_PANELS,storageKey='lat_yen_active_panel_v1'}={}){
   const allowed=new Set(panels);
   let legacy=typeof legacyNavigate==='function'?legacyNavigate:null;
-  const state={installed:false,navigations:0,reconciles:0,lastPanel:'',lastError:'',inNavigate:false,lastAt:0};
+  const renderLegacy=typeof legacyRender==='function'?legacyRender:null;
+  const state={installed:false,navigations:0,reconciles:0,renderRecoveries:0,renderFailures:0,lastPanel:'',lastError:'',inNavigate:false,lastAt:0};
   const normalize=id=>allowed.has(String(id||''))?String(id):'sales';
   const buttonFor=id=>document.querySelector(`#nav button[data-panel="${CSS.escape(id)}"]`);
 
@@ -16,6 +17,31 @@ export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,
       if(active)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');
     });
     state.reconciles++;
+  }
+
+  function panelReady(id){
+    const panel=document.getElementById(id);
+    return !!(panel&&panel.classList.contains('active')&&panel.innerHTML.trim());
+  }
+
+  function ensureRendered(id,button,attempt=0){
+    if(state.lastPanel!==id)return true;
+    reconcile(id,button);
+    if(panelReady(id))return true;
+    if(typeof renderLegacy==='function'){
+      try{renderLegacy.call(window,id);state.renderRecoveries++;}catch(error){state.lastError=String(error?.message||error);}
+    }
+    if(attempt>=3){
+      if(!panelReady(id)){
+        state.renderFailures++;
+        try{events?.emit?.('panel:render-failed',{panel:id,source:'v3-router'});}catch(_){}
+        try{window.dispatchEvent(new CustomEvent('latyen:panel-render-failed',{detail:{panel:id}}));}catch(_){}
+        return false;
+      }
+      return true;
+    }
+    setTimeout(()=>ensureRendered(id,button,attempt+1),attempt===0?34:80*attempt);
+    return false;
   }
 
   function navigate(panel,button){
@@ -31,7 +57,7 @@ export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,
       remember(id);
       if(typeof legacy==='function'&&legacy!==navigate)legacy.call(window,id,btn);
       reconcile(id,btn);
-      requestAnimationFrame(()=>reconcile(id,btn));
+      requestAnimationFrame(()=>{reconcile(id,btn);ensureRendered(id,btn,0);});
       events?.emit?.('panel:changed',{panel:id,source:'v3-router'});
       try{window.dispatchEvent(new CustomEvent('latyen:panel',{detail:{panel:id,source:'v3'}}));}catch(_){}
       return true;
@@ -58,9 +84,9 @@ export function createRouter({store,events,legacyNavigate,panels=DEFAULT_PANELS,
   }
 
   return Object.freeze({
-    version:'3.0.0-router.2',
+    version:'3.0.0-router.3',
     authoritative:true,
-    navigate,install,reconcile,
+    navigate,install,reconcile,ensureRendered,
     status:()=>({...state,activePanel:store?.getState?.()?.activePanel||''})
   });
 }
