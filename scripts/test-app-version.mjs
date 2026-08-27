@@ -8,6 +8,7 @@ const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url)
 const warehouseDeleteUx=await fs.readFile(new URL('../ly-warehouse-delete-ux.js',import.meta.url),'utf8');
 const localAssistant=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url),'utf8');
 const pagesPrep=await fs.readFile(new URL('./prepare-pages-artifact.mjs',import.meta.url),'utf8');
+const release=JSON.parse(await fs.readFile(new URL('../release-config.json',import.meta.url),'utf8'));
 
 const match=versionSource.match(/const VERSION='([^']+)'/);
 assert.ok(match,'ly-app-version.js must declare VERSION');
@@ -26,7 +27,8 @@ assert.ok(localAssistant.includes("storage:'indexeddb-device-only'"),'assistant 
 assert.ok(warehouseDeleteUx.includes("ly_delete_warehouse_secure"),'warehouse deletion must use the transactional secure RPC');
 assert.ok(warehouseDeleteUx.includes('Nhập chính xác tên kho'),'warehouse UX must require an explicit destructive confirmation');
 assert.ok(notifications.includes('__LY_APP_VERSION_LABEL'),'notifications must use centralized runtime version label');
-assert.ok(pagesPrep.includes(`APP_VERSION='${runtimeVersion}'`),'Pages artifact preparation must use the current version');
+assert.equal(release.appVersion,runtimeVersion,'release-config.json must be the version source of truth');
+assert.ok(pagesPrep.includes("const APP_VERSION=RELEASE.appVersion"),'Pages artifact preparation must read the app version from release-config.json');
 assert.ok(pagesPrep.includes('appVersionStatic'),'Pages artifact must replace the old V274 badge');
 assert.ok(pagesPrep.includes("updateViaCache:'none'"),'Pages artifact must bypass HTTP cache for service-worker updates');
 console.log(`App version contract: PASS (Ver ${runtimeVersion})`);
