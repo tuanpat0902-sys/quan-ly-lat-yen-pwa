@@ -44,37 +44,53 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
+
       - name: Check V3 architecture contract
         run: npm run v3:architecture
+
       - name: Test V3 foundation
         run: npm run v3:foundation
+
       - name: Test V3 Master Data shadow
         run: npm run v3:master-data
+
       - name: Test V3 zero-cost shadow soak
         run: npm run v3:shadow-soak
+
       - name: Test V3 Ingredients + Inventory
         run: npm run v3:ingredients-inventory
+
       - name: Test V3 Ingredients + Inventory controlled soak
         run: npm run v3:ingredients-inventory-soak
+
       - name: Test V3 Ingredients + Inventory migration gate
         run: npm run v3:ingredients-inventory-gate
+
       - name: Test V3 Ingredients + Inventory technical validation
         run: npm run v3:ingredients-inventory-accelerated
+
       - name: Test V3 Ingredients + Inventory read candidate
         run: npm run v3:ingredients-inventory-read-candidate
+
       - name: Test V3 Employees source-of-truth audit
         run: node scripts/test-fresh-core-v3-employees-audit.mjs
+
       - name: Test V3 Employees cloud schema decision guard
         run: node scripts/test-fresh-core-v3-employees-schema-decision.mjs
+
       - name: Test V3 Employees review-only DDL/RLS guard
         run: node scripts/test-fresh-core-v3-employees-review-ddl.mjs
+
       - name: Test V3 Employees formal security review gate
         run: node scripts/test-fresh-core-v3-employees-formal-security-review.mjs
+
       - name: Test V3 Employees generated schema-only migration
         run: node scripts/test-fresh-core-v3-employees-migration.mjs
+
       - name: Test V3 production shell
         run: npm run v3:production-shell
