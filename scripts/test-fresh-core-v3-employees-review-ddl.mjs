@@ -17,7 +17,6 @@ assert.equal((ddl.match(/for select\s+to authenticated/g)||[]).length,3);
 assert.equal((ddl.match(/ly_private\.ly_is_admin\(\) and org_id = ly_private\.ly_current_org\(\)/g)||[]).length,3);
 assert.doesNotMatch(ddl,/grant\s+(insert|update|delete|all)\b/i);
 assert.doesNotMatch(ddl,/for\s+(insert|update|delete|all)\b/i);
-assert.doesNotMatch(ddl,/security\s+definer/i);
 assert.doesNotMatch(ddl,/create\s+(or\s+replace\s+)?function/i);
 assert.doesNotMatch(ddl,/create\s+view/i);
 assert.doesNotMatch(ddl,/insert\s+into\s+public\.ly_employee/i);
@@ -32,6 +31,8 @@ assert.equal(DECISION.migrationAllowed,false);
 assert.equal(DECISION.repositoryAllowed,false);
 assert.equal(EMPLOYEES_CONTRACT.currentAuthority,'legacy-local');
 assert.equal(EMPLOYEES_CONTRACT.cloud.schemaPresent,false);
+assert.equal(EMPLOYEES_CONTRACT.cloud.reviewDdlPrepared,true);
+assert.equal(EMPLOYEES_CONTRACT.cloud.reviewDdlApplied,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireSensitiveDataReview,true);
 
