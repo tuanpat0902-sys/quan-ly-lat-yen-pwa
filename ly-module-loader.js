@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV66)return;
-  window.__lyModuleLoaderV66=true;
+  if(window.__lyModuleLoaderV67)return;
+  window.__lyModuleLoaderV67=true;
 
-  const VERSION='2026.08.27.17';
+  const VERSION='2026.08.27.18';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -50,6 +50,7 @@
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
     finalOwnership:{src:'./ly-fresh-core-v2-final-ownership.js?v=20260824.4',test:()=>window.__lyFreshCoreV2FinalOwnership?.version==='2026.08.24.4'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.3',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.3'},
+    settingsUIBridge:{src:'./ly-settings-ui-bridge.js?v=20260827.2',test:()=>window.__lySettingsUIBridge?.version==='2026.08.27.2'},
     settings:{src:'./ly-settings-enhancements.js?v=20260827.1',test:()=>window.__lyNotificationMaster?.version==='2026.08.27.1'},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
@@ -84,15 +85,32 @@
   async function loadCore(){
     await load('supabaseBootstrap');
     try{await window.__lySupabaseReady;}catch(e){}
-    await load('hydration');await load('shadow');await load('domShim');await load('stateShim');await load('helperShim');await load('modelShim');await load('listShim');await load('formDraftGuard');await load('menuSecurity');
+    await load('hydration');await load('shadow');await load('domShim');await load('stateShim');await load('helperShim');await load('modelShim');await load('listShim');await load('formDraftGuard');await load('menuSecurity');await load('settingsUIBridge');
     await load('ingredientsTakeover');await load('productsTakeover');await load('documentsTakeover');await load('salesTakeover');await load('cashflowTakeover');await load('masterDataTakeover');await load('readTakeover');await load('manualRefresh');await load('realtime');await load('realtimePhase2');
     await load('inAppNotifications');await load('dataNotifications');await load('notificationCenter');await load('inventoryAlerts');await load('finalOwnership');await load('performanceOptimizer');
   }
 
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
-  function preparePanel(panel){
-    if(panel==='settings'){load('settingsUI');load('settings');load('branding');}
-    if(panel==='ingredients'){load('ingredientConversionSync');load('ingredientTableUX');load('ingredientSidebarStatus');load('stockUnitSync');}if(panel==='history')load('activityHistory');if(panel==='employees'){load('employeesUI');load('salaryFundSync');load('employeeTerminationDate');}if(panel==='finance'){load('financeUI');load('salaryFundSync');}if(panel==='reports')load('reportsUI');if(panel==='cashflow')load('cashflowUI');if(HEAVY.has(panel))load('heavyPanels');
+  async function preparePanel(panel){
+    if(panel==='settings'){
+      await load('settingsUIBridge');
+      await load('settingsUI');
+      await load('settings');
+      await load('branding');
+      const active=document.querySelector('.panel.active')?.id||'';
+      if(active==='settings'){
+        try{window.renderSettings?.();}catch(e){console.warn('[Lát Yên] Settings render recovery',e);}
+        try{window.__lyNotificationMaster?.refresh?.();}catch(e){}
+      }
+      return;
+    }
+    if(panel==='ingredients'){load('ingredientConversionSync');load('ingredientTableUX');load('ingredientSidebarStatus');load('stockUnitSync');}
+    if(panel==='history')load('activityHistory');
+    if(panel==='employees'){load('employeesUI');load('salaryFundSync');load('employeeTerminationDate');}
+    if(panel==='finance'){load('financeUI');load('salaryFundSync');}
+    if(panel==='reports')load('reportsUI');
+    if(panel==='cashflow')load('cashflowUI');
+    if(HEAVY.has(panel))load('heavyPanels');
   }
 
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
