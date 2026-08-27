@@ -1,9 +1,9 @@
 import fs from 'node:fs/promises';
 
-const APP_VERSION='2.1.68';
-const REVISION='fresh-core-v2-authoritative-v74';
-const LOADER_VERSION='20260827.74';
-const SW_CACHE='lat-yen-fresh-core-v2-authoritative-158';
+const APP_VERSION='2.1.69';
+const REVISION='fresh-core-v2-authoritative-v75';
+const LOADER_VERSION='20260827.75';
+const SW_CACHE='lat-yen-fresh-core-v2-authoritative-159';
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`
@@ -19,9 +19,9 @@ const RUNTIME_BLOCK=`
 <script src="./ly-sidebar-visuals.js?v=20260825.1"></script>
 <script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
-<script src="./ly-inapp-notifications.js?v=20260824.2"></script>
+<script src="./ly-inapp-notifications.js?v=20260827.3"></script>
 <script src="./ly-data-notifications.js?v=20260825.7"></script>
-<script src="./ly-notification-center.js?v=20260823.3"></script>
+<script src="./ly-notification-center.js?v=20260827.4"></script>
 <script src="./ly-inventory-alerts.js?v=20260824.1"></script>
 <script src="./ly-cloud-realtime.js?v=20260824.5"></script>
 <script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.4"></script>
@@ -100,9 +100,9 @@ const checks=[
   ['menu security',output.includes('ly-menu-security.js?v=20260824.3')],
   ['list before security',output.indexOf('ly-legacy-list-shim.js?v=20260824.1')<output.indexOf('ly-menu-security.js?v=20260824.3')],
   ['security before final',output.indexOf('ly-menu-security.js?v=20260824.3')<output.indexOf('ly-fresh-core-v2-final-ownership.js?v=20260824.4')],
-  ['in-app notifications',output.includes('ly-inapp-notifications.js?v=20260824.2')],
+  ['in-app notifications',output.includes('ly-inapp-notifications.js?v=20260827.3')],
   ['data notifications',output.includes('ly-data-notifications.js?v=20260825.7')],
-  ['notification center',output.includes('ly-notification-center.js?v=20260823.3')],
+  ['notification center',output.includes('ly-notification-center.js?v=20260827.4')],
   ['inventory alerts',output.includes('ly-inventory-alerts.js?v=20260824.1')],
   ['unified cloud realtime',output.includes('ly-cloud-realtime.js?v=20260824.5')],
   ['stable bootstrap',output.includes('ly-independent-bootstrap.js?v=20260824.4')],
