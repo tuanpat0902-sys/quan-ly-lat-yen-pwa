@@ -168,8 +168,8 @@
       complete:live.complete??entry.complete??null,
       lastAt:Number(live.lastAt||entry.lastAt||0),
       counts:live.counts||entry.counts||{},
-      reads:Number(live.reads||0),
-      writes:Number(live.writes||0),
+      reads:Number(live.reads||entry.reads||entry.history?.[entry.history.length-1]?.reads||0),
+      writes:Number(live.writes||entry.writes||entry.history?.[entry.history.length-1]?.writes||0),
       gate:live.gate||entry.gate||null
     };
   }
@@ -195,8 +195,8 @@
       result,
       lastAt:Number(live.lastAt||entry.lastAt||0),
       durationMs:Number(live.lastDurationMs||entry.durationMs||0),
-      reads:Number(live.reads||0),
-      writes:Number(live.writes||0),
+      reads:Number(live.reads||entry.reads||entry.observations?.[entry.observations.length-1]?.reads||0),
+      writes:Number(live.writes||entry.writes||entry.observations?.[entry.observations.length-1]?.writes||0),
       running:!!live.running,
       eligible:eligibility.eligible!==false,
       retryAt:Number(eligibility.retryAt||0)
