@@ -1,7 +1,7 @@
 {
-  "appVersion": "3.0.11",
-  "revision": "fresh-core-v3-shell-authoritative-v12",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-186",
+  "appVersion": "3.0.12",
+  "revision": "fresh-core-v3-shell-authoritative-v13",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-187",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -61,12 +61,16 @@
   "deferredRenderRecovery": "visibilitychange-pageshow-focus-flush",
   "menuSecurityStatus": "single-flight-serialized",
   "panelPreparation": "pointerdown-plus-panel-event-no-duplicate-click-stage",
-  "v3Wave": "V3-2-bounded-technical-validation",
+  "v3Wave": "V3-2-read-candidate-prepared",
   "ingredientsInventoryShadow": "read-only-2-queries-per-24h-max-500-each",
   "v3CloudWrites": 0,
   "v3MigrationGate": "3-consecutive-parity-complete-zero-write-under-5s",
   "v3Rollback": "v2-default-no-auto-promotion",
   "v3TechnicalValidation": "3-rounds-6-read-queries-manual-only",
   "v3ProductionObservationCredit": 0,
-  "v3AutoPromotion": false
+  "v3AutoPromotion": false,
+  "v3DiagnosticsPersistence": "localStorage-read-write-counters-survive-reload",
+  "v3ReadCandidate": "prepared-not-activated",
+  "v3ReadCandidateRequirements": "production-gate-plus-technical-pass",
+  "v3ReadAuthority": "v2-default"
 }
