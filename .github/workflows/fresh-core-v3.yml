@@ -8,6 +8,10 @@ on:
       - 'src-v3/**'
       - 'scripts/check-fresh-core-v3-architecture.mjs'
       - 'scripts/test-fresh-core-v3-foundation.mjs'
+      - 'scripts/test-fresh-core-v3-master-data.mjs'
+      - 'scripts/test-fresh-core-v3-shadow-soak.mjs'
+      - 'scripts/copy-pages-runtime.mjs'
+      - 'ly-fresh-core-v3-shadow-soak.js'
       - 'package.json'
       - '.github/workflows/fresh-core-v3.yml'
   workflow_dispatch:
