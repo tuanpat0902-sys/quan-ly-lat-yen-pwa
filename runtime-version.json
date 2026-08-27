@@ -1,7 +1,7 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-191",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-192",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -73,5 +73,6 @@
   "v3ReadCandidate": "prepared-not-activated",
   "v3ReadCandidateRequirements": "production-gate-plus-technical-pass",
   "v3ReadAuthority": "v2-default",
-  "v3EmployeesParityRunner": "manual-device-only-zero-write-no-auto-run"
+  "v3EmployeesParityRunner": "manual-device-only-zero-write-no-auto-run",
+  "v3EmployeesEmptyParityCredit": 0
 }

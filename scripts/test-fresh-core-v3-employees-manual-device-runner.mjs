@@ -31,6 +31,7 @@ const cloud=[{id:'11111111-1111-1111-1111-111111111111',warehouse_id:warehouseId
   assert.equal(result.reads,1);
   assert.equal(result.writes,0);
   assert.equal(result.gate.pass,true);
+  assert.equal(result.gate.hasLegacyEvidence,true);
   assert.equal(result.gate.unlockControlledShadowReview,true);
   assert.equal(result.authoritative,false);
   assert.equal(result.activationAllowed,false);
@@ -52,6 +53,23 @@ const cloud=[{id:'11111111-1111-1111-1111-111111111111',warehouse_id:warehouseId
   assert.equal(result.gate.cloudSeedRequired,true);
   assert.equal(result.gate.recommendation,'cloud-directory-seed-required-before-parity');
   assert.equal(result.writes,0);
+}
+
+{
+  let reads=0;
+  const store=storage();
+  const result=await runEmployeesManualDeviceParity({
+    source:{listDirectory:async()=>{reads++;return [];}},legacyRows:[],orgId,warehouseId,storage:store,now:34567
+  });
+  assert.equal(reads,1);
+  assert.equal(result.gate.pass,false,'empty 0/0 must not unlock migration review');
+  assert.equal(result.gate.emptyDataset,true);
+  assert.equal(result.gate.hasLegacyEvidence,false);
+  assert.equal(result.gate.unlockControlledShadowReview,false);
+  assert.equal(result.gate.recommendation,'no-legacy-directory-evidence');
+  const saved=JSON.parse(store.raw(EMPLOYEES_DEVICE_PARITY_STORAGE_KEY));
+  const entry=saved.orgs[orgId].warehouses[warehouseId];
+  assert.equal(entry.productionObservationCredit,0);
 }
 
 assert.deepEqual(EMPLOYEES_MANUAL_DEVICE_PARITY_POLICY,{

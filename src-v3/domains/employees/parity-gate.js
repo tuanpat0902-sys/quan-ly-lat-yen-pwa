@@ -19,13 +19,17 @@ export function evaluateEmployeesDirectoryParityGate(observation){
   const realDevice=o.source==='device-local';
   const bounded=o.durationMs>0&&o.durationMs<=MAX_DURATION_MS;
   const countsMatch=o.legacyCount===o.cloudCount;
-  const pass=realDevice&&o.complete&&o.parityReady&&countsMatch&&o.reads===1&&o.writes===0&&bounded;
+  const hasLegacyEvidence=o.legacyCount>0;
+  const emptyDataset=o.legacyCount===0&&o.cloudCount===0;
+  const pass=realDevice&&o.complete&&o.parityReady&&hasLegacyEvidence&&countsMatch&&o.reads===1&&o.writes===0&&bounded;
   const cloudSeedRequired=o.legacyCount>0&&o.cloudCount===0;
   return Object.freeze({
     pass,
     realDevice,
     bounded,
     countsMatch,
+    hasLegacyEvidence,
+    emptyDataset,
     cloudSeedRequired,
     observation:o,
     authoritative:false,
@@ -36,13 +40,17 @@ export function evaluateEmployeesDirectoryParityGate(observation){
       ?'eligible-for-controlled-shadow-review'
       :cloudSeedRequired
         ?'cloud-directory-seed-required-before-parity'
-        :'obtain-real-device-directory-parity-observation'
+        :emptyDataset
+          ?'no-legacy-directory-evidence'
+          :'obtain-real-device-directory-parity-observation'
   });
 }
 
 export const EMPLOYEES_DIRECTORY_PARITY_GATE_POLICY=Object.freeze({
   source:'device-local',
   observationsRequired:1,
+  minimumLegacyRows:1,
+  emptyDatasetCredit:0,
   readsPerObservation:1,
   writesPerObservation:0,
   maxDurationMs:MAX_DURATION_MS,
