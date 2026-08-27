@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-6",
+  "version": "3.0-migration-plan-7",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -47,11 +47,21 @@
     {
       "id": "V3-2",
       "name": "Ingredients + Inventory",
-      "status": "planned",
+      "status": "foundation-implemented",
       "authoritative": "v2",
       "dependsOn": [
         "V3-1"
-      ]
+      ],
+      "evidence": {
+        "contract": "implemented",
+        "repository": "read-only",
+        "service": "shadow-only",
+        "parity": "local-compare",
+        "writes": "disabled",
+        "productionActivation": "not-enabled",
+        "zeroAddedCost": true,
+        "nextGate": "schema-and-v2-state-parity-audit"
+      }
     },
     {
       "id": "V3-3",
