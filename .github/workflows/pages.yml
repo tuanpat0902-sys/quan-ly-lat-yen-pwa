@@ -44,6 +44,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node scripts/prepare-pages-artifact.mjs
           rm -rf _site
           mkdir -p _site
           cp index.html sw.js manifest.webmanifest icon.svg .nojekyll runtime-version.json _site/
