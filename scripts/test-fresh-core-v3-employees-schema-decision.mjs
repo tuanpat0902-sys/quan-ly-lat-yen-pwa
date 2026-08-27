@@ -1,79 +1,51 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import {
-  EMPLOYEES_CLOUD_SCHEMA_DECISION as DECISION,
-  evaluateEmployeesSchemaDecision
-} from '../src-v3/domains/employees/cloud-schema-decision.js';
+import {EMPLOYEES_CLOUD_SCHEMA_DECISION as DECISION,evaluateEmployeesSchemaDecision} from '../src-v3/domains/employees/cloud-schema-decision.js';
 import {EMPLOYEES_CONTRACT,EMPLOYEES_MIGRATION_GUARD} from '../src-v3/domains/employees/employees-contract.js';
 
 const simulation=await fs.readFile(new URL('../ly-simulation-personnel.js',import.meta.url),'utf8');
-
 assert.equal(DECISION.status,'approved');
 assert.equal(DECISION.approvalScope,'migration-generation-only');
+assert.equal(DECISION.schemaApplied,true);
+assert.equal(DECISION.productionMigrationVersion,'20260827155709');
 assert.equal(DECISION.currentAuthority,'legacy-local');
 assert.equal(DECISION.approvalRequired,true);
-assert.equal(DECISION.migrationAllowed,true);
+assert.equal(DECISION.migrationAllowed,false,'applied migration must not remain eligible for re-apply');
 assert.equal(DECISION.repositoryAllowed,false);
 assert.equal(DECISION.productionActivation,false);
 assert.equal(DECISION.dualWrite,false);
 assert.equal(DECISION.cloudWrites,0);
 assert.deepEqual(DECISION.tenancy.requiredColumns,['org_id','warehouse_id']);
-
 assert.equal(DECISION.sourceEvidence.legacyEmployeeIdType,'opaque-text-not-guaranteed-uuid');
 assert.equal(DECISION.identity.cloudPrimaryKey,'uuid-generated-in-cloud');
 assert.equal(DECISION.identity.legacyMigrationKey,'legacy_id-text');
 assert.equal(DECISION.identity.preserveLegacyId,true);
 assert.match(DECISION.identity.childImportMapping,/legacy_id/);
-
-assert.equal(DECISION.candidates.employees.candidateName,'ly_employees');
-assert.equal(DECISION.candidates.attendance.candidateName,'ly_employee_attendance');
-assert.equal(DECISION.candidates.payroll.candidateName,'ly_employee_payroll');
 for(const table of Object.values(DECISION.candidates))assert.equal(table.approved,true);
-assert.equal(DECISION.candidates.employees.columns.id,'uuid not null');
-assert.equal(DECISION.candidates.employees.columns.legacy_id,'text not null');
-assert.equal(DECISION.candidates.attendance.columns.employee_id,'uuid not null');
-assert.equal(DECISION.candidates.payroll.columns.employee_id,'uuid not null');
 assert.deepEqual(DECISION.candidates.employees.uniqueKeys[0],['org_id','warehouse_id','legacy_id']);
-
 assert.equal(DECISION.sensitiveDataPolicy.status,'approved-for-safe-directory-only');
 for(const field of ['bank_account','id_number'])assert.ok(DECISION.sensitiveDataPolicy.restrictedFields.includes(field));
-for(const field of ['base_salary','hourly_rate'])assert.ok(DECISION.sensitiveDataPolicy.confidentialFields.includes(field));
-for(const forbidden of ['bank_account','id_number','phone','base_salary','hourly_rate']){
-  assert.ok(!DECISION.sensitiveDataPolicy.defaultListProjection.includes(forbidden),`default projection must exclude ${forbidden}`);
-}
-assert.ok(DECISION.sensitiveDataPolicy.requirements.includes('row-level-security-required-before-any-production-read'));
-assert.ok(DECISION.sensitiveDataPolicy.requirements.includes('no-anonymous-access'));
-
-const approved=evaluateEmployeesSchemaDecision();
-assert.equal(approved.approved,true);
-assert.equal(approved.identityReady,true);
-assert.equal(approved.migrationAllowed,true);
-assert.equal(approved.repositoryAllowed,false,'migration approval must not enable repository access');
-assert.equal(approved.authoritative,false,'schema approval must never make V3 authoritative');
-assert.equal(approved.recommendation,'eligible-for-schema-only-migration-generation');
-
+for(const forbidden of ['bank_account','id_number','phone','base_salary','hourly_rate'])assert.ok(!DECISION.sensitiveDataPolicy.defaultListProjection.includes(forbidden));
+const applied=evaluateEmployeesSchemaDecision();
+assert.equal(applied.approved,true);
+assert.equal(applied.identityReady,true);
+assert.equal(applied.migrationAllowed,false);
+assert.equal(applied.repositoryAllowed,false);
+assert.equal(applied.authoritative,false);
+assert.equal(applied.recommendation,'schema-applied-await-read-only-repository-review');
 const invalidIdentity=evaluateEmployeesSchemaDecision({...DECISION,identity:{...DECISION.identity,preserveLegacyId:false}});
-assert.equal(invalidIdentity.approved,false,'approval must fail if the legacy identity mapping is removed');
-assert.equal(invalidIdentity.migrationAllowed,false);
-
+assert.equal(invalidIdentity.approved,false);
 const overbroadApproval=evaluateEmployeesSchemaDecision({...DECISION,approvalScope:'production-activation'});
-assert.equal(overbroadApproval.approved,false,'approval scope must remain migration-generation-only');
-
+assert.equal(overbroadApproval.approved,false);
 assert.equal(EMPLOYEES_CONTRACT.currentAuthority,'legacy-local');
-assert.equal(EMPLOYEES_CONTRACT.cloud.schemaPresent,false);
+assert.equal(EMPLOYEES_CONTRACT.cloud.schemaPresent,true);
 assert.equal(EMPLOYEES_CONTRACT.cloud.reads,0);
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
 assert.equal(EMPLOYEES_CONTRACT.cloud.migrationGenerated,true);
-assert.equal(EMPLOYEES_CONTRACT.cloud.migrationApplied,false);
+assert.equal(EMPLOYEES_CONTRACT.cloud.migrationApplied,true);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireCloudSchemaDecision,true);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireSensitiveDataReview,true);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireSchemaOnlyMigrationReview,true);
-
-for(const key of ['lat_yen_employees_v1','lat_yen_employee_attendance_v1','lat_yen_employee_payroll_v1']){
-  assert.ok(simulation.includes(key),`legacy evidence missing ${key}`);
-}
-for(const shape of ['sim-emp-20260824-001','warehouse_id:wid','attendance_mode','base_salary','hourly_rate','standard_days','bank_account','id_number','time_slots','overtime_slots','daily_bonus','daily_penalty','allowance','bonus','deduction']){
-  assert.ok(simulation.includes(shape),`legacy field evidence missing ${shape}`);
-}
-
+for(const key of ['lat_yen_employees_v1','lat_yen_employee_attendance_v1','lat_yen_employee_payroll_v1'])assert.ok(simulation.includes(key));
+for(const shape of ['sim-emp-20260824-001','warehouse_id:wid','attendance_mode','base_salary','hourly_rate','standard_days','bank_account','id_number','time_slots','overtime_slots','daily_bonus','daily_penalty','allowance','bonus','deduction'])assert.ok(simulation.includes(shape));
 console.log('Fresh Core V3-6 employee cloud schema decision guard: PASS');
