@@ -45,6 +45,8 @@
       parityReady:!!result?.parityReady,
       warehouses:result?.parity?.warehouses??null,
       suppliers:result?.parity?.suppliers??null,
+      reads:2,
+      writes:0,
       v3Version:window.__lyFreshCoreV3Soak?.version||'3.0.0-shadow.1'
     };
     saveLocal({version:1,orgs});
