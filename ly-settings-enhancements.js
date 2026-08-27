@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lySettingsEnhancementsV4)return;
-  window.__lySettingsEnhancementsV4=true;
+  if(window.__lySettingsEnhancementsV5)return;
+  window.__lySettingsEnhancementsV5=true;
 
-  const VERSION='2026.08.27.2';
+  const VERSION='2026.08.27.3';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const LEGACY_PREF_KEY='lat_yen_notify_pref_v226';
   const PAGE_LOADED_AT=new Date();
@@ -99,14 +99,15 @@
     const app=window.__lyAppVersion||{};
     const core=window.__lyFreshCoreV3||window.__lyFreshCoreV2||{};
     const loader=window.__lyModuleLoader||{};
-    const finalOwnership=window.__lyFreshCoreV3?.router||window.__lyFreshCoreV2FinalOwnership||{};
+    const router=window.__lyFreshCoreV3?.router||{};
+    const routerStatus=router?.status?.()||{};
     const sw=navigator.serviceWorker?.controller;
     return {
       appLabel:app.label||window.__LY_APP_VERSION_LABEL||'Không xác định',
       appVersion:app.version||window.__LY_APP_VERSION||'Không xác định',
       revision:app.revision||'Không xác định',
       coreVersion:core.version||core?.status?.()?.version||'Fresh Core V2',
-      ownershipVersion:finalOwnership.version||'Không xác định',
+      ownershipVersion:router.authoritative===true?`${router.version||'V3 Router'} · authoritative`:(routerStatus.phase||'chưa sẵn sàng'),
       moduleLoaderVersion:loader.version||loader?.status?.()?.version||'Không xác định',
       settingsModuleVersion:VERSION,
       serviceWorker:sw?.scriptURL||'Chưa có controller',
@@ -197,7 +198,7 @@
         <summary>Xem chi tiết kỹ thuật</summary>
         <table class="ly-version-table"><tbody>
           <tr><td>Fresh Core</td><td class="ly-version-value">${esc(v.coreVersion)}</td></tr>
-          <tr><td>Quyền ghi dữ liệu</td><td class="ly-version-value">${esc(v.ownershipVersion)}</td></tr>
+          <tr><td>V3 Router</td><td class="ly-version-value">${esc(v.ownershipVersion)}</td></tr>
           <tr><td>Module loader</td><td class="ly-version-value">${esc(v.moduleLoaderVersion)}</td></tr>
           <tr><td>Service Worker</td><td class="ly-version-value">${esc(v.serviceWorker)}</td></tr>
           <tr><td>URL</td><td class="ly-version-value">${esc(v.pageUrl)}</td></tr>
