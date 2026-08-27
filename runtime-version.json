@@ -1,7 +1,7 @@
 {
-  "appVersion": "3.0.4",
-  "revision": "fresh-core-v3-shell-authoritative-v5",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-179",
+  "appVersion": "3.0.5",
+  "revision": "fresh-core-v3-shell-authoritative-v6",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-180",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -51,5 +51,7 @@
   "v2FinalOwnership": "removed-from-production",
   "bootstrapOwnership": "fresh-core-v3-router-authoritative",
   "diagnostics": "v3-runtime-router-first",
-  "uiRescue": "v3-router-aware"
+  "uiRescue": "v3-router-aware",
+  "v3RouterAuthority": "installed-state-behind-security-wrapper",
+  "menuSecurityComposition": "security-wraps-router-without-router-recapture"
 }
