@@ -9,6 +9,8 @@ assert.match(runtime,/let bootPromise=null/,'V3 runtime must serialize boot');
 assert.match(runtime,/if\(bootPromise\)return bootPromise/,'V3 runtime must reuse an in-flight boot');
 assert.match(runtime,/window\.__lyFreshCoreV3\?\.router\?\.authoritative===true/,'V3 runtime must detect an already-installed router');
 assert.match(runtime,/const legacyShowTab=window\.showTab/,'V3 must capture legacy showTab once before router install');
+assert.match(runtime,/window\.__lyFreshCoreV2\|\|null/,'V3 shell must boot even when V2 core is unavailable');
+assert.doesNotMatch(runtime,/!window\.__lyFreshCoreV2/,'V3 shell boot must not be blocked by missing V2 core');
 assert.doesNotMatch(runtime,/__lyFreshCoreV3Runtime\?\.core/,'runtime readiness must not depend on a nonexistent core property');
 assert.match(router,/if\(state\.inNavigate\)/,'router must hard-stop reentrant navigation');
 assert.match(router,/legacy!==navigate/,'router must never invoke itself through the legacy pointer');
