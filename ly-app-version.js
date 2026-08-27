@@ -31,7 +31,8 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã chuyển quyền điều hướng và trạng thái ứng dụng sang Fresh Core V3; V2 chỉ còn làm lớp tương thích cho dữ liệu nghiệp vụ trong giai đoạn migration.
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Fresh Core V3 hiện quản lý điều hướng và trạng thái ứng dụng; V2 chỉ còn là lớp tương thích cho dữ liệu nghiệp vụ trong thời gian migration.`
+      :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V3.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
     state.updateNoticeShown=true;
