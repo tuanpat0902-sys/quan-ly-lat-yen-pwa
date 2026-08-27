@@ -1,0 +1,28 @@
+name: iPOS Sync CI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/ly-ipos-sync/**'
+      - 'supabase/migrations/*ipos*sale*.sql'
+      - 'scripts/test-ipos-merged-sales-reconciliation.mjs'
+      - '.github/workflows/ipos-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test merged-sale reconciliation
+        run: node scripts/test-ipos-merged-sales-reconciliation.mjs
