@@ -1,8 +1,8 @@
 {
-  "appVersion": "3.0.10",
-  "revision": "fresh-core-v3-shell-authoritative-v11",
-  "loaderAssetVersion": "20260827.101",
-  "moduleLoaderVersion": "2026.08.27.34",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-185",
-  "redeploy": "2026-08-27-v3-2-migration-gate"
+  "appVersion": "3.0.11",
+  "revision": "fresh-core-v3-shell-authoritative-v12",
+  "loaderAssetVersion": "20260827.102",
+  "moduleLoaderVersion": "2026.08.27.35",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-186",
+  "redeploy": "2026-08-27-v3-2-bounded-technical-validation"
 }
