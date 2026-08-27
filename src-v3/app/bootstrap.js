@@ -25,7 +25,7 @@ export function createFreshCoreV3({supabase,v2Runtime,legacyShowTab,getOrgId,mod
     client:supabase,
     getOrgId:getOrgId??(()=>store.getState().orgId),
     allowedTables:new Set(['ly_warehouses','ly_suppliers','ly_ingredients','ly_inventory']),
-    allowedRpcs:new Set()
+    allowedRpcs:new Set(['ly_list_employee_directory'])
   });
   features.register({
     id:'master-data',
@@ -34,6 +34,10 @@ export function createFreshCoreV3({supabase,v2Runtime,legacyShowTab,getOrgId,mod
   features.register({
     id:'ingredients-inventory',
     load:()=>import('../domains/ingredients-inventory/index.js')
+  });
+  features.register({
+    id:'employees',
+    load:()=>import('../domains/employees/index.js')
   });
   const realtime=createRealtimeManager({client:supabase,getOrgId:getOrgId??(()=>store.getState().orgId),events});
   const v2=v2Runtime?createV2Adapter({v2:v2Runtime,events,legacyShowTab}):null;
