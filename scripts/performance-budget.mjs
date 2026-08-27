@@ -27,7 +27,9 @@ const eagerSource=[index,...[...eagerFiles].filter(f=>fs.existsSync(f)).map(read
 const fullSource=[index,...rootFiles.map(read)].join('\n');
 const eager=counts(eagerSource),full=counts(fullSource);
 const indexBytes=Buffer.byteLength(index);
-const coreNumber=Number(sw.match(/(?:fresh-core|authoritative)-v?(\d+)/)?.[1]||sw.match(/(?:fresh-core|authoritative)-(\d+)/)?.[1]||0);
+const coreNumber=Number(sw.match(/const CACHE='[^']*-(\d+)'/)?.[1]||0);
+const eagerBreakdown=[...eagerFiles].filter(f=>fs.existsSync(f)).map(file=>({file,...counts(read(file))})).filter(row=>row.intervals||row.observers||row.innerHtml).sort((a,b)=>(b.intervals+b.observers)-(a.intervals+a.observers));
+console.log('INFO eager hotspots:',eagerBreakdown.map(row=>`${row.file}[i:${row.intervals},o:${row.observers},h:${row.innerHtml}]`).join(' '));
 
 let failed=false;
 const fail=m=>{failed=true;console.error('FAIL:',m)};
