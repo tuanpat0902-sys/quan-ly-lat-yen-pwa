@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyFreshCoreV3Runtime)return;
-  const VERSION='2026.08.27.5';
+  const VERSION='2026.08.27.6';
   const state={version:VERSION,phase:'waiting',error:'',startedAt:Date.now(),navigationAuthoritative:false,dataCompatibility:'v2'};
   let bootPromise=null;
 
@@ -17,7 +17,7 @@
       const legacyShowTab=window.showTab;
       const legacyRenderPanel=window.renderPanel;
       const [{createFreshCoreV3},{createRouter}]=await Promise.all([
-        import('./src-v3/app/bootstrap.js?v=20260827.4'),
+        import('./src-v3/app/bootstrap.js?v=20260827.5'),
         import('./src-v3/app/router.js?v=20260827.4')
       ]);
       if(window.__lyFreshCoreV3?.router?.authoritative===true){
