@@ -1,6 +1,6 @@
 import {evaluateEmployeesDirectoryParityGate} from './parity-gate.js';
 
-export const EMPLOYEES_DEVICE_PARITY_STORAGE_KEY='lat_yen_v3_employees_directory_parity_v1';
+export const EMPLOYEES_DEVICE_PARITY_STORAGE_KEY='lat_yen_v3_employees_directory_parity_v2';
 
 function text(value){return String(value??'').trim();}
 function count(value){const n=Number(value);return Number.isFinite(n)&&n>=0?Math.trunc(n):0;}
@@ -46,6 +46,8 @@ export function persistEmployeesDeviceParityObservation({storage,orgId,warehouse
       pass:gate.pass===true,
       realDevice:gate.realDevice===true,
       countsMatch:gate.countsMatch===true,
+      hasLegacyEvidence:gate.hasLegacyEvidence===true,
+      emptyDataset:gate.emptyDataset===true,
       cloudSeedRequired:gate.cloudSeedRequired===true,
       unlockControlledShadowReview:gate.unlockControlledShadowReview===true,
       recommendation:String(gate.recommendation||'')
@@ -58,7 +60,7 @@ export function persistEmployeesDeviceParityObservation({storage,orgId,warehouse
     cloudWrites:0
   };
   orgs[oid]={warehouses};
-  storage.setItem(EMPLOYEES_DEVICE_PARITY_STORAGE_KEY,JSON.stringify({version:1,orgs}));
+  storage.setItem(EMPLOYEES_DEVICE_PARITY_STORAGE_KEY,JSON.stringify({version:2,orgs}));
   return Object.freeze({persisted:true,gate,entry:warehouses[wid]});
 }
 
@@ -80,6 +82,7 @@ export const EMPLOYEES_DEVICE_PARITY_OBSERVATION_POLICY=Object.freeze({
   cloudReadsAdded:0,
   cloudWrites:0,
   syntheticCredit:0,
+  emptyDatasetCredit:0,
   authoritative:false,
   activationAllowed:false,
   autoPromotion:false
