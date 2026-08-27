@@ -1,0 +1,44 @@
+export const EMPLOYEES_CONTRACT=Object.freeze({
+  domain:'employees',
+  wave:'V3-6',
+  dependsOn:Object.freeze(['V3-0']),
+  status:'source-of-truth-audited',
+  currentAuthority:'legacy-local',
+  v3Authoritative:false,
+  productionActivation:false,
+  autoPromotion:false,
+  dualWrite:false,
+  cloud:Object.freeze({
+    schemaPresent:false,
+    tables:Object.freeze([]),
+    reads:0,
+    writes:0
+  }),
+  legacyCore:Object.freeze({
+    dataLoader:'loadEmployees',
+    uiRenderer:'renderEmployees',
+    attendanceRenderer:'renderEmployeeAttendance',
+    salaryRenderer:'renderEmployeeSalaryReport',
+    persistence:'legacy-core-opaque'
+  }),
+  employeeProfileFields:Object.freeze([
+    'id','code','name','role','phone','hire_date','shift','base_salary','active','bank_account'
+  ]),
+  attendanceFieldsObserved:Object.freeze([
+    'status','full_day'
+  ]),
+  sensitiveData:Object.freeze([
+    'phone','bank_account','base_salary','attendance','payroll'
+  ]),
+  nextGate:'approve-cloud-schema-decision-before-repository-work'
+});
+
+export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
+  requireCloudSchemaDecision:true,
+  requireSensitiveDataReview:true,
+  requireReadOnlyShadowBeforeWrites:true,
+  requireRollbackPlan:true,
+  allowSyntheticCloudSource:false,
+  allowInferredTableNames:false,
+  currentAuthority:'legacy-local'
+});
