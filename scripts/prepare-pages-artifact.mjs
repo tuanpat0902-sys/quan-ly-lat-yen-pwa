@@ -8,30 +8,10 @@ const SW_CACHE=RELEASE.serviceWorker;
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
 const RUNTIME_BLOCK=`
-<script src="./ly-app-version.js?v=${APP_VERSION}"></script>
-<script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
-<script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
-<script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
-<script src="./ly-legacy-dom-shim.js?v=20260824.4"></script>
-<script src="./ly-legacy-state-shim.js?v=20260824.4"></script>
-<script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
-<script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
-<script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
 <script src="./ly-sidebar-visuals.js?v=20260825.1"></script>
 <script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
-<script src="./ly-menu-security.js?v=20260824.3"></script>
-<script src="./ly-inapp-notifications.js?v=20260827.3"></script>
-<script src="./ly-data-notifications.js?v=20260825.7"></script>
-<script src="./ly-notification-center.js?v=20260827.4"></script>
-<script src="./ly-inventory-alerts.js?v=20260824.1"></script>
-<script src="./ly-cloud-realtime.js?v=20260824.5"></script>
-<script src="./ly-fresh-core-v2-final-ownership.js?v=20260824.4"></script>
 <script src="./ly-ui-bootstrap-rescue.js?v=20260824.2"></script>
 <script src="./ly-independent-bootstrap.js?v=20260824.4"></script>
-<script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
-<script src="./ly-local-chatbot.js?v=20260826.19"></script>
-<script src="./ly-chat-language-plus.js?v=20260827.5"></script>
-<script src="./ly-chat-local-only.js?v=20260827.1"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 `;
 
@@ -91,28 +71,11 @@ const output=prepareHtml(input);
 const swInput=await fs.readFile('sw.js','utf8');
 const swOutput=prepareSw(swInput);
 const checks=[
-  ['version',output.includes(`ly-app-version.js?v=${APP_VERSION}`)],
   ['loader',output.includes(`ly-module-loader.js?v=${LOADER_VERSION}`)],
-  ['runtime error boundary',output.includes('ly-runtime-error-boundary.js?v=20260824.1')],
-  ['state shim',output.includes('ly-legacy-state-shim.js?v=20260824.4')],
-  ['helper shim v2',output.includes('ly-legacy-helper-shim.js?v=20260824.2')],
-  ['model shim',output.includes('ly-legacy-model-shim.js?v=20260824.2')],
-  ['list shim',output.includes('ly-legacy-list-shim.js?v=20260824.1')],
-  ['menu security',output.includes('ly-menu-security.js?v=20260824.3')],
-  ['list before security',output.indexOf('ly-legacy-list-shim.js?v=20260824.1')<output.indexOf('ly-menu-security.js?v=20260824.3')],
-  ['security before final',output.indexOf('ly-menu-security.js?v=20260824.3')<output.indexOf('ly-fresh-core-v2-final-ownership.js?v=20260824.4')],
-  ['in-app notifications',output.includes('ly-inapp-notifications.js?v=20260827.3')],
-  ['data notifications',output.includes('ly-data-notifications.js?v=20260825.7')],
-  ['notification center',output.includes('ly-notification-center.js?v=20260827.4')],
-  ['inventory alerts',output.includes('ly-inventory-alerts.js?v=20260824.1')],
-  ['unified cloud realtime',output.includes('ly-cloud-realtime.js?v=20260824.5')],
+  ['single app-version owner',!RUNTIME_BLOCK.includes('ly-app-version.js')],
+  ['no duplicated module-owned bootstrap',!/(ly-supabase-bootstrap|ly-fresh-core-v2-|ly-legacy-|ly-menu-security|ly-inapp-notifications|ly-data-notifications|ly-notification-center|ly-cloud-realtime|ly-warehouse-delete-ux|ly-local-chatbot|ly-chat-language-plus|ly-chat-local-only)/.test(RUNTIME_BLOCK)],
   ['stable bootstrap',output.includes('ly-independent-bootstrap.js?v=20260824.4')],
-  ['local assistant',output.includes('ly-local-chatbot.js?v=20260826.19')],
-  ['Vietnamese language plus',output.includes('ly-chat-language-plus.js?v=20260827.5')],
-  ['local-only chat gate',output.includes('ly-chat-local-only.js?v=20260827.1')],
   ['single auth owner',!output.includes('ly-auth-gate.js')],
-  ['single Supabase client bootstrap',output.includes('ly-supabase-bootstrap.js?v=20260824.2')],
-  ['shadow',output.includes('ly-fresh-core-v2-shadow.js?v=20260824.7')],
   ['service worker cache',swOutput.includes(SW_CACHE)],
   ['service worker language plus',swOutput.includes("'./ly-chat-language-plus.js'")],
   ['service worker inventory query',swOutput.includes("'./ly-chat-inventory-query.js'")],
