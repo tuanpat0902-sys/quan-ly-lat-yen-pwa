@@ -1,0 +1,24 @@
+{
+  "version": "3.0-zero-added-cost-1",
+  "policy": "zero-added-cost",
+  "paidServicesAllowed": false,
+  "paidInfrastructureAllowed": false,
+  "paidApiAllowed": false,
+  "newSupabaseProjectAllowed": false,
+  "newSupabaseBranchAllowed": false,
+  "externalTelemetryAllowed": false,
+  "cloudWritesForShadowDiagnostics": false,
+  "allowed": {
+    "supabaseExistingProjectFreeTier": true,
+    "githubExistingRepositoryPagesActionsFreeUsage": true,
+    "browserStorage": true,
+    "browserRuntime": true
+  },
+  "shadowSoak": {
+    "masterDataReadOnly": true,
+    "maxRunsPerDevicePerDay": 2,
+    "queriesPerRun": 2,
+    "cloudWrites": 0,
+    "diagnosticsStorage": "localStorage"
+  }
+}
