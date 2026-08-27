@@ -7,15 +7,25 @@ on:
     paths:
       - 'src-v3/app/bootstrap.js'
       - 'src-v3/domains/employees/**'
+      - 'src-v3/data/supabase/employees-directory-source.js'
+      - 'ly-fresh-core-v3-employees-parity-runner.js'
+      - 'ly-module-loader.js'
       - 'scripts/test-fresh-core-v3-employees-runtime-parity.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-parity-observation.mjs'
+      - 'scripts/test-fresh-core-v3-employees-manual-device-runner.mjs'
+      - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   pull_request:
     paths:
       - 'src-v3/app/bootstrap.js'
       - 'src-v3/domains/employees/**'
+      - 'src-v3/data/supabase/employees-directory-source.js'
+      - 'ly-fresh-core-v3-employees-parity-runner.js'
+      - 'ly-module-loader.js'
       - 'scripts/test-fresh-core-v3-employees-runtime-parity.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-parity-observation.mjs'
+      - 'scripts/test-fresh-core-v3-employees-manual-device-runner.mjs'
+      - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   workflow_dispatch:
 
@@ -36,3 +46,7 @@ jobs:
         run: node scripts/test-fresh-core-v3-employees-runtime-parity.mjs
       - name: Test device-local employees parity observation
         run: node scripts/test-fresh-core-v3-employees-device-parity-observation.mjs
+      - name: Test manual device parity runner
+        run: node scripts/test-fresh-core-v3-employees-manual-device-runner.mjs
+      - name: Test manual device runner UI guard
+        run: node scripts/test-fresh-core-v3-employees-device-runner-ui.mjs
