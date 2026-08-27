@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-4",
+  "version": "3.0-migration-plan-5",
   "productionMode": "v2-authoritative",
   "v3Mode": "shadow",
   "waves": [
@@ -36,10 +36,12 @@
         "productionBaseline": "captured",
         "shadowTests": "passing",
         "writes": "disabled",
-        "nextGate": "production-soak-observation",
+        "nextGate": "confirm-production-parity-from-device",
         "zeroAddedCost": true,
         "readCycle": "once-per-device-per-24h",
-        "cloudWrites": 0
+        "cloudWrites": 0,
+        "localObservation": "settings-status-card",
+        "telemetry": "none"
       }
     },
     {
