@@ -14,14 +14,26 @@ for(const table of ['ly_employees','ly_employee_attendance','ly_employee_payroll
   assert.match(ddl,new RegExp(`grant select on table public\\.${table} to authenticated;`));
 }
 assert.equal((ddl.match(/for select\s+to authenticated/g)||[]).length,3);
-assert.equal((ddl.match(/ly_private\.ly_is_admin\(\) and org_id = ly_private\.ly_current_org\(\)/g)||[]).length,3);
+assert.equal((ddl.match(/using \(ly_private\.ly_is_org_admin\(org_id\)\)/g)||[]).length,3);
 assert.doesNotMatch(ddl,/grant\s+(insert|update|delete|all)\b/i);
 assert.doesNotMatch(ddl,/for\s+(insert|update|delete|all)\b/i);
-assert.doesNotMatch(ddl,/create\s+(or\s+replace\s+)?function/i);
 assert.doesNotMatch(ddl,/create\s+view/i);
 assert.doesNotMatch(ddl,/insert\s+into\s+public\.ly_employee/i);
 assert.doesNotMatch(ddl,/update\s+public\.ly_employee/i);
 assert.doesNotMatch(ddl,/delete\s+from\s+public\.ly_employee/i);
+
+assert.match(ddl,/create or replace function ly_private\.ly_is_org_admin\(p_org_id uuid\)/);
+assert.equal((ddl.match(/security definer/g)||[]).length,1);
+assert.match(ddl,/set search_path = ''/);
+assert.match(ddl,/from public\.ly_org_members m/);
+assert.match(ddl,/m\.user_id = auth\.uid\(\)/);
+assert.match(ddl,/m\.org_id = p_org_id/);
+assert.match(ddl,/lower\(m\.role\) = 'admin'/);
+assert.match(ddl,/revoke all on function ly_private\.ly_is_org_admin\(uuid\) from public, anon, authenticated/);
+assert.match(ddl,/grant execute on function ly_private\.ly_is_org_admin\(uuid\) to authenticated/);
+assert.doesNotMatch(ddl,/admin@latyen\.vn/i);
+assert.doesNotMatch(ddl,/ly_private\.ly_is_admin\(\)/);
+assert.doesNotMatch(ddl,/ly_private\.ly_current_org\(\)/);
 
 assert.match(ddl,/legacy_id text not null/);
 assert.match(ddl,/unique \(org_id, warehouse_id, legacy_id\)/);
@@ -38,5 +50,6 @@ assert.equal(EMPLOYEES_CONTRACT.cloud.reviewDdlApplied,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireSensitiveDataReview,true);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireTenantIntegrity,true);
+assert.equal(EMPLOYEES_MIGRATION_GUARD.requireOrgScopedAuthorization,true);
 
 console.log('Fresh Core V3-6 review-only DDL/RLS security guard: PASS');
