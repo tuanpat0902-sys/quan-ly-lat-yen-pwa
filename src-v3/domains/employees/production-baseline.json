@@ -1,0 +1,25 @@
+{
+  "capturedAt": "2026-08-27",
+  "mode": "source-of-truth-audit-only",
+  "currentAuthority": "legacy-local",
+  "productionCloudWrites": 0,
+  "cloudSchema": {
+    "employeeNamedTables": [],
+    "allLyTablesReviewed": true,
+    "schemaPresent": false
+  },
+  "legacyEvidence": {
+    "uiModule": "ly-employees.js",
+    "dataLoader": "loadEmployees",
+    "attendanceRenderer": "renderEmployeeAttendance",
+    "salaryRenderer": "renderEmployeeSalaryReport",
+    "persistence": "legacy-core-opaque"
+  },
+  "constraints": {
+    "noSupabaseMigration": true,
+    "noInferredCloudTable": true,
+    "noRuntimeActivation": true,
+    "noDualWrite": true,
+    "sensitiveDataReviewRequired": true
+  }
+}

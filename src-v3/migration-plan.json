@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-13",
+  "version": "3.0-migration-plan-14",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -185,11 +185,30 @@
     {
       "id": "V3-6",
       "name": "Employees",
-      "status": "planned",
-      "authoritative": "v2",
+      "status": "source-of-truth-audited",
+      "authoritative": "legacy-local",
       "dependsOn": [
         "V3-0"
-      ]
+      ],
+      "evidence": {
+        "productionSchemaAudit": "no-employee-cloud-table-present",
+        "allLyTablesReviewed": true,
+        "currentSourceOfTruth": "legacy-local",
+        "legacyUi": "ly-employees.js",
+        "legacyDataLoader": "loadEmployees",
+        "legacyAttendance": "renderEmployeeAttendance",
+        "legacyPayroll": "renderEmployeeSalaryReport",
+        "v3Contract": "implemented-audit-only",
+        "repository": "not-created-no-cloud-source",
+        "service": "not-created-no-cloud-source",
+        "cloudReads": 0,
+        "cloudWrites": 0,
+        "productionActivation": false,
+        "dualWrite": false,
+        "sensitiveDataReviewRequired": true,
+        "schemaDecisionRequired": true,
+        "nextGate": "approve-cloud-schema-decision-before-repository-work"
+      }
     },
     {
       "id": "V3-7",
