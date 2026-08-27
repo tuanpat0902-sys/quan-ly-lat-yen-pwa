@@ -12,6 +12,8 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     schemaPresent:false,
     proposalPresent:true,
     proposalStatus:'proposed-not-approved',
+    reviewDdlPrepared:true,
+    reviewDdlApplied:false,
     tables:Object.freeze([]),
     reads:0,
     writes:0

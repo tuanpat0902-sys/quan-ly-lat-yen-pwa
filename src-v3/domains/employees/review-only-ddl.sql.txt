@@ -1,0 +1,150 @@
+-- FRESH CORE V3-6 EMPLOYEES — REVIEW ONLY
+-- DO NOT APPLY TO PRODUCTION.
+-- This file is intentionally outside supabase/migrations and uses .sql.txt so it cannot be
+-- mistaken for an approved migration. Schema approval + sensitive-data policy approval are
+-- still required before generating a real migration.
+--
+-- Current authority remains legacy-local. This package creates no runtime path and grants no writes.
+
+create table public.ly_employees (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.ly_organizations(id),
+  warehouse_id uuid not null references public.ly_warehouses(id),
+  legacy_id text not null,
+  code text not null,
+  name text not null,
+  role text,
+  phone text,
+  hire_date date,
+  shift text,
+  attendance_mode text,
+  base_salary numeric,
+  hourly_rate numeric,
+  standard_days numeric,
+  address text,
+  emergency_contact text,
+  note text,
+  bank_account text,
+  id_number text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint ly_employees_legacy_id_uniq unique (org_id, warehouse_id, legacy_id),
+  constraint ly_employees_code_uniq unique (org_id, warehouse_id, code),
+  constraint ly_employees_id_org_uniq unique (id, org_id),
+  constraint ly_employees_attendance_mode_check check (attendance_mode is null or attendance_mode in ('day','hour')),
+  constraint ly_employees_nonnegative_pay_check check (
+    (base_salary is null or base_salary >= 0) and
+    (hourly_rate is null or hourly_rate >= 0) and
+    (standard_days is null or standard_days >= 0)
+  )
+);
+
+create table public.ly_employee_attendance (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.ly_organizations(id),
+  warehouse_id uuid not null references public.ly_warehouses(id),
+  employee_id uuid not null,
+  work_date date not null,
+  status text not null,
+  full_day numeric,
+  time_slots jsonb,
+  hours numeric,
+  overtime_slots jsonb,
+  overtime_hours numeric,
+  pay_type text,
+  pay_multiplier numeric,
+  overtime_multiplier numeric,
+  daily_bonus numeric,
+  daily_penalty numeric,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint ly_employee_attendance_employee_org_fkey
+    foreign key (employee_id, org_id) references public.ly_employees(id, org_id) on delete cascade,
+  constraint ly_employee_attendance_day_uniq unique (org_id, warehouse_id, employee_id, work_date),
+  constraint ly_employee_attendance_nonnegative_check check (
+    (full_day is null or full_day >= 0) and
+    (hours is null or hours >= 0) and
+    (overtime_hours is null or overtime_hours >= 0) and
+    (pay_multiplier is null or pay_multiplier >= 0) and
+    (overtime_multiplier is null or overtime_multiplier >= 0) and
+    (daily_bonus is null or daily_bonus >= 0) and
+    (daily_penalty is null or daily_penalty >= 0)
+  )
+);
+
+create table public.ly_employee_payroll (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null references public.ly_organizations(id),
+  warehouse_id uuid not null references public.ly_warehouses(id),
+  employee_id uuid not null,
+  payroll_month date not null,
+  allowance numeric,
+  bonus numeric,
+  deduction numeric,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint ly_employee_payroll_employee_org_fkey
+    foreign key (employee_id, org_id) references public.ly_employees(id, org_id) on delete cascade,
+  constraint ly_employee_payroll_month_uniq unique (org_id, warehouse_id, employee_id, payroll_month),
+  constraint ly_employee_payroll_nonnegative_check check (
+    (allowance is null or allowance >= 0) and
+    (bonus is null or bonus >= 0) and
+    (deduction is null or deduction >= 0)
+  )
+);
+
+create index ly_employees_org_warehouse_active_idx
+  on public.ly_employees(org_id, warehouse_id, active);
+create index ly_employee_attendance_employee_date_idx
+  on public.ly_employee_attendance(org_id, warehouse_id, employee_id, work_date desc);
+create index ly_employee_payroll_employee_month_idx
+  on public.ly_employee_payroll(org_id, warehouse_id, employee_id, payroll_month desc);
+
+alter table public.ly_employees enable row level security;
+alter table public.ly_employee_attendance enable row level security;
+alter table public.ly_employee_payroll enable row level security;
+
+revoke all on table public.ly_employees from anon, authenticated;
+revoke all on table public.ly_employee_attendance from anon, authenticated;
+revoke all on table public.ly_employee_payroll from anon, authenticated;
+
+grant select on table public.ly_employees to authenticated;
+grant select on table public.ly_employee_attendance to authenticated;
+grant select on table public.ly_employee_payroll to authenticated;
+
+create policy ly_employees_admin_org_select
+  on public.ly_employees
+  for select
+  to authenticated
+  using (ly_private.ly_is_admin() and org_id = ly_private.ly_current_org());
+
+create policy ly_employee_attendance_admin_org_select
+  on public.ly_employee_attendance
+  for select
+  to authenticated
+  using (ly_private.ly_is_admin() and org_id = ly_private.ly_current_org());
+
+create policy ly_employee_payroll_admin_org_select
+  on public.ly_employee_payroll
+  for select
+  to authenticated
+  using (ly_private.ly_is_admin() and org_id = ly_private.ly_current_org());
+
+-- Deliberately absent in this review package:
+--   * INSERT / UPDATE / DELETE grants or policies
+--   * anon grants
+--   * SECURITY DEFINER functions
+--   * views exposing sensitive fields
+--   * import/backfill statements
+--   * authority or runtime switches
+--
+-- Before converting this file into a migration:
+--   1. approve schema and sensitive-data policy explicitly;
+--   2. validate warehouse/org consistency strategy for imports;
+--   3. review existing ly_private.ly_is_admin / ly_current_org authorization assumptions;
+--   4. create the real migration through the repository's approved Supabase migration workflow;
+--   5. apply schema only, with zero employee business-data writes;
+--   6. verify RLS/grants before implementing any read-only repository.
