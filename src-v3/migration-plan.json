@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-2",
+  "version": "3.0-migration-plan-3",
   "productionMode": "v2-authoritative",
   "v3Mode": "shadow",
   "waves": [
@@ -18,7 +18,7 @@
     {
       "id": "V3-1",
       "name": "Master Data",
-      "status": "in-progress",
+      "status": "parity-ready",
       "authoritative": "v2",
       "dependsOn": [
         "V3-0"
@@ -30,7 +30,14 @@
         "unit-catalog",
         "v2-v3-parity",
         "no-production-writes"
-      ]
+      ],
+      "evidence": {
+        "schemaAudit": "production-schema-reviewed",
+        "productionBaseline": "captured",
+        "shadowTests": "passing",
+        "writes": "disabled",
+        "nextGate": "production-shadow-soak"
+      }
     },
     {
       "id": "V3-2",
