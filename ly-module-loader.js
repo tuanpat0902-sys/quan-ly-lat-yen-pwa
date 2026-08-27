@@ -12,6 +12,7 @@
     appVersion:{src:'./ly-app-version.js?v=3.0.10',test:()=>window.__lyAppVersion?.version==='3.0.10'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.1',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.1'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.27.2'},
+    freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.1',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.1'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260826.19',test:()=>window.__lyLocalAssistant?.version==='2026.08.26.19'},
     chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260827.5',test:()=>window.__lyChatLanguagePlus?.version==='2026.08.27.5'},
     chatLegacyInventoryUnitGuard:{src:'./ly-chat-legacy-inventory-unit-guard.js?v=20260827.1',test:()=>window.__lyChatLegacyInventoryUnitGuard?.version==='2026.08.27.1'},
