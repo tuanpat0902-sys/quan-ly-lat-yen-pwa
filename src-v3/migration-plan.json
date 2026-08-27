@@ -1,7 +1,7 @@
 {
-  "version": "3.0-migration-plan-5",
-  "productionMode": "v2-authoritative",
-  "v3Mode": "shadow",
+  "version": "3.0-migration-plan-6",
+  "productionMode": "v3-shell-authoritative",
+  "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
     {
       "id": "V3-0",
@@ -142,5 +142,8 @@
     "required": true,
     "scope": "per-domain"
   },
-  "dualWrite": false
+  "dualWrite": false,
+  "v2Role": "business-data-and-legacy-renderer-compatibility",
+  "navigationAuthority": "v3",
+  "zeroAddedCost": true
 }
