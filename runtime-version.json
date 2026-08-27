@@ -1,7 +1,7 @@
 {
-  "appVersion": "3.0.8",
-  "revision": "fresh-core-v3-shell-authoritative-v9",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-183",
+  "appVersion": "3.0.9",
+  "revision": "fresh-core-v3-shell-authoritative-v10",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-184",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -60,5 +60,8 @@
   "repeatedMenuClicks": "regression-guarded",
   "deferredRenderRecovery": "visibilitychange-pageshow-focus-flush",
   "menuSecurityStatus": "single-flight-serialized",
-  "panelPreparation": "pointerdown-plus-panel-event-no-duplicate-click-stage"
+  "panelPreparation": "pointerdown-plus-panel-event-no-duplicate-click-stage",
+  "v3Wave": "V3-2-controlled-production-shadow-soak",
+  "ingredientsInventoryShadow": "read-only-2-queries-per-24h-max-500-each",
+  "v3CloudWrites": 0
 }
