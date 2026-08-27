@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-9",
+  "version": "3.0-migration-plan-10",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -60,7 +60,7 @@
         "writes": "disabled",
         "productionActivation": "controlled-shadow-read-only",
         "zeroAddedCost": true,
-        "nextGate": "confirm-production-parity-and-capacity-from-device",
+        "nextGate": "collect-3-consecutive-production-observations-before-read-authority-review",
         "productionSchema": "audited-read-only",
         "productionBaseline": "captured",
         "tables": [
@@ -81,7 +81,22 @@
           "cloudWrites": 0,
           "diagnostics": "localStorage-only"
         },
-        "localObservation": "settings-status-card"
+        "localObservation": "settings-status-card",
+        "promotionGate": {
+          "requiredConsecutivePasses": 3,
+          "parity": true,
+          "completeDataset": true,
+          "readsPerRun": 2,
+          "cloudWrites": 0,
+          "maxDurationMs": 5000,
+          "autoPromotion": false
+        },
+        "rollback": {
+          "defaultAuthority": "v2",
+          "localRuntimeSwitch": true,
+          "dualWrite": false,
+          "autoRollbackAllowed": true
+        }
       }
     },
     {
