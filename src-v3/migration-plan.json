@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-15",
+  "version": "3.0-migration-plan-16",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -185,7 +185,7 @@
     {
       "id": "V3-6",
       "name": "Employees",
-      "status": "cloud-schema-proposed",
+      "status": "migration-generated-awaiting-apply-review",
       "authoritative": "legacy-local",
       "dependsOn": [
         "V3-0"
@@ -198,26 +198,33 @@
         "legacyDataLoader": "loadEmployees",
         "legacyAttendance": "renderEmployeeAttendance",
         "legacyPayroll": "renderEmployeeSalaryReport",
-        "v3Contract": "implemented-proposal-linked",
-        "schemaProposal": "implemented-not-approved",
+        "v3Contract": "migration-generation-approved",
+        "schemaProposal": "approved-for-migration-generation",
+        "formalSecurityReview": "approved-for-migration-generation",
+        "sensitiveDataPolicy": "approved-for-safe-directory-only",
         "candidateTables": [
           "ly_employees",
           "ly_employee_attendance",
           "ly_employee_payroll"
         ],
-        "repository": "blocked-until-schema-approval",
-        "service": "blocked-until-schema-approval",
+        "safeProjection": "public.ly_list_employee_directory(uuid,uuid)",
+        "directBaseTableSelect": false,
+        "repository": "blocked-until-schema-applied-and-verified",
+        "service": "blocked-until-schema-applied-and-verified",
         "cloudSchemaPresent": false,
+        "migrationGenerated": true,
+        "migrationApplied": false,
         "cloudReads": 0,
         "cloudWrites": 0,
         "productionActivation": false,
         "dualWrite": false,
         "sensitiveDataReviewRequired": true,
         "schemaDecisionRequired": true,
-        "schemaApproved": false,
-        "migrationAllowed": false,
+        "schemaApproved": true,
+        "approvalScope": "migration-generation-only",
+        "migrationAllowed": true,
         "repositoryAllowed": false,
-        "nextGate": "explicit-schema-and-sensitive-data-policy-approval"
+        "nextGate": "review-schema-only-migration-before-production-apply"
       }
     },
     {

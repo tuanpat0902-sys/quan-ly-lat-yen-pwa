@@ -2,7 +2,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   domain:'employees',
   wave:'V3-6',
   dependsOn:Object.freeze(['V3-0']),
-  status:'security-review-complete-awaiting-approval',
+  status:'migration-generation-approved',
   currentAuthority:'legacy-local',
   v3Authoritative:false,
   productionActivation:false,
@@ -11,10 +11,12 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   cloud:Object.freeze({
     schemaPresent:false,
     proposalPresent:true,
-    proposalStatus:'proposed-not-approved',
+    proposalStatus:'approved-for-migration-generation',
     reviewDdlPrepared:true,
     reviewDdlApplied:false,
-    formalSecurityReview:'complete-awaiting-explicit-approval',
+    migrationGenerated:true,
+    migrationApplied:false,
+    formalSecurityReview:'approved-for-migration-generation',
     safeProjection:'public.ly_list_employee_directory(uuid,uuid)',
     directBaseTableSelect:false,
     tables:Object.freeze([]),
@@ -42,7 +44,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   sensitiveData:Object.freeze([
     'phone','address','emergency_contact','bank_account','id_number','base_salary','hourly_rate','attendance','payroll'
   ]),
-  nextGate:'explicit-schema-and-sensitive-data-policy-approval'
+  nextGate:'review-schema-only-migration-before-production-apply'
 });
 
 export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
@@ -52,6 +54,7 @@ export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
   requireTenantIntegrity:true,
   requireOrgScopedAuthorization:true,
   requireDbEnforcedSafeProjection:true,
+  requireSchemaOnlyMigrationReview:true,
   requireReadOnlyShadowBeforeWrites:true,
   requireRollbackPlan:true,
   allowSyntheticCloudSource:false,

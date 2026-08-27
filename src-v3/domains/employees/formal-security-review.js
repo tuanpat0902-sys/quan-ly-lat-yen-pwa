@@ -1,11 +1,13 @@
 export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
   domain:'employees',
   wave:'V3-6',
-  status:'review-complete-awaiting-explicit-approval',
+  status:'approved',
+  approvalScope:'migration-generation-only',
   reviewedAt:'2026-08-27',
+  approvedAt:'2026-08-27',
   currentAuthority:'legacy-local',
   productionSchemaPresent:false,
-  migrationAllowed:false,
+  migrationAllowed:true,
   repositoryAllowed:false,
   productionActivation:false,
   cloudWrites:0,
@@ -50,14 +52,14 @@ export const EMPLOYEES_FORMAL_SECURITY_REVIEW=Object.freeze({
       finding:'review package enables RLS for all three employee candidate tables as defense in depth while direct table reads remain revoked'
     })
   }),
-  nextGate:'explicit-schema-and-sensitive-data-policy-approval'
+  nextGate:'review-generated-schema-only-migration-before-production-apply'
 });
 
 export function evaluateEmployeesFormalSecurityReview(review=EMPLOYEES_FORMAL_SECURITY_REVIEW){
   const findings=Object.values(review?.findings||{});
   const blockers=findings.filter(item=>item?.severity==='blocker'&&item?.pass!==true);
   const unresolved=findings.filter(item=>item?.pass!==true);
-  const reviewApproved=review?.status==='approved';
+  const reviewApproved=review?.status==='approved'&&review?.approvalScope==='migration-generation-only';
   const pass=reviewApproved&&blockers.length===0&&unresolved.length===0;
   return Object.freeze({
     pass,
@@ -67,6 +69,6 @@ export function evaluateEmployeesFormalSecurityReview(review=EMPLOYEES_FORMAL_SE
     migrationAllowed:pass&&review?.migrationAllowed===true,
     repositoryAllowed:pass&&review?.repositoryAllowed===true,
     authoritative:false,
-    recommendation:pass?'eligible-for-migration-generation-review':blockers.length>0?'keep-legacy-local-and-resolve-security-review-blockers':unresolved.length>0?'keep-legacy-local-and-resolve-security-review-findings':'await-explicit-schema-and-sensitive-data-policy-approval'
+    recommendation:pass?'eligible-for-schema-only-migration-generation':blockers.length>0?'keep-legacy-local-and-resolve-security-review-blockers':unresolved.length>0?'keep-legacy-local-and-resolve-security-review-findings':'await-explicit-schema-and-sensitive-data-policy-approval'
   });
 }

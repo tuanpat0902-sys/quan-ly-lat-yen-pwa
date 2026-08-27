@@ -1,12 +1,6 @@
--- FRESH CORE V3-6 EMPLOYEES — REVIEW REFERENCE
--- DO NOT APPLY THIS FILE TO PRODUCTION.
--- Formal schema + safe-directory policy approval has been granted for migration generation only.
--- The generated migration must still be reviewed separately before any production apply.
---
--- Current authority remains legacy-local. This package creates no runtime path and grants no writes.
--- Tenant integrity is enforced with composite foreign keys; authorization is scoped per org membership.
--- Direct SELECT on employee base tables is deliberately not granted. The only proposed client read surface is
--- a DB-enforced safe directory projection with an explicit allowlist of non-sensitive fields.
+-- Fresh Core V3-6 Employees schema-only migration.
+-- Approval scope: migration generation only. Applying this file to production requires a separate review.
+-- No employee business-data import/backfill, no mutation grants/policies, no authority switch.
 
 alter table public.ly_warehouses
   add constraint ly_warehouses_id_org_uniq unique (id, org_id);
@@ -27,7 +21,6 @@ as $function$
   );
 $function$;
 
--- Private helper is internal-only. The public directory RPC executes it as function owner.
 revoke all on function ly_private.ly_is_org_admin(uuid) from public, anon, authenticated;
 
 create table public.ly_employees (
@@ -139,9 +132,6 @@ revoke all on table public.ly_employees from public, anon, authenticated;
 revoke all on table public.ly_employee_attendance from public, anon, authenticated;
 revoke all on table public.ly_employee_payroll from public, anon, authenticated;
 
--- Public RPC is intentionally the only client-facing read surface. It is SECURITY DEFINER so the
--- caller needs no SELECT privilege on the base table, while authorization and projection remain
--- enforced inside the function.
 create or replace function public.ly_list_employee_directory(
   p_org_id uuid,
   p_warehouse_id uuid
@@ -179,13 +169,3 @@ $function$;
 
 revoke all on function public.ly_list_employee_directory(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.ly_list_employee_directory(uuid, uuid) to authenticated;
-
--- Deliberately absent:
---   * direct SELECT grants on employee base tables
---   * SELECT policies that could expose full employee rows if a future table grant is added
---   * INSERT / UPDATE / DELETE grants or policies
---   * anon table/function access
---   * direct authenticated execution of the private authorization helper
---   * employee-detail / sensitive / attendance / payroll read functions
---   * import/backfill statements
---   * authority or runtime switches

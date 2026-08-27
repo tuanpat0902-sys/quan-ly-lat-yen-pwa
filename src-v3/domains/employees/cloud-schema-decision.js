@@ -1,10 +1,12 @@
 export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
   domain:'employees',
   wave:'V3-6',
-  status:'proposed-not-approved',
+  status:'approved',
+  approvalScope:'migration-generation-only',
+  approvedAt:'2026-08-27',
   currentAuthority:'legacy-local',
   approvalRequired:true,
-  migrationAllowed:false,
+  migrationAllowed:true,
   repositoryAllowed:false,
   productionActivation:false,
   dualWrite:false,
@@ -32,7 +34,7 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
   candidates:Object.freeze({
     employees:Object.freeze({
       candidateName:'ly_employees',
-      approved:false,
+      approved:true,
       primaryKey:'id uuid',
       legacyKey:'legacy_id text',
       uniqueKeys:Object.freeze([
@@ -49,7 +51,7 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
     }),
     attendance:Object.freeze({
       candidateName:'ly_employee_attendance',
-      approved:false,
+      approved:true,
       primaryKey:'id uuid',
       foreignKey:'employee_id uuid -> ly_employees.id',
       uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','employee_id','work_date'])]),
@@ -63,7 +65,7 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
     }),
     payroll:Object.freeze({
       candidateName:'ly_employee_payroll',
-      approved:false,
+      approved:true,
       primaryKey:'id uuid',
       foreignKey:'employee_id uuid -> ly_employees.id',
       uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','employee_id','payroll_month'])]),
@@ -75,6 +77,7 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
     })
   }),
   sensitiveDataPolicy:Object.freeze({
+    status:'approved-for-safe-directory-only',
     restrictedFields:Object.freeze(['bank_account','id_number']),
     confidentialFields:Object.freeze(['phone','address','emergency_contact','base_salary','hourly_rate']),
     payrollFields:Object.freeze(['allowance','bonus','deduction','daily_bonus','daily_penalty']),
@@ -96,7 +99,7 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
     'approve-controlled-shadow-read',
     'design-explicit-import-or-dual-write-plan-separately'
   ]),
-  nextGate:'explicit-schema-and-sensitive-data-policy-approval'
+  nextGate:'generate-and-review-schema-only-migration-before-apply'
 });
 
 export function evaluateEmployeesSchemaDecision(decision=EMPLOYEES_CLOUD_SCHEMA_DECISION){
@@ -106,9 +109,11 @@ export function evaluateEmployeesSchemaDecision(decision=EMPLOYEES_CLOUD_SCHEMA_
     decision?.identity?.preserveLegacyId===true;
   const approved=decision?.status==='approved'&&
     decision?.approvalRequired===true&&
+    decision?.approvalScope==='migration-generation-only'&&
     identityReady&&
     candidates.length===3&&
     candidates.every(table=>table?.approved===true)&&
+    decision?.sensitiveDataPolicy?.status==='approved-for-safe-directory-only'&&
     decision?.sensitiveDataPolicy?.requirements?.length>=5;
   return Object.freeze({
     approved,
@@ -116,6 +121,6 @@ export function evaluateEmployeesSchemaDecision(decision=EMPLOYEES_CLOUD_SCHEMA_
     migrationAllowed:approved&&decision?.migrationAllowed===true,
     repositoryAllowed:approved&&decision?.repositoryAllowed===true,
     authoritative:false,
-    recommendation:approved?'eligible-for-ddl-review':'keep-legacy-local-and-block-cloud-repository'
+    recommendation:approved?'eligible-for-schema-only-migration-generation':'keep-legacy-local-and-block-cloud-repository'
   });
 }

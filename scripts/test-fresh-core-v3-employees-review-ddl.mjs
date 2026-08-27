@@ -4,7 +4,7 @@ import {EMPLOYEES_CONTRACT,EMPLOYEES_MIGRATION_GUARD} from '../src-v3/domains/em
 import {EMPLOYEES_CLOUD_SCHEMA_DECISION as DECISION} from '../src-v3/domains/employees/cloud-schema-decision.js';
 
 const ddl=await fs.readFile(new URL('../src-v3/domains/employees/review-only-ddl.sql.txt',import.meta.url),'utf8');
-assert.match(ddl,/DO NOT APPLY TO PRODUCTION/);
+assert.match(ddl,/DO NOT APPLY THIS FILE TO PRODUCTION/);
 for(const table of ['ly_employees','ly_employee_attendance','ly_employee_payroll']){
   assert.match(ddl,new RegExp(`alter table public\\.${table} enable row level security;`));
   assert.match(ddl,new RegExp(`revoke all on table public\\.${table} from public, anon, authenticated;`));
@@ -19,6 +19,8 @@ assert.match(ddl,/create or replace function ly_private\.ly_is_org_admin\(p_org_
 assert.match(ddl,/m\.user_id = auth\.uid\(\)/);
 assert.match(ddl,/m\.org_id = p_org_id/);
 assert.match(ddl,/lower\(m\.role\) = 'admin'/);
+assert.match(ddl,/revoke all on function ly_private\.ly_is_org_admin\(uuid\) from public, anon, authenticated/);
+assert.doesNotMatch(ddl,/grant execute on function ly_private\.ly_is_org_admin/);
 assert.doesNotMatch(ddl,/admin@latyen\.vn/i);
 
 assert.match(ddl,/create or replace function public\.ly_list_employee_directory\(/);
@@ -41,13 +43,17 @@ assert.doesNotMatch(projection,/ly_employee_attendance|ly_employee_payroll/);
 assert.equal((ddl.match(/security definer/g)||[]).length,2);
 assert.equal((ddl.match(/set search_path = ''/g)||[]).length,2);
 
-assert.equal(DECISION.status,'proposed-not-approved');
-assert.equal(DECISION.migrationAllowed,false);
+assert.equal(DECISION.status,'approved');
+assert.equal(DECISION.approvalScope,'migration-generation-only');
+assert.equal(DECISION.migrationAllowed,true);
 assert.equal(DECISION.repositoryAllowed,false);
 assert.equal(EMPLOYEES_CONTRACT.currentAuthority,'legacy-local');
 assert.equal(EMPLOYEES_CONTRACT.cloud.schemaPresent,false);
+assert.equal(EMPLOYEES_CONTRACT.cloud.migrationGenerated,true);
+assert.equal(EMPLOYEES_CONTRACT.cloud.migrationApplied,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.directBaseTableSelect,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.safeProjection,'public.ly_list_employee_directory(uuid,uuid)');
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireDbEnforcedSafeProjection,true);
+assert.equal(EMPLOYEES_MIGRATION_GUARD.requireSchemaOnlyMigrationReview,true);
 console.log('Fresh Core V3-6 review-only DDL/RLS security guard: PASS');
