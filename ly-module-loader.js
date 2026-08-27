@@ -52,7 +52,7 @@
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.3',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.3'},
     settingsUIBridge:{src:'./ly-settings-ui-bridge.js?v=20260827.2',test:()=>window.__lySettingsUIBridge?.version==='2026.08.27.2'},
-    settings:{src:'./ly-settings-enhancements.js?v=20260827.3',test:()=>window.__lyNotificationMaster?.version==='2026.08.27.3'},
+    settings:{src:'./ly-settings-enhancements.js?v=20260827.4',test:()=>window.__lyNotificationMaster?.version==='2026.08.27.4'},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
