@@ -9,8 +9,8 @@ export function createIngredientsInventoryService({repository,cache,events,v2Ada
     cache.set(C.cache.inventory,inventory,{ttlMs:60000,meta:{domain:C.domain}});
     const v2=v2Adapter?.getState?.()||{};
     const parity=Object.freeze({
-      ingredients:compareIngredientsInventory(v2.ingredients,ingredients),
-      inventory:compareIngredientsInventory(v2.inventory,inventory)
+      ingredients:compareIngredientsInventory('ingredients',v2.ingredients,ingredients),
+      inventory:compareIngredientsInventory('inventory',v2.inventoryData?.balances,inventory)
     });
     const parityReady=parity.ingredients.equal&&parity.inventory.equal;
     const snapshot=Object.freeze({ingredients,inventory,parity,parityReady,authoritative:false,mode:'shadow'});
