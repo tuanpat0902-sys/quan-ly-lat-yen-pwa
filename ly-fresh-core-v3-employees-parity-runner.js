@@ -66,20 +66,22 @@
   }
 
   function render(){
-    const host=document.getElementById('lyV3ShadowStatusCard');
-    if(!host)return false;
+    const settings=document.getElementById('settings');
+    if(!settings)return false;
     let box=document.getElementById('lyV36EmployeesParityBox');
     if(!box){
-      box=document.createElement('div');box.id='lyV36EmployeesParityBox';
-      box.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid #eef2f6';
-      host.appendChild(box);
+      box=document.createElement('div');
+      box.id='lyV36EmployeesParityBox';
+      box.className='card ly-v3-card';
+      const anchor=document.getElementById('lyV3ShadowStatusCard');
+      if(anchor?.parentElement===settings)anchor.insertAdjacentElement('afterend',box);else settings.appendChild(box);
     }
     const s=status(),gate=s.gate||{},obs=s.observation||{};
     const state=gate.pass===true?'PASS · đủ điều kiện review controlled shadow':gate.cloudSeedRequired===true?'LOCKED · cần controlled cloud directory seed':s.lastAt?'LOCKED · '+text(gate.recommendation||'parity chưa đạt'):'Chưa có observation thiết bị thật';
     const cls=gate.pass===true?'ly-v3-ok':gate.cloudSeedRequired===true?'ly-v3-bad':'ly-v3-warn';
     const when=s.lastAt?new Date(s.lastAt).toLocaleString('vi-VN'):'Chưa chạy';
     const counts=s.lastAt?`${Number(obs.legacyCount||0)} legacy · ${Number(obs.cloudCount||0)} cloud`:'—';
-    box.innerHTML=`<div class="ly-v3-grid"><div class="ly-v3-metric"><b>V3-6 Employees parity</b><span class="${cls}">${esc(state)}</span></div><div class="ly-v3-metric"><b>Observation thiết bị</b><span>${esc(when)} · ${esc(counts)}</span></div></div><div style="margin-top:8px"><button id="lyV36EmployeesParityBtn" type="button" ${running?'disabled':''}>${running?'Đang kiểm tra…':'Kiểm tra parity V3-6 trên thiết bị'}</button></div><div class="ly-v3-note">Chỉ chạy khi bấm nút: đúng 1 safe-RPC read, 0 write. Evidence chỉ lưu localStorage và không chứa hồ sơ, PII hay lương. PASS chỉ mở review; không tự seed, không tự activate và không đổi authority.</div>`;
+    box.innerHTML=`<h3 style="margin:0">V3-6 Employees parity</h3><div class="ly-v3-grid"><div class="ly-v3-metric"><b>Trạng thái</b><span class="${cls}">${esc(state)}</span></div><div class="ly-v3-metric"><b>Observation thiết bị</b><span>${esc(when)} · ${esc(counts)}</span></div></div><div style="margin-top:8px"><button id="lyV36EmployeesParityBtn" type="button" ${running?'disabled':''}>${running?'Đang kiểm tra…':'Kiểm tra parity V3-6 trên thiết bị'}</button></div><div class="ly-v3-note">Chỉ chạy khi bấm nút: đúng 1 safe-RPC read, 0 write. Evidence chỉ lưu localStorage và không chứa hồ sơ, PII hay lương. PASS chỉ mở review; không tự seed, không tự activate và không đổi authority.</div>`;
     const btn=box.querySelector('#lyV36EmployeesParityBtn');
     btn?.addEventListener('click',async()=>{
       try{await run();}
