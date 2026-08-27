@@ -15,5 +15,6 @@ assert.doesNotMatch(runtime,/__lyFreshCoreV3Runtime\?\.core/,'runtime readiness 
 assert.match(router,/if\(state\.inNavigate\)/,'router must hard-stop reentrant navigation');
 assert.match(router,/legacy!==navigate/,'router must never invoke itself through the legacy pointer');
 assert.match(router,/if\(legacy===navigate\)legacy=null/,'router must clear a self-referential legacy pointer');
-assert.match(security,/if\(window\.showTab===st\.guard\)return/,'menu security must not wrap itself repeatedly');
+assert.doesNotMatch(security,/window\.showTab=st\.guard/,'menu security must never wrap showTab');
+assert.match(security,/function authorize\(id,btn,proceed\)/,'menu security must authorize through the V3 router');
 console.log('Fresh Core V3 recursion guard: PASS');
