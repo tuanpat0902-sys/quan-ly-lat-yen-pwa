@@ -3,5 +3,6 @@
   "revision": "fresh-core-v3-shell-authoritative-v1",
   "loaderAssetVersion": "20260827.91",
   "moduleLoaderVersion": "2026.08.27.24",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-175"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-175",
+  "redeploy": "2026-08-27-v3-app-version-syntax-fix"
 }
