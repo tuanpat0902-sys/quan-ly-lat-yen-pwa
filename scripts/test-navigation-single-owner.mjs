@@ -12,6 +12,6 @@ assert.match(router,/windowObject\.showTab=navigate/,'V3 router must own showTab
 assert.match(runtime,/mode:'v3-shell'/,'production V3 runtime must request authoritative shell mode');
 assert.doesNotMatch(security,/document\.addEventListener\('click'.*stopImmediatePropagation/s,'menu security must not install a competing global nav click interceptor');
 assert.match(loader,/await load\('freshCoreV3Runtime'\);[\s\S]*await load\('menuSecurity'\)/,'V3 runtime must load before menu security');
-assert.match(loader,/if\(!window\.__lyFreshCoreV3\?\.authoritative\)await load\('finalOwnership'\)/,'V2 final ownership must not override V3');
+assert.doesNotMatch(loader,/finalOwnership/,'V2 final ownership must be absent from V3 production startup');
 assert.doesNotMatch(loader,/await load\('navigationOwner'\)/,'legacy navigation owner must not participate in production startup');
 console.log('Fresh Core V3 single-owner navigation invariant: PASS');
