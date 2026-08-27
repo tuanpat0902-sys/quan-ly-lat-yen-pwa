@@ -41,6 +41,10 @@ for(const invalid of [
 
 assert.deepEqual(POLICY,{
   requiresRealDeviceObservation:true,
+  requiresCompleteObservation:true,
+  readsPerObservation:1,
+  writesPerObservation:0,
+  maxDurationMs:5000,
   requiresCloudSeedRequired:true,
   reviewOnly:true,
   seedAllowed:false,
