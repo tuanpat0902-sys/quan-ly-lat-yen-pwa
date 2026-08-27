@@ -30,10 +30,11 @@ jobs:
         with:
           node-version: 24
 
-      - name: Verify the release files
+      - name: Run predeploy regression gate
+        run: npm run predeploy:check
+
+      - name: Verify critical assistant contracts
         run: |
-          node scripts/check-release-consistency.mjs
-          node scripts/maintenance-audit.mjs
           node scripts/test-chat-language-plus.mjs
           node scripts/test-chat-sales-query.mjs
           node scripts/test-chat-sales-insights.mjs
