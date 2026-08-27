@@ -12,3 +12,4 @@ export {EMPLOYEES_CONTRACT,EMPLOYEES_MIGRATION_GUARD} from './employees-contract
 export {createEmployeesRepository,normalizeEmployeeDirectoryRow,EMPLOYEES_DIRECTORY_FIELDS} from './employees-repository.js';
 export {createEmployeesService} from './employees-service.js';
 export {compareEmployeeDirectory,EMPLOYEES_PARITY_FIELDS} from './parity.js';
+export {evaluateEmployeesDirectoryParityGate,EMPLOYEES_DIRECTORY_PARITY_GATE_POLICY} from './parity-gate.js';

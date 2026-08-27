@@ -30,6 +30,9 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     repositoryRuntimeActivated:false,
     serviceMode:'manual-read-only-shadow',
     autoShadow:false,
+    parityGatePrepared:true,
+    productionParityObservations:0,
+    productionParityCreditFromSynthetic:0,
     reads:0,
     writes:0
   }),
