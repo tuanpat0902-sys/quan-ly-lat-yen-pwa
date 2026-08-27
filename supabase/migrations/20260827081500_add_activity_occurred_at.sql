@@ -1,0 +1,91 @@
+alter table public.ly_activity_events
+  add column if not exists occurred_at timestamptz;
+
+update public.ly_activity_events e
+set occurred_at = s.sold_at
+from public.ly_sales s
+where e.entity_table = 'ly_sales'
+  and e.entity_id = s.id
+  and e.occurred_at is null
+  and s.sold_at is not null;
+
+update public.ly_activity_events
+set occurred_at = created_at
+where occurred_at is null;
+
+alter table public.ly_activity_events
+  alter column occurred_at set default now();
+
+create or replace function ly_private.ly_capture_activity_event()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_row jsonb;
+  v_org uuid;
+  v_id uuid;
+  v_name text;
+  v_amount numeric;
+  v_occurred_at timestamptz;
+begin
+  if tg_op = 'UPDATE' and tg_table_schema = 'public' and tg_table_name = 'ly_sales' then
+    if (
+      to_jsonb(new) - 'updated_at' - 'ipos_last_synced_at'
+    ) is not distinct from (
+      to_jsonb(old) - 'updated_at' - 'ipos_last_synced_at'
+    ) then
+      return new;
+    end if;
+  end if;
+
+  if tg_op = 'DELETE' then
+    v_row := to_jsonb(old);
+  else
+    v_row := to_jsonb(new);
+  end if;
+
+  v_org := nullif(v_row->>'org_id','')::uuid;
+  if v_org is null then
+    if tg_op = 'DELETE' then return old; else return new; end if;
+  end if;
+
+  v_id := nullif(v_row->>'id','')::uuid;
+  v_name := coalesce(
+    nullif(v_row->>'name',''),
+    nullif(v_row->>'receipt_no',''),
+    nullif(v_row->>'category',''),
+    nullif(v_row->>'description',''),
+    nullif(v_row->>'note','')
+  );
+
+  begin
+    v_amount := nullif(coalesce(v_row->>'total_amount', v_row->>'amount', v_row->>'total'),'')::numeric;
+  exception when others then
+    v_amount := null;
+  end;
+
+  if tg_table_schema = 'public' and tg_table_name = 'ly_sales' then
+    begin
+      v_occurred_at := nullif(v_row->>'sold_at','')::timestamptz;
+    exception when others then
+      v_occurred_at := null;
+    end;
+  end if;
+  v_occurred_at := coalesce(v_occurred_at, now());
+
+  insert into public.ly_activity_events(
+    org_id, actor_user_id, entity_table, entity_id, event_type,
+    entity_name, amount, occurred_at
+  ) values (
+    v_org, auth.uid(), tg_table_name, v_id, tg_op,
+    v_name, v_amount, v_occurred_at
+  );
+
+  if tg_op = 'DELETE' then return old; else return new; end if;
+end;
+$$;
+
+revoke all on function ly_private.ly_capture_activity_event() from public, anon, authenticated;
+grant execute on function ly_private.ly_capture_activity_event() to service_role;
