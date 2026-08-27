@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-17",
+  "version": "3.0-migration-plan-18",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -185,7 +185,7 @@
     {
       "id": "V3-6",
       "name": "Employees",
-      "status": "production-schema-applied-readonly-empty",
+      "status": "read-only-repository-prepared-not-activated",
       "authoritative": "legacy-local",
       "dependsOn": [
         "V3-0"
@@ -198,7 +198,7 @@
         "legacyDataLoader": "loadEmployees",
         "legacyAttendance": "renderEmployeeAttendance",
         "legacyPayroll": "renderEmployeeSalaryReport",
-        "v3Contract": "production-schema-applied-readonly-empty",
+        "v3Contract": "read-only-repository-prepared-not-activated",
         "schemaProposal": "approved-for-migration-generation",
         "formalSecurityReview": "approved-and-production-verified",
         "sensitiveDataPolicy": "approved-for-safe-directory-only",
@@ -209,8 +209,22 @@
         ],
         "safeProjection": "public.ly_list_employee_directory(uuid,uuid)",
         "directBaseTableSelect": false,
-        "repository": "not-implemented",
-        "service": "blocked-until-read-only-repository",
+        "repository": "implemented-read-only-safe-rpc",
+        "repositoryRuntimeActivated": false,
+        "service": "manual-read-only-shadow-not-activated",
+        "autoShadow": false,
+        "parityGate": {
+          "implemented": true,
+          "source": "device-local",
+          "requiredObservations": 1,
+          "readsPerObservation": 1,
+          "cloudWrites": 0,
+          "maxDurationMs": 5000,
+          "syntheticCredit": 0,
+          "activationAllowed": false,
+          "autoPromotion": false
+        },
+        "productionParityObservations": 0,
         "cloudSchemaPresent": true,
         "migrationGenerated": true,
         "migrationApplied": true,
@@ -229,8 +243,8 @@
         "dualWrite": false,
         "schemaApproved": true,
         "migrationAllowed": false,
-        "repositoryAllowed": false,
-        "nextGate": "implement-read-only-repository-against-safe-rpc"
+        "repositoryAllowed": true,
+        "nextGate": "obtain-device-v2-v3-directory-parity-before-shadow-activation"
       }
     },
     {
