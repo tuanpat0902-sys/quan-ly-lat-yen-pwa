@@ -26,6 +26,6 @@ assert.match(salesChart,/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/
 assert.match(salesChart,/ctx\.roundRect\(left,y,barW,barH,radius\)/,'sales bars must use the shared rounded shape');
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
-assert.match(bridge,/ly-special-reports\.js\?v=20260824\.3/,'bridge must bypass the previous cached report module');
+assert.match(bridge,/ly-special-reports\.js\?v=20260827\.4/,'bridge must bypass the previous cached report module');
 
 console.log('Sales report responsive layout: PASS');
