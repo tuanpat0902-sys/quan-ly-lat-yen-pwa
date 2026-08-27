@@ -1,5 +1,5 @@
 {
-  "version": "3.0-zero-added-cost-1",
+  "version": "3.0-zero-added-cost-2",
   "policy": "zero-added-cost",
   "paidServicesAllowed": false,
   "paidInfrastructureAllowed": false,
@@ -19,6 +19,11 @@
     "maxRunsPerDevicePerDay": 1,
     "queriesPerRun": 2,
     "cloudWrites": 0,
-    "diagnosticsStorage": "localStorage"
+    "diagnosticsStorage": "localStorage",
+    "ingredientsInventoryReadOnly": true,
+    "ingredientsInventoryMaxRunsPerDevicePerDay": 1,
+    "ingredientsInventoryQueriesPerRun": 2,
+    "ingredientsInventoryMaxRowsPerDataset": 500,
+    "ingredientsInventoryCloudWrites": 0
   }
 }
