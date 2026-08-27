@@ -1,8 +1,8 @@
 {
-  "appVersion": "3.0.3",
-  "revision": "fresh-core-v3-shell-authoritative-v4",
-  "loaderAssetVersion": "20260827.94",
-  "moduleLoaderVersion": "2026.08.27.27",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-178",
-  "redeploy": "2026-08-27-v3-shell-independent-from-v2-core"
+  "appVersion": "3.0.4",
+  "revision": "fresh-core-v3-shell-authoritative-v5",
+  "loaderAssetVersion": "20260827.95",
+  "moduleLoaderVersion": "2026.08.27.28",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-179",
+  "redeploy": "2026-08-27-remove-v2-final-ownership"
 }
