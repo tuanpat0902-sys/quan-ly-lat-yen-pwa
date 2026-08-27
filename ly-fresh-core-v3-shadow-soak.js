@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV3ShadowSoakV1)return;
   window.__lyFreshCoreV3ShadowSoakV1=true;
 
-  const VERSION='2026.08.27.1';
+  const VERSION='2026.08.27.2';
   const STORAGE_KEY='lat_yen_v3_master_data_shadow_soak_v1';
   const MIN_INTERVAL_MS=24*60*60*1000;
   const state={
