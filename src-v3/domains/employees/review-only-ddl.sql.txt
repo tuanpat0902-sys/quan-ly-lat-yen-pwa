@@ -1,12 +1,11 @@
--- FRESH CORE V3-6 EMPLOYEES — REVIEW ONLY
--- DO NOT APPLY TO PRODUCTION.
--- This file is intentionally outside supabase/migrations and uses .sql.txt so it cannot be
--- mistaken for an approved migration. Explicit schema + sensitive-data policy approval is
--- still required before generating a real migration.
+-- FRESH CORE V3-6 EMPLOYEES — REVIEW REFERENCE
+-- DO NOT APPLY THIS FILE TO PRODUCTION.
+-- Formal schema + safe-directory policy approval has been granted for migration generation only.
+-- The generated migration must still be reviewed separately before any production apply.
 --
 -- Current authority remains legacy-local. This package creates no runtime path and grants no writes.
 -- Tenant integrity is enforced with composite foreign keys; authorization is scoped per org membership.
--- Direct SELECT on employee base tables is deliberately not granted. The only proposed read surface is
+-- Direct SELECT on employee base tables is deliberately not granted. The only proposed client read surface is
 -- a DB-enforced safe directory projection with an explicit allowlist of non-sensitive fields.
 
 alter table public.ly_warehouses
@@ -28,8 +27,8 @@ as $function$
   );
 $function$;
 
+-- Private helper is internal-only. The public directory RPC executes it as function owner.
 revoke all on function ly_private.ly_is_org_admin(uuid) from public, anon, authenticated;
-grant execute on function ly_private.ly_is_org_admin(uuid) to authenticated;
 
 create table public.ly_employees (
   id uuid primary key default gen_random_uuid(),
@@ -181,20 +180,12 @@ $function$;
 revoke all on function public.ly_list_employee_directory(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.ly_list_employee_directory(uuid, uuid) to authenticated;
 
--- Deliberately absent in this review package:
+-- Deliberately absent:
 --   * direct SELECT grants on employee base tables
 --   * SELECT policies that could expose full employee rows if a future table grant is added
 --   * INSERT / UPDATE / DELETE grants or policies
 --   * anon table/function access
+--   * direct authenticated execution of the private authorization helper
 --   * employee-detail / sensitive / attendance / payroll read functions
 --   * import/backfill statements
 --   * authority or runtime switches
---
--- Before converting this file into a migration:
---   1. explicitly approve the schema + sensitive-data policy package;
---   2. verify the warehouse composite-key addition on production metadata;
---   3. review/approve both SECURITY DEFINER helpers and their execution grants;
---   4. create the real migration through the repository's approved Supabase migration workflow;
---   5. apply schema only, with zero employee business-data writes;
---   6. verify constraints, helper grants, RLS and absence of base-table SELECT grants;
---   7. only then implement a read-only repository against public.ly_list_employee_directory().
