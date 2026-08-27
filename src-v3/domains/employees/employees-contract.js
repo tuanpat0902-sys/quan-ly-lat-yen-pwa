@@ -2,7 +2,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   domain:'employees',
   wave:'V3-6',
   dependsOn:Object.freeze(['V3-0']),
-  status:'cloud-schema-proposed',
+  status:'review-ddl-prepared',
   currentAuthority:'legacy-local',
   v3Authoritative:false,
   productionActivation:false,
@@ -12,6 +12,8 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     schemaPresent:false,
     proposalPresent:true,
     proposalStatus:'proposed-not-approved',
+    reviewDdlPrepared:true,
+    reviewDdlApplied:false,
     tables:Object.freeze([]),
     reads:0,
     writes:0
