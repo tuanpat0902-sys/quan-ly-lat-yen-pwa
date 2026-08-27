@@ -25,7 +25,9 @@ assert.doesNotMatch(ddl,/delete\s+from\s+public\.ly_employee/i);
 
 assert.match(ddl,/legacy_id text not null/);
 assert.match(ddl,/unique \(org_id, warehouse_id, legacy_id\)/);
-assert.match(ddl,/foreign key \(employee_id, org_id\) references public\.ly_employees\(id, org_id\)/);
+assert.match(ddl,/add constraint ly_warehouses_id_org_uniq unique \(id, org_id\)/);
+assert.match(ddl,/foreign key \(warehouse_id, org_id\) references public\.ly_warehouses\(id, org_id\)/);
+assert.equal((ddl.match(/foreign key \(employee_id, org_id, warehouse_id\)/g)||[]).length,2);
 assert.equal(DECISION.status,'proposed-not-approved');
 assert.equal(DECISION.migrationAllowed,false);
 assert.equal(DECISION.repositoryAllowed,false);
@@ -35,5 +37,6 @@ assert.equal(EMPLOYEES_CONTRACT.cloud.reviewDdlPrepared,true);
 assert.equal(EMPLOYEES_CONTRACT.cloud.reviewDdlApplied,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
 assert.equal(EMPLOYEES_MIGRATION_GUARD.requireSensitiveDataReview,true);
+assert.equal(EMPLOYEES_MIGRATION_GUARD.requireTenantIntegrity,true);
 
 console.log('Fresh Core V3-6 review-only DDL/RLS security guard: PASS');
