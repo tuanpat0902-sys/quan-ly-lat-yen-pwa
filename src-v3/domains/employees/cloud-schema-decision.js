@@ -14,7 +14,15 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
     attendanceStorageKey:'lat_yen_employee_attendance_v1',
     payrollStorageKey:'lat_yen_employee_payroll_v1',
     attendanceKeyShape:'warehouse_id|employee_id|date',
-    payrollKeyShape:'warehouse_id|employee_id|month'
+    payrollKeyShape:'warehouse_id|employee_id|month',
+    legacyEmployeeIdType:'opaque-text-not-guaranteed-uuid'
+  }),
+  identity:Object.freeze({
+    cloudPrimaryKey:'uuid-generated-in-cloud',
+    legacyMigrationKey:'legacy_id-text',
+    preserveLegacyId:true,
+    childImportMapping:'resolve-employee-uuid-by-org-warehouse-legacy_id',
+    reason:'legacy employee ids may be non-UUID and are embedded in attendance/payroll keys'
   }),
   tenancy:Object.freeze({
     requiredColumns:Object.freeze(['org_id','warehouse_id']),
@@ -25,36 +33,45 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
     employees:Object.freeze({
       candidateName:'ly_employees',
       approved:false,
-      primaryKey:'id',
-      uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','code'])]),
-      fields:Object.freeze([
-        'id','org_id','warehouse_id','code','name','role','phone','hire_date','shift','attendance_mode',
-        'base_salary','hourly_rate','standard_days','address','emergency_contact','note','bank_account',
-        'id_number','active','created_at','updated_at'
-      ])
+      primaryKey:'id uuid',
+      legacyKey:'legacy_id text',
+      uniqueKeys:Object.freeze([
+        Object.freeze(['org_id','warehouse_id','legacy_id']),
+        Object.freeze(['org_id','warehouse_id','code'])
+      ]),
+      columns:Object.freeze({
+        id:'uuid not null',org_id:'uuid not null',warehouse_id:'uuid not null',legacy_id:'text not null',
+        code:'text not null',name:'text not null',role:'text',phone:'text',hire_date:'date',shift:'text',
+        attendance_mode:'text',base_salary:'numeric',hourly_rate:'numeric',standard_days:'numeric',address:'text',
+        emergency_contact:'text',note:'text',bank_account:'text',id_number:'text',active:'boolean not null',
+        created_at:'timestamptz not null',updated_at:'timestamptz not null'
+      })
     }),
     attendance:Object.freeze({
       candidateName:'ly_employee_attendance',
       approved:false,
-      primaryKey:'id',
-      foreignKey:'employee_id -> ly_employees.id',
+      primaryKey:'id uuid',
+      foreignKey:'employee_id uuid -> ly_employees.id',
       uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','employee_id','work_date'])]),
-      fields:Object.freeze([
-        'id','org_id','warehouse_id','employee_id','work_date','status','full_day','time_slots','hours',
-        'overtime_slots','overtime_hours','pay_type','pay_multiplier','overtime_multiplier','daily_bonus',
-        'daily_penalty','note','created_at','updated_at'
-      ])
+      columns:Object.freeze({
+        id:'uuid not null',org_id:'uuid not null',warehouse_id:'uuid not null',employee_id:'uuid not null',
+        work_date:'date not null',status:'text not null',full_day:'numeric',time_slots:'jsonb',hours:'numeric',
+        overtime_slots:'jsonb',overtime_hours:'numeric',pay_type:'text',pay_multiplier:'numeric',
+        overtime_multiplier:'numeric',daily_bonus:'numeric',daily_penalty:'numeric',note:'text',
+        created_at:'timestamptz not null',updated_at:'timestamptz not null'
+      })
     }),
     payroll:Object.freeze({
       candidateName:'ly_employee_payroll',
       approved:false,
-      primaryKey:'id',
-      foreignKey:'employee_id -> ly_employees.id',
+      primaryKey:'id uuid',
+      foreignKey:'employee_id uuid -> ly_employees.id',
       uniqueKeys:Object.freeze([Object.freeze(['org_id','warehouse_id','employee_id','payroll_month'])]),
-      fields:Object.freeze([
-        'id','org_id','warehouse_id','employee_id','payroll_month','allowance','bonus','deduction','note',
-        'created_at','updated_at'
-      ])
+      columns:Object.freeze({
+        id:'uuid not null',org_id:'uuid not null',warehouse_id:'uuid not null',employee_id:'uuid not null',
+        payroll_month:'date not null',allowance:'numeric',bonus:'numeric',deduction:'numeric',note:'text',
+        created_at:'timestamptz not null',updated_at:'timestamptz not null'
+      })
     })
   }),
   sensitiveDataPolicy:Object.freeze({
@@ -84,13 +101,18 @@ export const EMPLOYEES_CLOUD_SCHEMA_DECISION=Object.freeze({
 
 export function evaluateEmployeesSchemaDecision(decision=EMPLOYEES_CLOUD_SCHEMA_DECISION){
   const candidates=Object.values(decision?.candidates||{});
+  const identityReady=decision?.identity?.cloudPrimaryKey==='uuid-generated-in-cloud'&&
+    decision?.identity?.legacyMigrationKey==='legacy_id-text'&&
+    decision?.identity?.preserveLegacyId===true;
   const approved=decision?.status==='approved'&&
     decision?.approvalRequired===true&&
+    identityReady&&
     candidates.length===3&&
     candidates.every(table=>table?.approved===true)&&
     decision?.sensitiveDataPolicy?.requirements?.length>=5;
   return Object.freeze({
     approved,
+    identityReady,
     migrationAllowed:approved&&decision?.migrationAllowed===true,
     repositoryAllowed:approved&&decision?.repositoryAllowed===true,
     authoritative:false,
