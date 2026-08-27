@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {createFreshCoreV3} from '../src-v3/app/bootstrap.js';
+import {createEmployeesDirectorySource} from '../src-v3/data/supabase/employees-directory-source.js';
 import {evaluateEmployeesDirectoryParityGate} from '../src-v3/domains/employees/parity-gate.js';
 
 const calls=[];
@@ -28,8 +29,9 @@ const core=createFreshCoreV3({
 assert.equal(core.features.status().employees.phase,'registered');
 assert.equal(calls.length,0,'employees feature must not auto-run or read cloud data');
 
+const source=createEmployeesDirectorySource({gateway:core.gateway});
 const domain=await core.features.activate('employees',{
-  gateway:core.gateway,
+  source,
   events:core.events,
   v2Adapter:{getEmployees:()=>[employee]}
 });
