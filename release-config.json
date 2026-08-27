@@ -1,8 +1,8 @@
 {
-  "appVersion": "3.0.1",
-  "revision": "fresh-core-v3-shell-authoritative-v2",
-  "loaderAssetVersion": "20260827.92",
-  "moduleLoaderVersion": "2026.08.27.25",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-176",
-  "redeploy": "2026-08-27-v3-recursion-fix"
+  "appVersion": "3.0.2",
+  "revision": "fresh-core-v3-shell-authoritative-v3",
+  "loaderAssetVersion": "20260827.93",
+  "moduleLoaderVersion": "2026.08.27.26",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-177",
+  "redeploy": "2026-08-27-hard-recursion-protection"
 }
