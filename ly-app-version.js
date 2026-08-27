@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2.1.77',REVISION='fresh-core-v2-authoritative-v83';
+  const VERSION='2.1.78',REVISION='fresh-core-v2-authoritative-v84';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã bắt đầu Fresh Core V3 Master Data shadow soak chỉ đọc, giới hạn một chu kỳ mỗi 24 giờ trên thiết bị và không phát sinh dịch vụ trả phí.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã bổ sung trạng thái Fresh Core V3 ngay trong Cài đặt để theo dõi độ khớp dữ liệu, số lần đọc/ghi và giới hạn kiểm tra miễn phí.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V2.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
