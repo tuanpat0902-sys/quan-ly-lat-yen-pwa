@@ -1,12 +1,12 @@
 {
-  "version": "3.0-migration-plan-1",
+  "version": "3.0-migration-plan-2",
   "productionMode": "v2-authoritative",
   "v3Mode": "shadow",
   "waves": [
     {
       "id": "V3-0",
       "name": "Foundation",
-      "status": "in-progress",
+      "status": "completed",
       "authoritative": "v2",
       "gates": [
         "architecture",
@@ -18,10 +18,18 @@
     {
       "id": "V3-1",
       "name": "Master Data",
-      "status": "planned",
+      "status": "in-progress",
       "authoritative": "v2",
       "dependsOn": [
         "V3-0"
+      ],
+      "gates": [
+        "contract",
+        "repository",
+        "service",
+        "unit-catalog",
+        "v2-v3-parity",
+        "no-production-writes"
       ]
     },
     {
