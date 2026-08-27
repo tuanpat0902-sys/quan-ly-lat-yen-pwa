@@ -8,14 +8,14 @@ import {createHealth} from '../core/diagnostics/health.js';
 import {createV2Adapter} from '../compatibility/v2-adapter.js';
 import {createGateway} from '../data/supabase/gateway.js';
 
-export function createFreshCoreV3({supabase,v2Runtime,getOrgId,initialState={}}={}){
+export function createFreshCoreV3({supabase,v2Runtime,legacyShowTab,getOrgId,initialState={}}={}){
   const events=new EventBus();
   const store=createStore({
     session:null,
     orgId:null,
     activePanel:'ingredients',
     connectivity:{online:true,realtime:false},
-    migration:{mode:'shadow'},
+    migration:{mode:'v3-shell'},
     ...initialState
   });
   const scheduler=createScheduler();
@@ -32,17 +32,19 @@ export function createFreshCoreV3({supabase,v2Runtime,getOrgId,initialState={}}=
     load:()=>import('../domains/master-data/index.js')
   });
   const realtime=createRealtimeManager({client:supabase,getOrgId:getOrgId??(()=>store.getState().orgId),events});
-  const v2=v2Runtime?createV2Adapter({v2:v2Runtime,events}):null;
-  const health=createHealth({version:'3.0.0-shadow.1',store,scheduler,cache,realtime,features});
+  const v2=v2Runtime?createV2Adapter({v2:v2Runtime,events,legacyShowTab}):null;
+  const health=createHealth({version:'3.0.0-shell.1',store,scheduler,cache,realtime,features});
 
   function setOrg(orgId){store.patch({orgId},{source:'organization'});events.emit('org:changed',orgId);}
   function setPanel(activePanel){store.patch({activePanel},{source:'navigation'});events.emit('panel:changed',activePanel);}
   function destroy(){scheduler.stopAll();realtime.stopAll();events.clear();cache.clear();}
 
   return Object.freeze({
-    version:'3.0.0-shadow.1',
-    mode:'shadow',
-    authoritative:false,
+    version:'3.0.0-shell.1',
+    mode:'v3-shell',
+    authoritative:true,
+    authoritativeScope:Object.freeze(['application-state','navigation']),
+    compatibilityScope:Object.freeze(['business-data','legacy-renderers']),
     events,store,scheduler,cache,realtime,features,gateway,v2,health,setOrg,setPanel,destroy
   });
 }
