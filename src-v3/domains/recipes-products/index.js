@@ -3,6 +3,7 @@ import {RECIPES_PRODUCTS_SCHEMA,normalizeRecipesProductsRow,normalizeRecipesProd
 import {createRecipesProductsRepository} from './recipes-products-repository.js';
 import {compareRecipesProducts} from './parity.js';
 import {createRecipesProductsService} from './recipes-products-service.js';
+import {RECIPES_PRODUCTS_MIGRATION_GATE,evaluateRecipesProductsMigrationGate} from './migration-gate.js';
 
 export {
   RECIPES_PRODUCTS_CONTRACT,
@@ -11,5 +12,7 @@ export {
   normalizeRecipesProductsRows,
   createRecipesProductsRepository,
   compareRecipesProducts,
-  createRecipesProductsService
+  createRecipesProductsService,
+  RECIPES_PRODUCTS_MIGRATION_GATE,
+  evaluateRecipesProductsMigrationGate
 };
