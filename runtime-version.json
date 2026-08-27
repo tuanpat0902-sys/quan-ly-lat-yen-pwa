@@ -1,7 +1,7 @@
 {
-  "appVersion": "3.0.1",
-  "revision": "fresh-core-v3-shell-authoritative-v2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-176",
+  "appVersion": "3.0.2",
+  "revision": "fresh-core-v3-shell-authoritative-v3",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-177",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -45,5 +45,6 @@
   "navigationInterceptors": "duplicate-global-click-interceptor-removed",
   "v2Compatibility": "business-data-and-legacy-renderers-only",
   "v3Boot": "idempotent-single-flight",
-  "maxCallStackFix": "prevent-concurrent-router-self-capture"
+  "maxCallStackFix": "prevent-concurrent-router-self-capture",
+  "navigationRecursion": "hard-reentrancy-guard-plus-security-self-wrap-guard"
 }
