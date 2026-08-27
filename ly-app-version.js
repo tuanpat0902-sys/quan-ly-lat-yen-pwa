@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='3.0.0',REVISION='fresh-core-v3-shell-authoritative-v1';
+  const VERSION='3.0.1',REVISION='fresh-core-v3-shell-authoritative-v2';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION)return;
   const LABEL=`Ver ${VERSION}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -31,7 +31,7 @@
     const notifications=window.__lyInAppNotifications;
     if(typeof notifications?.show!=='function')return false;
     const detail=previous
-      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Fresh Core V3 hiện quản lý điều hướng và trạng thái ứng dụng; V2 chỉ còn là lớp tương thích cho dữ liệu nghiệp vụ trong thời gian migration.`
+      ?`Đã cập nhật từ Ver ${previous} lên Ver ${VERSION}. Đã sửa lỗi đệ quy khởi động Fresh Core V3 gây Maximum call stack size exceeded; router V3 giờ chỉ được khởi tạo đúng một lần.`
       :`Phần mềm đang sử dụng Ver ${VERSION} · Fresh Core V3.`;
     notifications.show(detail,'Quản Lý Lát Yên',false,'✅');
     rememberVersion();
