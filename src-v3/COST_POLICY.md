@@ -11,7 +11,7 @@ Master Data production shadow soak is read-only.
 - No cloud diagnostic writes.
 - No additional backend service.
 - No external telemetry.
-- At most two Master Data soak runs per device per rolling day.
+- At most one Master Data soak run per device per 24 hours.
 - Exactly two lightweight Master Data reads per run: warehouses and suppliers.
 - Diagnostics are stored only in browser localStorage.
 - V2 remains authoritative.
