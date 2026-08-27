@@ -8,7 +8,7 @@ const reconcileMigration=await fs.readFile(new URL('../supabase/migrations/20260
 
 assert.match(edge,/function canonicalTranId/);
 assert.match(edge,/\^EDT_\(\.\+\)_\[0-9\]\+\$/);
-assert.match(edge,/saleHeader\.deleted===true\?sale:await fetchSaleDetail/);
+assert.match(edge,/sale\.deleted===true\?sale:await fetchSaleDetail/);
 assert.match(edge,/ly_ipos_delete_sale/);
 assert.match(edge,/deletedSales=current\.filter\(s=>s\.deleted===true\)/);
 assert.match(edge,/activeByCanonical=new Map/);
