@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 const source=fs.readFileSync('ly-fresh-core-v3-shadow-soak.js','utf8');
 const cost=JSON.parse(fs.readFileSync('src-v3/cost-policy.json','utf8'));
 const copier=fs.readFileSync('scripts/copy-pages-runtime.mjs','utf8');
+const bootstrap=fs.readFileSync('src-v3/app/bootstrap.js','utf8');
 
 assert.equal(cost.policy,'zero-added-cost');
 assert.equal(cost.paidServicesAllowed,false);
@@ -27,8 +28,8 @@ assert.doesNotMatch(source,/\.update\s*\(/);
 assert.doesNotMatch(source,/\.upsert\s*\(/);
 assert.doesNotMatch(source,/\.delete\s*\(/);
 assert.doesNotMatch(source,/fetch\s*\(/);
-assert.match(source,/mode:'shadow'/);
-assert.match(source,/authoritative:false/);
+assert.match(bootstrap,/mode:'shadow'/);
+assert.match(bootstrap,/authoritative:false/);
 assert.match(copier,/copyV3Runtime/);
 
 console.log('Fresh Core V3 zero-cost production shadow soak contract: PASS');
