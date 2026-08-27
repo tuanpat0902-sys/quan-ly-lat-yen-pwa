@@ -16,6 +16,7 @@ on:
       - 'scripts/test-fresh-core-v3-employees-manual-device-runner.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
       - 'scripts/test-fresh-core-v3-employees-migration-plan.mjs'
+      - 'scripts/test-fresh-core-v3-employees-controlled-seed-review.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   pull_request:
     paths:
@@ -30,6 +31,7 @@ on:
       - 'scripts/test-fresh-core-v3-employees-manual-device-runner.mjs'
       - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
       - 'scripts/test-fresh-core-v3-employees-migration-plan.mjs'
+      - 'scripts/test-fresh-core-v3-employees-controlled-seed-review.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   workflow_dispatch:
 
@@ -56,3 +58,5 @@ jobs:
         run: node scripts/test-fresh-core-v3-employees-device-runner-ui.mjs
       - name: Test V3-6 migration-plan gate
         run: node scripts/test-fresh-core-v3-employees-migration-plan.mjs
+      - name: Test V3-6 controlled seed review evaluator
+        run: node scripts/test-fresh-core-v3-employees-controlled-seed-review.mjs
