@@ -11,7 +11,7 @@ const svg=open=>open?'<svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 9.6-2"
 function timeout(p,label){let t;return Promise.race([p,new Promise((_,r)=>t=setTimeout(()=>r(new Error(label+' quá thời gian chờ')),RPC_TIMEOUT_MS))]).finally(()=>clearTimeout(t))}
 function protectedMenu(id,btn){if(IDS.has(text(id)))return true;const l=norm(btn?.textContent);return LABELS.some(r=>r.test(l))}
 function buttonFor(id){try{const b=document.querySelector(`#nav button[data-panel="${CSS.escape(text(id))}"]`);if(b)return b}catch(e){}return [...document.querySelectorAll('#nav button[data-panel]')].find(b=>protectedMenu(b.dataset.panel,b))||null}
-function captureBase(){const fn=window.showTab;if(typeof fn==='function'&&fn!==st.guard&&fn!==st.baseShowTab){if(fn===st.baseShowTab)return st.baseShowTab;st.baseShowTab=fn}return st.baseShowTab}
+function captureBase(){const fn=window.showTab;if(typeof fn==='function'&&fn!==st.guard&&fn!==st.baseShowTab)st.baseShowTab=fn;return st.baseShowTab}
 function navigateBase(id,btn){const base=captureBase()||st.baseShowTab;if(typeof base==='function')return base.call(window,id,btn);return false}
 function navigateWhenReady(id,btn,attempt=0){if(navigateBase(id,btn)!==false)return true;if(attempt>=24)return false;setTimeout(()=>navigateWhenReady(id,btn,attempt+1),50);return false}
 function protectedWhenReady(id,btn,attempt=0){const base=captureBase();if(typeof base!=='function'){if(attempt<24)setTimeout(()=>protectedWhenReady(id,btn,attempt+1),50);return false}if(st.loaded){if(st.enabled&&!unlocked()){open(id,btn);return false}return navigateBase(id,btn)}status(true).then(on=>on&&!unlocked()?open(id,btn):navigateWhenReady(id,btn));return false}
