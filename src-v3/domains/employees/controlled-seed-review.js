@@ -18,7 +18,15 @@ export function evaluateEmployeesControlledSeedReview(observation){
   const normalized=normalizeObservation(observation);
   const gate=evaluateEmployeesDirectoryParityGate(normalized);
   const realDevice=normalized.source==='device-local';
-  const eligible=realDevice&&gate.cloudSeedRequired===true&&gate.pass===false&&normalized.writes===0;
+  const eligible=
+    realDevice&&
+    normalized.complete===true&&
+    normalized.parityReady===false&&
+    normalized.reads===1&&
+    normalized.writes===0&&
+    gate.bounded===true&&
+    gate.cloudSeedRequired===true&&
+    gate.pass===false;
   return Object.freeze({
     eligible,
     realDevice,
@@ -45,6 +53,10 @@ export function evaluateEmployeesControlledSeedReview(observation){
 
 export const EMPLOYEES_CONTROLLED_SEED_REVIEW_POLICY=Object.freeze({
   requiresRealDeviceObservation:true,
+  requiresCompleteObservation:true,
+  readsPerObservation:1,
+  writesPerObservation:0,
+  maxDurationMs:5000,
   requiresCloudSeedRequired:true,
   reviewOnly:true,
   seedAllowed:false,
