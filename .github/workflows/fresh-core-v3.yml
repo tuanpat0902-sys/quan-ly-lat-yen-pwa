@@ -20,6 +20,7 @@ on:
       - 'scripts/test-fresh-core-v3-employees-formal-security-review.mjs'
       - 'scripts/test-fresh-core-v3-employees-migration.mjs'
       - 'scripts/test-fresh-core-v3-employees-repository.mjs'
+      - 'scripts/test-fresh-core-v3-employees-parity-gate.mjs'
       - 'supabase/migrations/20260827155709_fresh_core_v3_employees_schema.sql'
       - 'ly-fresh-core-v3-ingredients-inventory-validation.js'
       - 'ly-fresh-core-v3-ingredients-inventory-soak.js'
@@ -95,6 +96,9 @@ jobs:
 
       - name: Test V3 Employees read-only repository
         run: node scripts/test-fresh-core-v3-employees-repository.mjs
+
+      - name: Test V3 Employees directory parity gate
+        run: node scripts/test-fresh-core-v3-employees-parity-gate.mjs
 
       - name: Test V3 production shell
         run: npm run v3:production-shell
