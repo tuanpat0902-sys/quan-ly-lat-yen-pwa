@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lySettingsEnhancementsV8)return;
-  window.__lySettingsEnhancementsV8=true;
+  if(window.__lySettingsEnhancementsV9)return;
+  window.__lySettingsEnhancementsV9=true;
 
-  const VERSION='2026.08.27.6';
+  const VERSION='2026.08.27.7';
   const MASTER_KEY='lat_yen_notifications_master_v1';
   const LEGACY_PREF_KEY='lat_yen_notify_pref_v226';
   const PAGE_LOADED_AT=new Date();
@@ -227,6 +227,9 @@
     const validationClass=validation.result?.pass===true?'ly-v3-ok':validation.result?.pass===false?'ly-v3-bad':'ly-v3-warn';
     const validationLast=validation.lastAt?new Date(validation.lastAt).toLocaleString('vi-VN'):'Chưa có kết quả';
     const validationButtonText=validation.running?'Đang kiểm tra…':validation.eligible?'Chạy kiểm tra nhanh V3-2':'Đã chạy trong 24 giờ';
+    const candidateReady=gate.pass===true&&validation.result?.pass===true;
+    const candidateText=candidateReady?'Sẵn sàng review quyền đọc':'Chưa kích hoạt · V2 vẫn là mặc định';
+    const candidateClass=candidateReady?'ly-v3-ok':'ly-v3-warn';
 
     const parityClass=v.parity===true?'ly-v3-ok':v.parity===false?'ly-v3-bad':'ly-v3-warn';
     const phaseText=v.available?v.phase:'Đang chờ module V3';
@@ -248,6 +251,7 @@
         <div class="ly-v3-metric"><b>Rollback</b><span>V2 mặc định · không tự chuyển quyền · không dual-write</span></div>
         <div class="ly-v3-metric"><b>V3-2 kiểm tra kỹ thuật nhanh</b><span class="${validationClass}">${esc(validationText)}</span></div>
         <div class="ly-v3-metric"><b>Lần kiểm tra nhanh gần nhất</b><span>${esc(validationLast)}</span></div>
+        <div class="ly-v3-metric"><b>V3-2 Read Candidate</b><span class="${candidateClass}">${esc(candidateText)}</span></div>
       </div>
       <div style="margin-top:10px"><button id="lyV32ValidationBtn" type="button" ${validation.running||!validation.eligible?'disabled':''}>${esc(validationButtonText)}</button></div>
       <div class="ly-v3-note">Kiểm tra nhanh chạy 3 vòng chỉ đọc (6 truy vấn tổng cộng), tối đa 1 phiên/24 giờ trên mỗi thiết bị. Kết quả chỉ mang tính kỹ thuật, không cộng vào 3 lần production soak và không tự chuyển quyền đọc. Master Data và V3-2 vẫn không ghi dữ liệu Cloud và không dual-write.</div>`;
