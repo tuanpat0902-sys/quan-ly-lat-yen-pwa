@@ -3,5 +3,6 @@
   "revision": "fresh-core-v2-authoritative-v90",
   "loaderAssetVersion": "20260827.90",
   "moduleLoaderVersion": "2026.08.27.23",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-174"
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-174",
+  "redeploy": "2026-08-27-menu-single-owner-gate-fix"
 }
