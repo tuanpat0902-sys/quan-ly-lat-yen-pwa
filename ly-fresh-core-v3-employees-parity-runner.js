@@ -6,7 +6,7 @@
   let running=false,lastResult=null;
 
   const text=value=>String(value??'').trim();
-  const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[ch]));
+  const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 
   function identity(){
     const core=window.__lyFreshCoreV3;
