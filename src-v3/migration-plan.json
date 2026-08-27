@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-14",
+  "version": "3.0-migration-plan-15",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -185,7 +185,7 @@
     {
       "id": "V3-6",
       "name": "Employees",
-      "status": "source-of-truth-audited",
+      "status": "cloud-schema-proposed",
       "authoritative": "legacy-local",
       "dependsOn": [
         "V3-0"
@@ -198,16 +198,26 @@
         "legacyDataLoader": "loadEmployees",
         "legacyAttendance": "renderEmployeeAttendance",
         "legacyPayroll": "renderEmployeeSalaryReport",
-        "v3Contract": "implemented-audit-only",
-        "repository": "not-created-no-cloud-source",
-        "service": "not-created-no-cloud-source",
+        "v3Contract": "implemented-proposal-linked",
+        "schemaProposal": "implemented-not-approved",
+        "candidateTables": [
+          "ly_employees",
+          "ly_employee_attendance",
+          "ly_employee_payroll"
+        ],
+        "repository": "blocked-until-schema-approval",
+        "service": "blocked-until-schema-approval",
+        "cloudSchemaPresent": false,
         "cloudReads": 0,
         "cloudWrites": 0,
         "productionActivation": false,
         "dualWrite": false,
         "sensitiveDataReviewRequired": true,
         "schemaDecisionRequired": true,
-        "nextGate": "approve-cloud-schema-decision-before-repository-work"
+        "schemaApproved": false,
+        "migrationAllowed": false,
+        "repositoryAllowed": false,
+        "nextGate": "explicit-schema-and-sensitive-data-policy-approval"
       }
     },
     {

@@ -2,7 +2,7 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   domain:'employees',
   wave:'V3-6',
   dependsOn:Object.freeze(['V3-0']),
-  status:'source-of-truth-audited',
+  status:'cloud-schema-proposed',
   currentAuthority:'legacy-local',
   v3Authoritative:false,
   productionActivation:false,
@@ -10,6 +10,8 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
   dualWrite:false,
   cloud:Object.freeze({
     schemaPresent:false,
+    proposalPresent:true,
+    proposalStatus:'proposed-not-approved',
     tables:Object.freeze([]),
     reads:0,
     writes:0
@@ -22,15 +24,20 @@ export const EMPLOYEES_CONTRACT=Object.freeze({
     persistence:'legacy-core-opaque'
   }),
   employeeProfileFields:Object.freeze([
-    'id','code','name','role','phone','hire_date','shift','base_salary','active','bank_account'
+    'id','code','name','role','phone','hire_date','shift','attendance_mode','base_salary','hourly_rate',
+    'standard_days','address','emergency_contact','note','active','bank_account','id_number'
   ]),
   attendanceFieldsObserved:Object.freeze([
-    'status','full_day'
+    'status','full_day','time_slots','hours','overtime_slots','overtime_hours','pay_type','pay_multiplier',
+    'overtime_multiplier','daily_bonus','daily_penalty','note'
+  ]),
+  payrollFieldsObserved:Object.freeze([
+    'allowance','bonus','deduction','note'
   ]),
   sensitiveData:Object.freeze([
-    'phone','bank_account','base_salary','attendance','payroll'
+    'phone','address','emergency_contact','bank_account','id_number','base_salary','hourly_rate','attendance','payroll'
   ]),
-  nextGate:'approve-cloud-schema-decision-before-repository-work'
+  nextGate:'explicit-schema-and-sensitive-data-policy-approval'
 });
 
 export const EMPLOYEES_MIGRATION_GUARD=Object.freeze({
