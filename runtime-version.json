@@ -1,7 +1,7 @@
 {
-  "appVersion": "2.1.75",
-  "revision": "fresh-core-v2-authoritative-v81",
-  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-165",
+  "appVersion": "2.1.76",
+  "revision": "fresh-core-v2-authoritative-v82",
+  "serviceWorker": "lat-yen-fresh-core-v2-authoritative-166",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -28,5 +28,6 @@
   "sidebarVisuals": "full-width-logo-and-consistent-navigation-palette",
   "reloadPerformance": "bounded-precache-cache-first-static-ignore-version-query-network-first-navigation",
   "maintenance": "legacy-chat-experiments-removed-minimal-service-worker-catalog-single-release-source",
-  "startup": "critical-business-first-assistant-idle-deferred-no-duplicate-core-pass"
+  "startup": "critical-business-first-assistant-idle-deferred-no-duplicate-core-pass",
+  "performance": "eager-runtime-budget-contextual-domain-loading-adaptive-timeouts-performance-v4-loader-owned"
 }
