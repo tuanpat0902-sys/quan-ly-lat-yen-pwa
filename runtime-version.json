@@ -1,7 +1,7 @@
 {
-  "appVersion": "3.0.7",
-  "revision": "fresh-core-v3-shell-authoritative-v8",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-182",
+  "appVersion": "3.0.8",
+  "revision": "fresh-core-v3-shell-authoritative-v9",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-183",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -57,5 +57,8 @@
   "panelRendering": "v3-router-targeted-render-verification",
   "broadRenderAllRecovery": false,
   "menuOwnership": "v3-router-only",
-  "repeatedMenuClicks": "regression-guarded"
+  "repeatedMenuClicks": "regression-guarded",
+  "deferredRenderRecovery": "visibilitychange-pageshow-focus-flush",
+  "menuSecurityStatus": "single-flight-serialized",
+  "panelPreparation": "pointerdown-plus-panel-event-no-duplicate-click-stage"
 }
