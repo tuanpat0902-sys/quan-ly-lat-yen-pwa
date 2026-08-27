@@ -8,6 +8,9 @@ const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url)
 
 assert.match(router,/legacy\.call\(window,id,btn\)/,'V3 router must preserve legacy activePanelId through the captured legacy showTab');
 assert.match(router,/reconcile\(id,btn\)/,'V3 router must reconcile nav and panel state');
+assert.match(router,/function ensureRendered\(/,'V3 router must verify panel rendering after navigation');
+assert.match(router,/renderLegacy\.call\(window,id\)/,'V3 router must recover a blank panel through the captured legacy renderer');
+assert.match(router,/if\(state\.lastPanel!==id\)return true/,'render recovery must never revive a stale panel');
 assert.match(router,/windowObject\.showTab=navigate/,'V3 router must own showTab');
 assert.match(runtime,/mode:'v3-shell'/,'production V3 runtime must request authoritative shell mode');
 assert.doesNotMatch(security,/document\.addEventListener\('click'.*stopImmediatePropagation/s,'menu security must not install a competing global nav click interceptor');
