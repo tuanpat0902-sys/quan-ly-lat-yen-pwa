@@ -20,7 +20,10 @@ const checks=[
   ['module loader runtime version',loader.includes(`const VERSION='${cfg.moduleLoaderVersion}'`)],
   ['module loader app asset',loader.includes(`ly-app-version.js?v=${cfg.appVersion}`)],
   ['module loader app test',loader.includes(`window.__lyAppVersion?.version==='${cfg.appVersion}'`)],
-  ['service worker cache',sw.includes(`const CACHE='${cfg.serviceWorker}'`)]
+  ['service worker cache',sw.includes(`const CACHE='${cfg.serviceWorker}'`)],
+  ['service worker honors version query',sw.includes('ignoreSearch:false')],
+  ['service worker release manifest network-first',sw.includes('runtime-version.json')&&sw.includes('isReleaseManifest')],
+  ['service worker forces activated release',sw.includes('client.navigate(')]
 ];
 const failed=checks.filter(([,ok])=>!ok).map(([name])=>name);
 if(failed.length)throw new Error('Release consistency failed: '+failed.join(', '));
