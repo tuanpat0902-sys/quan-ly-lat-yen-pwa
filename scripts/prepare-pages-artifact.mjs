@@ -42,28 +42,7 @@ export function prepareHtml(source){
 }
 
 function prepareSw(source){
-  let sw=String(source||'');
-  sw=sw.replace(/const CACHE='[^']+';/,`const CACHE='${SW_CACHE}';`);
-  if(!sw.includes("'./ly-supabase-bootstrap.js'"))sw=sw.replace("INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-module-loader.js','./ly-app-version.js',","INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-module-loader.js','./ly-app-version.js','./ly-supabase-bootstrap.js',");
-  if(!sw.includes("'./ly-runtime-error-boundary.js'"))sw=sw.replace("INDEX_KEY,'./manifest.webmanifest','./icon.svg',","INDEX_KEY,'./manifest.webmanifest','./icon.svg','./ly-runtime-error-boundary.js',");
-  if(!sw.includes("'./ly-legacy-dom-shim.js'"))sw=sw.replace("'./ly-fresh-core-v2-final-ownership.js',","'./ly-fresh-core-v2-final-ownership.js','./ly-legacy-dom-shim.js',");
-  if(!sw.includes("'./ly-legacy-state-shim.js'"))sw=sw.replace("'./ly-legacy-dom-shim.js',","'./ly-legacy-dom-shim.js','./ly-legacy-state-shim.js',");
-  if(!sw.includes("'./ly-legacy-helper-shim.js'"))sw=sw.replace("'./ly-legacy-state-shim.js',","'./ly-legacy-state-shim.js','./ly-legacy-helper-shim.js',");
-  if(!sw.includes("'./ly-legacy-model-shim.js'"))sw=sw.replace("'./ly-legacy-helper-shim.js',","'./ly-legacy-helper-shim.js','./ly-legacy-model-shim.js',");
-  if(!sw.includes("'./ly-legacy-list-shim.js'"))sw=sw.replace("'./ly-legacy-model-shim.js',","'./ly-legacy-model-shim.js','./ly-legacy-list-shim.js',");
-  if(!sw.includes("'./ly-menu-security.js'"))sw=sw.replace("'./ly-legacy-list-shim.js',","'./ly-legacy-list-shim.js','./ly-menu-security.js',");
-  if(!sw.includes("'./ly-local-chatbot.js'"))sw=sw.replace("'./ly-warehouse-delete-ux.js',","'./ly-warehouse-delete-ux.js','./ly-local-chatbot.js',");
-  if(!sw.includes("'./ly-chat-language-plus.js'"))sw=sw.replace("'./ly-local-chatbot.js',","'./ly-local-chatbot.js','./ly-chat-language-plus.js',");
-  if(!sw.includes("'./ly-chat-inventory-query.js'"))sw=sw.replace("'./ly-chat-language-plus.js',","'./ly-chat-language-plus.js','./ly-chat-inventory-query.js',");
-  if(!sw.includes("'./ly-chat-sales-query.js'"))sw=sw.replace("'./ly-chat-inventory-query.js',","'./ly-chat-inventory-query.js','./ly-chat-sales-query.js',");
-  if(!sw.includes("'./ly-chat-sales-insights.js'"))sw=sw.replace("'./ly-chat-sales-query.js',","'./ly-chat-sales-query.js','./ly-chat-sales-insights.js',");
-  if(!sw.includes("'./ly-chat-router.js'"))sw=sw.replace("'./ly-chat-sales-insights.js',","'./ly-chat-sales-insights.js','./ly-chat-router.js',");
-  if(!sw.includes("'./ly-chat-legacy-inventory-unit-guard.js'"))sw=sw.replace("'./ly-chat-router.js',","'./ly-chat-router.js','./ly-chat-legacy-inventory-unit-guard.js',");
-  if(!sw.includes("'./ly-chat-response-gate.js'"))sw=sw.replace("'./ly-chat-legacy-inventory-unit-guard.js',","'./ly-chat-legacy-inventory-unit-guard.js','./ly-chat-response-gate.js',");
-  if(!sw.includes("'./ly-chat-local-only.js'"))sw=sw.replace("'./ly-chat-response-gate.js',","'./ly-chat-response-gate.js','./ly-chat-local-only.js',");
-  if(!sw.includes("'./ly-sales-report-revenue-card.js'"))sw=sw.replace("'./ly-special-reports.js',","'./ly-special-reports.js','./ly-sales-report-revenue-card.js',");
-  if(!sw.includes("'./ly-inventory-alerts.js'"))sw=sw.replace("'./ly-notification-center.js',","'./ly-notification-center.js','./ly-inventory-alerts.js',");
-  return sw;
+  return String(source||'').replace(/const CACHE='[^']+';/,`const CACHE='${SW_CACHE}';`);
 }
 
 const input=await fs.readFile('index.html','utf8');
