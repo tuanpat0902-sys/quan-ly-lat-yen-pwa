@@ -128,7 +128,7 @@
 
   function apply(){ensureSidebar();numberPreparedLines();ensureChatUnitSync();ensureChatStockUnitDisplay();}
   function schedule(){clearTimeout(timer);timer=setTimeout(apply,60);}
-  function boot(){ensureStyle();apply();new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('latyen:cloud-refreshed',schedule);window.addEventListener('latyen:v2-ingredient-saved',schedule);setInterval(apply,2500);}
+  function boot(){ensureStyle();apply();new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('latyen:cloud-refreshed',schedule);window.addEventListener('latyen:v2-ingredient-saved',schedule);window.addEventListener('latyen:v2-hydrated',schedule);}
 
   window.__lyIngredientSidebarStatus={version:VERSION,apply};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
