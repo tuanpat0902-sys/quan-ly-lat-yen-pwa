@@ -74,7 +74,7 @@ jobs:
           grep -q "ly-chat-response-gate.js" _site/sw.js
           grep -q "ly-chat-router.js" _site/sw.js
           grep -q "ly-sales-report-revenue-card.js" _site/sw.js
-          grep -q "lat-yen-fresh-core-v2-authoritative-158" _site/runtime-version.json
+          grep -q "lat-yen-fresh-core-v2-authoritative-159" _site/runtime-version.json
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
