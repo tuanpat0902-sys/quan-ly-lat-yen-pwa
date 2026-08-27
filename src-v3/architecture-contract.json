@@ -1,0 +1,47 @@
+{
+  "version": "3.0-contract-1",
+  "authoritativeSource": "supabase",
+  "rules": {
+    "forbidDirectSupabaseFrom": [
+      "ui",
+      "domains/*/ui"
+    ],
+    "forbidSetIntervalUnder": [
+      "src-v3"
+    ],
+    "forbidServiceRoleSecrets": true,
+    "singleAuthoritativeWriter": true,
+    "dualWrite": false,
+    "schedulerOwnsRecurringWork": true,
+    "realtimeManagerOwnsSubscriptions": true,
+    "globalStoreLargeCollections": false,
+    "requireFeatureLifecycle": true,
+    "requireRollbackSwitchPerDomain": true
+  },
+  "allowedLayers": [
+    "app",
+    "core",
+    "data",
+    "domains",
+    "ui",
+    "compatibility"
+  ],
+  "migrationStates": [
+    "v2",
+    "shadow",
+    "v3",
+    "retired"
+  ],
+  "waves": [
+    "foundation",
+    "master-data",
+    "ingredients-inventory",
+    "recipes-products",
+    "documents",
+    "sales",
+    "employees",
+    "finance-cashflow",
+    "reports-notifications",
+    "legacy-retirement"
+  ]
+}
