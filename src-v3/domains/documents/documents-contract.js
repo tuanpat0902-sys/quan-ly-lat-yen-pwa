@@ -1,0 +1,48 @@
+export const DOCUMENTS_CONTRACT=Object.freeze({
+  domain:'documents',
+  wave:'V3-4',
+  dependsOn:Object.freeze(['V3-2']),
+  status:'source-of-truth-audited-dependency-locked',
+  currentAuthority:'v2',
+  v3Authoritative:false,
+  productionActivation:false,
+  dualWrite:false,
+  cloudWrites:0,
+  sourceOfTruth:Object.freeze({
+    implementation:'src-v2/domains/documents/document-repository.js',
+    factory:'src-v2/domains/create-domains.js',
+    stateKeys:Object.freeze({imports:'importsData',exports:'exportsData',stocktake:'stocktakeData'})
+  }),
+  documents:Object.freeze({
+    imports:Object.freeze({receiptTable:'ly_import_receipts',itemTable:'ly_import_items',saveRpc:'ly_save_import',deleteType:'import'}),
+    exports:Object.freeze({receiptTable:'ly_export_receipts',itemTable:'ly_export_items',saveRpc:'ly_save_export',deleteType:'export'}),
+    stocktake:Object.freeze({receiptTable:'ly_stocktake_receipts',itemTable:'ly_stocktake_items',saveRpc:'ly_save_stocktake',deleteType:'stocktake'})
+  }),
+  productionBaseline:Object.freeze({
+    importReceipts:2,
+    importItems:2,
+    exportReceipts:0,
+    exportItems:0,
+    stocktakeReceipts:0,
+    stocktakeItems:0
+  }),
+  security:Object.freeze({rlsVerifiedAllSixTables:true}),
+  repositoryImplemented:false,
+  serviceImplemented:false,
+  shadowImplemented:false,
+  productionReads:0,
+  nextGate:'wait-for-v3-2-readiness-then-design-read-only-documents-repository'
+});
+
+export const DOCUMENTS_MIGRATION_GUARD=Object.freeze({
+  requireV3_2Readiness:true,
+  requireOrgScope:true,
+  requireWarehouseScopeForReceiptHeaders:true,
+  requireReceiptItemReferentialIntegrity:true,
+  requireReadOnlyRepositoryBeforeShadow:true,
+  requireParityBeforeAuthorityReview:true,
+  allowWrites:false,
+  allowDualWrite:false,
+  allowAutoPromotion:false,
+  currentAuthority:'v2'
+});
