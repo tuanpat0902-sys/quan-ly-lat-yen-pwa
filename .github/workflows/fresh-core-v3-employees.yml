@@ -17,6 +17,7 @@ on:
       - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
       - 'scripts/test-fresh-core-v3-employees-migration-plan.mjs'
       - 'scripts/test-fresh-core-v3-employees-controlled-seed-review.mjs'
+      - 'scripts/test-fresh-core-v3-employees-empty-domain-hold.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   pull_request:
     paths:
@@ -32,6 +33,7 @@ on:
       - 'scripts/test-fresh-core-v3-employees-device-runner-ui.mjs'
       - 'scripts/test-fresh-core-v3-employees-migration-plan.mjs'
       - 'scripts/test-fresh-core-v3-employees-controlled-seed-review.mjs'
+      - 'scripts/test-fresh-core-v3-employees-empty-domain-hold.mjs'
       - '.github/workflows/fresh-core-v3-employees.yml'
   workflow_dispatch:
 
@@ -60,3 +62,5 @@ jobs:
         run: node scripts/test-fresh-core-v3-employees-migration-plan.mjs
       - name: Test V3-6 controlled seed review evaluator
         run: node scripts/test-fresh-core-v3-employees-controlled-seed-review.mjs
+      - name: Test V3-6 empty production domain hold
+        run: node scripts/test-fresh-core-v3-employees-empty-domain-hold.mjs
