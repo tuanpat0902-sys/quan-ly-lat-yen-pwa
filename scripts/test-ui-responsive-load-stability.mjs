@@ -5,6 +5,8 @@ const ui=await fs.readFile(new URL('../ly-ui-stability.js',import.meta.url),'utf
 const forms=await fs.readFile(new URL('../ly-ui-form-ergonomics.js',import.meta.url),'utf8');
 const design=await fs.readFile(new URL('../ly-ui-design-system.js',import.meta.url),'utf8');
 const tableUx=await fs.readFile(new URL('../ly-ui-table-ergonomics.js',import.meta.url),'utf8');
+const firstPaint=await fs.readFile(new URL('../ly-table-first-paint.js',import.meta.url),'utf8');
+const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
 const sales=await fs.readFile(new URL('../ly-ui-sales-workflow.js',import.meta.url),'utf8');
 const recovery=await fs.readFile(new URL('../ly-panel-lazy-render-recovery.js',import.meta.url),'utf8');
 const app=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
@@ -12,6 +14,13 @@ const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
 assert.match(index,/viewport-fit=cover/,'mobile viewport must keep safe-area support');
+assert.match(loader,/function ensureTableFirstPaintGate\(\)[\s\S]*data-ly-table-first-paint[\s\S]*visibility:hidden!important/,'unfinished table presentation must be hidden synchronously by the parser-blocking loader');
+assert.match(firstPaint,/requestAnimationFrame[\s\S]*window\.__lyUITableErgonomics\.apply\?\.[\s\S]*window\.__lyTableViewV2\.apply\?\./,'first paint must settle both table owners before reveal');
+assert.match(firstPaint,/requestAnimationFrame==='function'\?requestAnimationFrame[\s\S]*frame\(\(\)=>frame\(\(\)=>/,'table reveal must wait for two stable animation frames');
+assert.match(loader,/setTimeout\(\(\)=>root\.removeAttribute\?\.\('data-ly-table-first-paint'\),4000\)/,'first-paint gate must fail open if an asset fails');
+assert.match(loader,/async function loadCriticalTablePresentation\(\)\{await load\('tableFirstPaint'\);await load\('uiTableErgonomics'\);await load\('tableViewV2'\);window\.__lyTableFirstPaint\?\.settle/,'critical table owners must load in deterministic order before reveal');
+assert.match(loader,/ensureTableFirstPaintGate\(\);loadCriticalTablePresentation\(\);load\('runtimeErrorBoundary'\)/,'table gate must start before other asynchronous bootstrap work');
+assert.doesNotMatch(firstPaint,/\bfetch\s*\(|\.rpc\s*\(|localStorage|sessionStorage/,'first-paint coordinator must remain presentation-only');
 assert.match(ui,/VERSION='2026\.08\.28\.5'/,'UI stability v5 must be active');
 assert.match(ui,/overflow-x:hidden;overflow-x:clip/,'global horizontal overflow guard missing');
 assert.match(ui,/min-width:0;max-width:100%/,'flex/grid shrink guard missing');
@@ -63,9 +72,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.19'/,'visible V3-2 production scheduler fix marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.20'/,'atomic table first-paint release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.5/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-211/,'UI build 19 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-212/,'UI build 20 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
 console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');

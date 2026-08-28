@@ -1,12 +1,15 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV94)return;
-  window.__lyModuleLoaderV94=true;
+  if(window.__lyModuleLoaderV95)return;
+  window.__lyModuleLoaderV95=true;
 
-  const VERSION='2026.08.28.46';
+  const VERSION='2026.08.29.47';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
+    tableFirstPaint:{src:'./ly-table-first-paint.js?v=20260829.1',test:()=>window.__lyTableFirstPaint?.version==='2026.08.29.1'},
+    uiTableErgonomics:{src:'./ly-ui-table-ergonomics.js?v=20260828.5',test:()=>window.__lyUITableErgonomics?.version==='2026.08.28.5'},
+    tableViewV2:{src:'./ly-table-view-v2.js?v=20260828.6',test:()=>window.__lyTableViewV2?.version==='2026.08.28.6'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
     appVersion:{src:'./ly-app-version.js?v=3.0.12',test:()=>window.__lyAppVersion?.version==='3.0.12'},
@@ -65,6 +68,8 @@
     cashflowUI:{src:'./ly-cashflow.js?v=20260825.2',test:()=>window.__lyCashflowModule?.version==='2026.08.25.2'}
   };
 
+  function ensureTableFirstPaintGate(){const root=document.documentElement;root.setAttribute?.('data-ly-table-first-paint','pending');let style=document.getElementById?.('lyTableFirstPaintCritical');if(!style){style=document.createElement?.('style');if(style){style.id='lyTableFirstPaintCritical';style.textContent='html[data-ly-table-first-paint="pending"] main .panel.active{visibility:hidden!important}html[data-ly-table-first-paint="pending"] main{min-height:60vh}';(document.head||root).appendChild?.(style);}}setTimeout(()=>root.removeAttribute?.('data-ly-table-first-paint'),4000);return true;}
+
   function load(name){
     const module=modules[name];
     if(!module)return Promise.resolve(false);
@@ -84,6 +89,8 @@
   }
 
   async function loadAssistant(){await load('localAssistant');await load('chatLanguagePlus');await load('chatLegacyInventoryUnitGuard');await load('chatResponseGate');await load('chatLocalOnly');await load('chatUnitSync');}
+
+  async function loadCriticalTablePresentation(){await load('tableFirstPaint');await load('uiTableErgonomics');await load('tableViewV2');window.__lyTableFirstPaint?.settle?.('critical-layers-ready');}
 
   function legacyShellReady(){
     return typeof window.showTab==='function'&&typeof window.renderPanel==='function'&&typeof window.navInit==='function';
@@ -144,7 +151,7 @@
 
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
-  load('runtimeErrorBoundary');load('appVersion');loadCore();load('warehouseDeleteUX');
+  ensureTableFirstPaintGate();loadCriticalTablePresentation();load('runtimeErrorBoundary');load('appVersion');loadCore();load('warehouseDeleteUX');
   const loadBackground=()=>{load('branding');load('ingredientSidebarStatus');load('stockUnitSync');load('cloudRealtime');load('freshCoreV3ShadowSoak');load('freshCoreV3IngredientsInventorySoak');loadAssistant();};
   if(typeof requestIdleCallback==='function')requestIdleCallback(loadBackground,{timeout:1400});else setTimeout(loadBackground,900);
   setTimeout(()=>{load('runtimeErrorBoundary');load('appVersion');load('warehouseDeleteUX');},1400);
