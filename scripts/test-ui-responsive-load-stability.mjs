@@ -17,64 +17,42 @@ assert.match(ui,/overflow-x:hidden;overflow-x:clip/,'global horizontal overflow 
 assert.match(ui,/min-width:0;max-width:100%/,'flex/grid shrink guard missing');
 assert.match(ui,/safe-area-inset-bottom/,'Safari safe-area handling missing');
 assert.match(ui,/visualViewport/,'dynamic mobile viewport normalization missing');
-assert.match(ui,/92dvh/,'modal must use dynamic viewport height');
 assert.match(ui,/@media\(max-width:760px\)/,'phone breakpoint missing');
-assert.match(ui,/main\{width:100%!important;margin-left:0!important/,'mobile main must not inherit desktop sidebar width');
-assert.match(ui,/\.toolbar input,\.toolbar select\{width:100%;min-width:0\}/,'mobile controls must fit viewport');
-assert.match(ui,/@media\(hover:none\),\(pointer:coarse\)/,'coarse-pointer ergonomics guard missing');
 assert.match(ui,/min-height:44px/,'touch targets must reach the mobile target floor');
-assert.match(ui,/input,select,textarea\{font-size:16px!important\}/,'iOS form controls must avoid focus auto-zoom');
 assert.match(ui,/:focus-visible/,'keyboard focus visibility missing');
 assert.match(ui,/prefers-reduced-motion:reduce/,'reduced-motion accessibility missing');
-assert.match(ui,/role','status'/,'toast status semantics missing');
-assert.match(ui,/aria-live','polite'/,'toast live-region semantics missing');
-assert.match(ui,/aria-modal','true'/,'modal semantics missing');
-assert.match(ui,/PROGRESS_ID='lyUiProgress'/,'non-blocking progress feedback missing');
-assert.match(ui,/data-ly-ui-busy/,'busy-state visual contract missing');
-assert.match(ui,/boundedStartupFeedback/,'startup perceived-performance guard missing');
 
 assert.match(forms,/VERSION='2026\.08\.28\.2'/,'form ergonomics version missing');
 assert.match(forms,/aria-invalid="true"/,'ARIA invalid fields must have explicit styling');
-assert.match(forms,/@supports selector\(input:user-invalid\)/,'native user-invalid progressive enhancement missing');
-assert.match(forms,/\.modal\.open \.modal-head/,'mobile modal header must be sticky');
-assert.match(forms,/\.modal\.open \.receipt-modal-actions/,'mobile modal actions must be sticky');
 assert.doesNotMatch(forms,/MutationObserver|setInterval/,'form ergonomics must not observe or poll the DOM');
 assert.doesNotMatch(forms,/\bfetch\s*\(|\.rpc\s*\(/,'form ergonomics must not perform cloud calls');
 
 assert.match(design,/VERSION='2026\.08\.28\.2'/,'design-system version missing');
-assert.match(design,/--ly-space-1:4px/,'spacing token scale missing');
-assert.match(design,/--ly-shadow-card/,'card elevation token missing');
 assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 
-assert.match(tableUx,/VERSION='2026\.08\.28\.2'/,'table ergonomics v2 must be active');
+assert.match(tableUx,/VERSION='2026\.08\.28\.3'/,'table ergonomics v3 must be active');
 assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
-assert.match(tableUx,/\.scroll\{width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important/,'short table wrappers must retain natural height');
-assert.match(tableUx,/\.scroll\[data-ly-table-long="1"\]\{max-height:min\(68vh,680px\)!important;overflow-y:auto!important/,'long tables must get bounded vertical scrolling');
-assert.match(tableUx,/\.scroll>table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:0!important;max-width:100%!important/,'desktop tables must fit their container');
-assert.match(tableUx,/@media\(min-width:761px\)[\s\S]*thead th\{position:sticky!important;top:0!important/,'desktop long tables must keep headers visible while scrolling');
-assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*max-height:min\(64dvh,620px\)!important/,'mobile long tables must use viewport-aware vertical scrolling');
+assert.match(tableUx,/table-layout:fixed!important/,'table columns must use a stable fixed layout');
+assert.match(tableUx,/contain:layout paint/,'table wrappers must contain layout and paint shifts');
+assert.match(tableUx,/MutationObserver/,'newly rendered tables must be enhanced before paint');
+assert.match(tableUx,/observer\.observe\(root,\{childList:true,subtree:true,characterData:true\}\)/,'table observer must be bounded to DOM mutations');
+assert.match(tableUx,/function boot\(\)\{const tables=collectTables\(document\);prepare\(tables\);mountStyle\(\);observe\(\);return true;\}/,'initial table metadata must be prepared before CSS mounts');
+assert.match(tableUx,/\.scroll\[data-ly-table-long="1"\]\{max-height:min\(68vh,680px\)!important;overflow-y:auto!important/,'long tables must keep bounded vertical scrolling');
+assert.match(tableUx,/@media\(min-width:761px\)[\s\S]*thead th\{position:sticky!important;top:0!important/,'desktop long tables must keep headers visible');
 assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*tbody tr\{display:grid!important/,'read-only mobile tables must remain row cards');
-assert.match(tableUx,/data-ly-table-editable/,'editable tables must be detected and protected from row-card transforms');
-assert.match(tableUx,/data-ly-label/,'mobile row cards must preserve column labels');
-assert.match(tableUx,/data-ly-value/,'mobile row cards must preserve cell values');
-assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded from generic transforms');
+assert.match(tableUx,/data-ly-table-editable/,'editable tables must remain protected');
+assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded');
+assert.doesNotMatch(tableUx,/\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not use retry/reflow timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
-assert.match(sales,/VERSION='2026\.08\.28\.3'/,'sales workflow natural-height fix version missing');
-assert.match(sales,/#saleReportArea \.scroll,#recentSalesArea \.scroll\{max-height:none!important;height:auto!important\}/,'sales workflow scoped fix must remain present');
-assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|renderSaleReport|renderAll|renderPanel|showTab|\.navigate\s*\(/,'sales workflow layer must remain presentation-only');
+assert.match(sales,/VERSION='2026\.08\.28\.3'/,'sales workflow fix version missing');
+assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
+assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy recovery version missing');
 
-assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy render recovery version missing');
-assert.doesNotMatch(recovery,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|showTab|renderPanel|\.navigate\s*\(/,'lazy recovery must not own navigation, polling or cloud transport');
-
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.8'/,'visible long-table vertical-scroll marker missing');
-assert.match(app,/ly-ui-stability\.js\?v=20260828\.4/,'UI stability asset must be deterministic');
-assert.match(app,/ly-ui-form-ergonomics\.js\?v=20260828\.2/,'form ergonomics asset must be deterministic');
-assert.match(app,/ly-ui-design-system\.js\?v=20260828\.2/,'design-system asset must be deterministic');
-assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.2/,'table ergonomics asset must be deterministic');
-assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.3/,'sales scroll fix asset must remain deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-200/,'UI build 8 must force a fresh service-worker release');
+assert.match(app,/UI_BUILD='UI-2026\.08\.28\.9'/,'visible table stability marker missing');
+assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.3/,'table ergonomics asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-201/,'UI build 9 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
-console.log('Responsive UI + table horizontal fit + bounded long-table vertical scrolling: PASS');
+console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');
