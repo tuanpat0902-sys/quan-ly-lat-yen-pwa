@@ -19,6 +19,7 @@ on:
       - 'scripts/test-fresh-core-v3-finance-cashflow-audit.mjs'
       - 'scripts/test-fresh-core-v3-reports-notifications-audit.mjs'
       - 'scripts/test-fresh-core-v3-migration-plan-contract.mjs'
+      - 'scripts/test-fresh-core-v3-legacy-retirement-readiness.mjs'
       - 'scripts/test-fresh-core-v3-employees-audit.mjs'
       - 'scripts/test-fresh-core-v3-employees-schema-decision.mjs'
       - 'scripts/test-fresh-core-v3-employees-review-ddl.mjs'
@@ -98,6 +99,9 @@ jobs:
 
       - name: Test V3 migration-plan contract
         run: node scripts/test-fresh-core-v3-migration-plan-contract.mjs
+
+      - name: Test V3-9 legacy retirement readiness
+        run: node scripts/test-fresh-core-v3-legacy-retirement-readiness.mjs
 
       - name: Test V3 Employees source-of-truth audit
         run: node scripts/test-fresh-core-v3-employees-audit.mjs
