@@ -48,6 +48,19 @@
     return true;
   }
 
+  function ensureUIDesignSystem(){
+    if(window.__lyUIDesignSystem?.version==='2026.08.28.1')return true;
+    if(document.querySelector?.('script[src*="ly-ui-design-system.js?v=20260828.1"]'))return true;
+    const script=document.createElement?.('script');
+    if(!script)return false;
+    script.src='./ly-ui-design-system.js?v=20260828.1';
+    script.async=true;
+    script.dataset.lyBootstrap='ui-design-system';
+    script.onerror=()=>script.remove?.();
+    (document.head||document.documentElement).appendChild(script);
+    return true;
+  }
+
   function ensureEmployeesParityRunner(){
     if(window.__lyFreshCoreV3EmployeesParityRunner){
       try{window.__lyFreshCoreV3EmployeesParityRunner.render?.();}catch(e){}
@@ -82,12 +95,13 @@
     return true;
   }
 
-  function boot(){ensureUIStability();ensureUIFormErgonomics();mount();ensureEmployeesParityRunner();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
+  function ensureUILayers(){ensureUIStability();ensureUIFormErgonomics();ensureUIDesignSystem();}
+  function boot(){ensureUILayers();mount();ensureEmployeesParityRunner();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
   window.__LY_APP_VERSION=VERSION;
   window.__LY_APP_VERSION_LABEL=LABEL;
   window.__lyAppVersion={version:VERSION,revision:REVISION,label:LABEL,mount,status:()=>({...state})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{ensureUIStability();ensureUIFormErgonomics();mount();ensureEmployeesParityRunner();},delay));
-  window.addEventListener?.('focus',()=>{ensureUIStability();ensureUIFormErgonomics();mount();ensureEmployeesParityRunner();});
+  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{ensureUILayers();mount();ensureEmployeesParityRunner();},delay));
+  window.addEventListener?.('focus',()=>{ensureUILayers();mount();ensureEmployeesParityRunner();});
   window.addEventListener?.('latyen:branding-updated',()=>setTimeout(mount,0));
 })();
