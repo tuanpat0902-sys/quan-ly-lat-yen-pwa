@@ -71,7 +71,7 @@ assert.match(app,/ensureUIDesignSystem\(\)/,'design system must be bootstrapped 
 assert.match(app,/ly-ui-design-system\.js\?v=20260828\.1/,'design system must use deterministic asset version');
 assert.match(sw,/ly-ui-stability\.js\?v=20260828\.3/,'service worker must precache the exact UI layer asset');
 assert.match(sw,/ly-ui-form-ergonomics\.js\?v=20260828\.1/,'service worker must precache form ergonomics');
-assert.match(sw,/ly-ui-design-system\.js\?v=20260828\.1/,'service worker must precache design system');
+assert.doesNotMatch(sw,/ly-ui-design-system\.js/,'design system must stay outside critical precache budget');
 assert.doesNotMatch(ui,/MutationObserver/,'UI stability layer must not create DOM observation loops');
 assert.doesNotMatch(ui,/\bfetch\s*\(/,'UI stability layer must not perform network calls');
 assert.doesNotMatch(ui,/\.rpc\s*\(/,'UI stability layer must not call Supabase RPCs');
