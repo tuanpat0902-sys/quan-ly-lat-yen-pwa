@@ -35,15 +35,16 @@ assert.match(tableUx,/VERSION='2026\.08\.28\.3'/,'table ergonomics v3 must be ac
 assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
 assert.match(tableUx,/table-layout:fixed!important/,'table columns must use a stable fixed layout');
 assert.match(tableUx,/contain:layout paint/,'table wrappers must contain layout and paint shifts');
-assert.match(tableUx,/MutationObserver/,'newly rendered tables must be enhanced before paint');
-assert.match(tableUx,/observer\.observe\(root,\{childList:true,subtree:true,characterData:true\}\)/,'table observer must be bounded to DOM mutations');
-assert.match(tableUx,/function boot\(\)\{const tables=collectTables\(document\);prepare\(tables\);mountStyle\(\);observe\(\);return true;\}/,'initial table metadata must be prepared before CSS mounts');
+assert.match(tableUx,/function boot\(\)\{const tables=collectTables\(document\);prepare\(tables\);mountStyle\(\);return true;\}/,'initial table metadata must be prepared before CSS mounts');
+assert.match(tableUx,/latyen:panel/,'table refresh must follow renderer lifecycle');
+assert.match(tableUx,/latyen:cloud-refreshed/,'table refresh must follow cloud render lifecycle');
+assert.match(tableUx,/latyen:ui-rescued/,'table refresh must follow UI rescue lifecycle');
 assert.match(tableUx,/\.scroll\[data-ly-table-long="1"\]\{max-height:min\(68vh,680px\)!important;overflow-y:auto!important/,'long tables must keep bounded vertical scrolling');
 assert.match(tableUx,/@media\(min-width:761px\)[\s\S]*thead th\{position:sticky!important;top:0!important/,'desktop long tables must keep headers visible');
 assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*tbody tr\{display:grid!important/,'read-only mobile tables must remain row cards');
 assert.match(tableUx,/data-ly-table-editable/,'editable tables must remain protected');
 assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded');
-assert.doesNotMatch(tableUx,/\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not use retry/reflow timers or resize-driven rewrites');
+assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
 assert.match(sales,/VERSION='2026\.08\.28\.3'/,'sales workflow fix version missing');

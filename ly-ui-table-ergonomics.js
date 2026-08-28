@@ -58,9 +58,11 @@ table[data-ly-table-ux="1"] [data-ly-cell-kind="actions"] button{width:auto!impo
   function collectTables(root=document){const set=new Set();if(root?.matches?.('table'))set.add(root);root?.querySelectorAll?.('.scroll > table, .panel table')?.forEach?.(table=>set.add(table));root?.closest?.('table')&&set.add(root.closest('table'));return [...set];}
   function prepare(tables){tables.forEach(enhance);return tables.length;}
   function apply(root=document){const tables=collectTables(root);prepare(tables);mountStyle();return tables.length;}
-  let observer=null;
-  function observe(){if(observer||typeof MutationObserver!=='function')return false;const root=document.querySelector?.('main')||document.body;if(!root)return false;observer=new MutationObserver(records=>{const tables=new Set();records.forEach(record=>{const targetTable=record.target?.closest?.('table');if(targetTable)tables.add(targetTable);record.addedNodes?.forEach?.(node=>{if(node?.nodeType!==1)return;collectTables(node).forEach(table=>tables.add(table));});});if(tables.size)prepare([...tables]);});observer.observe(root,{childList:true,subtree:true,characterData:true});return true;}
-  function boot(){const tables=collectTables(document);prepare(tables);mountStyle();observe();return true;}
-  window.__lyUITableErgonomics=Object.freeze({version:VERSION,apply,observe,status:()=>({version:VERSION,tables:document.querySelectorAll?.('table[data-ly-table-ux="1"]')?.length||0,longTables:document.querySelectorAll?.('.scroll[data-ly-table-long="1"]')?.length||0,observing:!!observer})});
+  function boot(){const tables=collectTables(document);prepare(tables);mountStyle();return true;}
+  function refreshFromEvent(event){const panel=event?.target?.closest?.('.panel')||document.querySelector?.('.panel.active')||document;apply(panel);}
+  window.__lyUITableErgonomics=Object.freeze({version:VERSION,apply,status:()=>({version:VERSION,tables:document.querySelectorAll?.('table[data-ly-table-ux="1"]')?.length||0,longTables:document.querySelectorAll?.('.scroll[data-ly-table-long="1"]')?.length||0})});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+  window.addEventListener?.('latyen:panel',refreshFromEvent);
+  window.addEventListener?.('latyen:cloud-refreshed',refreshFromEvent);
+  window.addEventListener?.('latyen:ui-rescued',refreshFromEvent);
 })();
