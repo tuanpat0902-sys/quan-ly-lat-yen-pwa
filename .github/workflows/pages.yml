@@ -75,6 +75,7 @@ jobs:
           test -f _site/ly-chat-router.js
           test -f _site/ly-sales-report-revenue-card.js
           test -f _site/ly-ui-stability.js
+          test -f _site/ly-ui-feedback.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
