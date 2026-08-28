@@ -11,7 +11,7 @@ const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
 assert.match(index,/viewport-fit=cover/,'mobile viewport must keep safe-area support');
-assert.match(ui,/VERSION='2026\.08\.28\.3'/,'UI stability v3 must be active');
+assert.match(ui,/VERSION='2026\.08\.28\.4'/,'UI stability v4 must be active');
 assert.match(ui,/overflow-x:hidden;overflow-x:clip/,'global horizontal overflow guard missing');
 assert.match(ui,/min-width:0;max-width:100%/,'flex/grid shrink guard missing');
 assert.match(ui,/safe-area-inset-bottom/,'Safari safe-area handling missing');
@@ -38,7 +38,7 @@ assert.match(ui,/boundedStartupFeedback/,'startup perceived-performance guard mi
 assert.match(ui,/latyen:ui-rescued/,'UI rescue must settle perceived loading state');
 assert.match(ui,/\.empty\{min-height:/,'empty-state readability normalization missing');
 
-assert.match(forms,/VERSION='2026\.08\.28\.1'/,'form ergonomics version missing');
+assert.match(forms,/VERSION='2026\.08\.28\.2'/,'form ergonomics version missing');
 assert.match(forms,/aria-invalid="true"/,'ARIA invalid fields must have explicit styling');
 assert.match(forms,/@supports selector\(input:user-invalid\)/,'native user-invalid progressive enhancement missing');
 assert.match(forms,/\[role="alert"\]/,'inline form errors need readable alert styling');
@@ -50,7 +50,7 @@ assert.doesNotMatch(forms,/MutationObserver|setInterval/,'form ergonomics must n
 assert.doesNotMatch(forms,/\bfetch\s*\(|\.rpc\s*\(/,'form ergonomics must not perform cloud calls');
 assert.doesNotMatch(forms,/renderAll|renderPanel|showTab|\.navigate\s*\(/,'form ergonomics must not own renderer/navigation');
 
-assert.match(design,/VERSION='2026\.08\.28\.1'/,'design-system version missing');
+assert.match(design,/VERSION='2026\.08\.28\.2'/,'design-system version missing');
 assert.match(design,/--ly-space-1:4px/,'spacing token scale missing');
 assert.match(design,/--ly-radius-sm:8px/,'radius token scale missing');
 assert.match(design,/--ly-font-xs:12px/,'typography token scale missing');
@@ -82,10 +82,13 @@ assert.match(recovery,/renderHistory\?\.\(\)/,'history must render after module 
 assert.match(recovery,/renderSaleReport\?\.\(\)/,'sales quantity report must render after report readiness');
 assert.doesNotMatch(recovery,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|showTab|renderPanel|\.navigate\s*\(/,'lazy recovery must not own navigation, polling or cloud transport');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.5'/,'visible sales scroll-height fix marker missing');
-assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.3/,'sales scroll fix asset must be deterministic');
+assert.match(app,/UI_BUILD='UI-2026\.08\.28\.6'/,'visible deep UI/UX refresh marker missing');
+assert.match(app,/ly-ui-stability\.js\?v=20260828\.4/,'UI stability asset must be deterministic');
+assert.match(app,/ly-ui-form-ergonomics\.js\?v=20260828\.2/,'form ergonomics asset must be deterministic');
+assert.match(app,/ly-ui-design-system\.js\?v=20260828\.2/,'design-system asset must be deterministic');
+assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.3/,'sales scroll fix asset must remain deterministic');
 assert.match(app,/ly-panel-lazy-render-recovery\.js\?v=20260828\.1/,'lazy recovery asset must remain deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-197/,'sales scroll-height fix must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-198/,'UI build 6 must use the aligned service-worker release');
 assert.doesNotMatch(sw,/ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation/recovery layers must stay outside critical precache budget');
 
-console.log('Responsive UI + accessibility + natural-height sales report/history + lazy recovery: PASS');
+console.log('Responsive UI + accessibility + deep UI/UX refresh + natural-height sales report/history + lazy recovery: PASS');
