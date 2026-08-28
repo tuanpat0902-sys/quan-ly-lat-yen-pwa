@@ -66,6 +66,8 @@ h3{font-size:var(--ly-font-lg);line-height:1.35;letter-spacing:-.008em;font-weig
 :where(hr){border:0;border-top:1px solid var(--ly-border-soft);margin-block:var(--ly-space-4)}
 :where(code,kbd){border-radius:var(--ly-radius-xs)}
 :where(a){text-underline-offset:2px}
+#nav button[data-panel],#nav .nav-group-toggle{border-radius:var(--ly-radius-sm);line-height:1.25}
+#nav button[data-panel].active{font-weight:750}
 #appVersionStatic{font-variant-numeric:tabular-nums;opacity:.84}
 @media(min-width:761px){
   main{padding-block:var(--ly-space-6)}
