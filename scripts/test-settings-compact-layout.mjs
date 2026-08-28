@@ -19,13 +19,13 @@ assert.match(enhancements,/V3 Router/,'Settings technical diagnostics must show 
 assert.match(enhancements,/1 lần \/ 24 giờ · 2 truy vấn nhỏ/,'Settings must disclose the Master Data zero-cost shadow budget');
 assert.match(enhancements,/V3-2 Nguyên liệu \+ Tồn kho/,'Settings must expose V3-2 parity status');
 assert.match(enhancements,/tối đa 500 dòng\/tập/,'Settings must disclose the V3-2 bounded shadow budget');
-assert.match(enhancements,/V3-2 Migration Gate/,'Settings must expose V3-2 migration gate progress');
+assert.match(enhancements,/V3-2 Production Gate/,'Settings must expose V3-2 production gate progress');
 assert.match(enhancements,/V2 mặc định · không tự chuyển quyền · không dual-write/,'Settings must disclose V3-2 rollback safety');
 assert.match(enhancements,/Chạy kiểm tra nhanh V3-2/,'Settings must expose the bounded V3-2 technical validation action');
-assert.match(enhancements,/không cộng vào 3 lần production soak/,'Settings must keep technical validation separate from production observations');
+assert.match(enhancements,/không cộng vào production soak/,'Settings must keep technical validation separate from production observations');
 assert.match(enhancements,/V3-2 Read Candidate/,'Settings must expose non-authoritative V3-2 read candidate readiness');
 assert.match(enhancements,/Chưa kích hoạt · V2 vẫn là mặc định/,'Settings must keep V2 authoritative until all gates pass');
-assert.match(enhancements,/2026\.08\.27\.7/,'settings enhancement cache version must be current');
+assert.match(enhancements,/2026\.08\.28\.8/,'settings enhancement cache version must be current');
 assert.match(layout,/--ly-ui-font:/,'application must define one shared typeface token');
 assert.match(layout,/--ly-font-base:12px/,'application must define one shared body text size');
 assert.match(layout,/table th\{font-size:var\(--ly-font-sm\)/,'table headings must follow the shared type scale');

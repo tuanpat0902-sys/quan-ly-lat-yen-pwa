@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV3IngredientsInventorySoakV1)return;
   window.__lyFreshCoreV3IngredientsInventorySoakV1=true;
 
-  const VERSION='2026.08.27.3';
+  const VERSION='2026.08.28.4';
   const STORAGE_KEY='lat_yen_v3_ingredients_inventory_shadow_soak_v1';
   const MIN_INTERVAL_MS=24*60*60*1000;
   const HISTORY_LIMIT=7;
@@ -17,6 +17,9 @@
     reads:0,
     writes:0,
     lastAt:0,
+    lastAttemptAt:0,
+    nextRunAt:0,
+    lastReason:'',
     lastDurationMs:0,
     lastOrgId:'',
     parityReady:null,
@@ -25,7 +28,7 @@
     lastError:'',
     gate:null
   };
-  let running=false;
+  let running=false,retryTimer=null,idlePending=false;
 
   const now=()=>Date.now();
   const client=()=>{try{return window.sb?.auth?window.sb:null;}catch(_){return null;}};
@@ -38,10 +41,20 @@
   function saveLocal(value){
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(value));}catch(_){}
   }
-  function eligible(id){
-    if(!id||document.hidden||navigator.onLine===false)return false;
-    const saved=readLocal(),last=Number(saved?.orgs?.[id]?.lastAt||0);
-    return !last||now()-last>=MIN_INTERVAL_MS;
+  function eligibility(id=orgId()){
+    const saved=readLocal(),entry=id?saved?.orgs?.[id]:null;
+    const lastAt=Number(entry?.lastAt||0),lastAttemptAt=Number(entry?.lastAttemptAt||0);
+    const budgetAt=Math.max(lastAt,lastAttemptAt),retryAt=budgetAt?budgetAt+MIN_INTERVAL_MS:0;
+    const visible=!document.hidden,online=navigator.onLine!==false,cooldown=!retryAt||now()>=retryAt;
+    return Object.freeze({eligible:!!id&&visible&&online&&!running&&cooldown,orgId:id,lastAt,lastAttemptAt,retryAt,visible,online,cooldown});
+  }
+  function markAttempt(id){
+    const saved=readLocal(),orgs=saved.orgs&&typeof saved.orgs==='object'?saved.orgs:{};
+    const entry=orgs[id]&&typeof orgs[id]==='object'?orgs[id]:{};
+    const lastAttemptAt=now();
+    orgs[id]={...entry,lastAttemptAt,version:VERSION};
+    saveLocal({version:EVIDENCE_VERSION,orgs});
+    return lastAttemptAt;
   }
   function evidence(result){
     return {
@@ -62,7 +75,9 @@
     const observation=evidence(result);
     history.push(observation);
     orgs[id]={
+      ...(orgs[id]&&typeof orgs[id]==='object'?orgs[id]:{}),
       lastAt:state.lastAt,
+      lastAttemptAt:state.lastAttemptAt,
       durationMs:state.lastDurationMs,
       parityReady:!!result?.parityReady,
       complete:!!result?.complete,
@@ -82,19 +97,25 @@
 
   async function run(reason='idle'){
     if(running)return false;
-    const supabase=client(),coreV2=v2(),id=orgId();
+    const supabase=client(),coreV2=v2(),id=orgId(),ready=eligibility(id);
     if(!supabase||!coreV2?.authoritative||!id){
-      state.skips++;state.phase='waiting-v2';
+      state.skips++;state.phase='waiting-v2';state.lastReason=reason;
       return false;
     }
-    if(!eligible(id)){
-      state.skips++;state.phase='throttled';
+    if(!ready.eligible){
+      state.skips++;
+      state.phase=!ready.visible?'waiting-visible':!ready.online?'offline':'cooldown';
+      state.nextRunAt=ready.retryAt;state.lastReason=reason;
+      if(ready.visible&&ready.online&&!ready.cooldown)arm('cooldown-expired');
       return false;
     }
 
     running=true;
     state.phase='loading';
     state.lastError='';
+    state.lastReason=reason;
+    state.lastAttemptAt=markAttempt(id);
+    state.nextRunAt=state.lastAttemptAt+MIN_INTERVAL_MS;
     const started=now();
 
     try{
@@ -142,22 +163,42 @@
       return false;
     }finally{
       running=false;
+      arm('next-eligible');
     }
   }
 
-  function schedule(){
-    const launch=()=>run('idle');
+  function schedule(reason='idle'){
+    if(idlePending||running)return false;
+    idlePending=true;state.lastReason=reason;
+    const launch=()=>{idlePending=false;run(reason);};
     if(typeof requestIdleCallback==='function')requestIdleCallback(launch,{timeout:6000});
     else setTimeout(launch,3000);
+    return true;
+  }
+  function arm(reason='timer'){
+    if(retryTimer){clearTimeout(retryTimer);retryTimer=null;}
+    const ready=eligibility();
+    state.nextRunAt=ready.retryAt;
+    if(!ready.orgId||!ready.visible||!ready.online||running)return false;
+    const delay=Math.max(0,ready.retryAt-now());
+    if(delay>0){
+      retryTimer=setTimeout(()=>{retryTimer=null;schedule(reason);},Math.min(delay+1000,2147483647));
+      return true;
+    }
+    return schedule(reason);
   }
 
   window.__lyFreshCoreV3IngredientsInventorySoak={
     version:VERSION,
     run,
-    status:()=>({...state,counts:{...state.counts},policy:{readOnly:true,maxRunsPerDay:1,minObservationIntervalMs:MIN_INTERVAL_MS,queriesPerRun:2,maxRowsPerDataset:500,cloudWrites:0,autoPromotion:false,rollbackTarget:'v2',source:PRODUCTION_SOURCE,evidenceVersion:EVIDENCE_VERSION}})
+    eligibility,
+    status:()=>({...state,counts:{...state.counts},policy:{readOnly:true,maxRunsPerDay:1,minObservationIntervalMs:MIN_INTERVAL_MS,queriesPerRun:2,maxRowsPerDataset:500,cloudWrites:0,autoPromotion:false,rollbackTarget:'v2',source:PRODUCTION_SOURCE,evidenceVersion:EVIDENCE_VERSION,persistentScheduler:true,resumeEvents:['visibilitychange','pageshow','focus','online']}})
   };
 
-  window.addEventListener?.('latyen:v2-shadow-ready',schedule,{once:true});
-  window.addEventListener?.('online',schedule,{once:true});
-  if(v2()?.authoritative)schedule();
+  window.addEventListener?.('latyen:v2-shadow-ready',()=>arm('v2-ready'),{once:true});
+  window.addEventListener?.('online',()=>arm('online'));
+  document.addEventListener?.('visibilitychange',()=>{if(!document.hidden)arm('visible');});
+  window.addEventListener?.('pageshow',()=>arm('pageshow'));
+  window.addEventListener?.('focus',()=>arm('focus'));
+  arm('startup');
 })();
