@@ -4,6 +4,7 @@ import {createRecipesProductsRepository} from './recipes-products-repository.js'
 import {compareRecipesProducts} from './parity.js';
 import {createRecipesProductsService} from './recipes-products-service.js';
 import {RECIPES_PRODUCTS_MIGRATION_GATE,evaluateRecipesProductsMigrationGate} from './migration-gate.js';
+import {RECIPES_PRODUCTS_CONTROLLED_ACTIVATION_REVIEW,evaluateRecipesProductsControlledActivationReview} from './controlled-activation-review.js';
 
 export {
   RECIPES_PRODUCTS_CONTRACT,
@@ -14,5 +15,7 @@ export {
   compareRecipesProducts,
   createRecipesProductsService,
   RECIPES_PRODUCTS_MIGRATION_GATE,
-  evaluateRecipesProductsMigrationGate
+  evaluateRecipesProductsMigrationGate,
+  RECIPES_PRODUCTS_CONTROLLED_ACTIVATION_REVIEW,
+  evaluateRecipesProductsControlledActivationReview
 };
