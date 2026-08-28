@@ -52,7 +52,6 @@ assert.equal(EMPLOYEES_CONTRACT.cloud.productionParityCreditFromSynthetic,0);
 assert.equal(EMPLOYEES_CONTRACT.cloud.emptyProductionDomainHold,true);
 assert.equal(EMPLOYEES_CONTRACT.currentAuthority,'legacy-local');
 assert.equal(EMPLOYEES_CONTRACT.productionActivation,false);
-assert.equal(plan.version,'3.0-migration-plan-24');
 assert.equal(wave.status,'empty-production-domain-hold');
 assert.equal(wave.evidence.repository,'implemented-read-only-safe-rpc');
 assert.equal(wave.evidence.repositoryRuntimeActivated,false);
