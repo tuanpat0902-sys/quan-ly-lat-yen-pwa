@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-194';
+const CACHE='lat-yen-fresh-core-v3-authoritative-195';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
   INDEX_KEY,
@@ -20,11 +20,7 @@ self.addEventListener('activate',event=>{event.waitUntil((async()=>{
   if(oldKeys.length){
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
     for(const client of clients){
-      try{
-        const url=new URL(client.url);
-        url.searchParams.set('ly_release',CACHE);
-        await client.navigate(url.href);
-      }catch(e){}
+      try{const url=new URL(client.url);url.searchParams.set('ly_release',CACHE);await client.navigate(url.href);}catch(e){}
     }
   }
 })());});
