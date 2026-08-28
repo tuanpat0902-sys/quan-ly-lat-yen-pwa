@@ -45,5 +45,6 @@ assert.equal(EMPLOYEES_CONTRACT.cloud.repositoryRuntimeActivated,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.autoShadow,false);
 assert.equal(EMPLOYEES_CONTRACT.cloud.reads,0);
 assert.equal(EMPLOYEES_CONTRACT.cloud.writes,0);
-assert.equal(EMPLOYEES_CONTRACT.nextGate,'obtain-device-v2-v3-directory-parity-before-shadow-activation');
+assert.equal(EMPLOYEES_CONTRACT.cloud.emptyProductionDomainHold,true);
+assert.equal(EMPLOYEES_CONTRACT.nextGate,'rerun-real-device-parity-after-first-legacy-employee');
 console.log('Fresh Core V3-6 read-only repository guard: PASS');
