@@ -41,7 +41,7 @@
   
         ${list.length?`
           <div class="scroll section-gap">
-            <table class="employee-list-table">
+            <table class="employee-list-table" data-ly-table-view="employees">
               <tr>
                 <th>Mã NV</th>
                 <th>Họ tên</th>

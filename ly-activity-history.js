@@ -157,7 +157,7 @@
         ${auditRows.length?`
           ${allAuditRows.length>300?`<div class="history-limit-note">Đang hiển thị 300 hoạt động gần nhất trong ${num(allAuditRows.length)} kết quả.</div>`:''}
           <div class="scroll">
-            <table class="audit-table">
+            <table class="audit-table" data-ly-table-view="activity">
               <tr>
                 <th>Thời gian</th>
                 <th>Khu vực</th>
