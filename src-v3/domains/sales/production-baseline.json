@@ -1,0 +1,39 @@
+{
+  "capturedAt": "2026-08-28",
+  "mode": "source-of-truth-audit-read-only",
+  "currentAuthority": "v2",
+  "cloudReads": 0,
+  "cloudWrites": 0,
+  "tables": {
+    "ly_sales": {"rows": 226, "rls": true},
+    "ly_sale_items": {"rows": 488, "rls": true}
+  },
+  "ipos": {
+    "active": true,
+    "cronJob": "ly_ipos_sync_every_minute",
+    "cronSchedule": "* * * * *",
+    "salesWithSourceIpos": 226,
+    "salesWithIposTranId": 226,
+    "upsertRpc": "ly_ipos_upsert_sale",
+    "deleteRpc": "ly_ipos_delete_sale",
+    "reconciliationRpc": "ly_ipos_reconcile_absent_sales",
+    "inventoryChangedBySync": false
+  },
+  "integrity": {
+    "salesOrgScoped": true,
+    "salesWarehouseScoped": true,
+    "saleItemsOrgScoped": true,
+    "saleItemsReferenceSale": true,
+    "saleItemsReferenceProduct": true,
+    "orphanSaleItems": 0
+  },
+  "runtime": {
+    "v3RepositoryImplemented": false,
+    "v3ServiceImplemented": false,
+    "v3ShadowActivated": false,
+    "productionActivation": false,
+    "dualWrite": false,
+    "iposWritePathChanged": false,
+    "inventoryDeductionChanged": false
+  }
+}
