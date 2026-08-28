@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-20",
+  "version": "3.0-migration-plan-21",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -8,12 +8,7 @@
       "name": "Foundation",
       "status": "completed",
       "authoritative": "v2",
-      "gates": [
-        "architecture",
-        "foundation-tests",
-        "startup-non-regression",
-        "no-production-writes"
-      ]
+      "gates": ["architecture","foundation-tests","startup-non-regression","no-production-writes"]
     },
     {
       "id": "V3-1",
@@ -89,7 +84,29 @@
         "nextGate": "wait-for-v3-2-pass-then-review-controlled-shadow-activation"
       }
     },
-    {"id":"V3-4","name":"Documents","status":"planned","authoritative":"v2","dependsOn":["V3-2"]},
+    {
+      "id": "V3-4",
+      "name": "Documents",
+      "status": "source-of-truth-audited-dependency-locked",
+      "authoritative": "v2",
+      "dependsOn": ["V3-2"],
+      "evidence": {
+        "sourceOfTruth": "src-v2/domains/documents/document-repository.js",
+        "productionSchema": "audited-read-only",
+        "rlsVerifiedAllSixTables": true,
+        "tables": ["ly_import_receipts","ly_import_items","ly_export_receipts","ly_export_items","ly_stocktake_receipts","ly_stocktake_items"],
+        "productionBaselineCounts": {"importReceipts":2,"importItems":2,"exportReceipts":0,"exportItems":0,"stocktakeReceipts":0,"stocktakeItems":0},
+        "repository": "not-implemented",
+        "service": "not-implemented",
+        "shadow": "not-implemented",
+        "productionActivation": false,
+        "cloudReads": 0,
+        "cloudWrites": 0,
+        "dualWrite": false,
+        "activationBlockedBy": "V3-2",
+        "nextGate": "wait-for-v3-2-readiness-then-design-read-only-documents-repository"
+      }
+    },
     {"id":"V3-5","name":"Sales","status":"planned","authoritative":"v2","dependsOn":["V3-2","V3-3","V3-4"]},
     {
       "id": "V3-6",
@@ -116,55 +133,10 @@
         "repositoryRuntimeActivated": false,
         "service": "manual-device-parity-ready-held-empty-domain",
         "autoShadow": false,
-        "parityGate": {
-          "implemented": true,
-          "source": "device-local",
-          "requiredObservations": 1,
-          "minimumLegacyRowsForCredit": 1,
-          "emptyDatasetCredit": 0,
-          "readsPerObservation": 1,
-          "cloudWrites": 0,
-          "maxDurationMs": 5000,
-          "syntheticCredit": 0,
-          "activationAllowed": false,
-          "autoPromotion": false
-        },
-        "manualDeviceParityRunner": {
-          "implemented": true,
-          "surface": "settings-explicit-click",
-          "autoRun": false,
-          "requiresExplicitUserAction": true,
-          "readsPerRun": 1,
-          "cloudWritesPerRun": 0,
-          "storage": "localStorage-only",
-          "containsEmployeeRows": false,
-          "realDeviceOnly": true,
-          "syntheticCredit": 0,
-          "emptyDatasetCredit": 0,
-          "seedAllowed": false,
-          "authorityChange": false,
-          "activationAllowed": false,
-          "autoPromotion": false
-        },
-        "emptyProductionDomainHold": {
-          "active": true,
-          "verifiedFromRealDevice": true,
-          "legacyCount": 0,
-          "cloudCount": 0,
-          "productionObservationCredit": 0,
-          "seedRequired": false,
-          "seedAllowed": false,
-          "cloudWrites": 0,
-          "resumeWhen": "legacy-employee-count-positive"
-        },
-        "controlledCloudDirectorySeedReview": {
-          "eligible": false,
-          "requiresRealDeviceObservation": true,
-          "requiresCloudSeedRequired": true,
-          "autoSeed": false,
-          "businessDataWriteIncluded": false,
-          "activationAllowed": false
-        },
+        "parityGate": {"implemented":true,"source":"device-local","requiredObservations":1,"minimumLegacyRowsForCredit":1,"emptyDatasetCredit":0,"readsPerObservation":1,"cloudWrites":0,"maxDurationMs":5000,"syntheticCredit":0,"activationAllowed":false,"autoPromotion":false},
+        "manualDeviceParityRunner": {"implemented":true,"surface":"settings-explicit-click","autoRun":false,"requiresExplicitUserAction":true,"readsPerRun":1,"cloudWritesPerRun":0,"storage":"localStorage-only","containsEmployeeRows":false,"realDeviceOnly":true,"syntheticCredit":0,"emptyDatasetCredit":0,"seedAllowed":false,"authorityChange":false,"activationAllowed":false,"autoPromotion":false},
+        "emptyProductionDomainHold": {"active":true,"verifiedFromRealDevice":true,"legacyCount":0,"cloudCount":0,"productionObservationCredit":0,"seedRequired":false,"seedAllowed":false,"cloudWrites":0,"resumeWhen":"legacy-employee-count-positive"},
+        "controlledCloudDirectorySeedReview": {"eligible":false,"requiresRealDeviceObservation":true,"requiresCloudSeedRequired":true,"autoSeed":false,"businessDataWriteIncluded":false,"activationAllowed":false},
         "productionParityObservations": 1,
         "productionParityCredit": 0,
         "productionParityLastResult": "empty-dataset-no-evidence",
