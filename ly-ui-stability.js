@@ -1,8 +1,8 @@
 (()=>{
   'use strict';
-  if(window.__lyUIStability?.version==='2026.08.28.4')return;
+  if(window.__lyUIStability?.version==='2026.08.28.5')return;
 
-  const VERSION='2026.08.28.4';
+  const VERSION='2026.08.28.5';
   const STYLE_ID='lyUiStabilityStyle';
   const PROGRESS_ID='lyUiProgress';
   const CSS=`
@@ -11,7 +11,7 @@ body{min-width:0;text-rendering:optimizeLegibility;-webkit-text-size-adjust:100%
 main,.panel,.card,.grid,.grid2,.form-grid,.toolbar,.top,.top-actions,.scroll{min-width:0;max-width:100%}
 img,svg,canvas,video{max-width:100%;height:auto}
 .scroll{width:100%;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:#cbd5df transparent}
-.scroll>table{min-width:max-content}
+.scroll>table{min-width:100%}
 input,select,textarea,button{min-width:0;max-width:100%}
 .toolbar input,.toolbar select{max-width:100%}
 h1,h2,h3,.brand,.metric .value{overflow-wrap:anywhere}

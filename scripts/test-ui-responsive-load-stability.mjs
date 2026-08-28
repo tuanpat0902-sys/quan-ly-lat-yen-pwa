@@ -12,7 +12,7 @@ const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
 assert.match(index,/viewport-fit=cover/,'mobile viewport must keep safe-area support');
-assert.match(ui,/VERSION='2026\.08\.28\.4'/,'UI stability v4 must be active');
+assert.match(ui,/VERSION='2026\.08\.28\.5'/,'UI stability v5 must be active');
 assert.match(ui,/overflow-x:hidden;overflow-x:clip/,'global horizontal overflow guard missing');
 assert.match(ui,/min-width:0;max-width:100%/,'flex/grid shrink guard missing');
 assert.match(ui,/safe-area-inset-bottom/,'Safari safe-area handling missing');
@@ -21,6 +21,10 @@ assert.match(ui,/@media\(max-width:760px\)/,'phone breakpoint missing');
 assert.match(ui,/min-height:44px/,'touch targets must reach the mobile target floor');
 assert.match(ui,/:focus-visible/,'keyboard focus visibility missing');
 assert.match(ui,/prefers-reduced-motion:reduce/,'reduced-motion accessibility missing');
+assert.match(ui,/\.scroll>table\{min-width:100%\}/,'scroll tables need a bounded container-relative floor');
+assert.doesNotMatch(ui,/min-width:max-content/,'global max-content sizing must not expand tables by cell content');
+assert.match(index,/\.prepared-virtual-table\{width:760px!important;min-width:760px!important;max-width:760px!important;table-layout:fixed!important\}/,'prepared ingredient table width must stay bounded');
+assert.match(index,/\.ingredient-usage-table\{width:980px!important;min-width:980px!important;max-width:980px!important;table-layout:fixed!important\}/,'ingredient usage table width must stay bounded');
 
 assert.match(forms,/VERSION='2026\.08\.28\.2'/,'form ergonomics version missing');
 assert.match(forms,/aria-invalid="true"/,'ARIA invalid fields must have explicit styling');
@@ -55,9 +59,9 @@ assert.match(sales,/VERSION='2026\.08\.28\.3'/,'sales workflow fix version missi
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.16'/,'visible Table View V2 operational-tables wave marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.28\.17'/,'visible bounded-table foundation fix marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.5/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-208/,'UI build 16 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-209/,'UI build 17 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
 console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');
