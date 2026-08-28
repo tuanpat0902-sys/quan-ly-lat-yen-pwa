@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 const plan=JSON.parse(await fs.readFile(new URL('../src-v3/migration-plan.json',import.meta.url),'utf8'));
-assert.equal(plan.version,'3.0-migration-plan-21');
+assert.equal(plan.version,'3.0-migration-plan-22');
 
 const wave=plan.waves.find(item=>item.id==='V3-6');
 assert.ok(wave,'V3-6 wave must exist');
