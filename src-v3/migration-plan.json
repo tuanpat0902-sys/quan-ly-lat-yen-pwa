@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-23",
+  "version": "3.0-migration-plan-24",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -212,7 +212,41 @@
         "nextGate": "wait-for-v3-5-v3-6-readiness-then-design-read-only-finance-cashflow-projection"
       }
     },
-    {"id":"V3-8","name":"Reports + Notifications","status":"planned","authoritative":"v2","dependsOn":["V3-5","V3-7"]},
+    {
+      "id": "V3-8",
+      "name": "Reports + Notifications",
+      "status": "source-of-truth-audited-notification-delivery-dependency-locked",
+      "authoritative": "v2",
+      "dependsOn": ["V3-5","V3-7"],
+      "evidence": {
+        "reportsCalculationAuthority": "legacy-core",
+        "reportsDedicatedPersistenceTable": false,
+        "reportRenderers": ["ly-reports.js","ly-special-reports.js"],
+        "notificationsTables": ["ly_activity_events","ly_notification_devices"],
+        "productionBaselineCounts": {"activityEvents":63005,"notificationDevices":32},
+        "rlsVerifiedBothTables": true,
+        "activityOrgScoped": true,
+        "activityEventTypeRestricted": true,
+        "notificationDevicesOrgScoped": true,
+        "notificationCenter": "ly-notification-center.js",
+        "notificationDelivery": "ly-data-notifications.js",
+        "realtimeSource": "ly_activity_events",
+        "pollingFallback": true,
+        "deviceTelemetry": true,
+        "repository": "not-implemented",
+        "service": "not-implemented",
+        "shadow": "not-implemented",
+        "productionActivation": false,
+        "cloudReads": 0,
+        "cloudWrites": 0,
+        "dualWrite": false,
+        "reportFormulaChanges": false,
+        "notificationDeliveryChanges": false,
+        "notificationTelemetryChanges": false,
+        "activationBlockedBy": ["V3-5","V3-7"],
+        "nextGate": "wait-for-v3-5-v3-7-readiness-then-design-read-only-reports-notifications-projection"
+      }
+    },
     {"id":"V3-9","name":"Legacy retirement","status":"planned","authoritative":"mixed","dependsOn":["V3-1","V3-2","V3-3","V3-4","V3-5","V3-6","V3-7","V3-8"]}
   ],
   "domainGate": ["contract","repository","service","parity","performance","smoke","rollback","production-soak"],
