@@ -1,0 +1,29 @@
+{
+  "capturedAt": "2026-08-28",
+  "mode": "source-of-truth-audit-read-only",
+  "currentAuthority": "v2",
+  "cloudWrites": 0,
+  "tables": {
+    "ly_import_receipts": {"rows": 2, "rls": true},
+    "ly_import_items": {"rows": 2, "rls": true},
+    "ly_export_receipts": {"rows": 0, "rls": true},
+    "ly_export_items": {"rows": 0, "rls": true},
+    "ly_stocktake_receipts": {"rows": 0, "rls": true},
+    "ly_stocktake_items": {"rows": 0, "rls": true}
+  },
+  "constraints": {
+    "receiptHeadersOrgScoped": true,
+    "receiptHeadersWarehouseScoped": true,
+    "itemsOrgScoped": true,
+    "itemsReferenceReceipt": true,
+    "itemsReferenceIngredient": true,
+    "importItemsOptionalSupplierReference": true
+  },
+  "runtime": {
+    "v3RepositoryImplemented": false,
+    "v3ServiceImplemented": false,
+    "v3ShadowActivated": false,
+    "productionActivation": false,
+    "dualWrite": false
+  }
+}
