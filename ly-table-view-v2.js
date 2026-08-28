@@ -1,12 +1,16 @@
 (()=>{
   'use strict';
-  if(window.__lyTableViewV2?.version==='2026.08.28.1')return;
-  const VERSION='2026.08.28.1',STYLE_ID='lyTableViewV2Style',LONG_TABLE_ROWS=12;
+  if(window.__lyTableViewV2?.version==='2026.08.28.2')return;
+  const VERSION='2026.08.28.2',STYLE_ID='lyTableViewV2Style',LONG_TABLE_ROWS=12;
   const ORIGINAL_ATTRIBUTES=new WeakMap(),disabledKeys=new Set();
   const REGISTRY=Object.freeze({
     suppliers:Object.freeze({label:'Danh sách nhà cung cấp',columns:Object.freeze([{label:'Nhà cung cấp',kind:'primary',width:'23%'},{label:'Điện thoại',kind:'text',width:'15%'},{label:'Địa chỉ',kind:'long',width:'21%'},{label:'Dòng nhập',kind:'number',width:'12%'},{label:'Ghi chú',kind:'long',width:'21%'},{label:'Thao tác',kind:'actions',width:'8%'}])}),
     employees:Object.freeze({label:'Danh sách nhân viên',columns:Object.freeze([{label:'Mã NV',kind:'code',width:'8%'},{label:'Họ tên',kind:'primary',width:'15%'},{label:'Chức vụ',kind:'text',width:'10%'},{label:'Điện thoại',kind:'text',width:'10%'},{label:'Ngày vào làm',kind:'date',width:'11%'},{label:'Ca làm',kind:'text',width:'9%'},{label:'Chấm công',kind:'status',width:'9%'},{label:'Lương cơ bản',kind:'number',width:'11%'},{label:'Trạng thái',kind:'status',width:'9%'},{label:'Thao tác',kind:'actions',width:'8%'}])}),
-    activity:Object.freeze({label:'Nhật ký thay đổi',columns:Object.freeze([{label:'Thời gian',kind:'date',width:'16%'},{label:'Khu vực',kind:'status',width:'14%'},{label:'Hành động',kind:'status',width:'14%'},{label:'Nội dung',kind:'primary',width:'24%'},{label:'Chi tiết',kind:'long',width:'32%'}])})
+    activity:Object.freeze({label:'Nhật ký thay đổi',columns:Object.freeze([{label:'Thời gian',kind:'date',width:'16%'},{label:'Khu vực',kind:'status',width:'14%'},{label:'Hành động',kind:'status',width:'14%'},{label:'Nội dung',kind:'primary',width:'24%'},{label:'Chi tiết',kind:'long',width:'32%'}])}),
+    legacyMovements:Object.freeze({label:'Biến động kho trước đây',columns:Object.freeze([{label:'Thời gian',kind:'date',width:'18%'},{label:'Loại',kind:'status',width:'14%'},{label:'Nguyên liệu/ Dụng cụ',kind:'primary',width:'24%'},{label:'SL',kind:'number',width:'12%'},{label:'Ghi chú',kind:'long',width:'32%'}])}),
+    productPerformance:Object.freeze({label:'Thống kê chi tiết theo món',columns:Object.freeze([{label:'#',kind:'code',width:'6%'},{label:'Món',kind:'primary',width:'24%'},{label:'Số lượng bán',kind:'number',width:'14%'},{label:'Doanh thu',kind:'number',width:'15%'},{label:'Giá vốn',kind:'number',width:'15%'},{label:'Lãi gộp',kind:'number',width:'15%'},{label:'Tỷ trọng SL',kind:'number',width:'11%'}])}),
+    cashflowCategories:Object.freeze({label:'Phân loại Thu/Chi',columns:Object.freeze([{label:'Nhóm',kind:'primary',width:'45%'},{label:'Loại',kind:'status',width:'20%'},{label:'Số tiền',kind:'number',width:'35%'}])}),
+    cashflowHistory:Object.freeze({label:'Lịch sử Thu/Chi',columns:Object.freeze([{label:'Ngày',kind:'date',width:'14%'},{label:'Loại',kind:'status',width:'12%'},{label:'Nội dung',kind:'primary',width:'20%'},{label:'Ghi chú',kind:'long',width:'23%'},{label:'Số tiền',kind:'number',width:'18%'},{label:'Thao tác',kind:'actions',width:'13%'}])})
   });
   const CSS=`
 .scroll[data-ly-tv2-shell="1"]{width:100%!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:visible!important;contain:layout paint;border:1px solid var(--border,#e4e7ec)!important;border-radius:12px!important;background:var(--card,#fff)!important}
