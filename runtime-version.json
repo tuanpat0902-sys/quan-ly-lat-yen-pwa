@@ -1,8 +1,8 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-214",
-  "uiBuild": "UI-2026.08.29.22",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-215",
+  "uiBuild": "UI-2026.08.29.23",
   "uiUxRefresh": "deep-visual-hierarchy-forms-tables-modals-responsive-no-menu-change",
   "tableUx": "table-view-v2-explicit-contracts-real-node-preservation-fail-closed-rollback-plus-legacy-safe-fallback",
   "tableViewV2": "wave-6-plus-sales-history-explicit-registry-bounded-scroll-zero-cloud-zero-business-logic-first-paint-stable",
@@ -21,6 +21,7 @@
   "mutationRouting": "direct-v2-rpc-with-targeted-domain-refresh-and-no-wrapper-recursion",
   "ingredientWarehouseScope": "new-ingredients-only-in-selected-warehouse",
   "ingredientTableLayout": "stable-ten-column-fixed-layout-with-race-free-purchase-unit-and-responsive-overflow",
+  "ingredientLayoutOwner": "ingredient-table-ux-only-no-conversion-module-override",
   "ingredientStatusSync": "sidebar-and-table-share-selected-warehouse-purchased-inventory-scope",
   "brandingSync": "cloud-authoritative-logo-name-with-local-cache-realtime-and-latest-save-queue",
   "newWarehouseState": "empty-without-inventory-membership-seeding",
