@@ -1,12 +1,13 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.2';
+  const VERSION='2026.08.29.3';
   if(window.__lySalesReportRevenueCard?.version===VERSION)return;
   const text=value=>String(value??'').trim();
   const number=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
   const money=value=>`${new Intl.NumberFormat('vi-VN',{maximumFractionDigits:0}).format(number(value))} đ`;
   const pct=value=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:1}).format(Math.abs(number(value)));
   const localISO=date=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+  const formatDate=iso=>{const [y,m,d]=text(iso).split('-');return y&&m&&d?`${d}/${m}/${y}`:text(iso);};
   const previousDay=iso=>{const [y,m,d]=text(iso).split('-').map(Number),date=new Date(y,m-1,d);if(!Number.isFinite(date.getTime()))return '';date.setDate(date.getDate()-1);return localISO(date);};
   const previousMonthRange=iso=>{const [y,m]=text(iso).slice(0,7).split('-').map(Number),date=new Date(y,m-2,1);if(!Number.isFinite(date.getTime()))return null;const month=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`,last=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();return {start:`${month}-01`,end:`${month}-${String(last).padStart(2,'0')}`};};
   const previousYearRange=iso=>{const y=Number(text(iso).slice(0,4));return Number.isFinite(y)?{start:`${y-1}-01-01`,end:`${y-1}-12-31`}:null;};
@@ -24,33 +25,32 @@
     if(mode==='year'){const year=document.getElementById('saleReportYear')?.value||String(new Date().getFullYear());return {mode,start:`${year}-01-01`,end:`${year}-12-31`};}
     const start=document.getElementById('saleReportFrom')?.value||localISO(new Date()),end=document.getElementById('saleReportTo')?.value||start;return {mode,start,end};
   }
-  function comparisonLine(current,previous,label='ngày hôm qua'){
-    if(previous===0)return current===0?`Không đổi 0% so với ${label}`:'';
+  function comparisonLine(current,previous,label='ngày trước'){
+    if(previous===0)return current===0?`Không đổi 0% so với ${label}`:`Tăng từ 0 đ so với ${label}`;
     const change=(current-previous)/previous*100;
     if(Math.abs(change)<0.05)return `Không đổi 0% so với ${label}`;
     return `${change>0?'Tăng':'Giảm'} ${pct(change)}% so với ${label}`;
   }
   function inject(){
     const area=document.getElementById('saleReportArea'),grid=area?.querySelector?.('.sale-qty-summary');if(!grid)return false;
-    grid.querySelector?.('[data-ly-sales-revenue-card]')?.remove?.();
-    const range=reportRange(),current=revenueFor(range.start,range.end),card=document.createElement('div');card.className='card metric';card.dataset.lySalesRevenueCard='1';
+    const range=reportRange(),current=revenueFor(range.start,range.end);let card=grid.querySelector?.('[data-ly-sales-revenue-card]');if(!card){card=document.createElement('div');card.className='card metric';card.dataset.lySalesRevenueCard='1';}
     let line='';
     if(range.mode==='day'){
-      const prev=previousDay(range.start);line=comparisonLine(current,revenueFor(prev,prev),'ngày hôm qua');
+      const prev=previousDay(range.start);line=comparisonLine(current,revenueFor(prev,prev),`ngày ${formatDate(prev)}`);
     }else if(range.mode==='month'){
-      const prev=previousMonthRange(range.start);if(prev)line=comparisonLine(current,revenueFor(prev.start,prev.end),'tháng trước');
+      const prev=previousMonthRange(range.start);if(prev)line=comparisonLine(current,revenueFor(prev.start,prev.end),`tháng ${formatDate(prev.start).slice(3)}`);
     }else if(range.mode==='year'){
-      const prev=previousYearRange(range.start);if(prev)line=comparisonLine(current,revenueFor(prev.start,prev.end),'năm trước');
+      const prev=previousYearRange(range.start);if(prev)line=comparisonLine(current,revenueFor(prev.start,prev.end),`năm ${String(prev.start).slice(0,4)}`);
     }
     card.innerHTML=`<span class="muted">Doanh thu</span><div class="value" style="font-size:20px">${money(current)}</div>${line?`<div class="muted" style="margin-top:6px;font-size:13px;font-weight:700">${line}</div>`:''}`;
-    grid.prepend(card);return true;
+    if(grid.firstElementChild!==card)grid.prepend(card);return true;
   }
   function patch(){
     const current=window.renderSaleReport;if(typeof current!=='function')return false;if(current.__lyRevenueCardPatched)return true;
     const wrapped=function(...args){const result=current.apply(this,args);setTimeout(inject,0);return result;};wrapped.__lyRevenueCardPatched=true;window.renderSaleReport=wrapped;return true;
   }
   function sync(){patch();setTimeout(inject,0);}
-  window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);sync();
+  window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);window.addEventListener?.('latyen:cloud-refreshed',sync);window.addEventListener?.('latyen:panel',event=>{if(event?.detail?.panel==='sales')sync();});sync();
   const timer=setInterval(()=>{if(patch())clearInterval(timer);},200);setTimeout(()=>clearInterval(timer),30000);
-  window.__lySalesReportRevenueCard={version:VERSION,inject,patch,revenueFor,comparisonLine,status:()=>({version:VERSION,enabled:true})};
+  window.__lySalesReportRevenueCard={version:VERSION,inject,patch,sync,revenueFor,comparisonLine,formatDate,status:()=>({version:VERSION,enabled:true})};
 })();

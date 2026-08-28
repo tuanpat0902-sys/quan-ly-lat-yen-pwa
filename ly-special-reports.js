@@ -2,7 +2,7 @@
    Read-only report renderers extracted from Legacy index.html. Core business/save/chart helpers remain resident. */
 (()=>{
   'use strict';
-  if(window.__lySpecialReportsModule?.version==='2026.08.27.4')return;
+  if(window.__lySpecialReportsModule?.version==='2026.08.29.5')return;
   function renderImportReport(){
     const area=$('importReportArea');
     if(!area)return;
@@ -537,6 +537,7 @@
       </div>
     `;
   
+    window.__lySalesReportRevenueCard?.inject?.();
     (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
     setTimeout(()=>drawSaleReportCharts(sales,items,range.mode),0);
   }
@@ -544,5 +545,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.27.4'};
+  window.__lySpecialReportsModule={version:'2026.08.29.5'};
 })();

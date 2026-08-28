@@ -27,7 +27,12 @@ assert.match(salesChart,/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/
 assert.match(salesChart,/ctx\.roundRect\(left,y,barW,barH,radius\)/,'sales bars must use the shared rounded shape');
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
-assert.match(bridge,/ly-special-reports\.js\?v=20260827\.4/,'bridge must bypass the previous cached report module');
+assert.match(bridge,/ly-special-reports\.js\?v=20260829\.5/,'bridge must bypass the previous cached report module');
+assert.match(bridge,/ly-sales-report-revenue-card\.js\?v=20260829\.3/,'bridge must bypass the previous cached revenue card');
+assert.match(report,/window\.__lySalesReportRevenueCard\?\.inject\?\.\(\);[\s\S]*drawSaleReportCharts/,'every sales renderer pass must restore the revenue card before charts');
+assert.match(salesWorkflow,/#saleReportArea \.sale-qty-summary\{display:grid!important;grid-template-columns:minmax\(0,1\.15fr\) repeat\(3,minmax\(0,1fr\)\)!important/,'four desktop sales KPIs must stay on one row');
+assert.match(salesWorkflow,/@media\(max-width:900px\)\{#saleReportArea \.sale-qty-summary\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/,'tablet KPI layout must remain readable');
+assert.match(salesWorkflow,/@media\(max-width:600px\)\{#saleReportArea \.sale-qty-summary\{grid-template-columns:1fr!important/,'phone KPI layout must stack safely');
 assert.match(salesWorkflow,/#saleReportArea \.sale-table-panel \.scroll\{max-height:min\(62dvh,560px\)!important\}/,'long sales quantity report must scroll within a bounded viewport');
 assert.match(salesWorkflow,/#recentSalesArea \.scroll\{max-height:min\(68dvh,640px\)!important\}/,'long recent-sales history must scroll within a bounded viewport');
 assert.match(index,/<table data-ly-table-view="recentSales"/,'recent sales history must use the explicit responsive table contract');

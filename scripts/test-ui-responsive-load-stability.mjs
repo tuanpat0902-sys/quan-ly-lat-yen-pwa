@@ -64,17 +64,17 @@ assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded
 assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
-assert.match(sales,/VERSION='2026\.08\.28\.4'/,'sales workflow bounded-scroll version missing');
+assert.match(sales,/VERSION='2026\.08\.29\.5'/,'sales workflow KPI-grid and bounded-scroll version missing');
 assert.match(sales,/#saleReportArea \.sale-table-panel \.scroll\{max-height:min\(62dvh,560px\)!important\}/,'sales product report must have a viewport-bounded vertical scroller');
 assert.match(sales,/#recentSalesArea \.scroll\{max-height:min\(68dvh,640px\)!important\}/,'recent-sales history must have a viewport-bounded vertical scroller');
 assert.match(sales,/overflow-y:auto!important/,'sales table shells must explicitly allow vertical scrolling');
 assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bounded table scrolling');
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
-assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy recovery version missing');
+assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.20'/,'atomic table first-paint release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.21'/,'sales KPI stability release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.5/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-212/,'UI build 20 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-213/,'UI build 21 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
 console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');
