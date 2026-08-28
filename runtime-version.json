@@ -1,10 +1,10 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-202",
-  "uiBuild": "UI-2026.08.28.10",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-203",
+  "uiBuild": "UI-2026.08.28.11",
   "uiUxRefresh": "deep-visual-hierarchy-forms-tables-modals-responsive-no-menu-change",
-  "tableUx": "stable-fixed-layout-semantic-column-alignment-auto-density-zebra-hover-focus-bounded-scroll-mobile-cards",
+  "tableUx": "scoped-table-shells-stable-fixed-layout-semantic-alignment-auto-density-bounded-scroll-mobile-content-preserving-cards-wide-editable-complex-tables",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
