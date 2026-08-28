@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV3IngredientsInventorySoakV1)return;
   window.__lyFreshCoreV3IngredientsInventorySoakV1=true;
 
-  const VERSION='2026.08.28.4';
+  const VERSION='2026.08.27.3';
   const STORAGE_KEY='lat_yen_v3_ingredients_inventory_shadow_soak_v1';
   const MIN_INTERVAL_MS=24*60*60*1000;
   const HISTORY_LIMIT=7;
