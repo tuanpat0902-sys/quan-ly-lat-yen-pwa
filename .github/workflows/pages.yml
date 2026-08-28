@@ -77,6 +77,7 @@ jobs:
           test -f _site/ly-ui-stability.js
           test -f _site/ly-ui-form-ergonomics.js
           test -f _site/ly-ui-design-system.js
+          test -f _site/ly-ui-sales-workflow.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
