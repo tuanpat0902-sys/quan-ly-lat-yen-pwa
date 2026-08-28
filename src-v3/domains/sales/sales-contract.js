@@ -1,0 +1,55 @@
+export const SALES_CONTRACT=Object.freeze({
+  domain:'sales',
+  wave:'V3-5',
+  dependsOn:Object.freeze(['V3-2','V3-3','V3-4']),
+  status:'source-of-truth-audited-dependency-ipos-locked',
+  currentAuthority:'v2',
+  v3Authoritative:false,
+  productionActivation:false,
+  dualWrite:false,
+  cloudReads:0,
+  cloudWrites:0,
+  sourceOfTruth:Object.freeze({
+    repository:'src-v2/domains/sales/sales-repository.js',
+    service:'src-v2/domains/sales/sales-service.js',
+    stateKey:'salesData',
+    receiptTable:'ly_sales',
+    itemTable:'ly_sale_items',
+    manualSaveRpc:'ly_save_sale',
+    deleteRpc:'ly_delete_receipt',
+    deleteType:'sale'
+  }),
+  ipos:Object.freeze({
+    active:true,
+    cronJob:'ly_ipos_sync_every_minute',
+    cronSchedule:'* * * * *',
+    edgeFunction:'supabase/functions/ly-ipos-sync/index.ts',
+    upsertRpc:'ly_ipos_upsert_sale',
+    deleteRpc:'ly_ipos_delete_sale',
+    reconciliationRpc:'ly_ipos_reconcile_absent_sales',
+    inventoryChangedBySync:false,
+    protectedWritePath:true
+  }),
+  productionBaseline:Object.freeze({sales:226,saleItems:488,iposSales:226,orphanSaleItems:0}),
+  security:Object.freeze({rlsVerifiedBothTables:true}),
+  repositoryImplemented:false,
+  serviceImplemented:false,
+  shadowImplemented:false,
+  nextGate:'wait-for-v3-2-v3-3-v3-4-readiness-then-design-read-only-sales-repository'
+});
+
+export const SALES_MIGRATION_GUARD=Object.freeze({
+  requireDependencies:Object.freeze(['V3-2','V3-3','V3-4']),
+  requireIposWritePathPreserved:true,
+  requireOrgScope:true,
+  requireWarehouseScope:true,
+  requireSaleItemReferentialIntegrity:true,
+  requireReadOnlyRepositoryBeforeShadow:true,
+  requireParityBeforeAuthorityReview:true,
+  allowIposMutationChanges:false,
+  allowInventoryDeductionChanges:false,
+  allowWrites:false,
+  allowDualWrite:false,
+  allowAutoPromotion:false,
+  currentAuthority:'v2'
+});
