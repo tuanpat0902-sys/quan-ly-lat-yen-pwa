@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-22",
+  "version": "3.0-migration-plan-23",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -182,7 +182,36 @@
         "nextGate": "rerun-real-device-parity-after-first-legacy-employee"
       }
     },
-    {"id":"V3-7","name":"Finance / Cashflow","status":"planned","authoritative":"v2","dependsOn":["V3-5","V3-6"]},
+    {
+      "id": "V3-7",
+      "name": "Finance / Cashflow",
+      "status": "source-of-truth-audited-empty-cashflow-dependency-locked",
+      "authoritative": "v2",
+      "dependsOn": ["V3-5","V3-6"],
+      "evidence": {
+        "cashflowSourceOfTruth": "src-v2/domains/cashflow/cashflow-repository.js",
+        "cashflowTable": "ly_cashflow_entries",
+        "cashflowRows": 0,
+        "rlsVerified": true,
+        "orgScoped": true,
+        "warehouseScoped": true,
+        "entryTypeRestricted": true,
+        "positiveAmountRequired": true,
+        "financeCalculationAuthority": "legacy-core",
+        "financeAggregationInputs": ["sales","cogs","salary","cashflow","stocktake","inventory"],
+        "financeDedicatedPersistenceTable": false,
+        "repository": "not-implemented",
+        "service": "not-implemented",
+        "shadow": "not-implemented",
+        "productionActivation": false,
+        "cloudReads": 0,
+        "cloudWrites": 0,
+        "dualWrite": false,
+        "formulaChanges": false,
+        "activationBlockedBy": ["V3-5","V3-6"],
+        "nextGate": "wait-for-v3-5-v3-6-readiness-then-design-read-only-finance-cashflow-projection"
+      }
+    },
     {"id":"V3-8","name":"Reports + Notifications","status":"planned","authoritative":"v2","dependsOn":["V3-5","V3-7"]},
     {"id":"V3-9","name":"Legacy retirement","status":"planned","authoritative":"mixed","dependsOn":["V3-1","V3-2","V3-3","V3-4","V3-5","V3-6","V3-7","V3-8"]}
   ],
