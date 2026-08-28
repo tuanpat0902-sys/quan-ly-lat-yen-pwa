@@ -5,6 +5,7 @@ const ui=await fs.readFile(new URL('../ly-ui-stability.js',import.meta.url),'utf
 const forms=await fs.readFile(new URL('../ly-ui-form-ergonomics.js',import.meta.url),'utf8');
 const design=await fs.readFile(new URL('../ly-ui-design-system.js',import.meta.url),'utf8');
 const sales=await fs.readFile(new URL('../ly-ui-sales-workflow.js',import.meta.url),'utf8');
+const recovery=await fs.readFile(new URL('../ly-panel-lazy-render-recovery.js',import.meta.url),'utf8');
 const app=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
@@ -70,9 +71,19 @@ assert.doesNotMatch(sales,/\.sale-qty-summary\{display:grid|\.sale-qty-summary\{
 assert.doesNotMatch(sales,/#saleReportArea table td|#saleReportArea table th|#saleReportArea \.toolbar/,'sales UI must not override history/table/filter layout');
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|renderSaleReport|renderAll|renderPanel|showTab|\.navigate\s*\(/,'sales workflow layer must remain presentation-only');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.3'/,'visible UI hotfix marker missing');
-assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.2/,'sales hotfix asset version must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-195/,'UI hotfix must force a fresh service-worker release');
-assert.doesNotMatch(sw,/ly-ui-design-system\.js|ly-ui-sales-workflow\.js/,'non-critical presentation layers must stay outside critical precache budget');
+assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy render recovery version missing');
+assert.match(recovery,/load\?\.\('activityHistory'\)/,'history recovery must use the module loader first');
+assert.match(recovery,/activePanel\(\)!=='history'/,'history recovery must fail closed when user navigated away');
+assert.match(recovery,/ly-special-reports-bridge\.js\?v=20260827\.2/,'sales recovery must load the exact report bridge');
+assert.match(recovery,/__lySpecialReportsBridge\?\.load\?\.\(\)/,'sales recovery must await special reports');
+assert.match(recovery,/activePanel\(\)!=='sales'/,'sales recovery must fail closed when user navigated away');
+assert.match(recovery,/renderHistory\?\.\(\)/,'history must render after module readiness');
+assert.match(recovery,/renderSaleReport\?\.\(\)/,'sales quantity report must render after report readiness');
+assert.doesNotMatch(recovery,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|showTab|renderPanel|\.navigate\s*\(/,'lazy recovery must not own navigation, polling or cloud transport');
 
-console.log('Responsive UI + accessibility + native history/quantity layout hotfix: PASS');
+assert.match(app,/UI_BUILD='UI-2026\.08\.28\.4'/,'visible lazy-render recovery marker missing');
+assert.match(app,/ly-panel-lazy-render-recovery\.js\?v=20260828\.1/,'lazy recovery asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-196/,'lazy-render recovery must force a fresh service-worker release');
+assert.doesNotMatch(sw,/ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation/recovery layers must stay outside critical precache budget');
+
+console.log('Responsive UI + accessibility + history/sales lazy-render recovery: PASS');
