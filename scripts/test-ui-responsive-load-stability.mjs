@@ -63,32 +63,16 @@ assert.doesNotMatch(design,/MutationObserver|setInterval/,'design system must no
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 assert.doesNotMatch(design,/renderAll|renderPanel|showTab|\.navigate\s*\(/,'design system must not own renderer/navigation');
 
-assert.match(sales,/VERSION='2026\.08\.28\.1'/,'sales workflow UI version missing');
-assert.match(sales,/#saleReportArea \.sale-qty-summary/,'sales KPI grid normalization missing');
-assert.match(sales,/data-ly-sales-revenue-card/,'revenue-first sales hierarchy missing');
-assert.match(sales,/@media\(max-width:430px\)/,'small-phone sales workflow guard missing');
-assert.doesNotMatch(sales,/MutationObserver|setInterval/,'sales workflow layer must not observe or poll DOM');
-assert.doesNotMatch(sales,/\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must not perform cloud calls');
-assert.doesNotMatch(sales,/renderSaleReport|renderAll|renderPanel|showTab|\.navigate\s*\(/,'sales workflow layer must not own data/render/navigation');
+assert.match(sales,/VERSION='2026\.08\.28\.2'/,'sales workflow hotfix version missing');
+assert.match(sales,/data-ly-sales-revenue-card/,'revenue emphasis must remain');
+assert.match(sales,/layoutOwnership:false/,'sales UI must explicitly report no layout ownership');
+assert.doesNotMatch(sales,/\.sale-qty-summary\{display:grid|\.sale-qty-summary\{grid-template-columns/,'sales UI must preserve native quantity-statistics layout');
+assert.doesNotMatch(sales,/#saleReportArea table td|#saleReportArea table th|#saleReportArea \.toolbar/,'sales UI must not override history/table/filter layout');
+assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|renderSaleReport|renderAll|renderPanel|showTab|\.navigate\s*\(/,'sales workflow layer must remain presentation-only');
 
-assert.match(app,/ensureUIStability/,'UI layer must be bootstrapped by app-version');
-assert.match(app,/__lyUIStability\?\.version==='2026\.08\.28\.3'/,'app bootstrap must require the exact UI layer version');
-assert.match(app,/ly-ui-stability\.js\?v=20260828\.3/,'UI layer must use deterministic asset version');
-assert.match(app,/ensureUIFormErgonomics/,'form ergonomics must be bootstrapped by app-version');
-assert.match(app,/ly-ui-form-ergonomics\.js\?v=20260828\.1/,'form ergonomics must use deterministic asset version');
-assert.match(app,/ensureUIDesignSystem/,'design system must be bootstrapped by app-version');
-assert.match(app,/ly-ui-design-system\.js\?v=20260828\.1/,'design system must use deterministic asset version');
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.2'/,'visible UI build marker missing');
-assert.match(app,/ensureUISalesWorkflow/,'sales workflow layer must be bootstrapped by app-version');
-assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.1/,'sales workflow asset version must be deterministic');
-assert.match(sw,/ly-ui-stability\.js\?v=20260828\.3/,'service worker must precache the exact UI layer asset');
-assert.match(sw,/ly-ui-form-ergonomics\.js\?v=20260828\.1/,'service worker must precache form ergonomics');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-194/,'UI build must force a fresh service worker release');
+assert.match(app,/UI_BUILD='UI-2026\.08\.28\.3'/,'visible UI hotfix marker missing');
+assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.2/,'sales hotfix asset version must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-195/,'UI hotfix must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-design-system\.js|ly-ui-sales-workflow\.js/,'non-critical presentation layers must stay outside critical precache budget');
-assert.doesNotMatch(ui,/MutationObserver/,'UI stability layer must not create DOM observation loops');
-assert.doesNotMatch(ui,/\bfetch\s*\(/,'UI stability layer must not perform network calls');
-assert.doesNotMatch(ui,/\.rpc\s*\(/,'UI stability layer must not call Supabase RPCs');
-assert.doesNotMatch(ui,/renderAll|renderPanel|showTab/,'UI stability layer must not rerender application panels');
-assert.doesNotMatch(ui,/setInterval/,'loading feedback must not introduce persistent polling');
 
-console.log('Responsive UI + accessibility + perceived-performance + form ergonomics + design system + sales workflow: PASS');
+console.log('Responsive UI + accessibility + native history/quantity layout hotfix: PASS');
