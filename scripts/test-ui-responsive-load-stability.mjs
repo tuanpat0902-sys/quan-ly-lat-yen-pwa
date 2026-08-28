@@ -64,11 +64,12 @@ assert.doesNotMatch(design,/MutationObserver|setInterval/,'design system must no
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 assert.doesNotMatch(design,/renderAll|renderPanel|showTab|\.navigate\s*\(/,'design system must not own renderer/navigation');
 
-assert.match(sales,/VERSION='2026\.08\.28\.2'/,'sales workflow hotfix version missing');
+assert.match(sales,/VERSION='2026\.08\.28\.3'/,'sales workflow layout-fix version missing');
 assert.match(sales,/data-ly-sales-revenue-card/,'revenue emphasis must remain');
-assert.match(sales,/layoutOwnership:false/,'sales UI must explicitly report no layout ownership');
-assert.doesNotMatch(sales,/\.sale-qty-summary\{display:grid|\.sale-qty-summary\{grid-template-columns/,'sales UI must preserve native quantity-statistics layout');
-assert.doesNotMatch(sales,/#saleReportArea table td|#saleReportArea table th|#saleReportArea \.toolbar/,'sales UI must not override history/table/filter layout');
+assert.match(sales,/reportScrollCorrection:true/,'sales workflow must report the scoped scroll correction');
+assert.match(sales,/#saleReportArea \.sale-analysis-grid\{align-items:start!important\}/,'sales chart/table pair must not stretch the table vertically');
+assert.match(sales,/#saleReportArea \.scroll\{max-height:none!important;overflow-x:auto!important;overflow-y:visible!important\}/,'sales report tables must size to content and avoid nested vertical scrollbars');
+assert.match(sales,/#saleReportArea \.scroll>table\{width:100%!important;min-width:100%!important;max-width:100%!important/,'sales report tables must fit their cards without forced max-content width');
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|renderSaleReport|renderAll|renderPanel|showTab|\.navigate\s*\(/,'sales workflow layer must remain presentation-only');
 
 assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy render recovery version missing');
@@ -81,9 +82,9 @@ assert.match(recovery,/renderHistory\?\.\(\)/,'history must render after module 
 assert.match(recovery,/renderSaleReport\?\.\(\)/,'sales quantity report must render after report readiness');
 assert.doesNotMatch(recovery,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|showTab|renderPanel|\.navigate\s*\(/,'lazy recovery must not own navigation, polling or cloud transport');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.4'/,'visible lazy-render recovery marker missing');
-assert.match(app,/ly-panel-lazy-render-recovery\.js\?v=20260828\.1/,'lazy recovery asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-196/,'lazy-render recovery must force a fresh service-worker release');
+assert.match(app,/UI_BUILD='UI-2026\.08\.28\.5'/,'visible screenshot-driven UI fix marker missing');
+assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.3/,'sales layout-fix asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-197/,'UI build 5 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation/recovery layers must stay outside critical precache budget');
 
-console.log('Responsive UI + accessibility + history/sales lazy-render recovery: PASS');
+console.log('Responsive UI + screenshot-driven sales report sizing correction: PASS');
