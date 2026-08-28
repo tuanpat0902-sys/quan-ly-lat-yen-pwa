@@ -1,7 +1,7 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-192",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-193",
   "warehouseDelete": "password-confirmed-transactional-cascade",
   "warehousePassword": "optional-private-bcrypt-hash",
   "settingsVersionPanel": true,
@@ -64,7 +64,7 @@
   "v3Wave": "V3-2-read-candidate-prepared",
   "ingredientsInventoryShadow": "read-only-2-queries-per-24h-max-500-each",
   "v3CloudWrites": 0,
-  "v3MigrationGate": "3-consecutive-parity-complete-zero-write-under-5s",
+  "v3MigrationGate": "3-consecutive-parity-complete-zero-write-under-5s-24h-spaced",
   "v3Rollback": "v2-default-no-auto-promotion",
   "v3TechnicalValidation": "3-rounds-6-read-queries-manual-only",
   "v3ProductionObservationCredit": 0,
