@@ -1,0 +1,54 @@
+export const REPORTS_NOTIFICATIONS_CONTRACT=Object.freeze({
+  domain:'reports-notifications',
+  wave:'V3-8',
+  dependsOn:Object.freeze(['V3-5','V3-7']),
+  status:'source-of-truth-audited-notification-delivery-dependency-locked',
+  currentAuthority:'v2',
+  v3Authoritative:false,
+  productionActivation:false,
+  dualWrite:false,
+  cloudReads:0,
+  cloudWrites:0,
+  reports:Object.freeze({
+    standardUi:'ly-reports.js',
+    specialUi:'ly-special-reports.js',
+    calculationAuthority:'legacy-core',
+    dedicatedPersistenceTable:false,
+    readOnlyRenderers:true
+  }),
+  notifications:Object.freeze({
+    activityTable:'ly_activity_events',
+    devicesTable:'ly_notification_devices',
+    activityRows:63005,
+    deviceRows:32,
+    rlsVerifiedBothTables:true,
+    center:'ly-notification-center.js',
+    delivery:'ly-data-notifications.js',
+    realtimeSource:'ly_activity_events',
+    pollingFallback:true,
+    deviceTelemetry:true,
+    deliveryBehaviorProtected:true
+  }),
+  repositoryImplemented:false,
+  serviceImplemented:false,
+  shadowImplemented:false,
+  nextGate:'wait-for-v3-5-v3-7-readiness-then-design-read-only-reports-notifications-projection'
+});
+
+export const REPORTS_NOTIFICATIONS_MIGRATION_GUARD=Object.freeze({
+  requireDependencies:Object.freeze(['V3-5','V3-7']),
+  requireLegacyReportParity:true,
+  requireActivityOrgScope:true,
+  requireNotificationDeviceOrgScope:true,
+  requireExistingRealtimeDeliveryPreserved:true,
+  requireExistingPollingFallbackPreserved:true,
+  requireExistingTelemetryPreserved:true,
+  requireReadOnlyProjectionBeforeShadow:true,
+  allowReportFormulaChanges:false,
+  allowNotificationDeliveryChanges:false,
+  allowNotificationTelemetryChanges:false,
+  allowWrites:false,
+  allowDualWrite:false,
+  allowAutoPromotion:false,
+  currentAuthority:'v2'
+});
