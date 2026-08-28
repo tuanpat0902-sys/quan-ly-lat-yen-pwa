@@ -7,6 +7,8 @@
   const STORAGE_KEY='lat_yen_v3_ingredients_inventory_shadow_soak_v1';
   const MIN_INTERVAL_MS=24*60*60*1000;
   const HISTORY_LIMIT=7;
+  const PRODUCTION_SOURCE='device-local-production-soak';
+  const EVIDENCE_VERSION=2;
   const state={
     version:VERSION,
     phase:'idle',
@@ -41,18 +43,23 @@
     const saved=readLocal(),last=Number(saved?.orgs?.[id]?.lastAt||0);
     return !last||now()-last>=MIN_INTERVAL_MS;
   }
-  function record(id,result){
-    const saved=readLocal(),orgs=saved.orgs&&typeof saved.orgs==='object'?saved.orgs:{};
-    const history=Array.isArray(orgs[id]?.history)?orgs[id].history.slice(-HISTORY_LIMIT+1):[];
-    const observation={
+  function evidence(result){
+    return {
       lastAt:state.lastAt,
       durationMs:state.lastDurationMs,
       parityReady:!!result?.parityReady,
       complete:!!result?.complete,
       counts:result?.counts||{},
       reads:2,
-      writes:0
+      writes:0,
+      source:PRODUCTION_SOURCE,
+      evidenceVersion:EVIDENCE_VERSION
     };
+  }
+  function record(id,result){
+    const saved=readLocal(),orgs=saved.orgs&&typeof saved.orgs==='object'?saved.orgs:{};
+    const history=Array.isArray(orgs[id]?.history)?orgs[id].history.slice(-HISTORY_LIMIT+1):[];
+    const observation=evidence(result);
     history.push(observation);
     orgs[id]={
       lastAt:state.lastAt,
@@ -64,11 +71,13 @@
       inventory:result?.parity?.inventory??null,
       reads:2,
       writes:0,
+      source:PRODUCTION_SOURCE,
+      evidenceVersion:EVIDENCE_VERSION,
       history,
       gate:state.gate,
       version:VERSION
     };
-    saveLocal({version:1,orgs});
+    saveLocal({version:EVIDENCE_VERSION,orgs});
   }
 
   async function run(reason='idle'){
@@ -104,7 +113,7 @@
         v2Adapter:core.v2
       });
       const result=await instance.refreshControlledShadow();
-      const gateMod=await import('./src-v3/domains/ingredients-inventory/migration-gate.js?v=20260827.1');
+      const gateMod=await import('./src-v3/domains/ingredients-inventory/migration-gate.js?v=20260828.2');
 
       state.runs++;
       state.reads+=2;
@@ -117,7 +126,7 @@
       state.counts={...result.counts};
       const savedBefore=readLocal();
       const historyBefore=Array.isArray(savedBefore?.orgs?.[id]?.history)?savedBefore.orgs[id].history:[];
-      const observation={lastAt:state.lastAt,durationMs:state.lastDurationMs,parityReady:!!result.parityReady,complete:!!result.complete,reads:2,writes:0};
+      const observation=evidence(result);
       state.gate=gateMod.evaluateIngredientsInventoryMigrationGate([...historyBefore,observation]);
       state.phase=!result.complete?'capacity-guard':result.parityReady?(state.gate.pass?'candidate-ready':'parity-ready'):'mismatch';
 
@@ -145,7 +154,7 @@
   window.__lyFreshCoreV3IngredientsInventorySoak={
     version:VERSION,
     run,
-    status:()=>({...state,counts:{...state.counts},policy:{readOnly:true,maxRunsPerDay:1,queriesPerRun:2,maxRowsPerDataset:500,cloudWrites:0,autoPromotion:false,rollbackTarget:'v2'}})
+    status:()=>({...state,counts:{...state.counts},policy:{readOnly:true,maxRunsPerDay:1,minObservationIntervalMs:MIN_INTERVAL_MS,queriesPerRun:2,maxRowsPerDataset:500,cloudWrites:0,autoPromotion:false,rollbackTarget:'v2',source:PRODUCTION_SOURCE,evidenceVersion:EVIDENCE_VERSION}})
   };
 
   window.addEventListener?.('latyen:v2-shadow-ready',schedule,{once:true});
