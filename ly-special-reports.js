@@ -107,7 +107,7 @@
   
         ${rows.length?`
           <div class="scroll">
-            <table>
+            <table class="warehouse-import-summary-table" data-ly-table-view="specialImportSummary">
               <tr>
                 <th>Nguyên liệu/ Dụng cụ</th>
                 <th>Đơn vị</th>
@@ -136,7 +136,7 @@
           <h3>Chi tiết từng dòng nhập</h3>
   
           <div class="scroll">
-            <table class="warehouse-report-detail-table">
+            <table class="warehouse-report-detail-table" data-ly-table-view="specialImportDetails">
               <tr>
                 <th>Ngày</th>
                 <th>Số phiếu</th>
@@ -173,7 +173,7 @@
         <div class="section-gap">
           <h3>Tổng hợp theo ngày</h3>
           <div class="scroll">
-            <table>
+            <table class="warehouse-import-daily-table" data-ly-table-view="specialImportDaily">
               <tr>
                 <th>Ngày</th>
                 <th class="right">Số phiếu</th>
@@ -196,6 +196,7 @@
         </div>
       `:''}
     `;
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
   }
 
   function renderExportReport(){
@@ -343,7 +344,7 @@
   
         ${rows.length?`
           <div class="scroll">
-            <table class="warehouse-report-summary-table">
+            <table class="warehouse-report-summary-table" data-ly-table-view="specialExportSummary">
               <tr>
                 <th>Nguyên liệu/Dụng cụ</th>
                 <th>Đơn vị</th>
@@ -374,7 +375,7 @@
             <h3>Chi tiết từng dòng xuất</h3>
   
             <div class="scroll">
-              <table class="warehouse-report-detail-table">
+              <table class="warehouse-report-detail-table" data-ly-table-view="specialExportDetails">
                 <tr>
                   <th>Ngày</th>
                   <th>Số phiếu</th>
@@ -413,7 +414,7 @@
           <h3>Tổng hợp xuất kho theo ngày</h3>
   
           <div class="scroll">
-            <table>
+            <table class="warehouse-export-daily-table" data-ly-table-view="specialExportDaily">
               <tr>
                 <th>Ngày</th>
                 <th class="right">Số phiếu</th>
@@ -441,6 +442,7 @@
         </div>
       `:''}
     `;
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
   }
 
   function renderSaleReport(){
@@ -513,7 +515,7 @@
           <h3>Thống kê số lượng theo món</h3>
           ${ranked.length?`
             <div class="scroll">
-              <table>
+              <table class="sale-quantity-table" data-ly-table-view="specialSalesQuantity">
                 <tr>
                   <th>Món</th>
                   <th>Đơn vị</th>
@@ -535,6 +537,7 @@
       </div>
     `;
   
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
     setTimeout(()=>drawSaleReportCharts(sales,items,range.mode),0);
   }
 

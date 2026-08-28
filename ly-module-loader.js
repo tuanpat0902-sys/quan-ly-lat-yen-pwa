@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV89)return;
-  window.__lyModuleLoaderV89=true;
+  if(window.__lyModuleLoaderV90)return;
+  window.__lyModuleLoaderV90=true;
 
-  const VERSION='2026.08.28.41';
+  const VERSION='2026.08.28.42';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
