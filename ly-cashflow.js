@@ -392,7 +392,7 @@
         <div class="card cashflow-inner-card">
           <h3>Phân loại Thu/Chi</h3>
           ${categories.length?`
-            <table>
+            <table class="cashflow-category-table" data-ly-table-view="cashflowCategories">
               <tr><th>Nhóm</th><th>Loại</th><th class="right">Số tiền</th></tr>
               ${categories.map(x=>`
                 <tr>
@@ -430,7 +430,7 @@
         <h3>Lịch sử Thu/Chi</h3>
         ${list.length?`
         <div class="scroll">
-          <table class="cashflow-table">
+          <table class="cashflow-table" data-ly-table-view="cashflowHistory">
             <tr>
               <th>Ngày</th>
               <th>Loại</th>
@@ -468,6 +468,7 @@
         `:'<div class="empty">Chưa có khoản thu/chi nào trong kỳ.</div>'}
       </div>
     `;
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
   }
   
   function projectFreshState(core=window.__lyFreshCoreV2){

@@ -121,7 +121,7 @@
         <h3>Thống kê chi tiết theo món</h3>
         ${ranked.length?`
           <div class="scroll">
-            <table>
+            <table class="product-performance-table" data-ly-table-view="productPerformance">
               <tr>
                 <th>#</th>
                 <th>Món</th>
@@ -152,6 +152,7 @@
       </div>
     `;
   
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(E.reports),0);
     const dailyRows=Object.values(daily).sort((a,b)=>a.date.localeCompare(b.date));
     setTimeout(()=>drawReportCharts(dailyRows,ranked),0);
   }

@@ -185,7 +185,7 @@
           <div class="section-gap">
             ${legacyMovements.length?`
               <div class="scroll">
-                <table>
+                <table class="legacy-movement-table" data-ly-table-view="legacyMovements">
                   <tr><th>Thời gian</th><th>Loại</th><th>Nguyên liệu/ Dụng cụ</th><th class="right">SL</th><th>Ghi chú</th></tr>
                   ${legacyMovements.map(m=>{
                     const i=db.ingredients.find(x=>x.id===m.ingredient_id);
@@ -204,6 +204,7 @@
         </details>
       </div>
     `;
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(E.history),0);
   }
 
   window.auditActionClass=auditActionClass;

@@ -197,6 +197,7 @@
       </div>
     `;
   
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(E.employees),0);
     requestAnimationFrame(()=>{
       if(activePanelId!=='employees')return;
   
