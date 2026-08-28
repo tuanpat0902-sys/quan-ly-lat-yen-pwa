@@ -3,7 +3,7 @@
   if(window.__lyPerformanceOptimizerV4)return;
   window.__lyPerformanceOptimizerV4=true;
 
-  const VERSION='2026.08.23.4';
+  const VERSION='2026.08.29.5';
   const LIVE_MS=30000,FALLBACK_MS=8000,HIDDEN_MS=90000,OFFLINE_MS=15000,IDLE_TRIM_MS=20000;
   const LEADER_VISIBLE_MS=4500,LEADER_RETRY_MS=1800;
   const state={timer:null,leaderTimer:null,running:false,lastRunAt:0,lastReason:'',cycles:0,errors:0,trimTimer:null,stylesReady:false,leaderTicks:0,leaderErrors:0,tableObserver:null,tableRebinds:0,tableBatches:0,originalShowTab:null};
@@ -20,7 +20,7 @@
   function installRenderStyles(){if(state.stylesReady||document.getElementById('lyPerformanceRenderStyles'))return;const s=document.createElement('style');s.id='lyPerformanceRenderStyles';s.textContent=`.receipt-history-item,.stocktake-day,.stocktake-session,.ly-notify-item{content-visibility:auto;contain-intrinsic-size:auto 96px}.receipt-history-body,.stocktake-day-body,.stocktake-session .scroll{contain:layout style paint}html.ly-app-hidden *,html.ly-app-hidden *::before,html.ly-app-hidden *::after{animation-play-state:paused!important}.scroll{overscroll-behavior:contain}@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}`;document.head.appendChild(s);state.stylesReady=true;}
 
   function relevantTableMutation(m){if(m.type!=='childList'||!m.addedNodes?.length)return false;if(m.target?.closest?.('#pageStickyTableDock'))return false;if(m.target?.closest?.('table'))return true;for(const node of m.addedNodes){if(node?.nodeType!==1)continue;if(node.matches?.('table,.panel.active,.scroll')||node.querySelector?.('table'))return true;}return false;}
-  function tableMutationBatch(mutations){if(!mutations.some(relevantTableMutation))return;state.tableBatches++;try{if(typeof scheduleTableEnhancements==='function')scheduleTableEnhancements(document.querySelector('.panel.active')||document);}catch(e){}}
+  function tableMutationBatch(mutations){if(!mutations.some(relevantTableMutation))return;state.tableBatches++;try{window.__lyTableFirstPaint?.handleMutations?.(mutations);}catch(e){}try{if(typeof scheduleTableEnhancements==='function')scheduleTableEnhancements(document.querySelector('.panel.active')||document);}catch(e){}}
   function rebindTableObserver(){try{if(typeof tableEnhancementObserver!=='undefined'&&tableEnhancementObserver){tableEnhancementObserver.disconnect();}}catch(e){}
     if(!state.tableObserver)state.tableObserver=new MutationObserver(tableMutationBatch);else state.tableObserver.disconnect();
     const active=document.querySelector('.panel.active');const modal=document.getElementById('modalBox');

@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   if(window.__lyUnitConversions)return;
-  const VERSION='2026.08.25.3';
+  const VERSION='2026.08.29.5';
   const STORAGE_KEY='__latyen_ingredient_unit_conversions_v1';
   const CATALOG=[
     {key:'mg',label:'mg — miligam',family:'mass',factor:.001},
@@ -76,8 +76,8 @@
     document.querySelectorAll('table.ingredient-stock-table:not(.prepared-virtual-table)').forEach(table=>{
       const header=table.rows?.[0];if(!header)return;
       const headers=[...header.cells].map(cell=>String(cell.textContent||'').trim());
-      const unitIndex=headers.indexOf('Đơn vị'),supplierIndex=headers.indexOf('Nhà cung cấp gần nhất');
-      if(unitIndex<0||supplierIndex<0)return;
+      const unitIndex=headers.indexOf('Đơn vị');
+      if(unitIndex<0)return;
       if(!header.querySelector('[data-ly-purchase-column]')){const th=document.createElement('th');th.textContent='Đơn vị mua/đóng gói';th.dataset.lyPurchaseColumn='1';header.cells[unitIndex].after(th);}
       [...table.rows].slice(1).forEach(row=>{
         if(row.querySelector('[data-ly-purchase-cell]'))return;
@@ -106,6 +106,6 @@
     window.addEventListener('latyen:v2-ingredient-saved',()=>{cloudCache.clear();setTimeout(scheduleUiRefresh,60);});
   }
 
-  window.__lyUnitConversions={VERSION,STORAGE_KEY,CATALOG,canonical,definition,compatible,convert,ruleFor,saveIngredientRule,removeIngredientRule,listFor,optionsHtml,ingredientOptionsHtml,applyIngredientOptions,updateIngredientFormHint,enhanceIngredientTables,hydrateEditForm};
+  window.__lyUnitConversions={VERSION,STORAGE_KEY,CATALOG,canonical,definition,compatible,convert,ruleFor,saveIngredientRule,removeIngredientRule,listFor,optionsHtml,ingredientOptionsHtml,applyIngredientOptions,updateIngredientFormHint,packagingText,enhanceIngredientTables,hydrateEditForm};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootUiEnhancements,{once:true});else bootUiEnhancements();
 })();

@@ -5,6 +5,7 @@ const ui=await fs.readFile(new URL('../ly-ui-stability.js',import.meta.url),'utf
 const forms=await fs.readFile(new URL('../ly-ui-form-ergonomics.js',import.meta.url),'utf8');
 const design=await fs.readFile(new URL('../ly-ui-design-system.js',import.meta.url),'utf8');
 const tableUx=await fs.readFile(new URL('../ly-ui-table-ergonomics.js',import.meta.url),'utf8');
+const ingredientTable=await fs.readFile(new URL('../ly-ingredient-table-ux.js',import.meta.url),'utf8');
 const firstPaint=await fs.readFile(new URL('../ly-table-first-paint.js',import.meta.url),'utf8');
 const loader=await fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8');
 const sales=await fs.readFile(new URL('../ly-ui-sales-workflow.js',import.meta.url),'utf8');
@@ -15,10 +16,15 @@ const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
 assert.match(index,/viewport-fit=cover/,'mobile viewport must keep safe-area support');
 assert.match(loader,/function ensureTableFirstPaintGate\(\)[\s\S]*data-ly-table-first-paint[\s\S]*visibility:hidden!important/,'unfinished table presentation must be hidden synchronously by the parser-blocking loader');
-assert.match(firstPaint,/requestAnimationFrame[\s\S]*window\.__lyUITableErgonomics\.apply\?\.[\s\S]*window\.__lyTableViewV2\.apply\?\./,'first paint must settle both table owners before reveal');
-assert.match(firstPaint,/requestAnimationFrame==='function'\?requestAnimationFrame[\s\S]*frame\(\(\)=>frame\(\(\)=>/,'table reveal must wait for two stable animation frames');
-assert.match(loader,/setTimeout\(\(\)=>root\.removeAttribute\?\.\('data-ly-table-first-paint'\),4000\)/,'first-paint gate must fail open if an asset fails');
-assert.match(loader,/async function loadCriticalTablePresentation\(\)\{await load\('tableFirstPaint'\);await load\('uiTableErgonomics'\);await load\('tableViewV2'\);window\.__lyTableFirstPaint\?\.settle/,'critical table owners must load in deterministic order before reveal');
+assert.match(firstPaint,/VERSION='2026\.08\.29\.2'/);
+assert.match(firstPaint,/requestAnimationFrame[\s\S]*window\.__lyUITableErgonomics\?\.apply\?\.[\s\S]*window\.__lyTableViewV2\?\.apply\?\./,'first paint must settle both table owners before reveal');
+assert.match(firstPaint,/function flush[\s\S]*frame\(\(\)=>[\s\S]*targets\.forEach\(markReady\)[\s\S]*function schedule[\s\S]*frame\(\(\)=>flush/,'table reveal must wait for layout application and a stable animation frame');
+assert.match(firstPaint,/table:not\(\[data-ly-table-paint-ready=/,'unfinished tables must be detected');
+assert.match(firstPaint,/function handleMutations[\s\S]*schedule\('dynamic-table-ready'/,'new and rerendered tables must use the same atomic presentation gate');
+assert.match(await fs.readFile(new URL('../ly-performance-optimizer.js',import.meta.url),'utf8'),/tableMutationBatch[\s\S]*__lyTableFirstPaint\?\.handleMutations/,'atomic table paint must reuse the existing scoped table observer');
+assert.match(loader,/data-ly-table-atomic[\s\S]*table:not\(\[data-ly-table-paint-ready/,'critical CSS must hide every unfinished dynamic table before browser paint');
+assert.match(loader,/setTimeout\(\(\)=>\{if\(root\.dataset\.lyTableFirstPaintOwner!==[\s\S]*removeAttribute\?\.\('data-ly-table-atomic'\)/,'first-paint gate must fail open if an asset fails');
+assert.match(loader,/async function loadCriticalTablePresentation\(\)\{await Promise\.all\(\[load\('tableFirstPaint'\),load\('uiTableErgonomics'\),load\('tableViewV2'\),load\('ingredientTableUX'\)\]\);window\.__lyTableFirstPaint\?\.settle/,'critical table owners must load in parallel and settle once before reveal');
 assert.match(loader,/ensureTableFirstPaintGate\(\);loadCriticalTablePresentation\(\);load\('runtimeErrorBoundary'\)/,'table gate must start before other asynchronous bootstrap work');
 assert.doesNotMatch(firstPaint,/\bfetch\s*\(|\.rpc\s*\(|localStorage|sessionStorage/,'first-paint coordinator must remain presentation-only');
 assert.match(ui,/VERSION='2026\.08\.28\.5'/,'UI stability v5 must be active');
@@ -64,6 +70,14 @@ assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded
 assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
+assert.match(ingredientTable,/VERSION='2026\.08\.29\.5'/,'stable ingredient table layout version missing');
+assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1040px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
+assert.match(ingredientTable,/scrollbar-gutter:stable!important/,'ingredient stock table must reserve scrollbar space without resizing columns');
+assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:17%!important/,'purchase packaging column must have a stable width contract');
+assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:13%!important/,'ingredient action column must remain visible');
+assert.match(ingredientTable,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)/,'purchase column must settle before supplier removal');
+assert.match(ingredientTable,/markStableColumns\(table\)/,'column width metadata must be restored after every table render');
+
 assert.match(sales,/VERSION='2026\.08\.29\.5'/,'sales workflow KPI-grid and bounded-scroll version missing');
 assert.match(sales,/#saleReportArea \.sale-table-panel \.scroll\{max-height:min\(62dvh,560px\)!important\}/,'sales product report must have a viewport-bounded vertical scroller');
 assert.match(sales,/#recentSalesArea \.scroll\{max-height:min\(68dvh,640px\)!important\}/,'recent-sales history must have a viewport-bounded vertical scroller');
@@ -72,9 +86,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.21'/,'sales KPI stability release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.22'/,'ingredient table sizing release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.5/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-213/,'UI build 21 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-214/,'UI build 22 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
 console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');

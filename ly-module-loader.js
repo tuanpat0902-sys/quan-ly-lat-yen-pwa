@@ -3,11 +3,11 @@
   if(window.__lyModuleLoaderV95)return;
   window.__lyModuleLoaderV95=true;
 
-  const VERSION='2026.08.29.47';
+  const VERSION='2026.08.29.51';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
-    tableFirstPaint:{src:'./ly-table-first-paint.js?v=20260829.1',test:()=>window.__lyTableFirstPaint?.version==='2026.08.29.1'},
+    tableFirstPaint:{src:'./ly-table-first-paint.js?v=20260829.2',test:()=>window.__lyTableFirstPaint?.version==='2026.08.29.2'},
     uiTableErgonomics:{src:'./ly-ui-table-ergonomics.js?v=20260828.5',test:()=>window.__lyUITableErgonomics?.version==='2026.08.28.5'},
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260828.6',test:()=>window.__lyTableViewV2?.version==='2026.08.28.6'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
@@ -44,8 +44,8 @@
     realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260825.1',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.25.1'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
     ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260826.2',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.26.2'},
-    ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260826.4',test:()=>window.__lyIngredientTableUX?.version==='2026.08.26.4'},
-    ingredientSidebarStatus:{src:'./ly-ingredient-sidebar-status.js?v=20260826.6',test:()=>window.__lyIngredientSidebarStatus?.version==='2026.08.26.6'},
+    ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260829.5',test:()=>window.__lyIngredientTableUX?.version==='2026.08.29.5'},
+    ingredientSidebarStatus:{src:'./ly-ingredient-sidebar-status.js?v=20260829.1',test:()=>window.__lyIngredientSidebarStatus?.version==='2026.08.29.1'},
     stockUnitSync:{src:'./ly-stock-unit-sync.js?v=20260825.1',test:()=>window.__lyStockUnitSync?.version==='2026.08.25.1'},
     salaryFundSync:{src:'./ly-salary-fund-sync.js?v=20260826.1',test:()=>window.__lySalaryFundSync?.version==='2026.08.26.1'},
     employeeTerminationDate:{src:'./ly-employee-termination-date.js?v=20260826.2',test:()=>window.__lyEmployeeTerminationDate?.version==='2026.08.26.2'},
@@ -53,13 +53,13 @@
     dataNotifications:{src:'./ly-data-notifications.js?v=20260825.7',test:()=>window.__lyDataActivityNotifications?.version==='2026.08.25.7'},
     notificationCenter:{src:'./ly-notification-center.js?v=20260827.5',test:()=>window.__lyNotificationCenter?.version==='2026.08.27.5'},
     inventoryAlerts:{src:'./ly-inventory-alerts.js?v=20260824.1',test:()=>window.__lyInventoryAlerts?.version==='2026.08.24.1'},
-    performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260823.4',test:()=>window.__lyPerformanceOptimizer?.version==='2026.08.23.4'},
+    performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260829.5',test:()=>window.__lyPerformanceOptimizer?.version==='2026.08.29.5'},
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260824.5',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.08.24.5'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.3',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.3'},
     settingsUIBridge:{src:'./ly-settings-ui-bridge.js?v=20260827.2',test:()=>window.__lySettingsUIBridge?.version==='2026.08.27.2'},
     settings:{src:'./ly-settings-enhancements.js?v=20260828.8',test:()=>window.__lyNotificationMaster?.version==='2026.08.28.8'},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
-    branding:{src:'./ly-branding-sync.js?v=20260823.2',test:()=>!!window.__lyBrandingSync},
+    branding:{src:'./ly-branding-sync.js?v=20260829.2',test:()=>window.__lyBrandingSync?.version==='2026.08.29.2'},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
     activityHistory:{src:'./ly-activity-history.js?v=20260825.1',test:()=>window.__lyActivityHistoryModule?.version==='2026.08.25.1'},
     employeesUI:{src:'./ly-employees.js?v=20260825.4',test:()=>window.__lyEmployeesModule?.version==='2026.08.25.4'},
@@ -68,7 +68,7 @@
     cashflowUI:{src:'./ly-cashflow.js?v=20260825.2',test:()=>window.__lyCashflowModule?.version==='2026.08.25.2'}
   };
 
-  function ensureTableFirstPaintGate(){const root=document.documentElement;root.setAttribute?.('data-ly-table-first-paint','pending');let style=document.getElementById?.('lyTableFirstPaintCritical');if(!style){style=document.createElement?.('style');if(style){style.id='lyTableFirstPaintCritical';style.textContent='html[data-ly-table-first-paint="pending"] main .panel.active{visibility:hidden!important}html[data-ly-table-first-paint="pending"] main{min-height:60vh}';(document.head||root).appendChild?.(style);}}setTimeout(()=>root.removeAttribute?.('data-ly-table-first-paint'),4000);return true;}
+  function ensureTableFirstPaintGate(){const root=document.documentElement;root.setAttribute?.('data-ly-table-first-paint','pending');root.setAttribute?.('data-ly-table-atomic','1');let style=document.getElementById?.('lyTableFirstPaintCritical');if(!style){style=document.createElement?.('style');if(style){style.id='lyTableFirstPaintCritical';style.textContent='html[data-ly-table-first-paint="pending"] main .panel.active{visibility:hidden!important}html[data-ly-table-first-paint="pending"] main{min-height:60vh}html[data-ly-table-atomic="1"] main .panel table:not([data-ly-table-paint-ready="1"]){visibility:hidden!important}';(document.head||root).appendChild?.(style);}}setTimeout(()=>{if(root.dataset.lyTableFirstPaintOwner!=='ready'){root.removeAttribute?.('data-ly-table-first-paint');root.removeAttribute?.('data-ly-table-atomic');}},4000);return true;}
 
   function load(name){
     const module=modules[name];
@@ -90,7 +90,7 @@
 
   async function loadAssistant(){await load('localAssistant');await load('chatLanguagePlus');await load('chatLegacyInventoryUnitGuard');await load('chatResponseGate');await load('chatLocalOnly');await load('chatUnitSync');}
 
-  async function loadCriticalTablePresentation(){await load('tableFirstPaint');await load('uiTableErgonomics');await load('tableViewV2');window.__lyTableFirstPaint?.settle?.('critical-layers-ready');}
+  async function loadCriticalTablePresentation(){await Promise.all([load('tableFirstPaint'),load('uiTableErgonomics'),load('tableViewV2'),load('ingredientTableUX')]);window.__lyTableFirstPaint?.settle?.('critical-layers-ready');}
 
   function legacyShellReady(){
     return typeof window.showTab==='function'&&typeof window.renderPanel==='function'&&typeof window.navInit==='function';
