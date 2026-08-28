@@ -14,6 +14,7 @@ on:
       - 'scripts/test-fresh-core-v3-ingredients-inventory-migration-gate.mjs'
       - 'scripts/test-fresh-core-v3-ingredients-inventory-accelerated.mjs'
       - 'scripts/test-fresh-core-v3-ingredients-inventory-read-candidate.mjs'
+      - 'scripts/test-fresh-core-v3-documents-audit.mjs'
       - 'scripts/test-fresh-core-v3-employees-audit.mjs'
       - 'scripts/test-fresh-core-v3-employees-schema-decision.mjs'
       - 'scripts/test-fresh-core-v3-employees-review-ddl.mjs'
@@ -78,6 +79,9 @@ jobs:
 
       - name: Test V3 Ingredients + Inventory read candidate
         run: npm run v3:ingredients-inventory-read-candidate
+
+      - name: Test V3 Documents source-of-truth audit
+        run: node scripts/test-fresh-core-v3-documents-audit.mjs
 
       - name: Test V3 Employees source-of-truth audit
         run: node scripts/test-fresh-core-v3-employees-audit.mjs
