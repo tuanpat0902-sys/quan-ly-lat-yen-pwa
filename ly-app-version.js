@@ -48,6 +48,15 @@
     return true;
   }
 
+  function ensureUIFeedback(){
+    return ensureScript({
+      globalKey:'__lyUIFeedback',
+      selector:'script[data-ly-bootstrap="ui-feedback"]',
+      src:'./ly-ui-feedback.js?v=20260828.1',
+      datasetKey:'ui-feedback'
+    });
+  }
+
   function ensureEmployeesParityRunner(){
     if(window.__lyFreshCoreV3EmployeesParityRunner){
       try{window.__lyFreshCoreV3EmployeesParityRunner.render?.();}catch(e){}
@@ -82,12 +91,12 @@
     return true;
   }
 
-  function boot(){ensureUIStability();mount();ensureEmployeesParityRunner();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
+  function boot(){ensureUIStability();ensureUIFeedback();mount();ensureEmployeesParityRunner();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
   window.__LY_APP_VERSION=VERSION;
   window.__LY_APP_VERSION_LABEL=LABEL;
   window.__lyAppVersion={version:VERSION,revision:REVISION,label:LABEL,mount,status:()=>({...state})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{ensureUIStability();mount();ensureEmployeesParityRunner();},delay));
-  window.addEventListener?.('focus',()=>{ensureUIStability();mount();ensureEmployeesParityRunner();});
+  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{ensureUIStability();ensureUIFeedback();mount();ensureEmployeesParityRunner();},delay));
+  window.addEventListener?.('focus',()=>{ensureUIStability();ensureUIFeedback();mount();ensureEmployeesParityRunner();});
   window.addEventListener?.('latyen:branding-updated',()=>setTimeout(mount,0));
 })();
