@@ -15,6 +15,7 @@ on:
       - 'scripts/prepare-pages-artifact.mjs'
       - 'scripts/copy-pages-runtime.mjs'
       - 'scripts/runtime-assets.mjs'
+      - 'scripts/test-ui-responsive-load-stability.mjs'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -45,6 +46,9 @@ jobs:
       - name: Run predeploy regression gate
         run: npm run predeploy:check
 
+      - name: Verify responsive UI and page-load stability
+        run: node scripts/test-ui-responsive-load-stability.mjs
+
       - name: Verify critical assistant contracts
         run: |
           node scripts/test-chat-language-plus.mjs
@@ -70,6 +74,7 @@ jobs:
           grep -q "IDBObjectStore" _site/ly-chat-response-gate.js
           test -f _site/ly-chat-router.js
           test -f _site/ly-sales-report-revenue-card.js
+          test -f _site/ly-ui-stability.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
