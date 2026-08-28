@@ -35,6 +35,19 @@
     return true;
   }
 
+  function ensureUIFormErgonomics(){
+    if(window.__lyUIFormErgonomics?.version==='2026.08.28.1')return true;
+    if(document.querySelector?.('script[src*="ly-ui-form-ergonomics.js?v=20260828.1"]'))return true;
+    const script=document.createElement?.('script');
+    if(!script)return false;
+    script.src='./ly-ui-form-ergonomics.js?v=20260828.1';
+    script.async=true;
+    script.dataset.lyBootstrap='ui-form-ergonomics';
+    script.onerror=()=>script.remove?.();
+    (document.head||document.documentElement).appendChild(script);
+    return true;
+  }
+
   function ensureEmployeesParityRunner(){
     if(window.__lyFreshCoreV3EmployeesParityRunner){
       try{window.__lyFreshCoreV3EmployeesParityRunner.render?.();}catch(e){}
@@ -69,12 +82,12 @@
     return true;
   }
 
-  function boot(){ensureUIStability();mount();ensureEmployeesParityRunner();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
+  function boot(){ensureUIStability();ensureUIFormErgonomics();mount();ensureEmployeesParityRunner();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
   window.__LY_APP_VERSION=VERSION;
   window.__LY_APP_VERSION_LABEL=LABEL;
   window.__lyAppVersion={version:VERSION,revision:REVISION,label:LABEL,mount,status:()=>({...state})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{ensureUIStability();mount();ensureEmployeesParityRunner();},delay));
-  window.addEventListener?.('focus',()=>{ensureUIStability();mount();ensureEmployeesParityRunner();});
+  [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{ensureUIStability();ensureUIFormErgonomics();mount();ensureEmployeesParityRunner();},delay));
+  window.addEventListener?.('focus',()=>{ensureUIStability();ensureUIFormErgonomics();mount();ensureEmployeesParityRunner();});
   window.addEventListener?.('latyen:branding-updated',()=>setTimeout(mount,0));
 })();
