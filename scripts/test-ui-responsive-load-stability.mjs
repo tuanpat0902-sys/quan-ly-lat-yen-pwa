@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 const ui=await fs.readFile(new URL('../ly-ui-stability.js',import.meta.url),'utf8');
+const forms=await fs.readFile(new URL('../ly-ui-form-ergonomics.js',import.meta.url),'utf8');
 const app=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
@@ -33,14 +34,30 @@ assert.match(ui,/Math\.min\(2000/,'busy feedback must have a hard timeout');
 assert.match(ui,/boundedStartupFeedback/,'startup perceived-performance guard missing');
 assert.match(ui,/latyen:ui-rescued/,'UI rescue must settle perceived loading state');
 assert.match(ui,/\.empty\{min-height:/,'empty-state readability normalization missing');
+
+assert.match(forms,/VERSION='2026\.08\.28\.1'/,'form ergonomics version missing');
+assert.match(forms,/aria-invalid="true"/,'ARIA invalid fields must have explicit styling');
+assert.match(forms,/@supports selector\(input:user-invalid\)/,'native user-invalid progressive enhancement missing');
+assert.match(forms,/\[role="alert"\]/,'inline form errors need readable alert styling');
+assert.match(forms,/\.modal\.open \.modal-head/,'mobile modal header must be sticky');
+assert.match(forms,/\.modal\.open \.receipt-modal-actions/,'mobile modal actions must be sticky');
+assert.match(forms,/safe-area-inset-bottom/,'sticky mobile actions must respect bottom safe area');
+assert.match(forms,/min-height:44px/,'mobile modal actions must keep touch targets');
+assert.doesNotMatch(forms,/MutationObserver|setInterval/,'form ergonomics must not observe or poll the DOM');
+assert.doesNotMatch(forms,/\bfetch\s*\(|\.rpc\s*\(/,'form ergonomics must not perform cloud calls');
+assert.doesNotMatch(forms,/renderAll|renderPanel|showTab|\.navigate\s*\(/,'form ergonomics must not own renderer/navigation');
+
 assert.match(app,/ensureUIStability\(\)/,'UI layer must be bootstrapped by app-version');
 assert.match(app,/__lyUIStability\?\.version==='2026\.08\.28\.3'/,'app bootstrap must require the exact UI layer version');
 assert.match(app,/ly-ui-stability\.js\?v=20260828\.3/,'UI layer must use deterministic asset version');
+assert.match(app,/ensureUIFormErgonomics\(\)/,'form ergonomics must be bootstrapped by app-version');
+assert.match(app,/ly-ui-form-ergonomics\.js\?v=20260828\.1/,'form ergonomics must use deterministic asset version');
 assert.match(sw,/ly-ui-stability\.js\?v=20260828\.3/,'service worker must precache the exact UI layer asset');
+assert.match(sw,/ly-ui-form-ergonomics\.js\?v=20260828\.1/,'service worker must precache form ergonomics');
 assert.doesNotMatch(ui,/MutationObserver/,'UI stability layer must not create DOM observation loops');
 assert.doesNotMatch(ui,/\bfetch\s*\(/,'UI stability layer must not perform network calls');
 assert.doesNotMatch(ui,/\.rpc\s*\(/,'UI stability layer must not call Supabase RPCs');
 assert.doesNotMatch(ui,/renderAll|renderPanel|showTab/,'UI stability layer must not rerender application panels');
 assert.doesNotMatch(ui,/setInterval/,'loading feedback must not introduce persistent polling');
 
-console.log('Responsive UI + accessibility + perceived-performance stability: PASS');
+console.log('Responsive UI + accessibility + perceived-performance + form ergonomics: PASS');
