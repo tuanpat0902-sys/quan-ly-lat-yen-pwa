@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-21",
+  "version": "3.0-migration-plan-22",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -107,7 +107,31 @@
         "nextGate": "wait-for-v3-2-readiness-then-design-read-only-documents-repository"
       }
     },
-    {"id":"V3-5","name":"Sales","status":"planned","authoritative":"v2","dependsOn":["V3-2","V3-3","V3-4"]},
+    {
+      "id": "V3-5",
+      "name": "Sales",
+      "status": "source-of-truth-audited-dependency-ipos-locked",
+      "authoritative": "v2",
+      "dependsOn": ["V3-2","V3-3","V3-4"],
+      "evidence": {
+        "sourceOfTruth": "src-v2/domains/sales/sales-repository.js",
+        "productionSchema": "audited-read-only",
+        "rlsVerifiedBothTables": true,
+        "tables": ["ly_sales","ly_sale_items"],
+        "productionBaselineCounts": {"sales":226,"saleItems":488,"iposSales":226,"orphanSaleItems":0},
+        "ipos": {"active":true,"cronJob":"ly_ipos_sync_every_minute","cronSchedule":"* * * * *","upsertRpc":"ly_ipos_upsert_sale","deleteRpc":"ly_ipos_delete_sale","reconciliationRpc":"ly_ipos_reconcile_absent_sales","protectedWritePath":true,"inventoryChangedBySync":false},
+        "repository": "not-implemented",
+        "service": "not-implemented",
+        "shadow": "not-implemented",
+        "productionActivation": false,
+        "cloudReads": 0,
+        "cloudWrites": 0,
+        "dualWrite": false,
+        "inventoryDeductionChanged": false,
+        "activationBlockedBy": ["V3-2","V3-3","V3-4","active-iPOS-write-path"],
+        "nextGate": "wait-for-v3-2-v3-3-v3-4-readiness-then-design-read-only-sales-repository"
+      }
+    },
     {
       "id": "V3-6",
       "name": "Employees",
