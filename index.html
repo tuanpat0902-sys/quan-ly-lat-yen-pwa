@@ -34647,6 +34647,7 @@ function renderSales(){
     </div>
   `;
 
+  tv2(E.sales);
   setTimeout(()=>{renderSaleReport();updateSaleDiscountUI();updateSaleReceiptTotals();toggleCustomSaleSource();},0);
 }
 
@@ -34656,7 +34657,7 @@ function recentSalesTable(){
 
 function refreshRecentSales(){
   const area=document.getElementById('recentSalesArea');
-  if(area)area.innerHTML=recentSalesTable();
+  if(area)area.innerHTML=recentSalesTable(),tv2(area);
 }
 
 function stageSaleMovementLocal({
@@ -55306,7 +55307,7 @@ saleReceiptHistoryTable=function(){
 
   return `
     <div class="scroll">
-      <table>
+      <table data-ly-table-view="recentSales">
         <tr>
           <th>Ngày/giờ</th>
           <th>Số phiếu</th>
