@@ -47,11 +47,14 @@ assert.match(design,/--ly-shadow-card/,'card elevation token missing');
 assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 
-assert.match(tableUx,/VERSION='2026\.08\.28\.1'/,'table ergonomics v1 must be active');
-assert.match(tableUx,/\.scroll\{width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important/,'table wrappers must use natural vertical page flow');
+assert.match(tableUx,/VERSION='2026\.08\.28\.2'/,'table ergonomics v2 must be active');
+assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
+assert.match(tableUx,/\.scroll\{width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important/,'short table wrappers must retain natural height');
+assert.match(tableUx,/\.scroll\[data-ly-table-long="1"\]\{max-height:min\(68vh,680px\)!important;overflow-y:auto!important/,'long tables must get bounded vertical scrolling');
 assert.match(tableUx,/\.scroll>table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:0!important;max-width:100%!important/,'desktop tables must fit their container');
-assert.match(tableUx,/@media\(min-width:761px\)[\s\S]*\.scroll\{overflow-x:hidden!important\}/,'desktop table wrappers must not create routine horizontal scrolling');
-assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*tbody tr\{display:grid!important/,'read-only mobile tables must become row cards');
+assert.match(tableUx,/@media\(min-width:761px\)[\s\S]*thead th\{position:sticky!important;top:0!important/,'desktop long tables must keep headers visible while scrolling');
+assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*max-height:min\(64dvh,620px\)!important/,'mobile long tables must use viewport-aware vertical scrolling');
+assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*tbody tr\{display:grid!important/,'read-only mobile tables must remain row cards');
 assert.match(tableUx,/data-ly-table-editable/,'editable tables must be detected and protected from row-card transforms');
 assert.match(tableUx,/data-ly-label/,'mobile row cards must preserve column labels');
 assert.match(tableUx,/data-ly-value/,'mobile row cards must preserve cell values');
@@ -59,19 +62,19 @@ assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
 assert.match(sales,/VERSION='2026\.08\.28\.3'/,'sales workflow natural-height fix version missing');
-assert.match(sales,/#saleReportArea \.scroll,#recentSalesArea \.scroll\{max-height:none!important;height:auto!important\}/,'sales report/history must retain natural height');
+assert.match(sales,/#saleReportArea \.scroll,#recentSalesArea \.scroll\{max-height:none!important;height:auto!important\}/,'sales workflow scoped fix must remain present');
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|renderSaleReport|renderAll|renderPanel|showTab|\.navigate\s*\(/,'sales workflow layer must remain presentation-only');
 
 assert.match(recovery,/VERSION='2026\.08\.28\.1'/,'lazy render recovery version missing');
 assert.doesNotMatch(recovery,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(|showTab|renderPanel|\.navigate\s*\(/,'lazy recovery must not own navigation, polling or cloud transport');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.28\.7'/,'visible table UX overhaul marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.28\.8'/,'visible long-table vertical-scroll marker missing');
 assert.match(app,/ly-ui-stability\.js\?v=20260828\.4/,'UI stability asset must be deterministic');
 assert.match(app,/ly-ui-form-ergonomics\.js\?v=20260828\.2/,'form ergonomics asset must be deterministic');
 assert.match(app,/ly-ui-design-system\.js\?v=20260828\.2/,'design-system asset must be deterministic');
-assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.1/,'table ergonomics asset must be deterministic');
+assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.2/,'table ergonomics asset must be deterministic');
 assert.match(app,/ly-ui-sales-workflow\.js\?v=20260828\.3/,'sales scroll fix asset must remain deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-199/,'UI build 7 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-200/,'UI build 8 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
-console.log('Responsive UI + table UX overhaul + accessibility + natural page scrolling: PASS');
+console.log('Responsive UI + table horizontal fit + bounded long-table vertical scrolling: PASS');
