@@ -1,0 +1,33 @@
+{
+  "capturedAt": "2026-08-28",
+  "mode": "source-of-truth-audit-read-only",
+  "currentAuthority": "v2",
+  "cloudReads": 0,
+  "cloudWrites": 0,
+  "reports": {
+    "dedicatedPersistenceTable": false,
+    "calculationAuthority": "legacy-core",
+    "standardUi": "ly-reports.js",
+    "specialUi": "ly-special-reports.js",
+    "readOnlyRenderers": true
+  },
+  "notifications": {
+    "ly_activity_events": {"rows": 63005, "rls": true, "orgScoped": true, "eventTypeRestricted": true},
+    "ly_notification_devices": {"rows": 32, "rls": true, "orgScoped": true},
+    "center": "ly-notification-center.js",
+    "delivery": "ly-data-notifications.js",
+    "realtimeSource": "ly_activity_events",
+    "pollingFallback": true,
+    "deviceTelemetry": true
+  },
+  "runtime": {
+    "v3RepositoryImplemented": false,
+    "v3ServiceImplemented": false,
+    "v3ShadowActivated": false,
+    "productionActivation": false,
+    "dualWrite": false,
+    "reportFormulaChanged": false,
+    "notificationDeliveryChanged": false,
+    "notificationTelemetryChanged": false
+  }
+}
