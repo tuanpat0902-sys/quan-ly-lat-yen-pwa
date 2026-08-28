@@ -78,6 +78,7 @@ jobs:
           test -f _site/ly-ui-form-ergonomics.js
           test -f _site/ly-ui-design-system.js
           test -f _site/ly-ui-sales-workflow.js
+          test -f _site/ly-panel-lazy-render-recovery.js
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
