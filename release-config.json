@@ -1,8 +1,8 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "loaderAssetVersion": "20260829.116",
-  "moduleLoaderVersion": "2026.08.29.51",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-214",
-  "redeploy": "2026-08-29-atomic-tables-ingredient-status-branding-sync-ui-build-22"
+  "loaderAssetVersion": "20260829.117",
+  "moduleLoaderVersion": "2026.08.29.52",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-215",
+  "redeploy": "2026-08-29-single-owner-ingredient-table-layout-ui-build-23"
 }

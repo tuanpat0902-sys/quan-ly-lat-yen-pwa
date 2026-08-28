@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV95)return;
   window.__lyModuleLoaderV95=true;
 
-  const VERSION='2026.08.29.51';
+  const VERSION='2026.08.29.52';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -43,7 +43,7 @@
     manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js?v=20260824.2',test:()=>window.__lyFreshCoreV2ManualRefresh?.version==='2026.08.24.2'},
     realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260825.1',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.25.1'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
-    ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260826.2',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.26.2'},
+    ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260829.3',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.29.3'},
     ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260829.5',test:()=>window.__lyIngredientTableUX?.version==='2026.08.29.5'},
     ingredientSidebarStatus:{src:'./ly-ingredient-sidebar-status.js?v=20260829.1',test:()=>window.__lyIngredientSidebarStatus?.version==='2026.08.29.1'},
     stockUnitSync:{src:'./ly-stock-unit-sync.js?v=20260825.1',test:()=>window.__lyStockUnitSync?.version==='2026.08.25.1'},

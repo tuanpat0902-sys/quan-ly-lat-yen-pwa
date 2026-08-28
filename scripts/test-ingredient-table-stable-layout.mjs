@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [layout,units,sidebar,index,loader]=await Promise.all([
+const [layout,units,sidebar,conversion,index,loader]=await Promise.all([
   fs.readFile(new URL('../ly-ingredient-table-ux.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-unit-conversions.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-ingredient-sidebar-status.js',import.meta.url),'utf8'),
+  fs.readFile(new URL('../ly-ingredient-conversion-sync.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../index.html',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8')
 ]);
@@ -36,5 +37,11 @@ assert.match(sidebar,/VERSION='2026\.08\.29\.1'/);
 assert.match(sidebar,/purchasedWarehouseIngredientsInDisplayOrder[\s\S]*warehouseIngredients[\s\S]*ingredient_type\|\|'purchased'/,'sidebar status must use the same selected-warehouse purchased rows as the table');
 assert.doesNotMatch(sidebar,/return db\.ingredients/,'sidebar must not fall back to unscoped all-warehouse data');
 assert.match(loader,/ly-ingredient-sidebar-status\.js\?v=20260829\.1/);
+
+assert.match(conversion,/VERSION='2026\.08\.29\.3'/);
+assert.match(loader,/ly-ingredient-conversion-sync\.js\?v=20260829\.3/);
+assert.doesNotMatch(conversion,/#ingredients \.scroll\{[^}]*overflow-x:/,'conversion sync must not own the ingredient table scroll geometry');
+assert.doesNotMatch(conversion,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{[^}]*\b(?:width|min-width|max-width|table-layout):/,'conversion sync must not override the canonical table geometry');
+assert.doesNotMatch(conversion,/data-ly-col=|min-width:|max-width:|table-layout:|overflow-x:/,'conversion sync must not inject any late table geometry after refresh');
 
 console.log('Ingredient stock table deterministic columns and stable sizing: PASS');

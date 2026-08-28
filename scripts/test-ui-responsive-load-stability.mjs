@@ -86,9 +86,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.22'/,'ingredient table sizing release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.23'/,'ingredient table sizing release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.5/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-214/,'UI build 22 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-215/,'UI build 23 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
 console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');
