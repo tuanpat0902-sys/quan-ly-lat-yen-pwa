@@ -3,8 +3,9 @@ import fs from 'node:fs/promises';
 import {resolveIngredientsInventoryCandidate,INGREDIENTS_INVENTORY_READ_CANDIDATE} from '../src-v3/domains/ingredients-inventory/read-authority-candidate.js';
 import {createIngredientsInventoryLocalReadinessSnapshot,INGREDIENTS_INVENTORY_LOCAL_READINESS_POLICY} from '../src-v3/domains/ingredients-inventory/local-readiness-snapshot.js';
 
+const DAY=24*60*60*1000;
 const storage=value=>({getItem:()=>value});
-const passObservation=lastAt=>({lastAt,parityReady:true,complete:true,writes:0,reads:2,durationMs:800});
+const passObservation=(lastAt,source='device-local-production-soak')=>({lastAt,parityReady:true,complete:true,writes:0,reads:2,durationMs:800,source});
 
 assert.equal(resolveIngredientsInventoryCandidate({
   storage:storage('v3-candidate'),
@@ -31,11 +32,11 @@ assert.equal(INGREDIENTS_INVENTORY_READ_CANDIDATE.dualWrite,false);
 assert.equal(INGREDIENTS_INVENTORY_READ_CANDIDATE.defaultAuthority,'v2');
 
 const orgId='org-1';
-const production=[passObservation(1),passObservation(2),passObservation(3)];
+const production=[passObservation(DAY),passObservation(2*DAY),passObservation(3*DAY)];
 const technical=[passObservation(11),passObservation(12),passObservation(13)];
 const persisted=createIngredientsInventoryLocalReadinessSnapshot({
   orgId,
-  soakStored:{orgs:{[orgId]:{lastAt:3,history:production,gate:{pass:true}}}},
+  soakStored:{orgs:{[orgId]:{lastAt:3*DAY,history:production,gate:{pass:true}}}},
   validationStored:{orgs:{[orgId]:{lastAt:13,observations:technical,result:{pass:true}}}}
 });
 assert.equal(persisted.readiness.pass,true);
@@ -45,6 +46,16 @@ assert.equal(persisted.technicalObservationCount,3);
 assert.equal(persisted.activationAllowed,false);
 assert.equal(persisted.authoritative,false);
 assert.equal(persisted.source,'localStorage-only');
+
+const duplicateProduction=[passObservation(DAY),passObservation(2*DAY),passObservation(2*DAY+1000)];
+const duplicateSnapshot=createIngredientsInventoryLocalReadinessSnapshot({
+  orgId,
+  soakStored:{orgs:{[orgId]:{lastAt:2*DAY+1000,history:duplicateProduction,gate:{pass:true}}}},
+  validationStored:{orgs:{[orgId]:{lastAt:13,observations:technical,result:{pass:true}}}}
+});
+assert.equal(duplicateSnapshot.readiness.pass,false,'persisted pass flags must not override duplicate/same-day production evidence');
+assert.equal(duplicateSnapshot.readiness.productionReady,false);
+assert.equal(duplicateSnapshot.unlockDependents,false);
 
 const technicalOnly=createIngredientsInventoryLocalReadinessSnapshot({
   orgId,
