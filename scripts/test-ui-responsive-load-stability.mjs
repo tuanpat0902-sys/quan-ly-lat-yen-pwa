@@ -3,10 +3,11 @@ import fs from 'node:fs/promises';
 
 const ui=await fs.readFile(new URL('../ly-ui-stability.js',import.meta.url),'utf8');
 const app=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
+const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
 assert.match(index,/viewport-fit=cover/,'mobile viewport must keep safe-area support');
-assert.match(ui,/VERSION='2026\.08\.28\.2'/,'UI stability v2 must be active');
+assert.match(ui,/VERSION='2026\.08\.28\.3'/,'UI stability v3 must be active');
 assert.match(ui,/overflow-x:hidden;overflow-x:clip/,'global horizontal overflow guard missing');
 assert.match(ui,/min-width:0;max-width:100%/,'flex/grid shrink guard missing');
 assert.match(ui,/safe-area-inset-bottom/,'Safari safe-area handling missing');
@@ -25,12 +26,21 @@ assert.match(ui,/role','status'/,'toast status semantics missing');
 assert.match(ui,/aria-live','polite'/,'toast live-region semantics missing');
 assert.match(ui,/aria-modal','true'/,'modal semantics missing');
 assert.match(ui,/if\(style\.textContent!==CSS\)style\.textContent=CSS/,'hot-loaded UI layer must replace stale CSS safely');
+assert.match(ui,/PROGRESS_ID='lyUiProgress'/,'non-blocking progress feedback missing');
+assert.match(ui,/data-ly-ui-busy/,'busy-state visual contract missing');
+assert.match(ui,/aria-busy','true'/,'main content must expose bounded busy semantics');
+assert.match(ui,/Math\.min\(2000/,'busy feedback must have a hard timeout');
+assert.match(ui,/boundedStartupFeedback/,'startup perceived-performance guard missing');
+assert.match(ui,/latyen:ui-rescued/,'UI rescue must settle perceived loading state');
+assert.match(ui,/\.empty\{min-height:/,'empty-state readability normalization missing');
 assert.match(app,/ensureUIStability\(\)/,'UI layer must be bootstrapped by app-version');
-assert.match(app,/__lyUIStability\?\.version==='2026\.08\.28\.2'/,'app bootstrap must require the exact UI layer version');
-assert.match(app,/ly-ui-stability\.js\?v=20260828\.2/,'UI layer must use deterministic asset version');
+assert.match(app,/__lyUIStability\?\.version==='2026\.08\.28\.3'/,'app bootstrap must require the exact UI layer version');
+assert.match(app,/ly-ui-stability\.js\?v=20260828\.3/,'UI layer must use deterministic asset version');
+assert.match(sw,/ly-ui-stability\.js\?v=20260828\.3/,'service worker must precache the exact UI layer asset');
 assert.doesNotMatch(ui,/MutationObserver/,'UI stability layer must not create DOM observation loops');
 assert.doesNotMatch(ui,/\bfetch\s*\(/,'UI stability layer must not perform network calls');
 assert.doesNotMatch(ui,/\.rpc\s*\(/,'UI stability layer must not call Supabase RPCs');
 assert.doesNotMatch(ui,/renderAll|renderPanel|showTab/,'UI stability layer must not rerender application panels');
+assert.doesNotMatch(ui,/setInterval/,'loading feedback must not introduce persistent polling');
 
-console.log('Responsive UI + accessibility + page-load stability: PASS');
+console.log('Responsive UI + accessibility + perceived-performance stability: PASS');
