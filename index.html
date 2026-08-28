@@ -32549,6 +32549,7 @@ function toggleRecipeList(force=null){
   }
 }
 
+function tv2(root){(window.queueMicrotask||setTimeout)(()=>window.__lyTableViewV2?.apply?.(root),0)}
 function renderRecipes(){
   const products=warehouseProducts();
 
@@ -32597,7 +32598,7 @@ function renderRecipes(){
       <div id="recipeListContent" class="recipe-list-content ${recipeListCollapsed?'collapsed':''}">
         ${products.length?`
           <div class="scroll recipe-list-scroll">
-            <table class="section-gap recipe-list-table">
+            <table class="section-gap recipe-list-table" data-ly-table-view="recipeDirectory">
               <tr>
                 <th>Món</th>
                 <th class="right">Giá bán</th>
@@ -32627,6 +32628,7 @@ function renderRecipes(){
         `:'<div class="empty section-gap">Kho này chưa có công thức đồ uống</div>'}
       </div>
     </div>`;
+  tv2(E.recipes);
 }
 
 function toggleRecipeForm(forceOpen=null){
@@ -36907,7 +36909,7 @@ function recentStocktakeHistory(){
                 </div>
 
                 <div class="scroll">
-                  <table>
+                  <table data-ly-table-view="stocktakeSession">
                     <tr>
                       <th>Nguyên liệu/ Dụng cụ</th>
                       <th>Đơn vị</th>
@@ -37022,10 +37024,7 @@ function populateAllStocktakeLines(){
 
   holder.innerHTML='';
 
-  // QUAN TRỌNG:
-  // Không sort A→Z ở đây. renderIngredients() cũng lấy trực tiếp
-  // warehouseIngredients() rồi filter purchased, vì vậy thứ tự hai nơi
-  // luôn giống nhau 1:1.
+  // Giữ nguyên thứ tự warehouseIngredients() để STT khớp renderIngredients().
   const list=purchasedWarehouseIngredientsInDisplayOrder()
     .filter(i=>i.active!==false);
 
@@ -37230,7 +37229,7 @@ function stocktakeReceiptHistory(){
 
               <div id="stocktakeReceipt${dayIndex}_${ri}" class="stocktake-day-body">
                 <div class="scroll">
-                  <table>
+                  <table data-ly-table-view="stocktakeReceipt">
                     <tr>
                       <th>Nguyên liệu/ Dụng cụ</th>
                       <th>Đơn vị</th>
@@ -37413,6 +37412,7 @@ function renderStocktake(){
       <div class="section-gap">${stocktakeReceiptHistory()}</div>
     </div>
   `;
+  tv2(E.stocktake);
 }
 async function saveStocktakeReceipt(){
   const receiptNo=($('stocktakeReceiptNo')?.value||'').trim();
@@ -41418,7 +41418,7 @@ function renderWarehouses(){
     <div class="card">
       <h2>Kho / Chi nhánh</h2>
 
-      <table>
+      <table data-ly-table-view="warehouseDirectory">
         <tr>
           <th>Tên</th>
           <th>Địa chỉ</th>
@@ -41450,6 +41450,7 @@ function renderWarehouses(){
         `).join('')}
       </table>
     </div>`;
+  tv2(E.warehouses);
 }
 
 async function deleteWarehouse(id){

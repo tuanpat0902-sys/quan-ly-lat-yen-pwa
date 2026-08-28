@@ -155,7 +155,7 @@
         <h3>Báo cáo chi tiết nhân viên</h3>
         ${activeRows.length?`
           <div class="scroll section-gap">
-            <table class="employee-report-table">
+            <table class="employee-report-table" data-ly-table-view="employeePerformance">
               <tr>
                 <th>Mã NV</th>
                 <th>Nhân viên</th>
@@ -191,6 +191,7 @@
       </div>
     `;
   
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
     scheduleIdleWork(
       'employee-work-chart',
       ()=>drawEmployeeWorkChart(activeRows),

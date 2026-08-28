@@ -1,8 +1,8 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "loaderAssetVersion": "20260828.109",
-  "moduleLoaderVersion": "2026.08.28.42",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-207",
-  "redeploy": "2026-08-28-table-view-v2-wave-4-special-reports-ui-build-15"
+  "loaderAssetVersion": "20260828.110",
+  "moduleLoaderVersion": "2026.08.28.43",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-208",
+  "redeploy": "2026-08-28-table-view-v2-wave-5-operational-ui-build-16"
 }

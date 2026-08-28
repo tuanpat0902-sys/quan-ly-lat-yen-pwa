@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
-  if(window.__lyTableViewV2?.version==='2026.08.28.4')return;
-  const VERSION='2026.08.28.4',STYLE_ID='lyTableViewV2Style',LONG_TABLE_ROWS=12;
+  if(window.__lyTableViewV2?.version==='2026.08.28.5')return;
+  const VERSION='2026.08.28.5',STYLE_ID='lyTableViewV2Style',LONG_TABLE_ROWS=12;
   const ORIGINAL_ATTRIBUTES=new WeakMap(),disabledKeys=new Set();
   const REGISTRY=Object.freeze({
     suppliers:Object.freeze({label:'Danh sách nhà cung cấp',columns:Object.freeze([{label:'Nhà cung cấp',kind:'primary',width:'23%'},{label:'Điện thoại',kind:'text',width:'15%'},{label:'Địa chỉ',kind:'long',width:'21%'},{label:'Dòng nhập',kind:'number',width:'12%'},{label:'Ghi chú',kind:'long',width:'21%'},{label:'Thao tác',kind:'actions',width:'8%'}])}),
@@ -21,7 +21,12 @@
     specialExportSummary:Object.freeze({label:'Tổng hợp xuất kho theo mặt hàng',columns:Object.freeze([{label:'Nguyên liệu/Dụng cụ',kind:'primary',width:'27%'},{label:'Đơn vị',kind:'text',width:'11%'},{label:'Tổng SL xuất',kind:'number',width:'17%'},{label:'Số phiếu',kind:'number',width:'12%'},{label:'Tổng giá trị',kind:'number',width:'17%'},{label:'Đơn giá TB/đv',kind:'number',width:'16%'}])}),
     specialExportDetails:Object.freeze({label:'Chi tiết từng dòng xuất kho',columns:Object.freeze([{label:'Ngày',kind:'date',width:'14%'},{label:'Số phiếu',kind:'code',width:'15%'},{label:'Nguyên liệu/Dụng cụ',kind:'primary',width:'24%'},{label:'Đơn vị',kind:'text',width:'9%'},{label:'Số lượng',kind:'number',width:'12%'},{label:'Đơn giá',kind:'number',width:'13%'},{label:'Thành tiền',kind:'number',width:'13%'}])}),
     specialExportDaily:Object.freeze({label:'Tổng hợp xuất kho theo ngày',columns:Object.freeze([{label:'Ngày',kind:'date',width:'20%'},{label:'Số phiếu',kind:'number',width:'16%'},{label:'Dòng mặt hàng',kind:'number',width:'18%'},{label:'Tổng số lượng*',kind:'number',width:'22%'},{label:'Giá trị xuất',kind:'number',width:'24%'}])}),
-    specialSalesQuantity:Object.freeze({label:'Thống kê số lượng bán theo món',columns:Object.freeze([{label:'Món',kind:'primary',width:'40%'},{label:'Đơn vị',kind:'text',width:'18%'},{label:'Số lượng bán',kind:'number',width:'22%'},{label:'Tỷ trọng',kind:'number',width:'20%'}])})
+    specialSalesQuantity:Object.freeze({label:'Thống kê số lượng bán theo món',columns:Object.freeze([{label:'Món',kind:'primary',width:'40%'},{label:'Đơn vị',kind:'text',width:'18%'},{label:'Số lượng bán',kind:'number',width:'22%'},{label:'Tỷ trọng',kind:'number',width:'20%'}])}),
+    employeePerformance:Object.freeze({label:'Báo cáo chi tiết nhân viên',columns:Object.freeze([{label:'Mã NV',kind:'code',width:'9%'},{label:'Nhân viên',kind:'primary',width:'18%'},{label:'Loại',kind:'text',width:'11%'},{label:'Ngày công',kind:'number',width:'10%'},{label:'Giờ làm',kind:'number',width:'10%'},{label:'OT',kind:'number',width:'8%'},{label:'Nghỉ phép',kind:'number',width:'10%'},{label:'Nghỉ KP',kind:'number',width:'10%'},{label:'Lương ước tính',kind:'number',width:'14%'}])}),
+    recipeDirectory:Object.freeze({label:'Danh sách công thức',columns:Object.freeze([{label:'Món',kind:'primary',width:'22%'},{label:'Giá bán',kind:'number',width:'15%'},{label:'Giá vốn NVL',kind:'number',width:'17%'},{label:'Thành phần',kind:'long',width:'32%'},{label:'Thao tác',kind:'actions',width:'14%'}])}),
+    stocktakeSession:Object.freeze({label:'Chi tiết lần kiểm kê',columns:Object.freeze([{label:'Nguyên liệu/ Dụng cụ',kind:'primary',width:'28%'},{label:'Đơn vị',kind:'text',width:'12%'},{label:'Tồn trước',kind:'number',width:'18%'},{label:'Thực tế',kind:'number',width:'18%'},{label:'Chênh lệch',kind:'number',width:'24%'}])}),
+    stocktakeReceipt:Object.freeze({label:'Chi tiết phiếu kiểm kê',columns:Object.freeze([{label:'Nguyên liệu/ Dụng cụ',kind:'primary',width:'22%'},{label:'Đơn vị',kind:'text',width:'9%'},{label:'Tồn trước',kind:'number',width:'13%'},{label:'Thực tế',kind:'number',width:'13%'},{label:'Chênh lệch',kind:'status',width:'13%'},{label:'Đơn giá',kind:'number',width:'14%'},{label:'Thành tiền chênh lệch',kind:'number',width:'16%'}])}),
+    warehouseDirectory:Object.freeze({label:'Danh sách kho / chi nhánh',columns:Object.freeze([{label:'Tên',kind:'primary',width:'28%'},{label:'Địa chỉ',kind:'long',width:'32%'},{label:'Giá trị tồn',kind:'number',width:'22%'},{label:'Thao tác',kind:'actions',width:'18%'}])})
   });
   const CSS=`
 .scroll[data-ly-tv2-shell="1"]{width:100%!important;max-width:100%!important;overflow-x:hidden!important;overflow-y:visible!important;contain:layout paint;border:1px solid var(--border,#e4e7ec)!important;border-radius:12px!important;background:var(--card,#fff)!important}
