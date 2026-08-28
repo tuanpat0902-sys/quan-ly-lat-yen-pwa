@@ -1,0 +1,44 @@
+export const FINANCE_CASHFLOW_CONTRACT=Object.freeze({
+  domain:'finance-cashflow',
+  wave:'V3-7',
+  dependsOn:Object.freeze(['V3-5','V3-6']),
+  status:'source-of-truth-audited-empty-cashflow-dependency-locked',
+  currentAuthority:'v2',
+  v3Authoritative:false,
+  productionActivation:false,
+  dualWrite:false,
+  cloudReads:0,
+  cloudWrites:0,
+  cashflow:Object.freeze({
+    repository:'src-v2/domains/cashflow/cashflow-repository.js',
+    service:'src-v2/domains/cashflow/cashflow-service.js',
+    table:'ly_cashflow_entries',
+    stateKey:'cashflowEntries',
+    productionRows:0,
+    rlsVerified:true
+  }),
+  finance:Object.freeze({
+    ui:'ly-finance.js',
+    calculationAuthority:'legacy-core',
+    aggregationInputs:Object.freeze(['sales','cogs','salary','cashflow','stocktake','inventory']),
+    persistenceTableDedicated:false
+  }),
+  repositoryImplemented:false,
+  serviceImplemented:false,
+  shadowImplemented:false,
+  nextGate:'wait-for-v3-5-v3-6-readiness-then-design-read-only-finance-cashflow-projection'
+});
+
+export const FINANCE_CASHFLOW_MIGRATION_GUARD=Object.freeze({
+  requireDependencies:Object.freeze(['V3-5','V3-6']),
+  requireOrgScope:true,
+  requireWarehouseScope:true,
+  requireLegacyFinanceFormulaParity:true,
+  requireReadOnlyProjectionBeforeShadow:true,
+  requireParityBeforeAuthorityReview:true,
+  allowFormulaChanges:false,
+  allowCashflowWrites:false,
+  allowDualWrite:false,
+  allowAutoPromotion:false,
+  currentAuthority:'v2'
+});
