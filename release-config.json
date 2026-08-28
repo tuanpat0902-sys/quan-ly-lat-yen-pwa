@@ -1,8 +1,8 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "loaderAssetVersion": "20260828.111",
-  "moduleLoaderVersion": "2026.08.28.44",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-209",
-  "redeploy": "2026-08-28-table-width-foundation-fix-ui-build-17"
+  "loaderAssetVersion": "20260828.112",
+  "moduleLoaderVersion": "2026.08.28.45",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-210",
+  "redeploy": "2026-08-28-sales-tables-vertical-scroll-ui-build-18"
 }

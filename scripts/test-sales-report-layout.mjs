@@ -5,6 +5,7 @@ const report=await fs.readFile(new URL('../ly-special-reports.js',import.meta.ur
 const index=(await fs.readFile(new URL('../index.html',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 const bridge=await fs.readFile(new URL('../ly-special-reports-bridge.js',import.meta.url),'utf8');
 const layout=await fs.readFile(new URL('../ly-compact-admin-layout.js',import.meta.url),'utf8');
+const salesWorkflow=await fs.readFile(new URL('../ly-ui-sales-workflow.js',import.meta.url),'utf8');
 
 assert.match(report,/class="sale-analysis-grid section-gap"/,'sales chart and table must share one responsive grid');
 assert.match(report,/sale-chart-panel[\s\S]*sale-table-panel/,'chart must precede the adjacent product table');
@@ -27,5 +28,8 @@ assert.match(salesChart,/ctx\.roundRect\(left,y,barW,barH,radius\)/,'sales bars 
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
 assert.match(bridge,/ly-special-reports\.js\?v=20260827\.4/,'bridge must bypass the previous cached report module');
+assert.match(salesWorkflow,/#saleReportArea \.sale-table-panel \.scroll\{max-height:min\(62dvh,560px\)!important\}/,'long sales quantity report must scroll within a bounded viewport');
+assert.match(salesWorkflow,/#recentSalesArea \.scroll\{max-height:min\(68dvh,640px\)!important\}/,'long recent-sales history must scroll within a bounded viewport');
+assert.match(index,/<table data-ly-table-view="recentSales"/,'recent sales history must use the explicit responsive table contract');
 
 console.log('Sales report responsive layout: PASS');
