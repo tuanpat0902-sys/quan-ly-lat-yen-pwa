@@ -3,9 +3,9 @@
   if(window.__lyBrandingSyncV3)return;
   window.__lyBrandingSyncV3=true;
 
-  const VERSION='2026.08.26.1';
+  const VERSION='2026.08.29.2';
   const DEFAULT_NAME='QUẢN LÝ LÁT YÊN';
-  const state={orgId:'',row:null,channel:null,startTimer:null,saving:false,applying:false,seedAttempted:false,lastLoadAt:0};
+  const state={orgId:'',row:null,channel:null,startTimer:null,saving:false,pendingSave:null,applying:false,seedAttempted:false,lastLoadAt:0};
   const text=v=>String(v??'').trim();
   const stripVersion=v=>text(v).replace(/\s*(?:·|-)\s*Ver\s+\d+\.\d+\.\d+\s*$/i,'').trim();
   const getClient=()=>{try{if(typeof sb!=='undefined'&&sb?.from)return sb;}catch(e){}try{if(window.sb?.from)return window.sb;}catch(e){}return null;};
@@ -56,18 +56,20 @@
       if(logo)applyFavicon(logo);
       if(document.title&&[oldName,DEFAULT_NAME].map(x=>x.toLowerCase()).includes(stripVersion(document.title).toLowerCase()))document.title=name;
       state.row={...row,software_name:name,logo_data:logo||null};
+      try{localStorage.setItem('lat_yen_app_brand_v1',JSON.stringify({name,logo:logo||''}));}catch(e){}
       try{localStorage.setItem('__latyen_branding_cache',JSON.stringify({orgId:state.orgId,software_name:name,logo_data:logo||null,updated_at:row.updated_at||''}));}catch(e){}
       try{window.dispatchEvent(new CustomEvent('latyen:branding-updated',{detail:{softwareName:name,hasLogo:!!logo}}));}catch(e){}
       setTimeout(remountAppVersion,0);
     }finally{state.applying=false;}
   }
-  function applyCached(){try{const cached=JSON.parse(localStorage.getItem('__latyen_branding_cache')||'null');const org=getOrgId();if(cached&&cached.orgId===org&&cached.logo_data)applyBranding(cached);}catch(e){}}
+  function applyCached(){try{const cached=JSON.parse(localStorage.getItem('__latyen_branding_cache')||'null');const org=getOrgId();if(cached&&cached.orgId===org&&cached.software_name)applyBranding(cached);}catch(e){}}
 
   async function currentPayload(forceLogo){const parts=cardParts(),software_name=text(parts.nameInput?.value)||text(state.row?.software_name)||DEFAULT_NAME;let logo_data;if(forceLogo===null)logo_data=null;else if(forceLogo!==undefined)logo_data=forceLogo;else{const src=parts.preview?.getAttribute('src')||parts.preview?.src||state.row?.logo_data||'';logo_data=await imageSourceToData(src);}return {software_name,logo_data:logo_data||null};}
   async function persist(forceLogo){
-    if(state.applying||state.saving)return false;
+    if(state.applying)return false;
+    if(state.saving){state.pendingSave={forceLogo};return true;}
     const client=getClient(),org=getOrgId();if(!client||!org)return false;state.orgId=org;state.saving=true;
-    try{const payload=await currentPayload(forceLogo);let userId=null;try{const {data}=await client.auth?.getUser?.();userId=data?.user?.id||null;}catch(e){}const row={org_id:org,...payload,updated_at:new Date().toISOString(),updated_by:userId};const {data,error}=await client.from('ly_org_branding').upsert(row,{onConflict:'org_id'}).select('org_id,software_name,logo_data,updated_at,updated_by').single();if(error)throw error;applyBranding(data||row);return true;}catch(e){console.warn('[Lát Yên] branding save',e);return false;}finally{state.saving=false;}
+    try{const payload=await currentPayload(forceLogo);let userId=null;try{const {data}=await client.auth?.getUser?.();userId=data?.user?.id||null;}catch(e){}const row={org_id:org,...payload,updated_at:new Date().toISOString(),updated_by:userId};const {data,error}=await client.from('ly_org_branding').upsert(row,{onConflict:'org_id'}).select('org_id,software_name,logo_data,updated_at,updated_by').single();if(error)throw error;applyBranding(data||row);return true;}catch(e){console.warn('[Lát Yên] branding save',e);return false;}finally{state.saving=false;const next=state.pendingSave;state.pendingSave=null;if(next)queueMicrotask(()=>persist(next.forceLogo));}
   }
   async function seedIfNeeded(){if(state.seedAttempted||state.row||!state.orgId)return;const parts=cardParts();if(!parts.card)return;state.seedAttempted=true;await persist(undefined);}
   async function load(force=false){
@@ -82,7 +84,7 @@
   function ensureChannel(){
     const client=getClient();if(!client?.channel||!state.orgId||state.channel)return;
     let ch=client.channel(`latyen-branding-v3-${state.orgId}-${Math.random().toString(36).slice(2,7)}`);
-    ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'ly_org_branding',filter:`org_id=eq.${state.orgId}`},payload=>{if(payload.eventType==='DELETE'){state.row=null;return;}applyBranding(payload.new||{});});
+    ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'ly_org_branding',filter:`org_id=eq.${state.orgId}`},payload=>{if(payload.eventType==='DELETE'){applyBranding({software_name:DEFAULT_NAME,logo_data:null,updated_at:new Date().toISOString()});state.row=null;return;}applyBranding(payload.new||{});});
     state.channel=ch;ch.subscribe(status=>{if(status==='SUBSCRIBED'&&state.row)applyBranding(state.row);});
   }
   async function start(){applyCached();await load(true);ensureChannel();if(state.row)applyBranding(state.row);else remountAppVersion();}
@@ -90,8 +92,8 @@
   function isInsideBranding(target){const card=findBrandingCard();return !!(card&&target&&card.contains(target));}
   function isSettingsButton(target){const b=target?.closest?.('#nav button[data-panel],button[data-panel]');if(!b)return false;const id=text(b.dataset.panel).toLowerCase(),label=text(b.textContent).toLowerCase();return id==='settings'||label.includes('cài đặt');}
   function installEvents(){
-    document.addEventListener('click',e=>{if(isSettingsButton(e.target)){setTimeout(()=>load(true),120);return;}if(!isInsideBranding(e.target))return;const button=e.target.closest('button');if(!button)return;const label=text(button.textContent);if(/^Lưu$/i.test(label))setTimeout(()=>persist(undefined),80);else if(/^Xóa$/i.test(label))setTimeout(()=>persist(null),80);},true);
-    document.addEventListener('change',e=>{if(isInsideBranding(e.target)&&e.target?.matches?.('input[type="file"]'))setTimeout(()=>persist(undefined),250);},true);
+    document.addEventListener('click',e=>{if(isSettingsButton(e.target))setTimeout(()=>load(true),120);},true);
+    window.addEventListener('latyen:local-branding-changed',event=>persist(event?.detail?.logoData));
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);},true);
     window.addEventListener('focus',()=>load(true),true);
     window.addEventListener('online',()=>load(true));

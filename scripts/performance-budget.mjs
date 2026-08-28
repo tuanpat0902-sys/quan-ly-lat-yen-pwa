@@ -45,7 +45,7 @@ if(full.observers>11)fail(`repository observer call sites regressed above ceilin
 if(full.innerHtml>175)fail(`DOM assignment call sites regressed above ceiling: ${full.innerHtml}`);else pass('DOM assignment regression ceiling');
 for(const marker of ['__lyPerformanceOptimizerV4','LEADER_VISIBLE_MS=4500','rebindTableObserver','tableMutationBatch'])if(!perf.includes(marker))fail(`Performance V4 marker missing: ${marker}`);
 if(coreNumber<38)fail(`Service Worker is below Core-38 performance baseline: ${coreNumber}`);else pass(`Core-${coreNumber} cache baseline`);
-if(!loader.includes("performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260823.4'"))fail('Performance V4 is not owned by the module loader');
+if(!loader.includes("performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260829.5'"))fail('Performance V4 is not owned by the module loader');
 else if(!coreBody.includes("load('performanceOptimizer')"))fail('Performance V4 is not loaded with the core runtime');
 else pass('Performance V4 module-loader wiring');
 if(/setInterval\s*\(\s*schedule\s*,\s*700/.test(fullSource))fail('700ms cloud render interval regression detected');

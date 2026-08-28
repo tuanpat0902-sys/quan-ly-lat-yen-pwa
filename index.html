@@ -4092,16 +4092,6 @@ aside,
 .stock-summary-item.stock-low{color:#b54708;background:#fff8eb;border-color:#f5ddad}
 .stock-summary-item.stock-critical{color:#c4320a;background:#fff1eb;border-color:#f4c7b7}
 .stock-summary-item.stock-out{color:#b42318;background:#fef3f2;border-color:#f1c6c3}
-.stock-attention-note{
-  margin-left:auto;
-  padding:4px 8px;
-  border-radius:8px;
-  background:#fff4e5;
-  color:#b54708;
-  font-size:9.5px;
-  font-weight:700;
-}
-.stock-attention-note.all-good{background:#ecfdf3;color:#067647}
 .stock-status-badge{
   display:inline-flex;
   align-items:center;
@@ -11657,7 +11647,7 @@ html.v257-device-locked body{
 <script src="./ly-cashflow-bridge.js?v=20260823.1"></script>
 <script src="./ly-special-reports-bridge.js?v=20260824.3"></script>
 <script src="./ly-employee-reports-bridge.js?v=20260825.1"></script>
-<script src="./ly-unit-conversions.js?v=20260825.1"></script>
+<script src="./ly-unit-conversions.js?v=20260829.5"></script>
 <script>
 // ===== SUPABASE PROJECT =====
 const SUPABASE_URL = 'https://isfotiyxufvsmlkqsgez.supabase.co';
@@ -27408,7 +27398,6 @@ function ingredientTable(rows,type){
   }
 
   const summary=ingredientStockSummary(rows);
-  const attention=summary.low+summary.critical+summary.out;
   const activeFilter=getIngredientStockFilter();
 
   const filteredRows=
@@ -27473,9 +27462,6 @@ function ingredientTable(rows,type){
         <span>●</span> Hết hàng <b>${summary.out}</b>
       </button>
 
-      ${attention
-        ?`<div class="stock-attention-note">⚠ Có <b>${attention}</b> mặt hàng cần chú ý</div>`
-        :'<div class="stock-attention-note all-good">✓ Tồn kho đang ổn định</div>'}
     </div>
 
     ${activeFilter!=='all'?`
@@ -27494,51 +27480,50 @@ function ingredientTable(rows,type){
     `:''}
 
     <div class="scroll">
-      <table class="ingredient-stock-table">
+      <table class="ingredient-stock-table" data-ly-ingredient-stable-layout="1">
         <tr>
-          <th>STT</th>
-          <th>Tên</th>
-          <th>Đơn vị</th>
-          <th>Nhà cung cấp gần nhất</th>
-          <th class="right">Tồn</th>
-          <th class="right">Tối thiểu</th>
-          <th>Trạng thái</th>
-          <th class="right">Giá vốn bình quân/đv</th>
-          <th class="right">Giá trị</th>
-          <th></th>
+          <th data-ly-ingredient-column="stt">STT</th>
+          <th data-ly-ingredient-column="name">Tên</th>
+          <th data-ly-ingredient-column="unit">Đơn vị</th>
+          <th data-ly-purchase-column="1" data-ly-ingredient-column="purchase">Đơn vị mua/đóng gói</th>
+          <th class="right" data-ly-ingredient-column="stock">Tồn</th>
+          <th class="right" data-ly-ingredient-column="minimum">Tối thiểu</th>
+          <th data-ly-ingredient-column="status">Trạng thái</th>
+          <th class="right" data-ly-ingredient-column="cost">Giá vốn bình quân/đv</th>
+          <th class="right" data-ly-ingredient-column="value">Giá trị</th>
+          <th data-ly-ingredient-column="actions"></th>
         </tr>
 
         ${filteredRows.length
           ?filteredRows.map((i,index)=>{
             const cost=Number(i.cost||0);
-            const supplier=latestSupplierForIngredient(i.id);
             const status=ingredientStockStatus(i);
 
             return `<tr class="ingredient-stock-row ${status.className}" data-stock-status="${status.key}">
-              <td class="ingredient-stock-stt">${index+1}</td>
+              <td class="ingredient-stock-stt" data-ly-ingredient-column="stt">${index+1}</td>
 
-              <td>
+              <td data-ly-ingredient-column="name">
                 <b>${esc(i.name)}</b>
                 ${i._sync_status==='pending'&&!isExcelLocalIngredient(i)
                   ?'<span class="badge warnb" style="margin-left:7px">Chưa đồng bộ</span>'
                   :''}
               </td>
 
-              <td>${esc(i.unit)}</td>
-              <td>${esc(supplier||'—')}</td>
-              <td class="right stock-qty"><b>${num(stock(i.id))}</b></td>
-              <td class="right">${num(i.minimum_stock)}</td>
+              <td data-ly-ingredient-column="unit">${esc(i.unit)}</td>
+              <td data-ly-purchase-cell="1" data-ly-ingredient-column="purchase">${esc(window.__lyUnitConversions?.packagingText?.(i)||i.purchase_unit||i.unit||'—')}</td>
+              <td class="right stock-qty" data-ly-ingredient-column="stock"><b>${num(stock(i.id))}</b></td>
+              <td class="right" data-ly-ingredient-column="minimum">${num(i.minimum_stock)}</td>
 
-              <td>
+              <td data-ly-ingredient-column="status">
                 <span class="stock-status-badge ${status.className}">
                   <span class="stock-status-dot"></span>${status.label}
                 </span>
               </td>
 
-              <td class="right">${money(cost)}</td>
-              <td class="right">${money(stock(i.id)*cost)}</td>
+              <td class="right" data-ly-ingredient-column="cost">${money(cost)}</td>
+              <td class="right" data-ly-ingredient-column="value">${money(stock(i.id)*cost)}</td>
 
-              <td class="right">
+              <td class="right" data-ly-ingredient-column="actions">
                 <button class="secondary sm" onclick="ingredientModal('${i.id}')">Sửa</button>
                 <button class="danger sm" onclick="deleteIngredient('${i.id}')">Xóa</button>
               </td>
@@ -27910,7 +27895,6 @@ function renderIngredients(){
 
     <div class="card">
       <h2>Nguyên liệu/ Dụng cụ — ${esc(warehouse()?.name||'')}</h2>
-      <div class="muted">Nguyên liệu/ Dụng cụ riêng của kho/chi nhánh đang chọn.</div>
       <div class="section-gap">${ingredientTable(purchased,'purchased')}</div>
     </div>
 
@@ -27918,9 +27902,6 @@ function renderIngredients(){
       <div class="prepared-list-head">
         <div>
           <h2>Nguyên liệu/ Dụng cụ phải pha chế</h2>
-          <div class="muted">
-            Chỉ dùng làm công thức quy đổi số lượng sang nguyên liệu/dụng cụ mua vào; không có tồn và tồn tối thiểu riêng.
-          </div>
         </div>
 
         <button
@@ -27946,10 +27927,6 @@ function renderIngredients(){
       <div class="ingredient-usage-head">
         <div>
           <h2>Lịch sử thay đổi Nguyên liệu/Dụng cụ</h2>
-          <div class="muted">
-            Theo dõi các lần nguyên liệu/dụng cụ thay đổi do nhập kho, bán hàng hoặc xuất kho.
-            Nhập kho hiển thị số dương; bán hàng và xuất kho hiển thị số âm. Điều chỉnh kiểm kê không tính trong bảng này.
-          </div>
         </div>
 
         <button
@@ -41950,6 +41927,7 @@ function saveAppName(){
   auditLog('Hệ thống','Cập nhật','Tên phần mềm',name);
   toastMsg('Đã đổi tên phần mềm');
   renderSettings();
+  window.dispatchEvent(new CustomEvent('latyen:local-branding-changed',{detail:{logoData:b.logo||null}}));
 }
 
 function selectAppLogo(){
@@ -41991,6 +41969,7 @@ function handleAppLogo(input){
       auditLog('Hệ thống','Cập nhật','Logo phần mềm',`${w} × ${hh}px`);
       toastMsg('Đã thêm logo');
       renderSettings();
+      window.dispatchEvent(new CustomEvent('latyen:local-branding-changed',{detail:{logoData:logo}}));
     };
     img.onerror=()=>toastMsg('Không đọc được ảnh logo');
     img.src=String(reader.result||'');
@@ -42007,6 +41986,7 @@ function removeAppLogo(){
   auditLog('Hệ thống','Xóa','Logo phần mềm');
   toastMsg('Đã xóa logo');
   renderSettings();
+  window.dispatchEvent(new CustomEvent('latyen:local-branding-changed',{detail:{logoData:null}}));
 }
 
 function manualOptimizeStorage(){

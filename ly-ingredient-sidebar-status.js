@@ -1,14 +1,22 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientSidebarStatus)return;
-  const VERSION='2026.08.26.7';
+  const VERSION='2026.08.29.1';
   let timer=0;
 
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
 
   function currentRows(){
-    try{if(typeof warehouseIngredients==='function')return warehouseIngredients()||[];}catch(e){}
-    try{if(typeof db!=='undefined'&&Array.isArray(db?.ingredients))return db.ingredients;}catch(e){}
+    try{
+      if(typeof purchasedWarehouseIngredientsInDisplayOrder==='function'){
+        return purchasedWarehouseIngredientsInDisplayOrder()||[];
+      }
+    }catch(e){}
+    try{
+      if(typeof warehouseIngredients==='function'){
+        return (warehouseIngredients()||[]).filter(item=>(item?.ingredient_type||'purchased')==='purchased');
+      }
+    }catch(e){}
     return [];
   }
 
