@@ -36,12 +36,16 @@
   }
 
   function ensureUIStability(){
-    return ensureScript({
-      globalKey:'__lyUIStability',
-      selector:'script[data-ly-bootstrap="ui-stability"]',
-      src:'./ly-ui-stability.js?v=20260828.1',
-      datasetKey:'ui-stability'
-    });
+    if(window.__lyUIStability?.version==='2026.08.28.2')return true;
+    if(document.querySelector?.('script[src*="ly-ui-stability.js?v=20260828.2"]'))return true;
+    const script=document.createElement?.('script');
+    if(!script)return false;
+    script.src='./ly-ui-stability.js?v=20260828.2';
+    script.async=true;
+    script.dataset.lyBootstrap='ui-stability';
+    script.onerror=()=>script.remove?.();
+    (document.head||document.documentElement).appendChild(script);
+    return true;
   }
 
   function ensureEmployeesParityRunner(){
