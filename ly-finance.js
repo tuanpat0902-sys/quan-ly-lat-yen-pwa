@@ -578,7 +578,7 @@
           <div class="finance-detail-body">
             ${cashflowInfo.list.length?`
               <div class="scroll">
-                <table class="finance-cashflow-table">
+                <table class="finance-cashflow-table" data-ly-table-view="financeCashflow">
                   <tr>
                     <th>Ngày</th>
                     <th>Loại</th>
@@ -630,7 +630,7 @@
           <div class="finance-detail-body">
             ${stocktakeInfo.receipts.length?`
               <div class="scroll">
-                <table class="finance-stocktake-table">
+                <table class="finance-stocktake-table" data-ly-table-view="financeStocktake">
                   <tr>
                     <th>Ngày</th>
                     <th>Số phiếu</th>
@@ -677,7 +677,7 @@
           <div class="finance-detail-body">
             ${salaryCostInfo.byEmployee.length?`
               <div class="scroll">
-                <table class="finance-salary-table">
+                <table class="finance-salary-table" data-ly-table-view="financeSalary">
                   <tr>
                     <th>Nhân viên</th>
                     <th class="right">Chi phí lương</th>
@@ -722,7 +722,7 @@
           <div class="finance-detail-body">
             ${products.length?`
               <div class="scroll">
-                <table class="finance-product-table">
+                <table class="finance-product-table" data-ly-table-view="financeProducts">
                   <tr>
                     <th>Món</th>
                     <th>Đơn vị</th>
@@ -754,6 +754,7 @@
       </div>
     `;
   
+    (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
     scheduleIdleWork(
       'finance-trend-chart',
       ()=>drawFinanceTrend(sales,mode),

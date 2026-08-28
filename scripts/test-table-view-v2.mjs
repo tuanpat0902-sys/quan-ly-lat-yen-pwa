@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [tableView,legacyTables,app,index,employees,history,reports,cashflow,sw,runtime]=await Promise.all([
+const [tableView,legacyTables,app,index,employees,history,reports,cashflow,finance,sw,runtime]=await Promise.all([
   fs.readFile(new URL('../ly-table-view-v2.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-ui-table-ergonomics.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8'),
@@ -10,12 +10,13 @@ const [tableView,legacyTables,app,index,employees,history,reports,cashflow,sw,ru
   fs.readFile(new URL('../ly-activity-history.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-reports.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-cashflow.js',import.meta.url),'utf8'),
+  fs.readFile(new URL('../ly-finance.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../sw.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../runtime-version.json',import.meta.url),'utf8')
 ]);
 
-assert.match(tableView,/VERSION='2026\.08\.28\.2'/,'Table View V2 version missing');
-for(const key of ['suppliers','employees','activity','legacyMovements','productPerformance','cashflowCategories','cashflowHistory'])assert.match(tableView,new RegExp(`${key}:Object\\.freeze`),`${key} registry contract missing`);
+assert.match(tableView,/VERSION='2026\.08\.28\.3'/,'Table View V2 version missing');
+for(const key of ['suppliers','employees','activity','legacyMovements','productPerformance','cashflowCategories','cashflowHistory','financeCashflow','financeStocktake','financeSalary','financeProducts'])assert.match(tableView,new RegExp(`${key}:Object\\.freeze`),`${key} registry contract missing`);
 for(const kind of ['primary','number','date','status','long','actions'])assert.match(tableView,new RegExp(`kind:'${kind}'`),`${kind} column semantics missing`);
 assert.match(tableView,/header\.cells\.length!==config\.columns\.length/,'header parity must fail closed');
 assert.match(tableView,/row\.cells\.length!==config\.columns\.length/,'row parity must fail closed');
@@ -44,15 +45,16 @@ assert.match(history,/class="legacy-movement-table" data-ly-table-view="legacyMo
 assert.match(reports,/class="product-performance-table" data-ly-table-view="productPerformance"/,'product performance marker missing');
 assert.match(cashflow,/class="cashflow-category-table" data-ly-table-view="cashflowCategories"/,'cashflow category marker missing');
 assert.match(cashflow,/class="cashflow-table" data-ly-table-view="cashflowHistory"/,'cashflow history marker missing');
-for(const [source,name] of [[index,'suppliers'],[employees,'employees'],[history,'history'],[reports,'reports'],[cashflow,'cashflow']])assert.match(source,/\(window\.queueMicrotask\|\|window\.setTimeout\)\?\.\(\(\)=>window\.__lyTableViewV2\?\.apply\?\./,`${name} renderer must explicitly settle V2 after DOM replacement with a safe scheduler fallback`);
+for(const [key,className] of [['financeCashflow','finance-cashflow-table'],['financeStocktake','finance-stocktake-table'],['financeSalary','finance-salary-table'],['financeProducts','finance-product-table']])assert.match(finance,new RegExp(`class="${className}" data-ly-table-view="${key}"`),`${key} finance marker missing`);
+for(const [source,name] of [[index,'suppliers'],[employees,'employees'],[history,'history'],[reports,'reports'],[cashflow,'cashflow'],[finance,'finance']])assert.match(source,/\(window\.queueMicrotask\|\|window\.setTimeout\)\?\.\(\(\)=>window\.__lyTableViewV2\?\.apply\?\./,`${name} renderer must explicitly settle V2 after DOM replacement with a safe scheduler fallback`);
 assert.match(legacyTables,/t\?\.dataset\?\.lyTableView/,'legacy table layer must yield explicit V2 tables');
-assert.match(app,/ly-table-view-v2\.js\?v=20260828\.2/,'V2 asset must be cache-busted');
+assert.match(app,/ly-table-view-v2\.js\?v=20260828\.3/,'V2 asset must be cache-busted');
 assert.match(app,/ensureUITableErgonomics\(\);ensureTableViewV2\(\)/,'V2 must layer after the legacy fallback owner');
 assert.doesNotMatch(sw,/ly-table-view-v2\.js/,'non-critical V2 presentation must remain outside critical precache');
 
 const release=JSON.parse(runtime);
-assert.equal(release.uiBuild,'UI-2026.08.28.13');
-assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-205');
-assert.match(release.tableViewV2,/wave-2-suppliers-employees-activity-legacy-movements-product-performance-cashflow/);
+assert.equal(release.uiBuild,'UI-2026.08.28.14');
+assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-206');
+assert.match(release.tableViewV2,/wave-3-plus-finance-cashflow-stocktake-salary-products/);
 
 console.log('Table View V2 explicit-contract presentation boundary: PASS');
