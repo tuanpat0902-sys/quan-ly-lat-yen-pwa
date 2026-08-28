@@ -66,8 +66,8 @@ assert.match(app,/ensureUITableErgonomics\(\);ensureTableViewV2\(\)/,'V2 must la
 assert.doesNotMatch(sw,/ly-table-view-v2\.js/,'non-critical V2 presentation must remain outside critical precache');
 
 const release=JSON.parse(runtime);
-assert.equal(release.uiBuild,'UI-2026.08.28.16');
-assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-208');
+assert.equal(release.uiBuild,'UI-2026.08.28.17');
+assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-209');
 assert.match(release.tableViewV2,/wave-5-plus-employee-recipes-stocktake-warehouses/);
 
 console.log('Table View V2 explicit-contract presentation boundary: PASS');

@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-208';
+const CACHE='lat-yen-fresh-core-v3-authoritative-209';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
   INDEX_KEY,
@@ -7,7 +7,7 @@ const PRECACHE_ASSETS=[
   './ly-runtime-error-boundary.js',
   './ly-module-loader.js',
   './ly-app-version.js',
-  './ly-ui-stability.js?v=20260828.4',
+  './ly-ui-stability.js?v=20260828.5',
   './ly-ui-form-ergonomics.js?v=20260828.2',
   './ly-supabase-bootstrap.js'
 ];
