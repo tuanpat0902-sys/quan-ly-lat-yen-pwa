@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 
 const ui=await fs.readFile(new URL('../ly-ui-stability.js',import.meta.url),'utf8');
 const forms=await fs.readFile(new URL('../ly-ui-form-ergonomics.js',import.meta.url),'utf8');
+const design=await fs.readFile(new URL('../ly-ui-design-system.js',import.meta.url),'utf8');
 const app=await fs.readFile(new URL('../ly-app-version.js',import.meta.url),'utf8');
 const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
@@ -47,17 +48,34 @@ assert.doesNotMatch(forms,/MutationObserver|setInterval/,'form ergonomics must n
 assert.doesNotMatch(forms,/\bfetch\s*\(|\.rpc\s*\(/,'form ergonomics must not perform cloud calls');
 assert.doesNotMatch(forms,/renderAll|renderPanel|showTab|\.navigate\s*\(/,'form ergonomics must not own renderer/navigation');
 
+assert.match(design,/VERSION='2026\.08\.28\.1'/,'design-system version missing');
+assert.match(design,/--ly-space-1:4px/,'spacing token scale missing');
+assert.match(design,/--ly-radius-sm:8px/,'radius token scale missing');
+assert.match(design,/--ly-font-xs:12px/,'typography token scale missing');
+assert.match(design,/--ly-shadow-card/,'card elevation token missing');
+assert.match(design,/:where\(\.card\)/,'card anatomy normalization missing');
+assert.match(design,/:where\(button,\.primary,\.secondary,\.danger\)/,'button hierarchy normalization missing');
+assert.match(design,/:where\(table\)\{font-size:var\(--ly-font-sm\)/,'table density normalization missing');
+assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
+assert.match(design,/@media\(max-width:430px\)/,'small-phone density tokens missing');
+assert.doesNotMatch(design,/MutationObserver|setInterval/,'design system must not observe or poll DOM');
+assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
+assert.doesNotMatch(design,/renderAll|renderPanel|showTab|\.navigate\s*\(/,'design system must not own renderer/navigation');
+
 assert.match(app,/ensureUIStability\(\)/,'UI layer must be bootstrapped by app-version');
 assert.match(app,/__lyUIStability\?\.version==='2026\.08\.28\.3'/,'app bootstrap must require the exact UI layer version');
 assert.match(app,/ly-ui-stability\.js\?v=20260828\.3/,'UI layer must use deterministic asset version');
 assert.match(app,/ensureUIFormErgonomics\(\)/,'form ergonomics must be bootstrapped by app-version');
 assert.match(app,/ly-ui-form-ergonomics\.js\?v=20260828\.1/,'form ergonomics must use deterministic asset version');
+assert.match(app,/ensureUIDesignSystem\(\)/,'design system must be bootstrapped by app-version');
+assert.match(app,/ly-ui-design-system\.js\?v=20260828\.1/,'design system must use deterministic asset version');
 assert.match(sw,/ly-ui-stability\.js\?v=20260828\.3/,'service worker must precache the exact UI layer asset');
 assert.match(sw,/ly-ui-form-ergonomics\.js\?v=20260828\.1/,'service worker must precache form ergonomics');
+assert.match(sw,/ly-ui-design-system\.js\?v=20260828\.1/,'service worker must precache design system');
 assert.doesNotMatch(ui,/MutationObserver/,'UI stability layer must not create DOM observation loops');
 assert.doesNotMatch(ui,/\bfetch\s*\(/,'UI stability layer must not perform network calls');
 assert.doesNotMatch(ui,/\.rpc\s*\(/,'UI stability layer must not call Supabase RPCs');
 assert.doesNotMatch(ui,/renderAll|renderPanel|showTab/,'UI stability layer must not rerender application panels');
 assert.doesNotMatch(ui,/setInterval/,'loading feedback must not introduce persistent polling');
 
-console.log('Responsive UI + accessibility + perceived-performance + form ergonomics: PASS');
+console.log('Responsive UI + accessibility + perceived-performance + form ergonomics + design system: PASS');
