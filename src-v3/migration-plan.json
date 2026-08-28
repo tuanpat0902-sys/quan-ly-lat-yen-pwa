@@ -1,5 +1,5 @@
 {
-  "version": "3.0-migration-plan-24",
+  "version": "3.0-migration-plan-25",
   "productionMode": "v3-shell-authoritative",
   "v3Mode": "authoritative-shell-with-v2-business-compatibility",
   "waves": [
@@ -247,7 +247,30 @@
         "nextGate": "wait-for-v3-5-v3-7-readiness-then-design-read-only-reports-notifications-projection"
       }
     },
-    {"id":"V3-9","name":"Legacy retirement","status":"planned","authoritative":"mixed","dependsOn":["V3-1","V3-2","V3-3","V3-4","V3-5","V3-6","V3-7","V3-8"]}
+    {
+      "id": "V3-9",
+      "name": "Legacy retirement",
+      "status": "readiness-gate-implemented-upstream-locked",
+      "authoritative": "mixed",
+      "dependsOn": ["V3-1","V3-2","V3-3","V3-4","V3-5","V3-6","V3-7","V3-8"],
+      "evidence": {
+        "readinessEvaluator": "implemented-fail-closed",
+        "requiredAuthority": "v3",
+        "requiredProductionActivation": true,
+        "requiredWaves": ["V3-1","V3-2","V3-3","V3-4","V3-5","V3-6","V3-7","V3-8"],
+        "currentReady": false,
+        "blockedWaves": ["V3-1","V3-2","V3-3","V3-4","V3-5","V3-6","V3-7","V3-8"],
+        "globalDualWriteDisabledRequired": true,
+        "perDomainRollbackRequired": true,
+        "legacyRemovalAllowed": false,
+        "loaderRemovalAllowed": false,
+        "fallbackRemovalAllowed": false,
+        "autoRetirement": false,
+        "cloudReads": 0,
+        "cloudWrites": 0,
+        "nextGate": "wait-for-all-v3-1-through-v3-8-production-authority-gates"
+      }
+    }
   ],
   "domainGate": ["contract","repository","service","parity","performance","smoke","rollback","production-soak"],
   "rollback": {"required":true,"scope":"per-domain"},
