@@ -17,6 +17,7 @@ on:
       - 'scripts/test-fresh-core-v3-documents-audit.mjs'
       - 'scripts/test-fresh-core-v3-sales-audit.mjs'
       - 'scripts/test-fresh-core-v3-finance-cashflow-audit.mjs'
+      - 'scripts/test-fresh-core-v3-reports-notifications-audit.mjs'
       - 'scripts/test-fresh-core-v3-employees-audit.mjs'
       - 'scripts/test-fresh-core-v3-employees-schema-decision.mjs'
       - 'scripts/test-fresh-core-v3-employees-review-ddl.mjs'
@@ -90,6 +91,9 @@ jobs:
 
       - name: Test V3 Finance/Cashflow source-of-truth audit
         run: node scripts/test-fresh-core-v3-finance-cashflow-audit.mjs
+
+      - name: Test V3 Reports/Notifications source-of-truth audit
+        run: node scripts/test-fresh-core-v3-reports-notifications-audit.mjs
 
       - name: Test V3 Employees source-of-truth audit
         run: node scripts/test-fresh-core-v3-employees-audit.mjs
