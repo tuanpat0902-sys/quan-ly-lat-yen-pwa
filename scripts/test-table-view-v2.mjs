@@ -62,14 +62,14 @@ assert.match(index,/function tv2\(root\)\{\(window\.queueMicrotask\|\|setTimeout
 for(const root of ['E\\.recipes','E\\.stocktake','E\\.warehouses','E\\.sales'])assert.match(index,new RegExp(`tv2\\(${root}\\)`),`${root} renderer must explicitly settle V2`);
 assert.match(index,/if\(area\)area\.innerHTML=recentSalesTable\(\),tv2\(area\);/,'recent-sales refresh must explicitly settle V2 after DOM replacement');
 assert.equal([...specialReports.matchAll(/\(window\.queueMicrotask\|\|window\.setTimeout\)\?\.\(\(\)=>window\.__lyTableViewV2\?\.apply\?\./g)].length,3,'all three special-report renderers must settle V2 after DOM replacement');
-assert.match(legacyTables,/t\?\.dataset\?\.lyTableView/,'legacy table layer must yield explicit V2 tables');
+assert.match(legacyTables,/t\?\.dataset\?\.lyTv2Active==='1'/,'legacy table layer must yield only successfully activated V2 tables and retain a fallback for rejected contracts');
 assert.match(app,/ly-table-view-v2\.js\?v=20260828\.6/,'V2 asset must be cache-busted');
 assert.match(app,/ensureUITableErgonomics\(\);ensureTableViewV2\(\)/,'V2 must layer after the legacy fallback owner');
 assert.doesNotMatch(sw,/ly-table-view-v2\.js/,'non-critical V2 presentation must remain outside critical precache');
 
 const release=JSON.parse(runtime);
-assert.equal(release.uiBuild,'UI-2026.08.29.29');
-assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-221');
+assert.equal(release.uiBuild,'UI-2026.08.29.30');
+assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-222');
 assert.match(release.tableViewV2,/wave-6-plus-sales-history/);
 assert.match(release.tableFirstPaint,/two-frame-atomic-panel-reveal/);
 

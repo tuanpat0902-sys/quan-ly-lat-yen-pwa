@@ -8,7 +8,7 @@
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
     tableFirstPaint:{src:'./ly-table-first-paint.js?v=20260829.2',test:()=>window.__lyTableFirstPaint?.version==='2026.08.29.2'},
-    uiTableErgonomics:{src:'./ly-ui-table-ergonomics.js?v=20260829.6',test:()=>window.__lyUITableErgonomics?.version==='2026.08.29.6'},
+    uiTableErgonomics:{src:'./ly-ui-table-ergonomics.js?v=20260829.7',test:()=>window.__lyUITableErgonomics?.version==='2026.08.29.7'},
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260828.6',test:()=>window.__lyTableViewV2?.version==='2026.08.28.6'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
