@@ -2,7 +2,8 @@
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
   "loaderAssetVersion": "20260829.121",
+  "sidebarVisualsAssetVersion": "20260829.5",
   "moduleLoaderVersion": "2026.08.29.56",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-220",
-  "redeploy": "2026-08-29-mobile-primary-navigation-horizontal-submenus-vertical-dropdown-ui-build-28"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-221",
+  "redeploy": "2026-08-29-pages-artifact-keeps-icon-only-mobile-navigation-ui-build-29"
 }
