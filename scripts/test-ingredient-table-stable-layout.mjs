@@ -10,7 +10,7 @@ const [layout,units,sidebar,conversion,index,loader]=await Promise.all([
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8')
 ]);
 
-assert.match(layout,/VERSION='2026\.08\.29\.5'/);
+assert.match(layout,/VERSION='2026\.08\.29\.6'/);
 assert.match(layout,/width:100%!important;min-width:1040px!important;max-width:none!important;table-layout:fixed!important/);
 assert.match(layout,/scrollbar-gutter:stable!important/);
 assert.match(layout,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)[\s\S]*removeSupplierColumn\(table\)[\s\S]*markStableColumns\(table\)/,'purchase-unit insertion, supplier removal and stable sizing must run in deterministic order');
@@ -31,7 +31,10 @@ assert.match(index,/data-ly-purchase-column="1" data-ly-ingredient-column="purch
 assert.match(index,/data-ly-purchase-cell="1" data-ly-ingredient-column="purchase"/,'purchase cells must exist before DOM enhancers run');
 assert.match(loader,/loadCriticalTablePresentation[\s\S]*Promise\.all\([\s\S]*load\('ingredientTableUX'\)/,'ingredient geometry must load in parallel inside the global first-paint gate');
 assert.match(units,/updateIngredientFormHint,packagingText,enhanceIngredientTables/,'first render must use the canonical purchase packaging formatter');
-assert.match(loader,/ly-ingredient-table-ux\.js\?v=20260829\.5/);
+assert.match(loader,/ly-ingredient-table-ux\.js\?v=20260829\.6/);
+assert.match(layout,/markSupportingTables\(\)/,'prepared and history table column contracts must be restored after rerenders');
+assert.match(layout,/table\.prepared-virtual-table\{width:100%!important;min-width:900px!important/,'prepared table must fill its desktop shell');
+assert.match(layout,/table\.ingredient-usage-table\{width:100%!important;min-width:900px!important/,'history table must fill its desktop shell');
 
 assert.match(sidebar,/VERSION='2026\.08\.29\.1'/);
 assert.match(sidebar,/purchasedWarehouseIngredientsInDisplayOrder[\s\S]*warehouseIngredients[\s\S]*ingredient_type\|\|'purchased'/,'sidebar status must use the same selected-warehouse purchased rows as the table');

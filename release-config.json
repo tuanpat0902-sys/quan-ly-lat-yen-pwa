@@ -1,8 +1,8 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "loaderAssetVersion": "20260829.117",
-  "moduleLoaderVersion": "2026.08.29.52",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-215",
-  "redeploy": "2026-08-29-single-owner-ingredient-table-layout-ui-build-23"
+  "loaderAssetVersion": "20260829.118",
+  "moduleLoaderVersion": "2026.08.29.53",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-216",
+  "redeploy": "2026-08-29-mobile-table-cards-compact-notifications-balanced-supporting-tables-ui-build-24"
 }

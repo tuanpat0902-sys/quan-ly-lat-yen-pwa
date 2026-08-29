@@ -38,8 +38,8 @@ assert.match(ui,/:focus-visible/,'keyboard focus visibility missing');
 assert.match(ui,/prefers-reduced-motion:reduce/,'reduced-motion accessibility missing');
 assert.match(ui,/\.scroll>table\{min-width:100%\}/,'scroll tables need a bounded container-relative floor');
 assert.doesNotMatch(ui,/min-width:max-content/,'global max-content sizing must not expand tables by cell content');
-assert.match(index,/\.prepared-virtual-table\{width:760px!important;min-width:760px!important;max-width:760px!important;table-layout:fixed!important\}/,'prepared ingredient table width must stay bounded');
-assert.match(index,/\.ingredient-usage-table\{width:980px!important;min-width:980px!important;max-width:980px!important;table-layout:fixed!important\}/,'ingredient usage table width must stay bounded');
+assert.match(ingredientTable,/table\.prepared-virtual-table\{width:100%!important;min-width:900px!important;max-width:none!important;table-layout:fixed!important\}/,'prepared ingredient table must fill the available desktop width');
+assert.match(ingredientTable,/table\.ingredient-usage-table\{width:100%!important;min-width:900px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient history table must fill the available desktop width');
 
 assert.match(forms,/VERSION='2026\.08\.28\.2'/,'form ergonomics version missing');
 assert.match(forms,/aria-invalid="true"/,'ARIA invalid fields must have explicit styling');
@@ -50,7 +50,7 @@ assert.match(design,/VERSION='2026\.08\.28\.2'/,'design-system version missing')
 assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 
-assert.match(tableUx,/VERSION='2026\.08\.28\.5'/,'table ergonomics v5 must be active');
+assert.match(tableUx,/VERSION='2026\.08\.29\.6'/,'table ergonomics v6 must be active');
 assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
 assert.match(tableUx,/table-layout:fixed!important/,'table columns must use a stable fixed layout');
 assert.match(tableUx,/contain:layout paint/,'table wrappers must contain layout and paint shifts');
@@ -66,17 +66,21 @@ assert.match(tableUx,/lyTableComplex/,'complex tables must retain their native t
 assert.match(tableUx,/data-ly-table-wide/,'editable and complex tables must receive bounded horizontal scrolling');
 assert.doesNotMatch(tableUx,/content:attr\(data-ly-value\)/,'mobile cards must preserve real cell content without duplicating text');
 assert.match(tableUx,/lyTableEditable/,'editable tables must remain protected');
+assert.match(tableUx,/compactFit=t\.classList\?\.contains\('salary-report-table'\)&&h\.length<=4,wide=!compactFit&&\(editable\|\|complex\)/,'small salary table must not be misclassified as horizontally wide');
 assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded');
 assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
-assert.match(ingredientTable,/VERSION='2026\.08\.29\.5'/,'stable ingredient table layout version missing');
+assert.match(ingredientTable,/VERSION='2026\.08\.29\.6'/,'stable ingredient table layout version missing');
 assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1040px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
 assert.match(ingredientTable,/scrollbar-gutter:stable!important/,'ingredient stock table must reserve scrollbar space without resizing columns');
 assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:17%!important/,'purchase packaging column must have a stable width contract');
 assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:13%!important/,'ingredient action column must remain visible');
 assert.match(ingredientTable,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)/,'purchase column must settle before supplier removal');
 assert.match(ingredientTable,/markStableColumns\(table\)/,'column width metadata must be restored after every table render');
+assert.match(ingredientTable,/@media\(max-width:760px\)[\s\S]*min-width:0!important[\s\S]*content:attr\(data-ly-label\)/,'ingredient tables must switch to labeled cards on phones');
+assert.match(ingredientTable,/data-ly-prepared-column="name"\]\{width:21%!important[\s\S]*data-ly-prepared-column="output"\]\{width:18%!important[\s\S]*data-ly-prepared-column="formula"\]\{width:25%!important/,'prepared table must prioritize name, converted output and formula columns');
+assert.match(ingredientTable,/data-ly-usage-column="source"\]\{width:12%!important[\s\S]*data-ly-usage-column="reference"\]\{width:10%!important/,'ingredient history source and reference columns must never collapse');
 
 assert.match(sales,/VERSION='2026\.08\.29\.5'/,'sales workflow KPI-grid and bounded-scroll version missing');
 assert.match(sales,/#saleReportArea \.sale-table-panel \.scroll\{max-height:min\(62dvh,560px\)!important\}/,'sales product report must have a viewport-bounded vertical scroller');
@@ -86,9 +90,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.23'/,'ingredient table sizing release marker missing');
-assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260828\.5/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-215/,'UI build 23 must force a fresh service-worker release');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.24'/,'mobile responsive table release marker missing');
+assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260829\.6/,'table ergonomics asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-216/,'UI build 24 must force a fresh service-worker release');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
 console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');
