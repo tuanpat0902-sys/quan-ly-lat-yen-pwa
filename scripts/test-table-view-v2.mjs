@@ -68,8 +68,8 @@ assert.match(app,/ensureUITableErgonomics\(\);ensureTableViewV2\(\)/,'V2 must la
 assert.doesNotMatch(sw,/ly-table-view-v2\.js/,'non-critical V2 presentation must remain outside critical precache');
 
 const release=JSON.parse(runtime);
-assert.equal(release.uiBuild,'UI-2026.08.29.26');
-assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-218');
+assert.equal(release.uiBuild,'UI-2026.08.29.27');
+assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-219');
 assert.match(release.tableViewV2,/wave-6-plus-sales-history/);
 assert.match(release.tableFirstPaint,/two-frame-atomic-panel-reveal/);
 
