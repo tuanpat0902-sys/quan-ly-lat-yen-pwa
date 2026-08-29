@@ -1,8 +1,8 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "loaderAssetVersion": "20260829.119",
-  "moduleLoaderVersion": "2026.08.29.54",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-217",
-  "redeploy": "2026-08-29-mobile-nowrap-hidden-supporting-heads-labeled-main-cards-ui-build-25"
+  "loaderAssetVersion": "20260829.120",
+  "moduleLoaderVersion": "2026.08.29.55",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-218",
+  "redeploy": "2026-08-29-fast-first-load-cache-first-navigation-parallel-core-ui-build-26"
 }

@@ -23,7 +23,8 @@ assert.match(firstPaint,/table:not\(\[data-ly-table-paint-ready=/,'unfinished ta
 assert.match(firstPaint,/function handleMutations[\s\S]*schedule\('dynamic-table-ready'/,'new and rerendered tables must use the same atomic presentation gate');
 assert.match(await fs.readFile(new URL('../ly-performance-optimizer.js',import.meta.url),'utf8'),/tableMutationBatch[\s\S]*__lyTableFirstPaint\?\.handleMutations/,'atomic table paint must reuse the existing scoped table observer');
 assert.match(loader,/data-ly-table-atomic[\s\S]*table:not\(\[data-ly-table-paint-ready/,'critical CSS must hide every unfinished dynamic table before browser paint');
-assert.match(loader,/setTimeout\(\(\)=>\{if\(root\.dataset\.lyTableFirstPaintOwner!==[\s\S]*removeAttribute\?\.\('data-ly-table-atomic'\)/,'first-paint gate must fail open if an asset fails');
+assert.match(loader,/removeAttribute\?\.\('data-ly-table-atomic'\)[\s\S]*1400/,'first-paint gate must fail open quickly if an asset fails');
+assert.match(loader,/Promise\.all\(\[load\('hydration'\),load\('shadow'\),load\('domShim'\)/,'independent compatibility layers must load in parallel');
 assert.match(loader,/async function loadCriticalTablePresentation\(\)\{await Promise\.all\(\[load\('tableFirstPaint'\),load\('uiTableErgonomics'\),load\('tableViewV2'\),load\('ingredientTableUX'\)\]\);window\.__lyTableFirstPaint\?\.settle/,'critical table owners must load in parallel and settle once before reveal');
 assert.match(loader,/ensureTableFirstPaintGate\(\);loadCriticalTablePresentation\(\);load\('runtimeErrorBoundary'\)/,'table gate must start before other asynchronous bootstrap work');
 assert.doesNotMatch(firstPaint,/\bfetch\s*\(|\.rpc\s*\(|localStorage|sessionStorage/,'first-paint coordinator must remain presentation-only');
@@ -90,9 +91,10 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.25'/,'mobile responsive table release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.26'/,'fast first-load release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260829\.6/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-217/,'UI build 25 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-218/,'UI build 26 must force a fresh service-worker release');
+assert.match(sw,/async function navigationSource\(request\)\{const cached=await caches\.match\(INDEX_KEY\);if\(cached\)\{refreshNavigation\(request\)\.catch/,'warm navigations must render cached HTML immediately and refresh in background');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
 console.log('Responsive UI + stable first-paint table layout + bounded long-table scrolling: PASS');
