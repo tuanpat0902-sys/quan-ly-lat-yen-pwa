@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-217';
+const CACHE='lat-yen-fresh-core-v3-authoritative-218';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
   INDEX_KEY,
@@ -26,7 +26,8 @@ self.addEventListener('activate',event=>{event.waitUntil((async()=>{
 })());});
 async function networkFirst(request){try{const response=await fetch(request,{cache:'no-store'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(request,response.clone()).catch(()=>{});}return response;}catch(e){return caches.match(request,{ignoreSearch:true})||caches.match(new URL(request.url).pathname.replace(/^\/quan-ly-lat-yen-pwa\//,'./'));}}
 async function cacheFirstStatic(request){const exact=await caches.match(request,{ignoreSearch:false});if(exact)return exact;try{const response=await fetch(request,{cache:'reload'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(request,response.clone()).catch(()=>{});}return response;}catch(e){const url=new URL(request.url);return caches.match(url.pathname.replace(/^\/quan-ly-lat-yen-pwa\//,'./'));}}
-async function navigationSource(request){try{const response=await fetch(request,{cache:'no-store'});if(response?.ok){const cache=await caches.open(CACHE);cache.put(INDEX_KEY,response.clone()).catch(()=>{});}return response;}catch(e){return caches.match(INDEX_KEY);}}
+async function refreshNavigation(request){const response=await fetch(request,{cache:'no-cache'});if(response?.ok){const cache=await caches.open(CACHE);await cache.put(INDEX_KEY,response.clone());}return response;}
+async function navigationSource(request){const cached=await caches.match(INDEX_KEY);if(cached){refreshNavigation(request).catch(()=>{});return cached;}try{return await refreshNavigation(request);}catch(e){return caches.match(INDEX_KEY);}}
 const RPC_TABLE={ly_save_import:'ly_import_receipts',ly_save_export:'ly_export_receipts',ly_save_stocktake:'ly_stocktake_receipts',ly_save_sale:'ly_sales',ly_save_ingredient:'ly_ingredients',ly_save_product:'ly_products',ly_save_warehouse_secure:'ly_warehouses',ly_delete_warehouse_secure:'ly_warehouses'};
 function isSupabaseOrigin(url){return url.protocol==='https:'&&/^[a-z0-9-]+\.supabase\.co$/i.test(url.hostname);}
 function classifyMutation(request,url,body){const method=request.method.toUpperCase();if(!['POST','PUT','PATCH','DELETE'].includes(method)||!isSupabaseOrigin(url)||!url.pathname.startsWith('/rest/v1/'))return '';const rpc=url.pathname.match(/^\/rest\/v1\/rpc\/([^/]+)$/)?.[1]||'';if(rpc){if(rpc==='ly_delete_receipt'){const kind=String(body?.p_type||body?.p_kind||body?.kind||'').toLowerCase();return kind==='import'?'ly_import_receipts':kind==='export'?'ly_export_receipts':kind==='stocktake'?'ly_stocktake_receipts':kind==='sale'?'ly_sales':'';}return RPC_TABLE[rpc]||'';}const table=url.pathname.replace('/rest/v1/','').split('/')[0];return ['ly_warehouses','ly_suppliers','ly_ingredients','ly_products','ly_prepared_items','ly_inventory','ly_stock_transactions','ly_import_receipts','ly_export_receipts','ly_stocktake_receipts','ly_sales','ly_cashflow_entries'].includes(table)?table:'';}
