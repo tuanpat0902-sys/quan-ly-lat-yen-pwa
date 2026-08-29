@@ -37,7 +37,12 @@
   header .brand-wrap .brand,header #appNameText{min-width:0!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
   #nav{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px!important;width:100%!important;max-width:100vw!important;padding:7px 10px 9px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch}
   #nav .nav-group{display:block!important;position:static!important;flex:0 0 auto!important;width:auto!important;margin:0!important}
-  #nav .nav-group-toggle,#nav>button{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;min-height:38px!important;margin:0!important;padding:6px 9px!important;align-items:center!important;white-space:nowrap!important}
+  #nav .nav-group-toggle,#nav>button{display:inline-flex!important;flex:0 0 auto!important;min-height:46px!important;height:46px!important;margin:0!important;padding:6px!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important}
+  #nav>button[data-panel]{width:46px!important;min-width:46px!important}
+  #nav .nav-group-toggle{width:54px!important;min-width:54px!important}
+  #nav>button[data-panel]>span:last-child,#nav .nav-group-toggle .nav-label>span:last-child{display:none!important}
+  #nav .nav-group-toggle .nav-label{gap:0!important}
+  #nav .nav-group-toggle .nav-chevron{margin-left:2px!important;font-size:10px!important}
   #nav .v238-nav-section-label,#nav .v238-nav-spacer{display:none!important}
   #nav .nav-submenu{display:none!important}
   #nav .nav-submenu.ly-mobile-open{display:flex!important;position:fixed!important;left:10px!important;right:10px!important;top:var(--ly-mobile-submenu-top,170px)!important;width:auto!important;max-height:calc(100dvh - var(--ly-mobile-submenu-top,170px) - 12px)!important;flex-direction:column!important;gap:5px!important;padding:8px!important;margin:0!important;overflow-x:hidden!important;overflow-y:auto!important;z-index:90!important;background:#fff!important;border:1px solid #d8e3e8!important;border-radius:12px!important;box-shadow:0 16px 34px rgba(15,23,42,.18)!important}
@@ -52,14 +57,15 @@
   const mobileQuery=window.matchMedia?.('(max-width:760px)');
   let mobileMode=false;
   const menuPairs=()=>[...document.querySelectorAll('#nav .nav-group')].map(group=>({group,toggle:group.querySelector(':scope>.nav-group-toggle'),submenu:group.querySelector(':scope>.nav-submenu')})).filter(pair=>pair.toggle&&pair.submenu);
+  function labelPrimaryMenus(){document.querySelectorAll('#nav>button[data-panel]').forEach(button=>{const label=button.querySelector(':scope>span:last-child')?.textContent?.trim();if(label){button.setAttribute('aria-label',label);button.setAttribute('title',label);}});menuPairs().forEach(({toggle})=>{const label=toggle.querySelector('.nav-label>span:last-child')?.textContent?.trim();if(label){toggle.setAttribute('aria-label',label);toggle.setAttribute('title',label);}});}
   function closeMobileMenus(except=null){if(!mobileQuery?.matches)return;menuPairs().forEach(({toggle,submenu})=>{if(submenu===except)return;toggle.classList.remove('open');toggle.setAttribute('aria-expanded','false');submenu.classList.remove('open','ly-mobile-open');submenu.style.removeProperty('--ly-mobile-submenu-top');});}
-  function enterMobileMode(){if(!mobileQuery?.matches)return;mobileMode=true;closeMobileMenus();}
+  function enterMobileMode(){if(!mobileQuery?.matches)return;mobileMode=true;labelPrimaryMenus();closeMobileMenus();}
   function leaveMobileMode(){if(mobileQuery?.matches)return;mobileMode=false;menuPairs().forEach(({submenu})=>{submenu.classList.remove('ly-mobile-open');submenu.style.removeProperty('--ly-mobile-submenu-top');});}
   function placeMobileMenu(toggle,submenu){const rect=toggle.getBoundingClientRect();submenu.style.setProperty('--ly-mobile-submenu-top',`${Math.round(rect.bottom+6)}px`);}
   function syncMobileToggle(toggle){if(!mobileQuery?.matches)return;const group=toggle.closest('.nav-group'),submenu=group?.querySelector(':scope>.nav-submenu');if(!submenu)return;if(submenu.classList.contains('open')){closeMobileMenus(submenu);submenu.classList.add('ly-mobile-open');toggle.setAttribute('aria-expanded','true');placeMobileMenu(toggle,submenu);}else{submenu.classList.remove('ly-mobile-open');toggle.setAttribute('aria-expanded','false');}}
   document.addEventListener('click',event=>{if(!mobileQuery?.matches)return;const toggle=event.target.closest?.('#nav .nav-group-toggle');if(toggle){requestAnimationFrame(()=>syncMobileToggle(toggle));return;}if(event.target.closest?.('#nav .nav-submenu button[data-panel]')){closeMobileMenus();return;}if(!event.target.closest?.('#nav'))closeMobileMenus();});
   window.addEventListener('resize',()=>{if(mobileQuery?.matches){if(!mobileMode)enterMobileMode();const open=document.querySelector('#nav .nav-submenu.ly-mobile-open');if(open)placeMobileMenu(open.closest('.nav-group')?.querySelector(':scope>.nav-group-toggle'),open);}else if(mobileMode)leaveMobileMode();},{passive:true});
-  window.addEventListener('latyen:panel',()=>{if(mobileQuery?.matches)closeMobileMenus();});
+  window.addEventListener('latyen:panel',()=>{if(mobileQuery?.matches){labelPrimaryMenus();closeMobileMenus();}});
   requestAnimationFrame(()=>{if(mobileQuery?.matches)enterMobileMode();});
-  window.__lySidebarVisuals={version:'2026.08.29.4',closeMobileMenus};
+  window.__lySidebarVisuals={version:'2026.08.29.5',closeMobileMenus};
 })();

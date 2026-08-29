@@ -38,7 +38,7 @@
   "attendanceDefault": "off-not-working",
   "supplierMenu": "hidden-with-functions-retained",
   "salesChart": "full-labels-scroll-safe-responsive",
-  "sidebarVisuals": "desktop-full-width-logo-mobile-56px-logo-primary-horizontal-navigation-with-vertical-submenus-consistent-palette",
+  "sidebarVisuals": "desktop-full-width-logo-mobile-56px-logo-icon-only-primary-navigation-with-accessible-labels-and-vertical-submenus",
   "reloadPerformance": "instant-cache-first-navigation-background-refresh-preconnected-cloud-and-parallel-core",
   "maintenance": "legacy-chat-experiments-removed-minimal-service-worker-catalog-single-release-source",
   "startup": "critical-business-first-assistant-idle-deferred-no-duplicate-core-pass",
