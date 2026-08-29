@@ -35,15 +35,16 @@
   header .app-logo-slot{width:44px!important;max-width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex:0 0 44px!important}
   header .app-logo-slot img{width:44px!important;max-width:44px!important;height:44px!important;max-height:44px!important;object-fit:contain!important}
   header .brand-wrap .brand,header #appNameText{min-width:0!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-  #nav{display:flex!important;flex-direction:row!important;align-items:center!important;gap:6px!important;width:100%!important;max-width:100vw!important;padding:7px 10px 9px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch}
+  #nav{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;gap:6px!important;width:100%!important;max-width:100vw!important;padding:7px 10px 9px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch}
   #nav .nav-group,#nav .nav-submenu{display:contents!important}
   #nav .nav-group-toggle,#nav .v238-nav-section-label,#nav .v238-nav-spacer{display:none!important}
   #nav>button,#nav .nav-submenu button{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;min-height:38px!important;margin:0!important;padding:6px 9px!important;align-items:center!important;white-space:nowrap!important}
   #nav>button>span:last-child,#nav .nav-submenu button>span:last-child{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+  html body header .app-logo-slot img{width:44px!important;max-width:44px!important;height:44px!important;max-height:44px!important}
   main{margin-left:0!important;width:100%!important;padding-top:12px!important}
 }
 @media(max-width:620px){.ly-password-grid,.ly-delete-counts{grid-template-columns:1fr 1fr}}
 `;
   document.head.appendChild(style);
-  window.__lySidebarVisuals={version:'2026.08.29.2'};
+  window.__lySidebarVisuals={version:'2026.08.29.3'};
 })();

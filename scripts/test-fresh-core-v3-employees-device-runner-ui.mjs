@@ -38,7 +38,7 @@ assert.match(appVersion,/function boot\(\)\{ensureUILayers\(\);mount\(\);ensureE
 assert.doesNotMatch(appVersion,/\.run\?\.\(|\.run\(/,'boot loader must never execute parity automatically');
 assert.doesNotMatch(appVersion,/\.rpc\s*\(|\.from\s*\(|\.insert\s*\(|\.update\s*\(|\.upsert\s*\(|\.delete\s*\(/,'boot loader must not create any cloud data path');
 
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-216/,'current service worker release must continue invalidating cached false-positive parity runner bytes');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-217/,'current service worker release must continue invalidating cached false-positive parity runner bytes');
 assert.match(sw,/cacheFirstStatic\(request\)[\s\S]*fetch\(request,\{cache:'reload'\}\)/,'new static assets must bypass stale Safari HTTP cache before entering the release cache');
 
 console.log('Fresh Core V3 employees device runner UI guard: PASS');
