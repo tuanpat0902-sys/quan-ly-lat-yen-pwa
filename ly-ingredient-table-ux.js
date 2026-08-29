@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientTableUX)return;
-  const VERSION='2026.08.29.6';
+  const VERSION='2026.08.29.7';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   let scheduled=false;
 
@@ -76,7 +76,7 @@
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr>td:last-child button{min-height:32px!important;margin:1px!important}
         #ingredients .scroll:has(>table.prepared-virtual-table),#ingredients .scroll:has(>table.ingredient-usage-table){overflow-x:hidden!important;max-height:min(62dvh,600px)!important;overflow-y:auto!important;scrollbar-gutter:auto!important;padding:0 2px 2px!important;border:0!important;background:transparent!important}
         #ingredients table.prepared-virtual-table,#ingredients table.ingredient-usage-table{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:auto!important;border:0!important;background:transparent!important}
-        #ingredients table.prepared-virtual-table>tbody>tr:first-child:has(th),#ingredients table.ingredient-usage-table>tbody>tr:first-child:has(th){position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+        #ingredients table.prepared-virtual-table>thead,#ingredients table.ingredient-usage-table>thead,#ingredients table.prepared-virtual-table>tbody>tr:first-child:has(th),#ingredients table.ingredient-usage-table>tbody>tr:first-child:has(th){position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
         #ingredients table.prepared-virtual-table>tbody,#ingredients table.ingredient-usage-table>tbody{display:grid!important;width:100%!important;gap:8px!important}
         #ingredients table.prepared-virtual-table>tbody>tr:not(:first-child),#ingredients table.ingredient-usage-table>tbody>tr:not(:first-child){display:block!important;width:100%!important;border:1px solid var(--border,#e4e7ec)!important;border-radius:11px!important;background:var(--card,#fff)!important;overflow:hidden!important;contain:layout paint}
         #ingredients table.prepared-virtual-table>tbody>tr>td,#ingredients table.ingredient-usage-table>tbody>tr>td{display:grid!important;grid-template-columns:minmax(94px,35%) minmax(0,1fr)!important;column-gap:8px!important;align-items:start!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:7px 9px!important;border-bottom:1px solid #eef2f4!important;background:transparent!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:left!important}
@@ -121,9 +121,11 @@
     const header=table?.rows?.[0];
     if(!header)return false;
     const keys=[...header.cells].map((cell,index)=>columnKey(cell,index,header.cells.length));
-    [...table.rows].forEach(row=>{
+    const labels=[...header.cells].map(cell=>String(cell.textContent||'').trim()||'Thao tác');
+    [...table.rows].forEach((row,rowIndex)=>{
       [...row.cells].forEach((cell,index)=>{
         if(keys[index])cell.dataset.lyIngredientColumn=keys[index];
+        if(rowIndex>0)cell.dataset.lyLabel=labels[index]||'Thao tác';
       });
     });
     table.dataset.lyIngredientStableLayout='1';
