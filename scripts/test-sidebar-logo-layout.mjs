@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 const html=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const block=fs.readFileSync(new URL('../ly-sidebar-visuals.js',import.meta.url),'utf8');
+const pages=fs.readFileSync(new URL('./prepare-pages-artifact.mjs',import.meta.url),'utf8');
 for(const expected of ['header .brand-wrap','header .app-logo-slot img','width:100%!important','max-width:none!important','height:auto!important','object-fit:contain!important']){
   if(!block.includes(expected))throw new Error(`Missing full-width logo contract: ${expected}`);
 }
@@ -14,4 +15,5 @@ if(!/#nav \.nav-group-toggle,#nav>button\{display:inline-flex!important[\s\S]*#n
 if(!/closeMobileMenus[\s\S]*syncMobileToggle[\s\S]*aria-expanded/.test(block))throw new Error('Mobile submenu open, close and accessibility state are incomplete');
 if(!/#nav>button\[data-panel\]\{width:46px!important[\s\S]*nav-group-toggle\{width:54px!important[\s\S]*display:none!important/.test(block))throw new Error('Mobile primary navigation must be icon-only and compact');
 if(!/function labelPrimaryMenus\(\)[\s\S]*aria-label[\s\S]*title/.test(block))throw new Error('Icon-only mobile navigation must preserve accessible names');
+if(!/SIDEBAR_VERSION=RELEASE\.sidebarVisualsAssetVersion[\s\S]*ly-sidebar-visuals\.js\?v=\$\{SIDEBAR_VERSION\}/.test(pages))throw new Error('Pages artifact must retain the current sidebar visuals asset instead of a pinned stale version');
 console.log('Sidebar full-width logo layout: PASS');
