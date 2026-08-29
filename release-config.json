@@ -1,9 +1,9 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "loaderAssetVersion": "20260829.122",
+  "loaderAssetVersion": "20260829.123",
   "sidebarVisualsAssetVersion": "20260829.6",
   "moduleLoaderVersion": "2026.08.29.56",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-222",
-  "redeploy": "2026-08-29-fixed-mobile-header-balanced-menu-icons-reliable-dropdowns-and-complete-table-scroll-ui-build-30"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-223",
+  "redeploy": "2026-08-29-dynamic-column-table-fallback-after-explicit-contract-rejection-ui-build-31"
 }
