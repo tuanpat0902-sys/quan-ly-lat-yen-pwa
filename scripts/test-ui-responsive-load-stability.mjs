@@ -51,7 +51,7 @@ assert.match(design,/VERSION='2026\.08\.28\.2'/,'design-system version missing')
 assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 
-assert.match(tableUx,/VERSION='2026\.08\.29\.6'/,'table ergonomics v6 must be active');
+assert.match(tableUx,/VERSION='2026\.08\.29\.7'/,'table ergonomics v7 must be active');
 assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
 assert.match(tableUx,/table-layout:fixed!important/,'table columns must use a stable fixed layout');
 assert.match(tableUx,/contain:layout paint/,'table wrappers must contain layout and paint shifts');
@@ -65,6 +65,9 @@ assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*tbody tr\{display:block!im
 assert.match(tableUx,/\.scroll\[data-ly-table-shell="1"\]/,'generic scroll containers must not receive table styling');
 assert.match(tableUx,/lyTableComplex/,'complex tables must retain their native table structure');
 assert.match(tableUx,/data-ly-table-wide/,'editable and complex tables must receive bounded horizontal scrolling');
+assert.match(tableUx,/function ensureShell\(t\)[\s\S]*ly-generated-table-scroll[\s\S]*Bảng dữ liệu có thể cuộn ngang/,'wide tables without a shell must receive their own accessible horizontal scroller');
+assert.match(tableUx,/lyTv2Active==='1'/,'only successfully activated explicit card tables may bypass the generic fallback');
+assert.match(tableUx,/touch-action:pan-x pan-y[\s\S]*scrollbar-width:auto!important/,'native phone tables must expose a touchable visible horizontal scrollbar');
 assert.doesNotMatch(tableUx,/content:attr\(data-ly-value\)/,'mobile cards must preserve real cell content without duplicating text');
 assert.match(tableUx,/lyTableEditable/,'editable tables must remain protected');
 assert.match(tableUx,/compactFit=t\.classList\?\.contains\('salary-report-table'\)&&h\.length<=4,wide=!compactFit&&\(editable\|\|complex\)/,'small salary table must not be misclassified as horizontally wide');
@@ -91,9 +94,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.29'/,'mobile primary navigation artifact release marker missing');
-assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260829\.6/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-221/,'UI build 29 must force a fresh service-worker release');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.30'/,'fixed mobile navigation and table scroll release marker missing');
+assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260829\.7/,'table ergonomics asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-222/,'UI build 30 must force a fresh service-worker release');
 assert.match(sw,/async function navigationSource\(request\)\{const cached=await caches\.match\(INDEX_KEY\);if\(cached\)\{refreshNavigation\(request\)\.catch/,'warm navigations must render cached HTML immediately and refresh in background');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 

@@ -1,9 +1,9 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "loaderAssetVersion": "20260829.121",
-  "sidebarVisualsAssetVersion": "20260829.5",
+  "loaderAssetVersion": "20260829.122",
+  "sidebarVisualsAssetVersion": "20260829.6",
   "moduleLoaderVersion": "2026.08.29.56",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-221",
-  "redeploy": "2026-08-29-pages-artifact-keeps-icon-only-mobile-navigation-ui-build-29"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-222",
+  "redeploy": "2026-08-29-fixed-mobile-header-balanced-menu-icons-reliable-dropdowns-and-complete-table-scroll-ui-build-30"
 }
