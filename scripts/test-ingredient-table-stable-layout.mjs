@@ -38,10 +38,11 @@ assert.match(layout,/table\.prepared-virtual-table>thead,#ingredients table\.ing
 assert.match(layout,/table\.prepared-virtual-table\{width:100%!important;min-width:900px!important/,'prepared table must fill its desktop shell');
 assert.match(layout,/table\.ingredient-usage-table\{width:100%!important;min-width:900px!important/,'history table must fill its desktop shell');
 
-assert.match(sidebar,/VERSION='2026\.08\.29\.1'/);
+assert.match(sidebar,/VERSION='2026\.08\.29\.2'/);
 assert.match(sidebar,/purchasedWarehouseIngredientsInDisplayOrder[\s\S]*warehouseIngredients[\s\S]*ingredient_type\|\|'purchased'/,'sidebar status must use the same selected-warehouse purchased rows as the table');
 assert.doesNotMatch(sidebar,/return db\.ingredients/,'sidebar must not fall back to unscoped all-warehouse data');
-assert.match(loader,/ly-ingredient-sidebar-status\.js\?v=20260829\.1/);
+assert.match(sidebar,/@media\(max-width:760px\)\{#nav>\.ly-sidebar-stock-status\{display:none!important\}\}/,'desktop stock summary must not increase the mobile navigation height');
+assert.match(loader,/ly-ingredient-sidebar-status\.js\?v=20260829\.2/);
 
 assert.match(conversion,/VERSION='2026\.08\.29\.3'/);
 assert.match(loader,/ly-ingredient-conversion-sync\.js\?v=20260829\.3/);

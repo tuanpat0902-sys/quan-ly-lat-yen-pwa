@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientSidebarStatus)return;
-  const VERSION='2026.08.29.1';
+  const VERSION='2026.08.29.2';
   let timer=0;
 
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
@@ -129,6 +129,7 @@
       @keyframes lyStockAttention{0%,84%,100%{box-shadow:none}90%{box-shadow:0 0 0 2px rgba(249,115,22,.10)}}
       .prepared-recipe-head,#preparedRecipeLines .prepared-recipe-line{grid-template-columns:42px minmax(185px,1.5fr) 72px 115px minmax(185px,1.1fr) 36px!important}
       .ly-prepared-index-head,.ly-prepared-index{display:flex;align-items:center;justify-content:center;font-weight:700;color:#64748b}
+      @media(max-width:760px){#nav>.ly-sidebar-stock-status{display:none!important}}
       @media(max-width:700px){.ly-prepared-index{grid-column:1/-1!important;justify-content:flex-start;margin-bottom:-2px}.ly-prepared-index::before{content:'STT ';margin-right:4px;color:#64748b}}
       @media(prefers-reduced-motion:reduce){.ly-sidebar-stock-status button,.ly-sidebar-stock-status .dot{animation:none!important;transition:none!important}}
     `;
