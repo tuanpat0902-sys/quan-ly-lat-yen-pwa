@@ -51,11 +51,12 @@ assert.match(design,/VERSION='2026\.08\.28\.2'/,'design-system version missing')
 assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 
-assert.match(tableUx,/VERSION='2026\.08\.29\.7'/,'table ergonomics v7 must be active');
+assert.match(tableUx,/VERSION='2026\.08\.30\.1'/,'universal table ergonomics owner must be active');
 assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
 assert.match(tableUx,/table-layout:fixed!important/,'table columns must use a stable fixed layout');
 assert.match(tableUx,/contain:layout paint/,'table wrappers must contain layout and paint shifts');
 assert.match(tableUx,/function boot\(\)\{const tables=collect\(document\);tables\.forEach\(enhance\);mountStyle\(\);return true;\}/,'initial table metadata must be prepared before CSS mounts');
+assert.match(tableUx,/function collect\(root=document\)\{[\s\S]*querySelectorAll\?\.\('table'\)/,'every runtime table, including modal and dynamically inserted tables, must be owned by the mobile fallback');
 assert.match(tableUx,/latyen:panel/,'table refresh must follow renderer lifecycle');
 assert.match(tableUx,/latyen:cloud-refreshed/,'table refresh must follow cloud render lifecycle');
 assert.match(tableUx,/latyen:ui-rescued/,'table refresh must follow UI rescue lifecycle');
@@ -96,9 +97,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.30\.34'/,'sales report consistency release marker missing');
-assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260829\.7/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-226/,'UI build 34 must force a fresh service-worker release');
+assert.match(app,/UI_BUILD='UI-2026\.08\.30\.35'/,'universal table release marker missing');
+assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.1/,'table ergonomics asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-227/,'UI build 35 must force a fresh service-worker release');
 assert.match(sw,/async function navigationSource\(request\)\{const cached=await caches\.match\(INDEX_KEY\);if\(cached\)\{refreshNavigation\(request\)\.catch/,'warm navigations must render cached HTML immediately and refresh in background');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
