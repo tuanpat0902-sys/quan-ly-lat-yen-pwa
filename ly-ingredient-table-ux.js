@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientTableUX)return;
-  const VERSION='2026.08.29.8';
+  const VERSION='2026.08.30.1';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   let scheduled=false;
 
@@ -63,7 +63,7 @@
       #ingredients table.ingredient-usage-table [data-ly-usage-column="reference"]{width:10%!important}
       #ingredients table.ingredient-usage-table [data-ly-usage-column="quantity"]{width:13%!important}
       #ingredients table.ingredient-usage-table [data-ly-usage-column="note"]{width:14%!important}
-      @media(max-width:760px){
+      @media(max-width:0px){
         #ingredients .scroll:has(>table.ingredient-stock-table:not(.prepared-virtual-table)){overflow-x:hidden!important;max-height:min(62dvh,600px)!important;overflow-y:auto!important;scrollbar-gutter:auto!important;padding:0 2px 2px!important;border:0!important;background:transparent!important}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:auto!important;border:0!important;background:transparent!important}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) thead,#ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr:first-child:has(th){position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}

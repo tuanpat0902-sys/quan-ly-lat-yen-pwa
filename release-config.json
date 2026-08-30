@@ -2,8 +2,8 @@
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
   "loaderAssetVersion": "20260830.2",
-  "sidebarVisualsAssetVersion": "20260830.1",
+  "sidebarVisualsAssetVersion": "20260830.2",
   "moduleLoaderVersion": "2026.08.30.2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-228",
-  "redeploy": "2026-08-30-sales-history-render-variable-fix-ui-build-36"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-229",
+  "redeploy": "2026-08-30-fixed-reference-table-width-desktop-tablet-phone-ui-build-37"
 }

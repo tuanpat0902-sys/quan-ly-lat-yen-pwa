@@ -1,7 +1,7 @@
 /* Lát Yên — sidebar identity and readable navigation visuals. */
 (()=>{
   'use strict';
-  const VERSION='2026.08.30.1';
+  const VERSION='2026.08.30.2';
   if(window.__lySidebarVisuals?.version===VERSION)return;
   let style=document.getElementById('lySidebarVisualsV1');
   if(!style){style=document.createElement('style');style.id='lySidebarVisualsV1';document.head.appendChild(style);}
@@ -39,13 +39,13 @@
   #nav{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;max-width:100vw!important;padding:7px 10px 9px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch}
   #nav .nav-group,#nav .nav-submenu{display:contents!important}
   #nav .nav-group-toggle{display:none!important}
-  #nav>button[data-panel],#nav .nav-submenu button[data-panel]{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none!important;min-height:44px!important;height:44px!important;margin:0!important;padding:7px 10px!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;white-space:nowrap!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
+  #nav>button[data-panel],#nav .nav-submenu button[data-panel]{display:inline-flex!important;flex:0 0 44px!important;width:44px!important;min-width:44px!important;max-width:44px!important;min-height:44px!important;height:44px!important;margin:0!important;padding:7px!important;align-items:center!important;justify-content:center!important;gap:0!important;white-space:nowrap!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
   #nav .nav-icon{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important;border-radius:9px!important}
   #nav .nav-icon svg{width:18px!important;height:18px!important;stroke-width:2!important}
   #nav .nav-submenu .nav-icon{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important}
   #nav .nav-submenu .nav-icon svg{width:18px!important;height:18px!important}
   #nav .v238-nav-section-label,#nav .v238-nav-spacer{display:none!important}
-  #nav>button>span:last-child,#nav .nav-submenu button>span:last-child{display:inline!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+  #nav>button>span:last-child,#nav .nav-submenu button>span:last-child{display:none!important}
   html body header .app-logo-slot img{width:56px!important;max-width:56px!important;height:56px!important;max-height:56px!important}
   main{margin-left:0!important;margin-top:var(--ly-mobile-header-height,190px)!important;width:100%!important;padding-top:12px!important}
 }
