@@ -3,7 +3,7 @@
   'use strict';
   if(window.__lySpecialReportsBridgeV4)return;
   window.__lySpecialReportsBridgeV4=true;
-  const VERSION='2026.08.29.3';
+  const VERSION='2026.08.31.1';
   let loading=null;
   const stubs={};
   function loadRevenueCard(){
@@ -18,7 +18,7 @@
     if(loading)return loading;
     loading=new Promise(resolve=>{
       const s=document.createElement('script');
-      s.src='./ly-special-reports.js?v=20260830.2';
+      s.src='./ly-special-reports.js?v=20260831.1';
       s.async=true;
       s.onload=()=>{loadRevenueCard();resolve(true);};
       s.onerror=()=>{loading=null;resolve(false)};
