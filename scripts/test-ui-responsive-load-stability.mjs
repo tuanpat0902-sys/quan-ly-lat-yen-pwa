@@ -75,7 +75,7 @@ assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded
 assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
-assert.match(ingredientTable,/VERSION='2026\.08\.29\.7'/,'stable ingredient table layout version missing');
+assert.match(ingredientTable,/VERSION='2026\.08\.29\.8'/,'stable ingredient table layout version missing');
 assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1040px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
 assert.match(ingredientTable,/scrollbar-gutter:stable!important/,'ingredient stock table must reserve scrollbar space without resizing columns');
 assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:17%!important/,'purchase packaging column must have a stable width contract');
@@ -83,6 +83,8 @@ assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:13%!i
 assert.match(ingredientTable,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)/,'purchase column must settle before supplier removal');
 assert.match(ingredientTable,/markStableColumns\(table\)/,'column width metadata must be restored after every table render');
 assert.match(ingredientTable,/@media\(max-width:760px\)[\s\S]*min-width:0!important[\s\S]*content:attr\(data-ly-label\)/,'ingredient tables must switch to labeled cards on phones');
+assert.match(ingredientTable,/td\[data-ly-ingredient-column\]\{width:100%!important;min-width:0!important;max-width:100%!important\}/,'ingredient mobile cards must override the desktop percentage width contract');
+assert.match(ingredientTable,/td\[data-ly-prepared-column\],[^}]*td\[data-ly-usage-column\]\{width:100%!important;min-width:0!important;max-width:100%!important\}/,'supporting ingredient mobile cards must override their desktop percentage widths');
 assert.match(ingredientTable,/data-ly-prepared-column="name"\]\{width:21%!important[\s\S]*data-ly-prepared-column="output"\]\{width:18%!important[\s\S]*data-ly-prepared-column="formula"\]\{width:25%!important/,'prepared table must prioritize name, converted output and formula columns');
 assert.match(ingredientTable,/data-ly-usage-column="source"\]\{width:12%!important[\s\S]*data-ly-usage-column="reference"\]\{width:10%!important/,'ingredient history source and reference columns must never collapse');
 
@@ -94,9 +96,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.31'/,'dynamic table fallback release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.29\.32'/,'mobile ingredient card width release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260829\.7/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-223/,'UI build 31 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-224/,'UI build 32 must force a fresh service-worker release');
 assert.match(sw,/async function navigationSource\(request\)\{const cached=await caches\.match\(INDEX_KEY\);if\(cached\)\{refreshNavigation\(request\)\.catch/,'warm navigations must render cached HTML immediately and refresh in background');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 

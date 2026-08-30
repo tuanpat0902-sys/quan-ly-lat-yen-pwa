@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientTableUX)return;
-  const VERSION='2026.08.29.7';
+  const VERSION='2026.08.29.8';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   let scheduled=false;
 
@@ -70,6 +70,7 @@
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody{display:grid!important;width:100%!important;gap:8px!important}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr{display:block!important;width:100%!important;border:1px solid var(--border,#e4e7ec)!important;border-left:3px solid #d0d5dd!important;border-radius:11px!important;background:var(--card,#fff)!important;overflow:hidden!important;contain:layout paint}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr>td{display:grid!important;grid-template-columns:minmax(94px,35%) minmax(0,1fr)!important;column-gap:8px!important;align-items:start!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:7px 9px!important;border-bottom:1px solid #eef2f4!important;background:transparent!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:left!important}
+        #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr>td[data-ly-ingredient-column]{width:100%!important;min-width:0!important;max-width:100%!important}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr>td::before{content:attr(data-ly-label);display:block!important;color:#667085!important;font-size:11.5px!important;font-weight:700!important;line-height:1.35!important;text-align:left!important}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr>td:last-child{display:flex!important;align-items:center!important;justify-content:flex-start!important;flex-wrap:wrap!important;gap:4px!important;min-width:0!important;border-bottom:0!important}
         #ingredients table.ingredient-stock-table:not(.prepared-virtual-table)>tbody>tr>td:last-child::before{flex:0 0 calc(35% - 4px)!important}
@@ -80,6 +81,7 @@
         #ingredients table.prepared-virtual-table>tbody,#ingredients table.ingredient-usage-table>tbody{display:grid!important;width:100%!important;gap:8px!important}
         #ingredients table.prepared-virtual-table>tbody>tr:not(:first-child),#ingredients table.ingredient-usage-table>tbody>tr:not(:first-child){display:block!important;width:100%!important;border:1px solid var(--border,#e4e7ec)!important;border-radius:11px!important;background:var(--card,#fff)!important;overflow:hidden!important;contain:layout paint}
         #ingredients table.prepared-virtual-table>tbody>tr>td,#ingredients table.ingredient-usage-table>tbody>tr>td{display:grid!important;grid-template-columns:minmax(94px,35%) minmax(0,1fr)!important;column-gap:8px!important;align-items:start!important;width:100%!important;min-width:0!important;max-width:100%!important;padding:7px 9px!important;border-bottom:1px solid #eef2f4!important;background:transparent!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;text-align:left!important}
+        #ingredients table.prepared-virtual-table>tbody>tr>td[data-ly-prepared-column],#ingredients table.ingredient-usage-table>tbody>tr>td[data-ly-usage-column]{width:100%!important;min-width:0!important;max-width:100%!important}
         #ingredients table.prepared-virtual-table>tbody>tr>td::before,#ingredients table.ingredient-usage-table>tbody>tr>td::before{content:attr(data-ly-label);display:block!important;color:#667085!important;font-size:11.5px!important;font-weight:700!important;line-height:1.35!important;text-align:left!important}
         #ingredients table.prepared-virtual-table>tbody>tr>td:last-child,#ingredients table.ingredient-usage-table>tbody>tr>td:last-child{border-bottom:0!important}
       }

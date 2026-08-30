@@ -10,7 +10,7 @@ const [layout,units,sidebar,conversion,index,loader]=await Promise.all([
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8')
 ]);
 
-assert.match(layout,/VERSION='2026\.08\.29\.7'/);
+assert.match(layout,/VERSION='2026\.08\.29\.8'/);
 assert.match(layout,/width:100%!important;min-width:1040px!important;max-width:none!important;table-layout:fixed!important/);
 assert.match(layout,/scrollbar-gutter:stable!important/);
 assert.match(layout,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)[\s\S]*removeSupplierColumn\(table\)[\s\S]*markStableColumns\(table\)/,'purchase-unit insertion, supplier removal and stable sizing must run in deterministic order');
@@ -31,7 +31,9 @@ assert.match(index,/data-ly-purchase-column="1" data-ly-ingredient-column="purch
 assert.match(index,/data-ly-purchase-cell="1" data-ly-ingredient-column="purchase"/,'purchase cells must exist before DOM enhancers run');
 assert.match(loader,/loadCriticalTablePresentation[\s\S]*Promise\.all\([\s\S]*load\('ingredientTableUX'\)/,'ingredient geometry must load in parallel inside the global first-paint gate');
 assert.match(units,/updateIngredientFormHint,packagingText,enhanceIngredientTables/,'first render must use the canonical purchase packaging formatter');
-assert.match(loader,/ly-ingredient-table-ux\.js\?v=20260829\.7/);
+assert.match(loader,/ly-ingredient-table-ux\.js\?v=20260829\.8/);
+assert.match(layout,/td\[data-ly-ingredient-column\]\{width:100%!important;min-width:0!important;max-width:100%!important\}/,'mobile stock card cells must override desktop percentage column widths');
+assert.match(layout,/td\[data-ly-prepared-column\],[^}]*td\[data-ly-usage-column\]\{width:100%!important;min-width:0!important;max-width:100%!important\}/,'mobile prepared and history card cells must override desktop percentage column widths');
 assert.match(layout,/markSupportingTables\(\)/,'prepared and history table column contracts must be restored after rerenders');
 assert.match(layout,/if\(rowIndex>0\)cell\.dataset\.lyLabel=labels\[index\]\|\|'Thao tác'/,'main ingredient mobile cards must receive labels after the STT column is inserted');
 assert.match(layout,/table\.prepared-virtual-table>thead,#ingredients table\.ingredient-usage-table>thead/,'supporting-table headers must be removed from mobile card flow');

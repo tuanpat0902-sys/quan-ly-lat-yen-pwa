@@ -1,9 +1,10 @@
 /* Lát Yên — sidebar identity and readable navigation visuals. */
 (()=>{
   'use strict';
-  if(document.getElementById('lySidebarVisualsV1'))return;
-  const style=document.createElement('style');
-  style.id='lySidebarVisualsV1';
+  const VERSION='2026.08.29.9';
+  if(window.__lySidebarVisuals?.version===VERSION)return;
+  let style=document.getElementById('lySidebarVisualsV1');
+  if(!style){style=document.createElement('style');style.id='lySidebarVisualsV1';document.head.appendChild(style);}
   style.textContent=`
   header .brand-wrap{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;width:100%!important;min-width:0!important}
   header .app-logo-slot{display:flex!important;width:100%!important;max-width:none!important;height:auto!important;min-width:0!important;min-height:0!important;flex:none!important;margin:0!important;padding:0!important}
@@ -39,6 +40,7 @@
   #nav .nav-group{display:block!important;position:static!important;flex:1 0 58px!important;width:auto!important;max-width:70px!important;margin:0!important}
   #nav .nav-group-toggle,#nav>button{display:inline-flex!important;flex:1 0 58px!important;min-width:58px!important;max-width:70px!important;min-height:54px!important;height:54px!important;margin:0!important;padding:7px!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important}
   #nav .nav-group-toggle{position:relative!important;width:100%!important;max-width:none!important}
+  #nav .nav-group-toggle{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
   #nav .nav-icon{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;flex:0 0 38px!important;border-radius:10px!important}
   #nav .nav-icon svg{width:24px!important;height:24px!important;stroke-width:2!important}
   #nav .nav-submenu .nav-icon{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important}
@@ -56,22 +58,23 @@
 }
 @media(max-width:620px){.ly-password-grid,.ly-delete-counts{grid-template-columns:1fr 1fr}}
 `;
-  document.head.appendChild(style);
   const mobileQuery=window.matchMedia?.('(max-width:760px)');
   let mobileMode=false;
-  const menuPairs=()=>[...document.querySelectorAll('#nav .nav-group')].map(group=>({group,toggle:group.querySelector(':scope>.nav-group-toggle'),submenu:group.querySelector(':scope>.nav-submenu')})).filter(pair=>pair.toggle&&pair.submenu);
-  function labelPrimaryMenus(){document.querySelectorAll('#nav>button[data-panel]').forEach(button=>{const label=button.querySelector('.nav-label>span:last-child,:scope>span:last-child')?.textContent?.trim()||button.textContent?.trim();if(label){button.setAttribute('aria-label',label);button.setAttribute('title',label);}});menuPairs().forEach(({toggle})=>{const label=toggle.querySelector('.nav-label>span:last-child')?.textContent?.trim();if(label){toggle.setAttribute('aria-label',label);toggle.setAttribute('title',label);}});}
+  const directChild=(parent,className)=>[...(parent?.children||[])].find(child=>child.classList?.contains(className))||null;
+  const menuPairs=()=>[...document.querySelectorAll('#nav .nav-group')].map(group=>({group,toggle:directChild(group,'nav-group-toggle'),submenu:directChild(group,'nav-submenu')})).filter(pair=>pair.toggle&&pair.submenu);
+  function labelPrimaryMenus(){document.querySelectorAll('#nav>button[data-panel]').forEach(button=>{const label=button.lastElementChild?.textContent?.trim()||button.textContent?.trim();if(label){button.setAttribute('aria-label',label);button.setAttribute('title',label);}});menuPairs().forEach(({toggle})=>{const label=toggle.querySelector('.nav-label>span:last-child')?.textContent?.trim();if(label){toggle.setAttribute('aria-label',label);toggle.setAttribute('title',label);}});}
   function closeMobileMenus(except=null){if(!mobileQuery?.matches)return;menuPairs().forEach(({toggle,submenu})=>{if(submenu===except)return;toggle.classList.remove('open');toggle.setAttribute('aria-expanded','false');submenu.classList.remove('open','ly-mobile-open');submenu.style.removeProperty('--ly-mobile-submenu-top');});}
   function syncMobileHeaderOffset(){if(!mobileQuery?.matches)return;const header=document.querySelector('header');if(!header)return;document.documentElement.style.setProperty('--ly-mobile-header-height',`${Math.ceil(header.getBoundingClientRect().height)}px`);}
   function enterMobileMode(){if(!mobileQuery?.matches)return;mobileMode=true;labelPrimaryMenus();closeMobileMenus();syncMobileHeaderOffset();}
   function leaveMobileMode(){if(mobileQuery?.matches)return;mobileMode=false;document.documentElement.style.removeProperty('--ly-mobile-header-height');menuPairs().forEach(({submenu})=>{submenu.classList.remove('ly-mobile-open');submenu.style.removeProperty('--ly-mobile-submenu-top');});}
-  function placeMobileMenu(toggle,submenu){const rect=toggle.getBoundingClientRect();submenu.style.setProperty('--ly-mobile-submenu-top',`${Math.round(rect.bottom+6)}px`);}
-  function syncMobileToggle(toggle,shouldOpen){if(!mobileQuery?.matches)return;const group=toggle.closest('.nav-group'),submenu=group?.querySelector(':scope>.nav-submenu');if(!submenu)return;if(shouldOpen){closeMobileMenus(submenu);toggle.classList.add('open');submenu.classList.add('open','ly-mobile-open');toggle.setAttribute('aria-expanded','true');placeMobileMenu(toggle,submenu);}else{toggle.classList.remove('open');submenu.classList.remove('open','ly-mobile-open');toggle.setAttribute('aria-expanded','false');}}
-  document.addEventListener('click',event=>{if(!mobileQuery?.matches)return;const toggle=event.target.closest?.('#nav .nav-group-toggle');if(!toggle)return;event.preventDefault();event.stopImmediatePropagation();const submenu=toggle.closest('.nav-group')?.querySelector(':scope>.nav-submenu'),shouldOpen=!submenu?.classList.contains('ly-mobile-open');syncMobileToggle(toggle,shouldOpen);},true);
+  function placeMobileMenu(toggle,submenu){if(!toggle||!submenu)return;const rect=toggle.getBoundingClientRect();submenu.style.setProperty('--ly-mobile-submenu-top',`${Math.round(rect.bottom+6)}px`);}
+  function pairForToggle(toggle){const group=toggle?.parentElement?.classList?.contains('nav-group')?toggle.parentElement:toggle?.closest?.('.nav-group');return {group,submenu:directChild(group,'nav-submenu')};}
+  function syncMobileToggle(toggle,shouldOpen){if(!mobileQuery?.matches)return;const {submenu}=pairForToggle(toggle);if(!submenu)return;if(shouldOpen){closeMobileMenus(submenu);toggle.classList.add('open');submenu.classList.add('open','ly-mobile-open');toggle.setAttribute('aria-expanded','true');placeMobileMenu(toggle,submenu);}else{toggle.classList.remove('open');submenu.classList.remove('open','ly-mobile-open');toggle.setAttribute('aria-expanded','false');}}
+  function toggleMobileMenu(toggle){if(!mobileQuery?.matches||!toggle)return false;const {submenu}=pairForToggle(toggle);if(!submenu)return false;syncMobileToggle(toggle,!submenu.classList.contains('ly-mobile-open'));return true;}
   document.addEventListener('click',event=>{if(!mobileQuery?.matches)return;if(event.target.closest?.('#nav .nav-submenu button[data-panel]')){closeMobileMenus();return;}if(!event.target.closest?.('#nav'))closeMobileMenus();});
-  window.addEventListener('resize',()=>{if(mobileQuery?.matches){if(!mobileMode)enterMobileMode();syncMobileHeaderOffset();const open=document.querySelector('#nav .nav-submenu.ly-mobile-open');if(open)placeMobileMenu(open.closest('.nav-group')?.querySelector(':scope>.nav-group-toggle'),open);}else if(mobileMode)leaveMobileMode();},{passive:true});
+  window.addEventListener('resize',()=>{if(mobileQuery?.matches){if(!mobileMode)enterMobileMode();syncMobileHeaderOffset();const open=document.querySelector('#nav .nav-submenu.ly-mobile-open');if(open)placeMobileMenu(directChild(open.closest('.nav-group'),'nav-group-toggle'),open);}else if(mobileMode)leaveMobileMode();},{passive:true});
   window.addEventListener('latyen:panel',()=>{if(mobileQuery?.matches){labelPrimaryMenus();syncMobileHeaderOffset();}});
   if(window.ResizeObserver){const header=document.querySelector('header');if(header)new ResizeObserver(()=>syncMobileHeaderOffset()).observe(header);}
   if(mobileQuery?.matches)enterMobileMode();
-  window.__lySidebarVisuals={version:'2026.08.29.6',closeMobileMenus};
+  window.__lySidebarVisuals={version:VERSION,closeMobileMenus,toggleMobileMenu};
 })();
