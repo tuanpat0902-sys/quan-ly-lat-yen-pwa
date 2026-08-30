@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://isfotiyxufvsmlkqsgez.supabase.co" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260829.123" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260829.124" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>
 <style>
@@ -11638,7 +11638,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260829.123"></script>
+<script src="./ly-module-loader.js?v=20260829.124"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -26691,43 +26691,13 @@ function toggleManageMenu(btn){
   );
 }
 
-function toggleNavGroupV238(
-  btn,
-  submenuId
-){
-  const submenu=
-    document.getElementById(
-      submenuId
-    );
-
-  if(!submenu)return;
-
-  const isOpen=
-    submenu.classList.toggle(
-      'open'
-    );
-
-  btn?.classList.toggle(
-    'open',
-    isOpen
-  );
-
-  const chev=
-    btn?.querySelector(
-      '.nav-chevron'
-    );
-
-  if(chev){
-    chev.textContent=
-      isOpen?'▾':'▸';
-  }
-
-  try{
-    localStorage.setItem(
-      'lat_yen_nav_group_'+submenuId,
-      isOpen?'1':'0'
-    );
-  }catch(e){}
+function toggleNavGroupV238(btn,submenuId){
+  const submenu=document.getElementById(submenuId);if(!submenu)return;
+  if(window.__lySidebarVisuals?.toggleMobileMenu?.(btn))return;
+  const isOpen=!submenu.classList.contains('open');
+  submenu.classList.toggle('open',isOpen);btn?.classList.toggle('open',isOpen);
+  const chev=btn?.querySelector('.nav-chevron');if(chev)chev.textContent=isOpen?'▾':'▸';
+  try{localStorage.setItem('lat_yen_nav_group_'+submenuId,isOpen?'1':'0')}catch(e){}
 }
 
 const ACTIVE_PANEL_STORAGE_KEY='lat_yen_active_panel_v1';
@@ -55510,7 +55480,7 @@ saveSaleReceipt=async function(){
 <script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
-<script src="./ly-sidebar-visuals.js?v=20260829.6"></script>
+<script src="./ly-sidebar-visuals.js?v=20260829.9"></script>
 <script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
