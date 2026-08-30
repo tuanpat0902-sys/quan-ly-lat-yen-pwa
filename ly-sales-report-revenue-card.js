@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.29.3';
+  const VERSION='2026.08.30.1';
   if(window.__lySalesReportRevenueCard?.version===VERSION)return;
   const text=value=>String(value??'').trim();
   const number=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
@@ -32,7 +32,7 @@
     return `${change>0?'Tăng':'Giảm'} ${pct(change)}% so với ${label}`;
   }
   function inject(){
-    const area=document.getElementById('saleReportArea'),grid=area?.querySelector?.('.sale-qty-summary');if(!grid)return false;
+    const area=document.getElementById('saleReportArea'),grid=area?.querySelector?.('.sale-qty-summary');if(!grid)return false;if(grid.querySelector?.('[data-ly-sales-revenue-native="1"]'))return true;
     const range=reportRange(),current=revenueFor(range.start,range.end);let card=grid.querySelector?.('[data-ly-sales-revenue-card]');if(!card){card=document.createElement('div');card.className='card metric';card.dataset.lySalesRevenueCard='1';}
     let line='';
     if(range.mode==='day'){

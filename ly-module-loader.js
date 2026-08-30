@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV95)return;
   window.__lyModuleLoaderV95=true;
 
-  const VERSION='2026.08.30.1';
+  const VERSION='2026.08.30.2';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
