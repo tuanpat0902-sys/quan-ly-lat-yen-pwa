@@ -27,7 +27,7 @@ assert.match(salesChart,/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/
 assert.match(salesChart,/ctx\.roundRect\(left,y,barW,barH,radius\)/,'sales bars must use the shared rounded shape');
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
-assert.match(bridge,/ly-special-reports\.js\?v=20260829\.5/,'bridge must bypass the previous cached report module');
+assert.match(bridge,/ly-special-reports\.js\?v=20260830\.1/,'bridge must bypass the previous cached report module');
 assert.match(bridge,/ly-sales-report-revenue-card\.js\?v=20260829\.3/,'bridge must bypass the previous cached revenue card');
 assert.match(report,/window\.__lySalesReportRevenueCard\?\.inject\?\.\(\);[\s\S]*drawSaleReportCharts/,'every sales renderer pass must restore the revenue card before charts');
 assert.match(salesWorkflow,/#saleReportArea \.sale-qty-summary\{display:grid!important;grid-template-columns:minmax\(0,1\.15fr\) repeat\(3,minmax\(0,1fr\)\)!important/,'four desktop sales KPIs must stay on one row');
@@ -36,5 +36,9 @@ assert.match(salesWorkflow,/@media\(max-width:600px\)\{#saleReportArea \.sale-qt
 assert.match(salesWorkflow,/#saleReportArea \.sale-table-panel \.scroll\{max-height:min\(62dvh,560px\)!important\}/,'long sales quantity report must scroll within a bounded viewport');
 assert.match(salesWorkflow,/#recentSalesArea \.scroll\{max-height:min\(68dvh,640px\)!important\}/,'long recent-sales history must scroll within a bounded viewport');
 assert.match(index,/<table data-ly-table-view="recentSales"/,'recent sales history must use the explicit responsive table contract');
+assert.match(report,/<th>STT<\/th>[\s\S]*?<th>Món<\/th>/,'sales quantity table must own its serial column before V2 layout runs');
+assert.match(report,/ranked\.map\(\(x,index\)=>[\s\S]*?<td>\$\{index\+1\}<\/td>/,'sales quantity rows must keep native serial values');
+assert.match(index,/<table data-ly-table-view="recentSales">[\s\S]*?<th>STT<\/th>/,'recent sales table must own its serial header');
+assert.match(index,/sales\.map\(\(s,i\)=>[\s\S]*?<td>\$\{i\+1\}<\/td>/,'recent sales rows must keep native serial values');
 
 console.log('Sales report responsive layout: PASS');

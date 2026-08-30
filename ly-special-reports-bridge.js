@@ -18,7 +18,7 @@
     if(loading)return loading;
     loading=new Promise(resolve=>{
       const s=document.createElement('script');
-      s.src='./ly-special-reports.js?v=20260829.5';
+      s.src='./ly-special-reports.js?v=20260830.1';
       s.async=true;
       s.onload=()=>{loadRevenueCard();resolve(true);};
       s.onerror=()=>{loading=null;resolve(false)};

@@ -96,9 +96,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.29\.32'/,'mobile ingredient card width release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.08\.30\.33'/,'sales table release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260829\.7/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-224/,'UI build 32 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-225/,'UI build 33 must force a fresh service-worker release');
 assert.match(sw,/async function navigationSource\(request\)\{const cached=await caches\.match\(INDEX_KEY\);if\(cached\)\{refreshNavigation\(request\)\.catch/,'warm navigations must render cached HTML immediately and refresh in background');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
