@@ -2,7 +2,36 @@
    Read-only report renderers extracted from Legacy index.html. Core business/save/chart helpers remain resident. */
 (()=>{
   'use strict';
-  if(window.__lySpecialReportsModule?.version==='2026.08.29.5')return;
+  if(window.__lySpecialReportsModule?.version==='2026.08.31.1')return;
+  let salesCloudRefreshKey='';
+  let salesCloudRefreshAt=0;
+  let salesCloudRefreshRunning=false;
+
+  function refreshSalesReportCloud(range,force=false){
+    const orgId=String(window.__lyFreshOrgId||'');
+    const warehouseId=String(window.currentWarehouseId||'');
+    if(!orgId||!warehouseId||typeof window.lyFreshFetch!=='function'||salesCloudRefreshRunning)return;
+    const key=`${orgId}|${warehouseId}|${range.start}|${range.end}`;
+    if(!force&&key===salesCloudRefreshKey&&Date.now()-salesCloudRefreshAt<15000)return;
+    salesCloudRefreshKey=key;
+    salesCloudRefreshRunning=true;
+    Promise.all([
+      window.lyFreshFetch?.('ly_sales','sold_at',false),
+      window.lyFreshFetch?.('ly_sale_items','created_at',true),
+      window.lyFreshFetch?.('ly_products','created_at',true)
+    ]).then(([sales,items,products])=>{
+      if(!Array.isArray(sales)||!Array.isArray(items)||!Array.isArray(products))throw new Error('Cloud sales snapshot is incomplete');
+      db.sales=sales.map(s=>({...s,_fresh_note:s.note||'',note:`Phiếu:${s.receipt_no} | ${s.note||''}`}));
+      db.saleItems=items.map(x=>({...x}));
+      db.products=products.map(x=>({...x}));
+      invalidateDataIndexes?.();
+      invalidateDerivedCaches?.();
+      salesCloudRefreshAt=Date.now();
+      const activeRange=saleReportRange?.();
+      if(activeRange&&`${orgId}|${warehouseId}|${activeRange.start}|${activeRange.end}`===key)renderSaleReport();
+    }).catch(error=>console.warn('[Lát Yên] Cloud sales report refresh failed',error))
+      .finally(()=>{salesCloudRefreshRunning=false;});
+  }
   function renderImportReport(){
     const area=$('importReportArea');
     if(!area)return;
@@ -463,6 +492,7 @@
       area.innerHTML='<div class="warnbox">Từ ngày không được lớn hơn đến ngày.</div>';
       return;
     }
+    refreshSalesReportCloud(range);
   
     const sales=saleReportRows(range.start,range.end);
     const saleIds=new Set(sales.map(s=>s.id));
@@ -551,5 +581,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.30.2'};
+  window.__lySpecialReportsModule={version:'2026.08.31.1',refreshSalesReportCloud};
 })();

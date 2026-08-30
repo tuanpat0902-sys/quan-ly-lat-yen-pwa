@@ -27,9 +27,12 @@ assert.match(salesChart,/Math\.min\(LY_HORIZONTAL_CHART_BAR_HEIGHT,rowH\*\.48\)/
 assert.match(salesChart,/ctx\.roundRect\(left,y,barW,barH,radius\)/,'sales bars must use the shared rounded shape');
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
-assert.match(bridge,/ly-special-reports\.js\?v=20260830\.2/,'bridge must bypass the previous cached report module');
+assert.match(bridge,/ly-special-reports\.js\?v=20260831\.1/,'bridge must bypass the previous cached report module');
 assert.match(bridge,/ly-sales-report-revenue-card\.js\?v=20260830\.1/,'bridge must bypass the previous cached revenue card');
 assert.match(report,/const revenue=sales\.reduce/,'sales revenue must use the same filtered rows as the chart and quantity report');
+assert.match(report,/function refreshSalesReportCloud\(range,force=false\)/,'sales report must refresh the authoritative Cloud snapshot');
+assert.match(report,/window\.lyFreshFetch\?\.\('ly_sales','sold_at',false\)/,'sales report refresh must load current Cloud receipts');
+assert.match(report,/window\.lyFreshFetch\?\.\('ly_sale_items','created_at',true\)/,'sales report refresh must load current Cloud item quantities');
 assert.match(report,/data-ly-sales-revenue-native="1"/,'native report revenue card must prevent stale asynchronous replacement');
 assert.match(index,/function salesForCurrentWarehouse\(\)\{return\(db\.sales\|\|\[\]\)\.filter\(s=>s\.warehouse_id==currentWarehouseId\|\|!s\.warehouse_id\)/,'sales reports and receipt history must read loaded receipts directly and retain legacy unscoped rows');
 assert.match(index,/const sales=\[\.\.\.salesForCurrentWarehouse\(\)\]/,'recent receipt history must share the same resilient warehouse source as the report');

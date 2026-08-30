@@ -39,8 +39,8 @@
   }
 
   async function ensureSpecialReportsBridge(){
-    if(window.__lySpecialReportsBridge?.version==='2026.08.29.3')return true;
-    return loadScript('./ly-special-reports-bridge.js?v=20260829.3','special-reports-bridge',()=>window.__lySpecialReportsBridge?.version==='2026.08.29.3');
+    if(window.__lySpecialReportsBridge?.version==='2026.08.31.1')return true;
+    return loadScript('./ly-special-reports-bridge.js?v=20260831.1','special-reports-bridge',()=>window.__lySpecialReportsBridge?.version==='2026.08.31.1');
   }
 
   async function recoverSales(){
