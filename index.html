@@ -34250,7 +34250,8 @@ async function deleteSaleReceipt(saleId){
   }
 }
 
-function saleReportRows(a,b){let i=getDataIndexes().salesByWarehouse.get(currentWarehouseId)||[],r=i.length?i:db.sales.filter(s=>!s.warehouse_id||s.warehouse_id===currentWarehouseId);return r.filter(s=>{let d=new Date(s.sold_at||s.sale_date||s.date||s.created_at),x=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return(!a||x>=a)&&(!b||x<=b)}).sort((a,b)=>new Date(a.sold_at||a.created_at)-new Date(b.sold_at||b.created_at));}
+function salesForCurrentWarehouse(){return(db.sales||[]).filter(s=>s.warehouse_id==currentWarehouseId||!s.warehouse_id);}
+function saleReportRows(a,b){return salesForCurrentWarehouse().filter(s=>{let d=new Date(s.sold_at||s.sale_date||s.date||s.created_at),x=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;return(!a||x>=a)&&(!b||x<=b)}).sort((a,b)=>new Date(a.sold_at||a.created_at)-new Date(b.sold_at||b.created_at));}
 
 function saleReportRange(){
   const mode=$('saleReportMode')?.value||'day';
@@ -55233,7 +55234,7 @@ saleEditDiscountLines=function(sale,items){
 
 saleReceiptHistoryTable=function(){
   const indexes=getDataIndexes();
-  const sales=[...(indexes.salesByWarehouse.get(currentWarehouseId)||[])]
+  const sales=[...salesForCurrentWarehouse()]
     .sort((a,b)=>new Date(b.sold_at||b.created_at)-new Date(a.sold_at||a.created_at))
     .slice(0,50);
 
