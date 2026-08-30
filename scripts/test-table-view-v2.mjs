@@ -17,8 +17,8 @@ const [tableView,legacyTables,app,index,employees,history,reports,cashflow,finan
   fs.readFile(new URL('../runtime-version.json',import.meta.url),'utf8')
 ]);
 
-assert.match(tableView,/VERSION='2026\.08\.30\.2'/,'Table View V2 fixed-reference version missing');
-for(const key of ['suppliers','employees','activity','legacyMovements','productPerformance','cashflowCategories','cashflowHistory','financeCashflow','financeStocktake','financeSalary','financeProducts','specialImportSummary','specialImportDetails','specialImportDaily','specialExportSummary','specialExportDetails','specialExportDaily','specialSalesQuantity','recentSales','employeePerformance','recipeDirectory','stocktakeSession','stocktakeReceipt','warehouseDirectory'])assert.match(tableView,new RegExp(`${key}:Object\\.freeze`),`${key} registry contract missing`);
+assert.match(tableView,/VERSION='2026\.08\.30\.3'/,'Table View V2 fixed-reference version missing');
+for(const key of ['suppliers','employees','employeeDetails','activity','legacyMovements','productPerformance','cashflowCategories','cashflowHistory','financeCashflow','financeStocktake','financeSalary','financeProducts','specialImportSummary','specialImportDetails','specialImportDaily','specialExportSummary','specialExportDetails','specialExportDaily','specialSalesQuantity','recentSales','employeePerformance','recipeDirectory','stocktakeSession','stocktakeReceipt','warehouseDirectory'])assert.match(tableView,new RegExp(`${key}:Object\\.freeze`),`${key} registry contract missing`);
 for(const kind of ['primary','number','date','status','long','actions'])assert.match(tableView,new RegExp(`kind:'${kind}'`),`${kind} column semantics missing`);
 assert.match(tableView,/header\.cells\.length!==config\.columns\.length/,'header parity must fail closed');
 assert.match(tableView,/row\.cells\.length!==config\.columns\.length/,'row parity must fail closed');
@@ -43,6 +43,8 @@ assert.doesNotMatch(tableView,/cloneNode|innerHTML\s*=|outerHTML\s*=|content:att
 assert.match(index,/class="supplier-directory-table" data-ly-table-view="suppliers"/,'supplier pilot marker missing');
 assert.match(index,/<table data-ly-table-view="recentSales"/,'recent sales history marker missing');
 assert.match(employees,/class="employee-list-table" data-ly-table-view="employees"/,'employee pilot marker missing');
+assert.match(employees,/<th>STT<\/th>[\s\S]*<th>Mã NV<\/th>[\s\S]*<th>Họ tên<\/th>[\s\S]*<th>Chức vụ<\/th>[\s\S]*<th>Điện thoại<\/th>[\s\S]*<th class="right">Lương cơ bản<\/th>[\s\S]*<th>Trạng thái<\/th>[\s\S]*<th>Thao tác<\/th>/,'employee list must retain only its concise primary columns');
+assert.match(employees,/class="employee-detail-table" data-ly-table-view="employeeDetails"/,'employee detail table must hold the secondary fields outside the list');
 assert.match(history,/class="audit-table" data-ly-table-view="activity"/,'activity pilot marker missing');
 assert.match(history,/class="legacy-movement-table" data-ly-table-view="legacyMovements"/,'legacy movement marker missing');
 assert.match(reports,/class="product-performance-table" data-ly-table-view="productPerformance"/,'product performance marker missing');
@@ -63,15 +65,15 @@ for(const root of ['E\\.recipes','E\\.stocktake','E\\.warehouses','E\\.sales'])a
 assert.match(index,/if\(area\)area\.innerHTML=recentSalesTable\(\),tv2\(area\);/,'recent-sales refresh must explicitly settle V2 after DOM replacement');
 assert.equal([...specialReports.matchAll(/\(window\.queueMicrotask\|\|window\.setTimeout\)\?\.\(\(\)=>window\.__lyTableViewV2\?\.apply\?\./g)].length,3,'all three special-report renderers must settle V2 after DOM replacement');
 assert.match(legacyTables,/t\?\.dataset\?\.lyTv2Active==='1'/,'legacy table layer must yield only successfully activated V2 tables and retain a fallback for rejected contracts');
-assert.match(app,/ly-table-view-v2\.js\?v=20260830\.2/,'V2 asset must be cache-busted');
+assert.match(app,/ly-table-view-v2\.js\?v=20260830\.3/,'V2 asset must be cache-busted');
 assert.match(tableView,/function reject\(table,reason\)[\s\S]*lyTv2FallbackQueued[\s\S]*__lyUITableErgonomics\?\.apply\?\.\(table\)/,'rejected or dynamically changed explicit tables must immediately fall back to safe cards or bounded horizontal scrolling');
 assert.match(app,/ensureUITableErgonomics\(\);ensureTableViewV2\(\)/,'V2 must layer after the legacy fallback owner');
 assert.doesNotMatch(sw,/ly-table-view-v2\.js/,'non-critical V2 presentation must remain outside critical precache');
 
 const release=JSON.parse(runtime);
-assert.equal(release.uiBuild,'UI-2026.08.30.37');
-assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-229');
-assert.match(release.tableViewV2,/wave-7-dynamic-column-rejection/);
+assert.equal(release.uiBuild,'UI-2026.08.30.38');
+assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-230');
+assert.match(release.tableViewV2,/employee-summary-and-activity-columns/);
 assert.match(release.tableFirstPaint,/two-frame-atomic-panel-reveal/);
 
 console.log('Table View V2 explicit-contract presentation boundary: PASS');
