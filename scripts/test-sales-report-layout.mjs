@@ -33,6 +33,7 @@ assert.match(report,/const revenue=sales\.reduce/,'sales revenue must use the sa
 assert.match(report,/data-ly-sales-revenue-native="1"/,'native report revenue card must prevent stale asynchronous replacement');
 assert.match(index,/function salesForCurrentWarehouse\(\)\{return\(db\.sales\|\|\[\]\)\.filter\(s=>s\.warehouse_id==currentWarehouseId\|\|!s\.warehouse_id\)/,'sales reports and receipt history must read loaded receipts directly and retain legacy unscoped rows');
 assert.match(index,/const sales=\[\.\.\.salesForCurrentWarehouse\(\)\]/,'recent receipt history must share the same resilient warehouse source as the report');
+assert.match(index,/sales\.map\(\(s,index\)=>[\s\S]*?<td>\$\{index\+1\}<\/td>/,'recent receipt history must use its declared serial index and never abort the complete sales render');
 assert.match(salesWorkflow,/#saleReportArea \.sale-qty-summary\{display:grid!important;grid-template-columns:minmax\(0,1\.15fr\) repeat\(3,minmax\(0,1fr\)\)!important/,'four desktop sales KPIs must stay on one row');
 assert.match(salesWorkflow,/@media\(max-width:900px\)\{#saleReportArea \.sale-qty-summary\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)!important/,'tablet KPI layout must remain readable');
 assert.match(salesWorkflow,/@media\(max-width:600px\)\{#saleReportArea \.sale-qty-summary\{grid-template-columns:1fr!important/,'phone KPI layout must stack safely');
@@ -42,6 +43,6 @@ assert.match(index,/<table data-ly-table-view="recentSales"/,'recent sales histo
 assert.match(report,/<th>STT<\/th>[\s\S]*?<th>Món<\/th>/,'sales quantity table must own its serial column before V2 layout runs');
 assert.match(report,/ranked\.map\(\(x,index\)=>[\s\S]*?<td>\$\{index\+1\}<\/td>/,'sales quantity rows must keep native serial values');
 assert.match(index,/<table data-ly-table-view="recentSales">[\s\S]*?<th>STT<\/th>/,'recent sales table must own its serial header');
-assert.match(index,/sales\.map\(\(s,i\)=>[\s\S]*?<td>\$\{i\+1\}<\/td>/,'recent sales rows must keep native serial values');
+assert.match(index,/sales\.map\(\(s,index\)=>[\s\S]*?<td>\$\{index\+1\}<\/td>/,'recent sales rows must keep native serial values');
 
 console.log('Sales report responsive layout: PASS');
