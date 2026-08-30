@@ -517,13 +517,15 @@
             <div class="scroll">
               <table class="sale-quantity-table" data-ly-table-view="specialSalesQuantity">
                 <tr>
+                  <th>STT</th>
                   <th>Món</th>
                   <th>Đơn vị</th>
                   <th class="right">Số lượng bán</th>
                   <th class="right">Tỷ trọng</th>
                 </tr>
-                ${ranked.map(x=>`
+                ${ranked.map((x,index)=>`
                   <tr>
+                    <td>${index+1}</td>
                     <td><b>${esc(x.name)}</b></td>
                     <td>${esc(x.unit||'')}</td>
                     <td class="right"><b>${num(x.qty)}</b></td>
@@ -545,5 +547,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.29.5'};
+  window.__lySpecialReportsModule={version:'2026.08.30.1'};
 })();

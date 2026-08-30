@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://isfotiyxufvsmlkqsgez.supabase.co" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260829.124" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260830.1" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>
 <style>
@@ -11638,14 +11638,14 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260829.124"></script>
+<script src="./ly-module-loader.js?v=20260830.1"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
 <script src="./ly-reports-bridge.js?v=20260823.1"></script>
 <script src="./ly-settings-ui-bridge.js?v=20260823.1"></script>
 <script src="./ly-cashflow-bridge.js?v=20260823.1"></script>
-<script src="./ly-special-reports-bridge.js?v=20260824.3"></script>
+<script src="./ly-special-reports-bridge.js?v=20260830.1"></script>
 <script src="./ly-employee-reports-bridge.js?v=20260825.1"></script>
 <script src="./ly-unit-conversions.js?v=20260829.5"></script>
 <script>
@@ -34034,6 +34034,7 @@ function saleReceiptHistoryTable(){
     <div class="scroll">
       <table>
         <tr>
+          <th>STT</th>
           <th>Ngày/giờ</th>
           <th>Số phiếu</th>
           <th>Nguồn</th>
@@ -34044,7 +34045,7 @@ function saleReceiptHistoryTable(){
           <th></th>
         </tr>
 
-        ${sales.map(s=>{
+        ${sales.map((s,i)=>{
           const items=
             indexes.saleItemsBySale.get(s.id)||
             [];
@@ -55258,6 +55259,7 @@ saleReceiptHistoryTable=function(){
     <div class="scroll">
       <table data-ly-table-view="recentSales">
         <tr>
+          <th>STT</th>
           <th>Ngày/giờ</th>
           <th>Số phiếu</th>
           <th>Nguồn</th>
@@ -55267,22 +55269,18 @@ saleReceiptHistoryTable=function(){
           <th class="right">Thanh toán</th>
           <th></th>
         </tr>
-        ${sales.map(s=>{
+        ${sales.map((s,index)=>{
           const items=indexes.saleItemsBySale.get(s.id)||[];
           const qty=items.reduce((sum,x)=>sum+Number(x.quantity||0),0);
-
           const itemDiscount=
             s.item_discount_total!=null
               ?Math.max(0,Number(s.item_discount_total||0))
               :items.reduce((sum,x)=>sum+Math.max(0,Number(x.item_discount||0)),0);
-
           const receiptDiscount=
             s.receipt_discount!=null
               ?Math.max(0,Number(s.receipt_discount||0))
               :Math.max(0,Number(s.discount||0)-itemDiscount);
-
           const discountTotal=itemDiscount+receiptDiscount;
-
           const subtotal=
             s.subtotal!=null
               ?Math.max(0,Number(s.subtotal||0))
@@ -55298,6 +55296,7 @@ saleReceiptHistoryTable=function(){
 
           return `
             <tr>
+              <td>${i+1}</td>
               <td>${lyFreshSaleHistoryTime(s.sold_at||s.created_at)}</td>
               <td><b>${esc(saleReceiptNumber(s))}</b></td>
               <td><span class="badge">${esc(s.source||'manual')}</span></td>
