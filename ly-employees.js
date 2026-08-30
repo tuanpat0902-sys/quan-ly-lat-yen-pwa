@@ -5,6 +5,7 @@
   if(window.__lyEmployeesUIV1)return;
   window.__lyEmployeesUIV1=true;
   const VERSION='2026.08.25.4';
+  let detailEmployeeId='';
   if(!document.getElementById?.('lyEmployeeLayoutStyles')){const style=document.createElement('style');style.id='lyEmployeeLayoutStyles';style.textContent=`.employee-salary-chart-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;gap:12px}.employee-salary-chart-grid>.card{margin-top:0!important;min-width:0;padding:14px!important}.employee-salary-chart-grid .employee-section-head{min-height:56px;align-items:flex-start}.employee-salary-chart-grid .employee-section-head h3{font-size:var(--ly-font-md,14px)!important}.employee-salary-chart-grid .muted{font-size:var(--ly-font-sm,11px)!important}.employee-salary-card .salary-report-table-wrap,.employee-salary-card .salary-report-scroll,.employee-salary-card .salary-report-actions{width:100%!important;max-width:none!important}.employee-salary-card .salary-report-scroll{overflow-x:hidden!important}.employee-salary-card .salary-report-table{width:100%!important;min-width:0!important;max-width:none!important;table-layout:fixed!important;font-size:var(--ly-font-base,12px)!important}.employee-salary-card .salary-report-table th{font-size:var(--ly-font-sm,11px)!important}.employee-work-chart-card{overflow:hidden}.employee-work-chart-card canvas{display:block;max-width:100%!important;margin-top:6px}@media(max-width:1180px){.employee-salary-chart-grid{grid-template-columns:1fr}}@media(max-width:700px){.employee-salary-chart-grid{gap:8px}.employee-salary-chart-grid>.card{padding:10px!important}.employee-salary-chart-grid .employee-section-head{display:grid;grid-template-columns:minmax(0,1fr) 142px;gap:8px;min-height:0}.employee-work-chart-card .employee-section-head{grid-template-columns:1fr}.employee-salary-card .salary-report-table th,.employee-salary-card .salary-report-table td{height:36px!important;padding:5px 4px!important}.employee-salary-card .salary-report-table th:nth-child(1),.employee-salary-card .salary-report-table td:nth-child(1){display:none}.employee-salary-card .salary-report-table th:nth-child(2),.employee-salary-card .salary-report-table td:nth-child(2){width:31%!important;max-width:none!important}.employee-salary-card .salary-report-table th:nth-child(3),.employee-salary-card .salary-report-table td:nth-child(3){width:39%!important;max-width:none!important}.employee-salary-card .salary-report-table th:nth-child(4),.employee-salary-card .salary-report-table td:nth-child(4){width:30%!important;max-width:none!important}.employee-salary-card .salarySource{height:32px!important;min-height:32px!important;padding:3px 4px!important;font-size:10px!important}.employee-salary-card .salary-value-wrap{min-width:0}.employee-salary-card .salaryAttendanceValue{font-size:10.5px!important}.employee-salary-card .salaryDirectValue{width:100%!important;max-width:100%!important}.employee-salary-card .salary-report-actions .primary{width:100%;min-height:36px!important;height:36px!important}.employee-work-chart-card canvas{margin-top:2px}}@media(max-width:420px){.employee-salary-chart-grid .employee-section-head{grid-template-columns:1fr}.employee-salary-card .salary-report-table th:nth-child(2),.employee-salary-card .salary-report-table td:nth-child(2){width:30%!important}.employee-salary-card .salary-report-table th:nth-child(3),.employee-salary-card .salary-report-table td:nth-child(3){width:40%!important}}`;document.head.appendChild(style);}
 
   function renderEmployees(){
@@ -43,38 +44,39 @@
           <div class="scroll section-gap">
             <table class="employee-list-table" data-ly-table-view="employees">
               <tr>
+                <th>STT</th>
                 <th>Mã NV</th>
                 <th>Họ tên</th>
                 <th>Chức vụ</th>
                 <th>Điện thoại</th>
-                <th>Ngày vào làm</th>
-                <th>Ca làm</th>
-                <th>Chấm công</th>
                 <th class="right">Lương cơ bản</th>
                 <th>Trạng thái</th>
-                <th></th>
+                <th>Thao tác</th>
               </tr>
-              ${list.map(e=>`
+              ${list.map((e,index)=>`
                 <tr class="employee-list-row">
+                  <td>${index+1}</td>
                   <td>${esc(e.code||'—')}</td>
                   <td>
-                    <button type="button" class="employee-name-link" onclick="openEmployeeAttendance('${e.id}');return false;">${esc(e.name)}</button>
-                    ${e.bank_account?`<div class="muted">TK: ${esc(e.bank_account)}</div>`:''}
+                    <button type="button" class="employee-name-link" onclick="window.__lyEmployeesModule?.showDetails?.('${e.id}');return false;">${esc(e.name)}</button>
                   </td>
                   <td>${esc(e.role||'')}</td>
                   <td>${esc(e.phone||'')}</td>
-                  <td>${e.hire_date?formatVNDate(e.hire_date):'—'}</td>
-                  <td>${esc(e.shift||'')}</td>
-                  <td>${employeeWorkMode(e)==='day'?'Theo ngày':'Theo giờ'}</td>
                   <td class="right">${money(e.base_salary||0)}</td>
                   <td>${e.active!==false?'<span class="badge okb">Đang làm</span>':'<span class="badge">Đã nghỉ</span>'}</td>
                   <td class="right employee-row-actions">
+                    <button type="button" class="secondary sm" onclick="window.__lyEmployeesModule?.showDetails?.('${e.id}')">Chi tiết</button>
                     <button type="button" class="secondary sm js-employee-edit" data-employee-id="${esc(e.id)}">Sửa</button>
                   </td>
                 </tr>
               `).join('')}
             </table>
           </div>
+          ${(()=>{const employee=list.find(item=>String(item.id)===String(detailEmployeeId));return employee?`
+            <div class="employee-detail-card section-gap">
+              <div class="employee-section-head"><div><h3>Thông tin chi tiết — ${esc(employee.name||'Nhân viên')}</h3><div class="muted">Các thông tin phụ được tách khỏi bảng danh sách để bảng chính luôn gọn.</div></div><div><button type="button" class="secondary sm" onclick="window.__lyEmployeesModule?.showDetails?.('')">Đóng</button></div></div>
+              <div class="scroll"><table class="employee-detail-table" data-ly-table-view="employeeDetails"><tr><th>Thông tin</th><th>Chi tiết</th></tr><tr><td>Ngày vào làm</td><td>${employee.hire_date?formatVNDate(employee.hire_date):'—'}</td></tr><tr><td>Ca làm</td><td>${esc(employee.shift||'—')}</td></tr><tr><td>Hình thức chấm công</td><td>${employeeWorkMode(employee)==='day'?'Theo ngày':'Theo giờ'}</td></tr><tr><td>Tài khoản ngân hàng</td><td>${esc(employee.bank_account||'—')}</td></tr><tr><td>Ghi chú</td><td>${esc(employee.note||'—')}</td></tr></table></div>
+            </div>`:'';})()}
         `:'<div class="empty section-gap">Chưa có nhân viên</div>'}
       </div>
   
@@ -216,6 +218,8 @@
     });
   }
 
+  function showDetails(employeeId=''){detailEmployeeId=String(employeeId||'');renderEmployees();}
+
   window.renderEmployees=renderEmployees;
-  window.__lyEmployeesModule={version:VERSION,render:renderEmployees};
+  window.__lyEmployeesModule={version:VERSION,render:renderEmployees,showDetails};
 })();

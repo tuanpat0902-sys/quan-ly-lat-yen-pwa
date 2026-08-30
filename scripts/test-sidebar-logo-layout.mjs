@@ -6,10 +6,10 @@ for(const expected of ['header .brand-wrap','header .app-logo-slot img','width:1
   if(!block.includes(expected))throw new Error(`Missing full-width logo contract: ${expected}`);
 }
 if(block.indexOf('header .app-logo-slot img')>block.indexOf('@media(min-width:761px)'))throw new Error('Full-width logo must also apply on narrow sidebars');
-if(!block.includes("const VERSION='2026.08.30.2'"))throw new Error('Sidebar visuals version is stale');
+if(!block.includes("const VERSION='2026.08.30.3'"))throw new Error('Sidebar visuals version is stale');
 if(!/appNameText[\s\S]*text-align:center!important/.test(block))throw new Error('Software name must be centered beneath the logo');
-if(!block.includes('background:#0f766e!important')||!block.includes('color:#fff!important'))throw new Error('Active menu palette is incomplete');
-if(!html.includes('ly-sidebar-visuals.js?v=20260830.2'))throw new Error('Sidebar visuals are not loaded');
+if(!block.includes('background:#0f6cbd!important')||!block.includes('color:#fff!important')||!block.includes('stroke-linecap:round!important'))throw new Error('Windows-style Fluent active menu palette and icon treatment are incomplete');
+if(!html.includes('ly-sidebar-visuals.js?v=20260830.3'))throw new Error('Sidebar visuals are not loaded');
 if(!/@media\(max-width:760px\)[\s\S]*header\{position:fixed!important[\s\S]*header \.app-logo-slot\{width:56px!important[\s\S]*#nav\{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important[\s\S]*overflow-x:auto!important/.test(block))throw new Error('Mobile header must stay fixed with a clear 56px logo and single-row horizontally scrollable navigation');
 if(!/#nav\{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important[\s\S]*overflow-x:auto!important/.test(block)||!/#nav \.nav-group,#nav \.nav-submenu\{display:contents!important\}[\s\S]*#nav \.nav-group-toggle\{display:none!important\}[\s\S]*#nav>button\[data-panel\],#nav \.nav-submenu button\[data-panel\]\{display:inline-flex!important/.test(block))throw new Error('Mobile navigation must expose every authorized item in the single horizontal scroller');
 if(!/function toggleMobileMenu\(toggle\)\{return Boolean\(mobileQuery\?\.matches&&toggle\);\}/.test(block))throw new Error('Hidden mobile group toggles must not fall through to desktop submenu behavior');

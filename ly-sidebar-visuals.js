@@ -1,7 +1,7 @@
 /* Lát Yên — sidebar identity and readable navigation visuals. */
 (()=>{
   'use strict';
-  const VERSION='2026.08.30.2';
+  const VERSION='2026.08.30.3';
   if(window.__lySidebarVisuals?.version===VERSION)return;
   let style=document.getElementById('lySidebarVisualsV1');
   if(!style){style=document.createElement('style');style.id='lySidebarVisualsV1';document.head.appendChild(style);}
@@ -15,10 +15,12 @@
   #nav button[data-panel],#nav .nav-group-toggle{color:#18324a!important;background:transparent!important;border:1px solid transparent!important}
   #nav button[data-panel]:hover,#nav .nav-group-toggle:hover{background:#edf6f5!important;border-color:#d5e8e5!important;color:#0f5f59!important}
   #nav .nav-group.open>.nav-group-toggle,#nav .nav-group-toggle[aria-expanded="true"]{background:#f0f7f6!important;color:#0f5f59!important}
-  #nav button[data-panel].active,#nav button[data-panel][aria-current="page"]{background:#0f766e!important;border-color:#0f766e!important;color:#fff!important;box-shadow:0 4px 12px rgba(15,118,110,.18)!important}
+  #nav button[data-panel].active,#nav button[data-panel][aria-current="page"]{background:#0f6cbd!important;border-color:#0f6cbd!important;color:#fff!important;box-shadow:0 2px 7px rgba(15,108,189,.26)!important}
   #nav button[data-panel].active .nav-icon,#nav button[data-panel][aria-current="page"] .nav-icon{background:rgba(255,255,255,.14)!important;border-color:rgba(255,255,255,.34)!important;color:#fff!important}
   #nav button[data-panel].active svg,#nav button[data-panel][aria-current="page"] svg{stroke:#fff!important;color:#fff!important}
-  #nav .nav-icon{color:#2563eb!important;background:#fff!important;border:1px solid #d7e3f4!important}
+  #nav .nav-icon{color:#0f6cbd!important;background:#f3f9ff!important;border:1px solid #c7e0f4!important;box-shadow:none!important}
+  #nav .nav-icon svg{stroke-linecap:round!important;stroke-linejoin:round!important;fill:none!important}
+  #nav button[data-panel="sales"] .nav-icon{color:#107c10!important;background:#edf7ed!important;border-color:#c8e6c9!important}#nav button[data-panel="ingredients"] .nav-icon,#nav button[data-panel="imports"] .nav-icon,#nav button[data-panel="stocktake"] .nav-icon{color:#ca5010!important;background:#fff5eb!important;border-color:#f6d4b5!important}#nav button[data-panel="finance"] .nav-icon,#nav button[data-panel="cashflow"] .nav-icon{color:#5c2d91!important;background:#f6f1fa!important;border-color:#ddcfeb!important}#nav button[data-panel="employees"] .nav-icon,#nav button[data-panel="warehouses"] .nav-icon,#nav button[data-panel="history"] .nav-icon{color:#0f6cbd!important;background:#f3f9ff!important;border-color:#c7e0f4!important}#nav button[data-panel="settings"] .nav-icon{color:#605e5c!important;background:#f3f2f1!important;border-color:#dedbd9!important}
   #nav .nav-lock,#nav .lock-icon,[data-lock]{color:#159467!important}
   .ly-warehouse-security{border:1px solid #cbd5e1;border-radius:12px;padding:14px;background:#f8fafc}.ly-security-toggle{display:flex;gap:10px;align-items:flex-start;cursor:pointer}.ly-security-toggle input{width:18px;height:18px;margin-top:2px}.ly-security-toggle span{display:grid;gap:3px}.ly-security-toggle small{color:#64748b;font-weight:400}.ly-password-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.ly-warehouse-security #wCurrentPasswordWrap{margin-top:12px}.is-hidden{display:none!important}.ly-delete-warning{padding:14px;border:1px solid #fecaca;border-radius:12px;background:#fff1f2;color:#991b1b}.ly-delete-warning p{margin:6px 0 0}.ly-delete-counts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.ly-delete-counts span{padding:8px;border:1px solid #e2e8f0;border-radius:8px;text-align:center;background:#fff}
 @media(min-width:761px){

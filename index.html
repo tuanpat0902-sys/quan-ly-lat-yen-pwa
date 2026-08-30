@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://isfotiyxufvsmlkqsgez.supabase.co" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260830.2" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260830.3" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>
 <style>
@@ -11638,7 +11638,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260830.2"></script>
+<script src="./ly-module-loader.js?v=20260830.3"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -27521,8 +27521,9 @@ function ingredientUsageMovementLabel(m){
   const type=String(m?.transaction_type||'').toUpperCase();
 
   if(type==='IMPORT')return 'Nhập kho';
-  if(type==='SALE')return 'Bán hàng';
+  if(type==='SALE')return m?._derivedUsage?'Bán hàng (đối chiếu)':'Bán hàng';
   if(type==='EXPORT')return 'Xuất kho';
+  if(type==='ADJUSTMENT')return 'Kiểm kê';
 
   return type||'Thay đổi';
 }
@@ -27615,9 +27616,6 @@ function ingredientUsageRows({
 
       const type=String(m.transaction_type||'').toUpperCase();
 
-      // Lịch sử thay đổi chỉ tính các biến động thực tế:
-      // Nhập kho tăng; Bán hàng/Xuất kho giảm.
-      // Điều chỉnh kiểm kê (ADJUSTMENT) không tính ở bảng này.
       if(!['IMPORT','SALE','EXPORT'].includes(type))return false;
 
       const signedQty=ingredientChangeSignedQty(m);
@@ -27648,7 +27646,7 @@ function ingredientUsageRows({
 }
 
 function ingredientUsageHistoryHtml(filters={}){
-  const rows=ingredientUsageRows(filters);
+  const rows=window.ingredientUsageRows?.(filters)||ingredientUsageRows(filters);
 
   const totalIncrease=rows.reduce((sum,m)=>{
     const qty=ingredientChangeSignedQty(m);
@@ -27923,6 +27921,7 @@ function renderIngredients(){
             <option value="IMPORT">Nhập kho</option>
             <option value="SALE">Bán hàng</option>
             <option value="EXPORT">Xuất kho</option>
+            <option value="ADJUSTMENT">Kiểm kê</option>
           </select>
         </div>
 
@@ -51764,6 +51763,7 @@ function normalizeAllTableHeaders(root=document){
 
   for(const table of tables){
     if(table.closest?.('#pageStickyTableDock'))continue;
+    if(table.dataset?.lyTableView)continue;
     normalizeTableHeader(table);
   }
 }
@@ -51831,6 +51831,7 @@ function applyTableColumnSizing(root=document){
 
   for(const table of tables){
     if(table.closest?.('#pageStickyTableDock'))continue;
+    if(table.dataset?.lyTableView)continue;
 
     const thead=normalizeTableHeader(table);
     if(!thead || !thead.rows.length)continue;
@@ -51882,13 +51883,13 @@ function applySerialNumbers(root=document){
 
   for(const table of tables){
     if(table.closest?.('#pageStickyTableDock'))continue;
+    if(table.dataset?.lyTableView)continue;
 
     normalizeTableHeader(table);
 
     const rows=[...table.querySelectorAll(':scope > thead > tr, :scope > tbody > tr, :scope > tfoot > tr, :scope > tr')];
     if(!rows.length)continue;
 
-    // Nếu bảng vốn đã có cột STT/# ở đầu thì không chèn thêm.
     const firstHeader=rows.find(r=>r.querySelector('th'));
     const firstHeaderCell=firstHeader?.children?.[0];
     const firstHeaderText=String(firstHeaderCell?.textContent||'').trim().toUpperCase();
@@ -51910,7 +51911,6 @@ function applySerialNumbers(root=document){
 
       const isHeader=directCells.some(el=>el.tagName==='TH');
 
-      // Dòng nhóm dùng colspan: mở rộng colspan thêm 1 để giữ đúng bố cục.
       if(!isHeader && directCells.length===1 && directCells[0].hasAttribute('colspan')){
         const td=directCells[0];
         const colspan=Math.max(1,Number(td.getAttribute('colspan')||1));
@@ -55466,7 +55466,8 @@ saveSaleReceipt=async function(){
 <script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
-<script src="./ly-sidebar-visuals.js?v=20260830.2"></script>
+<script src="./ly-sidebar-visuals.js?v=20260830.3"></script>
+<script src="./ly-ingredient-usage-history-reconcile.js?v=20260830.1"></script>
 <script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>

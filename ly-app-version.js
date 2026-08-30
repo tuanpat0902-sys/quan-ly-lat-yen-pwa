@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='3.0.12',REVISION='fresh-core-v3-shell-authoritative-v14',UI_BUILD='UI-2026.08.30.37';
+  const VERSION='3.0.12',REVISION='fresh-core-v3-shell-authoritative-v14',UI_BUILD='UI-2026.08.30.38';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION&&window.__lyAppVersion?.uiBuild===UI_BUILD)return;
   const LABEL=`Ver ${VERSION} · ${UI_BUILD}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,uiBuild:UI_BUILD,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -10,7 +10,7 @@
   const ensureUIFormErgonomics=()=>ensureScript(()=>window.__lyUIFormErgonomics?.version==='2026.08.28.2','./ly-ui-form-ergonomics.js?v=20260828.2','ui-form-ergonomics');
   const ensureUIDesignSystem=()=>ensureScript(()=>window.__lyUIDesignSystem?.version==='2026.08.28.2','./ly-ui-design-system.js?v=20260828.2','ui-design-system');
   const ensureUITableErgonomics=()=>ensureScript(()=>window.__lyUITableErgonomics?.version==='2026.08.30.2','./ly-ui-table-ergonomics.js?v=20260830.2','ui-table-ergonomics');
-  const ensureTableViewV2=()=>ensureScript(()=>window.__lyTableViewV2?.version==='2026.08.30.2','./ly-table-view-v2.js?v=20260830.2','table-view-v2');
+  const ensureTableViewV2=()=>ensureScript(()=>window.__lyTableViewV2?.version==='2026.08.30.3','./ly-table-view-v2.js?v=20260830.3','table-view-v2');
   const ensureUISalesWorkflow=()=>ensureScript(()=>window.__lyUISalesWorkflow?.version==='2026.08.29.5','./ly-ui-sales-workflow.js?v=20260829.5','ui-sales-workflow');
   const ensurePanelLazyRenderRecovery=()=>ensureScript(()=>window.__lyPanelLazyRenderRecovery?.version==='2026.08.29.2','./ly-panel-lazy-render-recovery.js?v=20260829.2','panel-lazy-render-recovery');
   function ensureEmployeesParityRunner(){if(window.__lyFreshCoreV3EmployeesParityRunner){try{window.__lyFreshCoreV3EmployeesParityRunner.render?.();}catch(e){}return true;}if(document.querySelector?.('script[data-ly-bootstrap="v3-6-employees-parity"]'))return true;const script=document.createElement?.('script');if(!script)return false;script.src='./ly-fresh-core-v3-employees-parity-runner.js?v=20260828.3';script.async=true;script.dataset.lyBootstrap='v3-6-employees-parity';script.onload=()=>{try{window.__lyFreshCoreV3EmployeesParityRunner?.render?.();}catch(e){}};script.onerror=()=>script.remove?.();(document.head||document.documentElement).appendChild(script);return true;}
