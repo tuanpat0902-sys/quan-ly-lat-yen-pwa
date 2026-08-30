@@ -12174,8 +12174,6 @@ function excelImportIngredientMaps(){
 function applyEmbeddedExcelImport(force=false){
   const marker=localStorage.getItem(EXCEL_IMPORT_MARKER_KEY);
 
-  // V236: migration legitimately removes excel_kho_latyen.
-  // The marker alone proves this embedded dataset was already imported.
   if(
     !force &&
     marker===EXCEL_IMPORT_ID
