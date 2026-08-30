@@ -45,6 +45,7 @@ assert.match(index,/<table data-ly-table-view="recentSales"/,'recent sales histo
 assert.match(employees,/class="employee-list-table" data-ly-table-view="employees"/,'employee pilot marker missing');
 assert.match(employees,/<th>STT<\/th>[\s\S]*<th>Mã NV<\/th>[\s\S]*<th>Họ tên<\/th>[\s\S]*<th>Chức vụ<\/th>[\s\S]*<th>Điện thoại<\/th>[\s\S]*<th class="right">Lương cơ bản<\/th>[\s\S]*<th>Trạng thái<\/th>[\s\S]*<th>Thao tác<\/th>/,'employee list must retain only its concise primary columns');
 assert.match(employees,/class="employee-detail-table" data-ly-table-view="employeeDetails"/,'employee detail table must hold the secondary fields outside the list');
+assert.match(employees,/class="employee-name-link" onclick="openEmployeeAttendance\('\$\{e\.id\}'\);return false;"/,'employee name must continue opening attendance while the detail button owns secondary information');
 assert.match(history,/class="audit-table" data-ly-table-view="activity"/,'activity pilot marker missing');
 assert.match(history,/class="legacy-movement-table" data-ly-table-view="legacyMovements"/,'legacy movement marker missing');
 assert.match(reports,/class="product-performance-table" data-ly-table-view="productPerformance"/,'product performance marker missing');
