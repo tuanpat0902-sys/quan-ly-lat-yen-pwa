@@ -51,7 +51,7 @@ assert.match(design,/VERSION='2026\.08\.28\.2'/,'design-system version missing')
 assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 
-assert.match(tableUx,/VERSION='2026\.08\.30\.1'/,'universal table ergonomics owner must be active');
+assert.match(tableUx,/VERSION='2026\.08\.30\.2'/,'fixed-reference table owner must be active');
 assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
 assert.match(tableUx,/table-layout:fixed!important/,'table columns must use a stable fixed layout');
 assert.match(tableUx,/contain:layout paint/,'table wrappers must contain layout and paint shifts');
@@ -62,7 +62,7 @@ assert.match(tableUx,/latyen:cloud-refreshed/,'table refresh must follow cloud r
 assert.match(tableUx,/latyen:ui-rescued/,'table refresh must follow UI rescue lifecycle');
 assert.match(tableUx,/\.scroll\[data-ly-table-shell="1"\]\[data-ly-table-long="1"\]\{max-height:min\(68vh,680px\)!important;overflow-y:auto!important/,'long tables must keep bounded vertical scrolling');
 assert.match(tableUx,/@media\(min-width:761px\)[\s\S]*thead th\{position:sticky!important;top:0!important/,'desktop long tables must keep headers visible');
-assert.match(tableUx,/@media\(max-width:760px\)[\s\S]*tbody tr\{display:block!important/,'read-only mobile tables must remain row cards');
+assert.match(tableUx,/FIXED_REFERENCE_CSS[\s\S]*@media\(max-width:1200px\)[\s\S]*min-width:var\(--ly-table-reference-width,960px\)!important/,'tablet and phone tables must retain one fixed desktop reference width inside a horizontal shell');
 assert.match(tableUx,/\.scroll\[data-ly-table-shell="1"\]/,'generic scroll containers must not receive table styling');
 assert.match(tableUx,/lyTableComplex/,'complex tables must retain their native table structure');
 assert.match(tableUx,/data-ly-table-wide/,'editable and complex tables must receive bounded horizontal scrolling');
@@ -76,16 +76,14 @@ assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded
 assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
-assert.match(ingredientTable,/VERSION='2026\.08\.29\.8'/,'stable ingredient table layout version missing');
+assert.match(ingredientTable,/VERSION='2026\.08\.30\.1'/,'fixed-reference ingredient table layout version missing');
 assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1040px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
 assert.match(ingredientTable,/scrollbar-gutter:stable!important/,'ingredient stock table must reserve scrollbar space without resizing columns');
 assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:17%!important/,'purchase packaging column must have a stable width contract');
 assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:13%!important/,'ingredient action column must remain visible');
 assert.match(ingredientTable,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)/,'purchase column must settle before supplier removal');
 assert.match(ingredientTable,/markStableColumns\(table\)/,'column width metadata must be restored after every table render');
-assert.match(ingredientTable,/@media\(max-width:760px\)[\s\S]*min-width:0!important[\s\S]*content:attr\(data-ly-label\)/,'ingredient tables must switch to labeled cards on phones');
-assert.match(ingredientTable,/td\[data-ly-ingredient-column\]\{width:100%!important;min-width:0!important;max-width:100%!important\}/,'ingredient mobile cards must override the desktop percentage width contract');
-assert.match(ingredientTable,/td\[data-ly-prepared-column\],[^}]*td\[data-ly-usage-column\]\{width:100%!important;min-width:0!important;max-width:100%!important\}/,'supporting ingredient mobile cards must override their desktop percentage widths');
+assert.match(ingredientTable,/@media\(max-width:0px\)/,'ingredient tables must not replace the desktop reference grid with phone cards');
 assert.match(ingredientTable,/data-ly-prepared-column="name"\]\{width:21%!important[\s\S]*data-ly-prepared-column="output"\]\{width:18%!important[\s\S]*data-ly-prepared-column="formula"\]\{width:25%!important/,'prepared table must prioritize name, converted output and formula columns');
 assert.match(ingredientTable,/data-ly-usage-column="source"\]\{width:12%!important[\s\S]*data-ly-usage-column="reference"\]\{width:10%!important/,'ingredient history source and reference columns must never collapse');
 
@@ -97,9 +95,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.08\.30\.36'/,'sales render recovery release marker missing');
-assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.1/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-228/,'UI build 36 must force a fresh service-worker release');
+assert.match(app,/UI_BUILD='UI-2026\.08\.30\.37'/,'fixed-reference release marker missing');
+assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.2/,'table ergonomics asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-229/,'UI build 37 must force a fresh service-worker release');
 assert.match(sw,/async function navigationSource\(request\)\{const cached=await caches\.match\(INDEX_KEY\);if\(cached\)\{refreshNavigation\(request\)\.catch/,'warm navigations must render cached HTML immediately and refresh in background');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
