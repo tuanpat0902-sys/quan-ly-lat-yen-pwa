@@ -7,10 +7,10 @@
   let loading=null;
   const stubs={};
   function loadRevenueCard(){
-    if(window.__lySalesReportRevenueCard?.version==='2026.08.29.3'){window.__lySalesReportRevenueCard.sync?.();return Promise.resolve(true);}
+    if(window.__lySalesReportRevenueCard?.version==='2026.08.30.1'){window.__lySalesReportRevenueCard.sync?.();return Promise.resolve(true);}
     return new Promise(resolve=>{
       const existing=document.querySelector?.('script[data-ly-sales-revenue-card]');if(existing){setTimeout(()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(Boolean(window.__lySalesReportRevenueCard));},0);return;}
-      const s=document.createElement('script');s.src='./ly-sales-report-revenue-card.js?v=20260829.3';s.async=true;s.dataset.lySalesRevenueCard='1';s.onload=()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(true);};s.onerror=()=>resolve(false);(document.head||document.documentElement).appendChild(s);
+      const s=document.createElement('script');s.src='./ly-sales-report-revenue-card.js?v=20260830.1';s.async=true;s.dataset.lySalesRevenueCard='1';s.onload=()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(true);};s.onerror=()=>resolve(false);(document.head||document.documentElement).appendChild(s);
     });
   }
   function load(){
@@ -18,7 +18,7 @@
     if(loading)return loading;
     loading=new Promise(resolve=>{
       const s=document.createElement('script');
-      s.src='./ly-special-reports.js?v=20260830.1';
+      s.src='./ly-special-reports.js?v=20260830.2';
       s.async=true;
       s.onload=()=>{loadRevenueCard();resolve(true);};
       s.onerror=()=>{loading=null;resolve(false)};

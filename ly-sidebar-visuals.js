@@ -1,7 +1,7 @@
 /* Lát Yên — sidebar identity and readable navigation visuals. */
 (()=>{
   'use strict';
-  const VERSION='2026.08.29.9';
+  const VERSION='2026.08.30.1';
   if(window.__lySidebarVisuals?.version===VERSION)return;
   let style=document.getElementById('lySidebarVisualsV1');
   if(!style){style=document.createElement('style');style.id='lySidebarVisualsV1';document.head.appendChild(style);}
@@ -37,22 +37,15 @@
   header .app-logo-slot img{width:56px!important;max-width:56px!important;height:56px!important;max-height:56px!important;object-fit:contain!important}
   header .brand-wrap .brand,header #appNameText{min-width:0!important;text-align:left!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
   #nav{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;width:100%!important;max-width:100vw!important;padding:7px 10px 9px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;overscroll-behavior-x:contain!important;-webkit-overflow-scrolling:touch}
-  #nav .nav-group{display:block!important;position:static!important;flex:1 0 58px!important;width:auto!important;max-width:70px!important;margin:0!important}
-  #nav .nav-group-toggle,#nav>button{display:inline-flex!important;flex:1 0 58px!important;min-width:58px!important;max-width:70px!important;min-height:54px!important;height:54px!important;margin:0!important;padding:7px!important;align-items:center!important;justify-content:center!important;white-space:nowrap!important}
-  #nav .nav-group-toggle{position:relative!important;width:100%!important;max-width:none!important}
-  #nav .nav-group-toggle{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
-  #nav .nav-icon{width:38px!important;height:38px!important;min-width:38px!important;min-height:38px!important;flex:0 0 38px!important;border-radius:10px!important}
-  #nav .nav-icon svg{width:24px!important;height:24px!important;stroke-width:2!important}
+  #nav .nav-group,#nav .nav-submenu{display:contents!important}
+  #nav .nav-group-toggle{display:none!important}
+  #nav>button[data-panel],#nav .nav-submenu button[data-panel]{display:inline-flex!important;flex:0 0 auto!important;width:auto!important;min-width:max-content!important;max-width:none!important;min-height:44px!important;height:44px!important;margin:0!important;padding:7px 10px!important;align-items:center!important;justify-content:flex-start!important;gap:7px!important;white-space:nowrap!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}
+  #nav .nav-icon{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important;border-radius:9px!important}
+  #nav .nav-icon svg{width:18px!important;height:18px!important;stroke-width:2!important}
   #nav .nav-submenu .nav-icon{width:30px!important;height:30px!important;min-width:30px!important;min-height:30px!important;flex:0 0 30px!important}
   #nav .nav-submenu .nav-icon svg{width:18px!important;height:18px!important}
-  #nav>button[data-panel]>span:last-child,#nav .nav-group-toggle .nav-label>span:last-child{display:none!important}
-  #nav .nav-group-toggle .nav-label{gap:0!important}
-  #nav .nav-group-toggle .nav-chevron{position:absolute!important;right:5px!important;bottom:4px!important;margin:0!important;font-size:11px!important;line-height:1!important}
   #nav .v238-nav-section-label,#nav .v238-nav-spacer{display:none!important}
-  #nav .nav-submenu{display:none!important}
-  #nav .nav-submenu.ly-mobile-open{display:flex!important;position:fixed!important;left:10px!important;right:10px!important;top:var(--ly-mobile-submenu-top,170px)!important;width:auto!important;max-height:calc(100dvh - var(--ly-mobile-submenu-top,170px) - 12px)!important;flex-direction:column!important;gap:5px!important;padding:8px!important;margin:0!important;overflow-x:hidden!important;overflow-y:auto!important;z-index:90!important;background:#fff!important;border:1px solid #d8e3e8!important;border-radius:12px!important;box-shadow:0 16px 34px rgba(15,23,42,.18)!important}
-  #nav .nav-submenu.ly-mobile-open button{display:flex!important;width:100%!important;min-width:0!important;min-height:44px!important;margin:0!important;padding:8px 10px!important;align-items:center!important;white-space:normal!important;text-align:left!important}
-  #nav>button>span:last-child,#nav .nav-submenu button>span:last-child{white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+  #nav>button>span:last-child,#nav .nav-submenu button>span:last-child{display:inline!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
   html body header .app-logo-slot img{width:56px!important;max-width:56px!important;height:56px!important;max-height:56px!important}
   main{margin-left:0!important;margin-top:var(--ly-mobile-header-height,190px)!important;width:100%!important;padding-top:12px!important}
 }
@@ -63,16 +56,12 @@
   const directChild=(parent,className)=>[...(parent?.children||[])].find(child=>child.classList?.contains(className))||null;
   const menuPairs=()=>[...document.querySelectorAll('#nav .nav-group')].map(group=>({group,toggle:directChild(group,'nav-group-toggle'),submenu:directChild(group,'nav-submenu')})).filter(pair=>pair.toggle&&pair.submenu);
   function labelPrimaryMenus(){document.querySelectorAll('#nav>button[data-panel]').forEach(button=>{const label=button.lastElementChild?.textContent?.trim()||button.textContent?.trim();if(label){button.setAttribute('aria-label',label);button.setAttribute('title',label);}});menuPairs().forEach(({toggle})=>{const label=toggle.querySelector('.nav-label>span:last-child')?.textContent?.trim();if(label){toggle.setAttribute('aria-label',label);toggle.setAttribute('title',label);}});}
-  function closeMobileMenus(except=null){if(!mobileQuery?.matches)return;menuPairs().forEach(({toggle,submenu})=>{if(submenu===except)return;toggle.classList.remove('open');toggle.setAttribute('aria-expanded','false');submenu.classList.remove('open','ly-mobile-open');submenu.style.removeProperty('--ly-mobile-submenu-top');});}
+  function closeMobileMenus(){if(!mobileQuery?.matches)return;menuPairs().forEach(({toggle,submenu})=>{toggle.classList.remove('open');toggle.setAttribute('aria-expanded','false');submenu.classList.remove('open','ly-mobile-open');});}
   function syncMobileHeaderOffset(){if(!mobileQuery?.matches)return;const header=document.querySelector('header');if(!header)return;document.documentElement.style.setProperty('--ly-mobile-header-height',`${Math.ceil(header.getBoundingClientRect().height)}px`);}
   function enterMobileMode(){if(!mobileQuery?.matches)return;mobileMode=true;labelPrimaryMenus();closeMobileMenus();syncMobileHeaderOffset();}
-  function leaveMobileMode(){if(mobileQuery?.matches)return;mobileMode=false;document.documentElement.style.removeProperty('--ly-mobile-header-height');menuPairs().forEach(({submenu})=>{submenu.classList.remove('ly-mobile-open');submenu.style.removeProperty('--ly-mobile-submenu-top');});}
-  function placeMobileMenu(toggle,submenu){if(!toggle||!submenu)return;const rect=toggle.getBoundingClientRect();submenu.style.setProperty('--ly-mobile-submenu-top',`${Math.round(rect.bottom+6)}px`);}
-  function pairForToggle(toggle){const group=toggle?.parentElement?.classList?.contains('nav-group')?toggle.parentElement:toggle?.closest?.('.nav-group');return {group,submenu:directChild(group,'nav-submenu')};}
-  function syncMobileToggle(toggle,shouldOpen){if(!mobileQuery?.matches)return;const {submenu}=pairForToggle(toggle);if(!submenu)return;if(shouldOpen){closeMobileMenus(submenu);toggle.classList.add('open');submenu.classList.add('open','ly-mobile-open');toggle.setAttribute('aria-expanded','true');placeMobileMenu(toggle,submenu);}else{toggle.classList.remove('open');submenu.classList.remove('open','ly-mobile-open');toggle.setAttribute('aria-expanded','false');}}
-  function toggleMobileMenu(toggle){if(!mobileQuery?.matches||!toggle)return false;const {submenu}=pairForToggle(toggle);if(!submenu)return false;syncMobileToggle(toggle,!submenu.classList.contains('ly-mobile-open'));return true;}
-  document.addEventListener('click',event=>{if(!mobileQuery?.matches)return;if(event.target.closest?.('#nav .nav-submenu button[data-panel]')){closeMobileMenus();return;}if(!event.target.closest?.('#nav'))closeMobileMenus();});
-  window.addEventListener('resize',()=>{if(mobileQuery?.matches){if(!mobileMode)enterMobileMode();syncMobileHeaderOffset();const open=document.querySelector('#nav .nav-submenu.ly-mobile-open');if(open)placeMobileMenu(directChild(open.closest('.nav-group'),'nav-group-toggle'),open);}else if(mobileMode)leaveMobileMode();},{passive:true});
+  function leaveMobileMode(){if(mobileQuery?.matches)return;mobileMode=false;document.documentElement.style.removeProperty('--ly-mobile-header-height');menuPairs().forEach(({submenu})=>submenu.classList.remove('ly-mobile-open'));}
+  function toggleMobileMenu(toggle){return Boolean(mobileQuery?.matches&&toggle);}
+  window.addEventListener('resize',()=>{if(mobileQuery?.matches){if(!mobileMode)enterMobileMode();syncMobileHeaderOffset();}else if(mobileMode)leaveMobileMode();},{passive:true});
   window.addEventListener('latyen:panel',()=>{if(mobileQuery?.matches){labelPrimaryMenus();syncMobileHeaderOffset();}});
   if(window.ResizeObserver){const header=document.querySelector('header');if(header)new ResizeObserver(()=>syncMobileHeaderOffset()).observe(header);}
   if(mobileQuery?.matches)enterMobileMode();

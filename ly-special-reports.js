@@ -468,6 +468,7 @@
     const saleIds=new Set(sales.map(s=>s.id));
     const items=(db.saleItems||[]).filter(x=>saleIds.has(x.sale_id));
     const qty=items.reduce((sum,x)=>sum+Number(x.quantity||0),0);
+    const revenue=sales.reduce((sum,s)=>sum+Number(s.total_amount??s.net_amount??s.total??s.amount??0),0);
   
     const byProduct={};
     for(const it of items){
@@ -488,6 +489,10 @@
   
     area.innerHTML=`
       <div class="report-summary-grid sale-qty-summary">
+        <div class="card metric" data-ly-sales-revenue-card data-ly-sales-revenue-native="1">
+          <span class="muted">Doanh thu</span>
+          <div class="value">${money(revenue)}</div>
+        </div>
         <div class="card metric">
           <span class="muted">Số phiếu bán</span>
           <div class="value">${num(sales.length)}</div>
@@ -539,7 +544,6 @@
       </div>
     `;
   
-    window.__lySalesReportRevenueCard?.inject?.();
     (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(area),0);
     setTimeout(()=>drawSaleReportCharts(sales,items,range.mode),0);
   }
@@ -547,5 +551,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.30.1'};
+  window.__lySpecialReportsModule={version:'2026.08.30.2'};
 })();
