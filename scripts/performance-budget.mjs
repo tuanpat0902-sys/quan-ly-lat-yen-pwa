@@ -37,7 +37,8 @@ const pass=m=>console.log('PASS:',m);
 
 console.log(`INFO: index=${indexBytes} bytes eagerFiles=${eagerFiles.size} eagerIntervals=${eager.intervals} eagerObservers=${eager.observers} eagerInnerHTML=${eager.innerHtml} fullIntervals=${full.intervals} fullObservers=${full.observers} fullInnerHTML=${full.innerHtml} core=${coreNumber}`);
 
-if(indexBytes>1_320_000)fail('index.html exceeded 1.32 MB performance budget');else pass('index.html performance budget');
+// The owned 50-row history pager replaces a 500-row first render while adding a small control contract.
+if(indexBytes>1_322_000)fail('index.html exceeded 1.322 MB performance budget');else pass('index.html performance budget');
 if(eager.intervals>8)fail(`eager setInterval call sites above budget: ${eager.intervals}`);else pass('eager timer budget');
 if(eager.observers>7)fail(`eager MutationObserver call sites above budget: ${eager.observers}`);else pass('eager observer budget');
 if(full.intervals>18)fail(`repository timer call sites regressed above ceiling: ${full.intervals}`);else pass('repository timer regression ceiling');
