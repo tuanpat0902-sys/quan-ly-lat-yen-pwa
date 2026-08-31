@@ -8,9 +8,9 @@ const reconcileMigration=await fs.readFile(new URL('../supabase/migrations/20260
 
 assert.match(edge,/function canonicalTranId/);
 assert.match(edge,/\^EDT_\(\.\+\)_\[0-9\]\+\$/);
-assert.match(edge,/sale\.deleted===true\?sale:await fetchSaleDetail/);
+assert.match(edge,/deletedSales=current\.filter\(s=>s\.deleted===true\)[\s\S]*activeRaw=current\.filter\(s=>s\.deleted!==true\)/,'deleted headers must be handled before detail loading');
+assert.match(edge,/changedHeaders=activeHeaders\.filter[\s\S]*fetchChangedSaleDetails\(config,changedHeaders\)/,'only active changed receipts may request sale details');
 assert.match(edge,/ly_ipos_delete_sale/);
-assert.match(edge,/deletedSales=current\.filter\(s=>s\.deleted===true\)/);
 assert.match(edge,/activeByCanonical=new Map/);
 assert.match(edge,/!requestedDate&&windows\.length===1/);
 assert.match(edge,/ly_ipos_reconcile_absent_sales/);
