@@ -27645,8 +27645,13 @@ function ingredientUsageRows({
     });
 }
 
+const INGREDIENT_USAGE_PAGE_SIZE=50;
+let ingredientUsageHistoryPage=0;
+
 function ingredientUsageHistoryHtml(filters={}){
-  const rows=window.ingredientUsageRows?.(filters)||ingredientUsageRows(filters);
+  const rows=ingredientUsageRows(filters);
+  const pageCount=Math.max(1,Math.ceil(rows.length/INGREDIENT_USAGE_PAGE_SIZE));
+  ingredientUsageHistoryPage=Math.min(Math.max(0,ingredientUsageHistoryPage),pageCount-1);
 
   const totalIncrease=rows.reduce((sum,m)=>{
     const qty=ingredientChangeSignedQty(m);
@@ -27671,7 +27676,8 @@ function ingredientUsageHistoryHtml(filters={}){
     `;
   }
 
-  const displayRows=rows.slice(0,500);
+  const pageStart=ingredientUsageHistoryPage*INGREDIENT_USAGE_PAGE_SIZE;
+  const displayRows=rows.slice(pageStart,pageStart+INGREDIENT_USAGE_PAGE_SIZE);
 
   return `
     <div class="ingredient-change-summary">
@@ -27698,8 +27704,9 @@ function ingredientUsageHistoryHtml(filters={}){
       </div>
     </div>
 
-    ${rows.length>500
-      ?`<div class="history-limit-note">Đang hiển thị 500 lượt gần nhất trong ${num(rows.length)} kết quả.</div>`
+    ${rows.length>INGREDIENT_USAGE_PAGE_SIZE
+      ?`<div class="history-limit-note">Đang hiển thị ${num(pageStart+1)}–${num(pageStart+displayRows.length)} trong ${num(rows.length)} kết quả.</div>
+        <div class="toolbar section-gap ingredient-usage-pagination"><button type="button" class="secondary sm" onclick="changeIngredientUsagePage(-1)" ${ingredientUsageHistoryPage===0?'disabled':''}>← Mới hơn</button><span>Trang ${num(ingredientUsageHistoryPage+1)} / ${num(pageCount)}</span><button type="button" class="secondary sm" onclick="changeIngredientUsagePage(1)" ${ingredientUsageHistoryPage>=pageCount-1?'disabled':''}>Cũ hơn →</button></div>`
       :''}
 
     <div class="scroll ingredient-usage-scroll">
@@ -27796,7 +27803,19 @@ function renderIngredientUsageHistory(){
   });
 }
 
+function changeIngredientUsagePage(delta){
+  ingredientUsageHistoryPage+=Number(delta)||0;
+  renderIngredientUsageHistory();
+  $('ingredientUsageHistoryArea')?.scrollIntoView?.({block:'start'});
+}
+
+function ingredientUsageHistoryFilterChanged(){
+  ingredientUsageHistoryPage=0;
+  renderIngredientUsageHistory();
+}
+
 function resetIngredientUsageFilters(){
+  ingredientUsageHistoryPage=0;
   if($('ingredientUsageIngredient'))$('ingredientUsageIngredient').value='all';
   if($('ingredientUsageSource'))$('ingredientUsageSource').value='all';
   if($('ingredientUsageFrom'))$('ingredientUsageFrom').value='';
@@ -27906,7 +27925,7 @@ function renderIngredients(){
       <div class="ingredient-usage-filter">
         <div>
           <label>Nguyên liệu/Dụng cụ</label>
-          <select id="ingredientUsageIngredient" onchange="renderIngredientUsageHistory()">
+          <select id="ingredientUsageIngredient" onchange="ingredientUsageHistoryFilterChanged()">
             <option value="all">Tất cả</option>
             ${purchased.map(i=>`
               <option value="${i.id}">${esc(i.name)}</option>
@@ -27916,7 +27935,7 @@ function renderIngredients(){
 
         <div>
           <label>Nguồn</label>
-          <select id="ingredientUsageSource" onchange="renderIngredientUsageHistory()">
+          <select id="ingredientUsageSource" onchange="ingredientUsageHistoryFilterChanged()">
             <option value="all">Tất cả</option>
             <option value="IMPORT">Nhập kho</option>
             <option value="SALE">Bán hàng</option>
@@ -27930,7 +27949,7 @@ function renderIngredients(){
           <input
             id="ingredientUsageFrom"
             type="date"
-            onchange="renderIngredientUsageHistory()"
+            onchange="ingredientUsageHistoryFilterChanged()"
           >
         </div>
 
@@ -27939,7 +27958,7 @@ function renderIngredients(){
           <input
             id="ingredientUsageTo"
             type="date"
-            onchange="renderIngredientUsageHistory()"
+            onchange="ingredientUsageHistoryFilterChanged()"
           >
         </div>
       </div>
@@ -55468,7 +55487,6 @@ saveSaleReceipt=async function(){
 <script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
 <script src="./ly-sidebar-visuals.js?v=20260831.2"></script>
 <script src="./ly-ingredient-usage-history-reconcile.js?v=20260830.1"></script>
-<script src="./ly-ingredient-usage-history-pagination.js?v=20260831.1"></script>
 <script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
