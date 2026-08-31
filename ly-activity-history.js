@@ -4,8 +4,9 @@
   'use strict';
   if(window.__lyActivityHistoryUIV1)return;
   window.__lyActivityHistoryUIV1=true;
-  const VERSION='2026.08.25.1';
-  const cloudState={orgId:'',rows:[],loading:false,loaded:false,error:''};
+  const VERSION='2026.08.31.1';
+  const cloudState={orgId:'',rows:[],loading:false,loaded:false,hasMore:true,error:''};
+  const PAGE_SIZE=250;let page=0;
 
   function cloudClient(){
     try{if(typeof sb!=='undefined'&&sb?.from)return sb;}catch(e){}
@@ -52,18 +53,23 @@
       .sort((a,b)=>new Date(b?.created_at||0)-new Date(a?.created_at||0));
   }
 
-  async function refreshCloudHistory(force=false){
+  async function refreshCloudHistory(force=false,older=false){
     const orgId=String(window.__lyFreshOrgId||'');
     const client=cloudClient();
     if(!orgId||!client||cloudState.loading)return false;
-    if(!force&&cloudState.loaded&&cloudState.orgId===orgId)return true;
+    const orgChanged=cloudState.orgId!==orgId;
+    if(!force&&cloudState.loaded&&!orgChanged&&!older)return true;
     cloudState.loading=true;cloudState.orgId=orgId;cloudState.error='';
     try{
+      if(force||orgChanged){cloudState.rows=[];cloudState.hasMore=true;page=0;}
+      if(older&&!cloudState.hasMore)return true;
+      const from=cloudState.rows.length;
       const {data,error}=await client.from('ly_activity_events')
         .select('id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at')
-        .eq('org_id',orgId).order('id',{ascending:false}).limit(500);
+        .eq('org_id',orgId).order('id',{ascending:false}).range(from,from+PAGE_SIZE-1);
       if(error)throw error;
-      cloudState.rows=(data||[]).map(cloudActivityRow);
+      cloudState.rows=cloudState.rows.concat((data||[]).map(cloudActivityRow));
+      cloudState.hasMore=(data||[]).length===PAGE_SIZE;
       cloudState.loaded=true;
       return true;
     }catch(error){
@@ -103,12 +109,17 @@
     });
   }
 
+  function pageCountForHistory(){return Math.max(1,Math.ceil(auditFilterRows().length/PAGE_SIZE));}
+
   function renderHistory(){
     if(!E.history)return;
     refreshCloudHistory(false);
   
     const allAuditRows=auditFilterRows();
-    const auditRows=allAuditRows.slice(0,300);
+    const pageCount=Math.max(1,Math.ceil(allAuditRows.length/PAGE_SIZE));
+    page=Math.min(Math.max(0,page),pageCount-1);
+    const pageStart=page*PAGE_SIZE;
+    const auditRows=allAuditRows.slice(pageStart,pageStart+PAGE_SIZE);
     const modules=[...new Set(activityRows()
       .filter(x=>!x.warehouse_id||x.warehouse_id===currentWarehouseId)
       .map(x=>x.module)
@@ -155,7 +166,7 @@
       <div class="card section-gap">
         <h3>Nhật ký thay đổi</h3>
         ${auditRows.length?`
-          ${allAuditRows.length>300?`<div class="history-limit-note">Đang hiển thị 300 hoạt động gần nhất trong ${num(allAuditRows.length)} kết quả.</div>`:''}
+          ${allAuditRows.length>PAGE_SIZE||cloudState.hasMore?`<div class="history-limit-note">Đang hiển thị ${num(pageStart+1)}–${num(pageStart+auditRows.length)} trong dữ liệu đã tải.</div><div class="toolbar section-gap"><button type="button" class="secondary sm" onclick="changeActivityHistoryPage(-1)" ${page===0?'disabled':''}>← Mới hơn</button><span>Trang ${num(page+1)}${cloudState.hasMore?' / …':` / ${num(pageCount)}`}</span><button type="button" class="secondary sm" onclick="changeActivityHistoryPage(1)" ${page>=pageCount-1&&!cloudState.hasMore?'disabled':''}>Cũ hơn →</button></div>`:''}
           <div class="scroll">
             <table class="audit-table" data-ly-table-view="activity">
               <tr>
@@ -209,6 +220,7 @@
 
   window.auditActionClass=auditActionClass;
   window.auditFilterRows=auditFilterRows;
+  window.changeActivityHistoryPage=delta=>{const next=Number(delta)||0;if(next>0&&page>=pageCountForHistory()){refreshCloudHistory(false,true).then(()=>{page++;renderHistory();});return;}page=Math.max(0,page+next);renderHistory();E.history?.scrollIntoView?.({block:'start'});};
   window.renderHistory=renderHistory;
   window.__lyActivityHistoryModule={version:VERSION,render:renderHistory,refresh:()=>refreshCloudHistory(true),status:()=>({...cloudState,count:activityRows().length})};
 })();
