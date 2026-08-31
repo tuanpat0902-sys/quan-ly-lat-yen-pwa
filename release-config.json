@@ -2,8 +2,8 @@
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
   "loaderAssetVersion": "20260830.3",
-  "sidebarVisualsAssetVersion": "20260831.1",
+  "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.08.30.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-232",
-  "redeploy": "2026-08-31-sales-report-cloud-refresh-ui-build-40"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-234",
+  "redeploy": "2026-08-31-history-pagination-modern-menu-icons-ui-build-42"
 }

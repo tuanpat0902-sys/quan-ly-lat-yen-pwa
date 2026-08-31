@@ -61,7 +61,7 @@
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260829.2',test:()=>window.__lyBrandingSync?.version==='2026.08.29.2'},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
-    activityHistory:{src:'./ly-activity-history.js?v=20260825.1',test:()=>window.__lyActivityHistoryModule?.version==='2026.08.25.1'},
+    activityHistory:{src:'./ly-activity-history.js?v=20260831.1',test:()=>window.__lyActivityHistoryModule?.version==='2026.08.31.1'},
     employeesUI:{src:'./ly-employees.js?v=20260830.2',test:()=>window.__lyEmployeesModule?.version==='2026.08.30.2'},
     financeUI:{src:'./ly-finance.js?v=20260825.1',test:()=>window.__lyFinanceModule?.version==='2026.08.25.1'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
