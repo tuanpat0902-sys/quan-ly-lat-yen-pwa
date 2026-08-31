@@ -34612,6 +34612,12 @@ function refreshRecentSales(){
   if(area)area.innerHTML=recentSalesTable(),tv2(area);
 }
 
+function changeRecentSalesPage(delta){
+  recentSalesHistoryPage+=Number(delta)||0;
+  refreshRecentSales();
+  document.getElementById('recentSalesArea')?.scrollIntoView?.({block:'start'});
+}
+
 function stageSaleMovementLocal({
   ingredientId,quantity,note,referenceId,createdAt
 }){
@@ -55251,11 +55257,17 @@ saleEditDiscountLines=function(sale,items){
   });
 };
 
+const RECENT_SALES_PAGE_SIZE=50;
+let recentSalesHistoryPage=0;
+
 saleReceiptHistoryTable=function(){
   const indexes=getDataIndexes();
-  const sales=[...salesForCurrentWarehouse()]
-    .sort((a,b)=>new Date(b.sold_at||b.created_at)-new Date(a.sold_at||a.created_at))
-    .slice(0,50);
+  const allSales=[...salesForCurrentWarehouse()]
+    .sort((a,b)=>new Date(b.sold_at||b.created_at)-new Date(a.sold_at||a.created_at));
+  const pageCount=Math.max(1,Math.ceil(allSales.length/RECENT_SALES_PAGE_SIZE));
+  recentSalesHistoryPage=Math.min(Math.max(0,recentSalesHistoryPage),pageCount-1);
+  const pageStart=recentSalesHistoryPage*RECENT_SALES_PAGE_SIZE;
+  const sales=allSales.slice(pageStart,pageStart+RECENT_SALES_PAGE_SIZE);
 
   if(!sales.length){
     return '<div class="empty">Chưa có phiếu bán hàng</div>';
@@ -55302,7 +55314,7 @@ saleReceiptHistoryTable=function(){
 
           return `
             <tr>
-              <td>${index+1}</td>
+              <td>${pageStart+index+1}</td>
               <td>${lyFreshSaleHistoryTime(s.sold_at||s.created_at)}</td>
               <td><b>${esc(saleReceiptNumber(s))}</b></td>
               <td><span class="badge">${esc(s.source||'manual')}</span></td>
@@ -55319,7 +55331,13 @@ saleReceiptHistoryTable=function(){
             </tr>`;
         }).join('')}
       </table>
-    </div>`;
+    </div>
+    ${allSales.length>RECENT_SALES_PAGE_SIZE?`
+      <div class="toolbar section-gap recent-sales-pagination">
+        <button type="button" class="secondary sm" onclick="changeRecentSalesPage(-1)" ${recentSalesHistoryPage===0?'disabled':''}>← Phiếu mới hơn</button>
+        <span>Trang ${num(recentSalesHistoryPage+1)} / ${num(pageCount)}</span>
+        <button type="button" class="secondary sm" onclick="changeRecentSalesPage(1)" ${recentSalesHistoryPage>=pageCount-1?'disabled':''}>Phiếu cũ hơn →</button>
+      </div>`:''}`;
 };
 
 /* Replace Fresh save so discount metadata is persisted in structured Cloud columns. */
