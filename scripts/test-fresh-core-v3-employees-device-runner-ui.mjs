@@ -31,14 +31,14 @@ assert.match(loader,/freshCoreV3EmployeesParityRunner:\{src:'\.\/ly-fresh-core-v
 assert.match(loader,/if\(panel==='settings'\)[\s\S]*await load\('freshCoreV3EmployeesParityRunner'\)/,'Settings preparation remains an idempotent fallback loader');
 assert.doesNotMatch(loader,/loadBackground=.*freshCoreV3EmployeesParityRunner/,'runner must not be loaded by idle/background scheduling');
 
-assert.match(appVersion,/REVISION='fresh-core-v3-shell-authoritative-v14'/,'app boot revision must advance with the runner delivery fix');
+assert.match(appVersion,/REVISION='fresh-core-v3-shell-authoritative-v15'/,'app boot revision must advance with the current release');
 assert.match(appVersion,/function ensureEmployeesParityRunner\(\)/,'app boot must expose a deterministic runner bootstrap');
 assert.match(appVersion,/ly-fresh-core-v3-employees-parity-runner\.js\?v=20260828\.3/,'app boot must use a cache-busted runner URL');
 assert.match(appVersion,/function boot\(\)\{ensureUILayers\(\);mount\(\);ensureEmployeesParityRunner\(\);/,'runner module must be requested after presentation layers mount during normal app boot');
 assert.doesNotMatch(appVersion,/\.run\?\.\(|\.run\(/,'boot loader must never execute parity automatically');
 assert.doesNotMatch(appVersion,/\.rpc\s*\(|\.from\s*\(|\.insert\s*\(|\.update\s*\(|\.upsert\s*\(|\.delete\s*\(/,'boot loader must not create any cloud data path');
 
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-236/,'current service worker release must continue invalidating cached false-positive parity runner bytes');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-237/,'current service worker release must continue invalidating cached false-positive parity runner bytes');
 assert.match(sw,/cacheFirstStatic\(request\)[\s\S]*fetch\(request,\{cache:'reload'\}\)/,'new static assets must bypass stale Safari HTTP cache before entering the release cache');
 
 console.log('Fresh Core V3 employees device runner UI guard: PASS');
