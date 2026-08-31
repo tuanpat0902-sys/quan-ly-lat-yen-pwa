@@ -1,8 +1,8 @@
 {
   "appVersion": "3.0.12",
   "revision": "fresh-core-v3-shell-authoritative-v14",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-235",
-  "uiBuild": "UI-2026.08.31.43",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-236",
+  "uiBuild": "UI-2026.08.31.44",
   "uiUxRefresh": "deep-visual-hierarchy-forms-tables-modals-responsive-no-menu-change",
   "tableUx": "all-data-tables-fixed-desktop-reference-width-contained-horizontal-scroll-below-desktop",
   "tableViewV2": "employee-summary-and-activity-columns-owned-by-explicit-table-contract-without-global-auto-serial-interference",
