@@ -93,7 +93,7 @@ assert.match(sales,/#recentSalesArea \.scroll\{max-height:min\(68dvh,640px\)!imp
 assert.match(sales,/overflow-y:auto!important/,'sales table shells must explicitly allow vertical scrolling');
 assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bounded table scrolling');
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
-assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing');
+assert.match(recovery,/VERSION='2026\.09\.02\.1'/,'lazy recovery version missing');
 
 assert.match(app,/UI_BUILD='UI-2026\.09\.02\.49'/,'current Cloud release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.2/,'table ergonomics asset must be deterministic');
