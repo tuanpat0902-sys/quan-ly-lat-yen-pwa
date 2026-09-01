@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.15",
-  "revision": "fresh-core-v3-shell-authoritative-v17",
-  "loaderAssetVersion": "20260901.2",
+  "appVersion": "3.0.16",
+  "revision": "fresh-core-v3-shell-authoritative-v18",
+  "loaderAssetVersion": "20260901.3",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.01.2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-239",
-  "redeploy": "2026-09-01-supabase-change-broker-ui-build-47"
+  "moduleLoaderVersion": "2026.09.01.3",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-240",
+  "redeploy": "2026-09-01-supabase-egress-delta-notifications-ui-build-48"
 }

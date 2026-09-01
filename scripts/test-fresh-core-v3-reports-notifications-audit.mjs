@@ -40,11 +40,12 @@ assert.equal(baseline.runtime.notificationTelemetryChanged,false);
 assert.match(reports,/Report calculations\/charts remain in Legacy core/);
 assert.match(specialReports,/Read-only report renderers/);
 assert.match(center,/from\('ly_activity_events'\)/);
-assert.match(delivery,/table:'ly_activity_events'/);
 assert.match(delivery,/from\('ly_activity_events'\)/);
 assert.match(delivery,/from\('ly_notification_devices'\)\.upsert/);
-assert.match(delivery,/HEALTH_POLL_MS=60000/);
-assert.match(delivery,/DISCONNECTED_POLL_MS=6000/);
+assert.match(delivery,/addEventListener\('latyen:change-signal',signalPoll\)/);
+assert.doesNotMatch(delivery,/postgres_changes/);
+assert.match(delivery,/HEALTH_POLL_MS=900000/);
+assert.match(delivery,/DISCONNECTED_POLL_MS=120000/);
 
 assert.deepEqual(GUARD.requireDependencies,['V3-5','V3-7']);
 assert.equal(GUARD.requireExistingRealtimeDeliveryPreserved,true);
