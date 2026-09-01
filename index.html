@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://isfotiyxufvsmlkqsgez.supabase.co" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260830.3" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260901.1" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>
 <style>
@@ -11639,7 +11639,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260830.3"></script>
+<script src="./ly-module-loader.js?v=20260901.1"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -54228,24 +54228,26 @@ loadCloud=async function(){
 setupRealtime=function(){
   if(window.__lyFreshRealtime){
     try{sb.removeChannel(window.__lyFreshRealtime)}catch(e){}
+    window.__lyFreshRealtime=null;
   }
-  if(!window.__lyFreshOrgId)return;
-  let ch=sb.channel('latyen-legacy-ui-fresh-'+window.__lyFreshOrgId);
-  for(const table of LY_FRESH_TABLES){
-    ch=ch.on('postgres_changes',{
-      event:'*',schema:'public',table,
-      filter:`org_id=eq.${window.__lyFreshOrgId}`
-    },()=>{
-      clearTimeout(window.__lyFreshReloadTimer);
-      window.__lyFreshReloadTimer=setTimeout(()=>loadCloud(),300);
-    });
+  if(window.__lyFreshReloadTimer){
+    clearTimeout(window.__lyFreshReloadTimer);
+    window.__lyFreshReloadTimer=null;
   }
-  window.__lyFreshRealtime=ch.subscribe(status=>{
-    if(status==='SUBSCRIBED')setCloudStatus?.('Cloud • Realtime','online');
-    else if(['CHANNEL_ERROR','TIMED_OUT','CLOSED'].includes(status)){
-      setCloudStatus?.('Realtime gián đoạn','offline');
-    }
-  });
+  if(!window.__lyFreshOrgId)return false;
+
+  // V2 is the single Realtime owner. The former compatibility channel also
+  // subscribed to all 17 tables and reloaded every table after every event,
+  // doubling Postgres Changes traffic and causing unnecessary Supabase egress.
+  const realtime=window.__lyFreshCoreV2Realtime;
+  if(typeof realtime?.enable==='function'){
+    const enabled=realtime.enable();
+    const connected=realtime.status?.().connected===true;
+    setCloudStatus?.(connected?'Cloud • Realtime':'Cloud • Đang kết nối Realtime',connected?'online':'');
+    return enabled;
+  }
+  setCloudStatus?.('Cloud • Đang khởi tạo Realtime');
+  return false;
 };
 
 async function lyFreshEnsureSupplier(name){

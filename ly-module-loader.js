@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV95)return;
   window.__lyModuleLoaderV95=true;
 
-  const VERSION='2026.08.30.3';
+  const VERSION='2026.09.01.1';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,7 +12,7 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.13',test:()=>window.__lyAppVersion?.version==='3.0.13'},
+    appVersion:{src:'./ly-app-version.js?v=3.0.14',test:()=>window.__lyAppVersion?.version==='3.0.14'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
@@ -41,7 +41,7 @@
     masterDataTakeover:{src:'./ly-fresh-core-v2-masterdata-takeover.js?v=20260823.5',test:()=>window.__lyFreshCoreV2MasterDataTakeover?.version==='2026.08.23.5'},
     readTakeover:{src:'./ly-fresh-core-v2-read-takeover.js?v=20260824.5',test:()=>window.__lyFreshCoreV2ReadTakeover?.version==='2026.08.24.5'},
     manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js?v=20260824.2',test:()=>window.__lyFreshCoreV2ManualRefresh?.version==='2026.08.24.2'},
-    realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260825.1',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.08.25.1'},
+    realtime:{src:'./ly-fresh-core-v2-realtime.js?v=20260901.1',test:()=>window.__lyFreshCoreV2Realtime?.version==='2026.09.01.1'},
     realtimePhase2:{src:'./ly-fresh-core-v2-realtime-phase2.js?v=20260823.2',test:()=>window.__lyFreshCoreV2RealtimePhase2?.version==='2026.08.23.2'},
     ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260829.3',test:()=>window.__lyIngredientConversionSync?.version==='2026.08.29.3'},
     ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260830.1',test:()=>window.__lyIngredientTableUX?.version==='2026.08.30.1'},
