@@ -6,6 +6,7 @@ const source=await fs.readFile(new URL('../ly-fresh-core-v2-realtime.js',import.
 const handlers=[];
 const refreshes=[];
 const events=[];
+const browserEvents=[];
 let statusHandler=null;
 let batchCallback=null;
 let projectionCallback=null;
@@ -31,6 +32,7 @@ const core={
 const context={
   console,
   Date,
+  CustomEvent:class CustomEvent{constructor(type,options={}){this.type=type;this.detail=options.detail;}},
   navigator:{onLine:true},
   setTimeout(callback,delay){if(delay===260){batchCallback=callback;return 260;}if(delay===700){projectionCallback=callback;return 700;}callback();return 1;},
   clearTimeout(){},
@@ -44,7 +46,8 @@ const context={
     v240HasActiveDraft(){return draftOpen;},
     v240MarkProjectionDeferred(){},
     v235RequestBackgroundRender(){safeRenders++;return !deferRender;},
-    renderAll(){fallbackRenders++;}
+    renderAll(){fallbackRenders++;},
+    dispatchEvent(event){browserEvents.push(event);}
   }
 };
 context.globalThis=context;
@@ -70,6 +73,7 @@ for(const [domain,table] of [['masterData','ly_warehouses'],['ingredients','ly_i
   handlers[0].callback({new:{domain,last_table:table}});
 }
 assert.equal(api.status().events,5);
+assert.equal(browserEvents.filter(event=>event.type==='latyen:change-signal').length,5,'each broker row must wake delta readers without another channel');
 assert.equal(api.status().coalescedEvents,4,'events arriving together must be coalesced');
 assert.equal(typeof batchCallback,'function');
 await batchCallback();

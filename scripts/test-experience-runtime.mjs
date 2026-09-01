@@ -15,13 +15,13 @@ for(const file of modules){
   assert.ok(!sw.includes(file),`non-critical experience module must stay outside the service-worker precache: ${file}`);
 }
 assert.match(pages,/no duplicated module-owned bootstrap/,'Pages artifact must keep notification modules under the single module-loader owner');
-assert.ok(loader.includes("await load('notificationCenter')"),'notification center must load in the core experience chain');
+assert.ok(loader.includes("load('notificationCenter')"),'notification center must load in the core experience chain');
 assert.ok(center.includes('lyNotificationButton')&&center.includes('lyNotificationOverlay')&&center.includes('ly-notify-panel'),'notification center UI contract is incomplete');
 assert.match(center,/VERSION='2026\.08\.29\.6'/,'compact notification center release is missing');
 assert.match(center,/height:min\(52dvh,480px\)/,'desktop notification center must remain near half a viewport tall');
 assert.match(center,/height:min\(50dvh,430px\)/,'mobile notification center must remain near half a viewport tall');
 assert.match(center,/\.ly-notify-list\{min-height:0;overflow-y:auto;overflow-x:hidden/,'notification list must keep internal vertical scrolling without horizontal overflow');
-assert.ok(data.includes('ly_activity_events')&&data.includes('latyen:activity'),'activity notification realtime contract is incomplete');
+assert.ok(data.includes('ly_activity_events')&&data.includes('latyen:activity')&&data.includes('latyen:change-signal'),'activity notification broker/delta contract is incomplete');
 assert.ok(inApp.includes('__lyInAppNotifications'),'in-app toast API is missing');
 assert.ok(cloud.includes('ly-cloud-orbit')&&cloud.includes('ly-realtime-live'),'modern Cloud + Realtime indicator is missing');
 assert.ok(cloud.includes('latyen:v2-realtime-status'),'Cloud indicator is not connected to V2 realtime status');

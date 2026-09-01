@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 const realtime=await fs.readFile(new URL('../ly-fresh-core-v2-realtime.js',import.meta.url),'utf8');
+const notifications=await fs.readFile(new URL('../ly-data-notifications.js',import.meta.url),'utf8');
 const start=index.indexOf('setupRealtime=function(){',index.indexOf('const LY_FRESH_TABLES='));
 const end=index.indexOf('\n};',start);
 assert.ok(start>0&&end>start,'Fresh compatibility setupRealtime owner must exist');
@@ -18,5 +19,11 @@ assert.match(realtime,/SIGNAL_TABLE='ly_change_signals'/,'Authoritative Realtime
 assert.doesNotMatch(realtime,/for\s*\(const \[table,domain\].*\.on\('postgres_changes'/s,'Authoritative Realtime must not subscribe to every business table');
 assert.match(realtime,/HIDDEN_SUSPEND_MS/,'Hidden devices must release their Realtime subscription');
 assert.doesNotMatch(realtime,/loadCloud\s*\(/,'Authoritative Realtime must not call the full Legacy loader');
+assert.match(realtime,/CustomEvent\('latyen:change-signal'/,'The compact broker must wake dependent delta readers');
+assert.match(notifications,/addEventListener\('latyen:change-signal',signalPoll\)/,'Activity notifications must reuse the compact broker');
+assert.doesNotMatch(notifications,/\.channel\s*\(/,'Activity notifications must not create a second Realtime channel');
+assert.doesNotMatch(notifications,/postgres_changes/,'Activity notifications must not subscribe to full activity rows');
+assert.match(notifications,/HEALTH_POLL_MS=900000/,'Healthy notification fallback reads must be limited to every 15 minutes');
+assert.match(notifications,/if\(document\.hidden\)return/,'Hidden notification clients must not poll Supabase');
 
 console.log('Supabase egress + single Realtime owner guard: PASS');

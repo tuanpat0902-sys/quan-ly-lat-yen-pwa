@@ -3,7 +3,8 @@
   if(window.__lyBrandingSyncV3)return;
   window.__lyBrandingSyncV3=true;
 
-  const VERSION='2026.08.29.2';
+  const VERSION='2026.09.01.1';
+  const RECHECK_MS=900000;
   const DEFAULT_NAME='QUẢN LÝ LÁT YÊN';
   const state={orgId:'',row:null,channel:null,startTimer:null,saving:false,pendingSave:null,applying:false,seedAttempted:false,lastLoadAt:0};
   const text=v=>String(v??'').trim();
@@ -76,7 +77,7 @@
     const client=getClient(),org=getOrgId();
     if(!client||!org){clearTimeout(state.startTimer);state.startTimer=setTimeout(()=>load(force),600);return false;}
     if(state.orgId!==org){stopChannel();state.orgId=org;state.row=null;state.seedAttempted=false;applyCached();}
-    if(!force&&Date.now()-state.lastLoadAt<1200&&state.row){applyBranding(state.row);return true;}
+    if(!force&&Date.now()-state.lastLoadAt<RECHECK_MS&&state.row){applyBranding(state.row);ensureChannel();return true;}
     state.lastLoadAt=Date.now();
     try{const {data,error}=await client.from('ly_org_branding').select('org_id,software_name,logo_data,updated_at,updated_by').eq('org_id',org).maybeSingle();if(error)throw error;if(data)applyBranding(data);else await seedIfNeeded();ensureChannel();return true;}catch(e){console.warn('[Lát Yên] branding load',e);return false;}
   }
@@ -87,18 +88,18 @@
     ch=ch.on('postgres_changes',{event:'*',schema:'public',table:'ly_org_branding',filter:`org_id=eq.${state.orgId}`},payload=>{if(payload.eventType==='DELETE'){applyBranding({software_name:DEFAULT_NAME,logo_data:null,updated_at:new Date().toISOString()});state.row=null;return;}applyBranding(payload.new||{});});
     state.channel=ch;ch.subscribe(status=>{if(status==='SUBSCRIBED'&&state.row)applyBranding(state.row);});
   }
-  async function start(){applyCached();await load(true);ensureChannel();if(state.row)applyBranding(state.row);else remountAppVersion();}
+  async function start(){applyCached();await load(false);ensureChannel();if(state.row)applyBranding(state.row);else remountAppVersion();}
 
   function isInsideBranding(target){const card=findBrandingCard();return !!(card&&target&&card.contains(target));}
   function isSettingsButton(target){const b=target?.closest?.('#nav button[data-panel],button[data-panel]');if(!b)return false;const id=text(b.dataset.panel).toLowerCase(),label=text(b.textContent).toLowerCase();return id==='settings'||label.includes('cài đặt');}
   function installEvents(){
-    document.addEventListener('click',e=>{if(isSettingsButton(e.target))setTimeout(()=>load(true),120);},true);
+    document.addEventListener('click',e=>{if(isSettingsButton(e.target))setTimeout(()=>load(false),120);},true);
     window.addEventListener('latyen:local-branding-changed',event=>persist(event?.detail?.logoData));
-    document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(true);},true);
-    window.addEventListener('focus',()=>load(true),true);
-    window.addEventListener('online',()=>load(true));
-    window.addEventListener('latyen:v2-hydrated',()=>load(true));
-    window.addEventListener('latyen:cloud-refreshed',()=>load(true));
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)load(false);},true);
+    window.addEventListener('focus',()=>load(false),true);
+    window.addEventListener('online',()=>load(false));
+    window.addEventListener('latyen:v2-hydrated',()=>{if(state.row)applyBranding(state.row);});
+    window.addEventListener('latyen:cloud-refreshed',()=>{if(state.row)applyBranding(state.row);});
   }
   function boot(){installEvents();start();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();

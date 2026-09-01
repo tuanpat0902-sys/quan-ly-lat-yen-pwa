@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2RealtimeV1)return;
   window.__lyFreshCoreV2RealtimeV1=true;
 
-  const VERSION='2026.09.01.2';
+  const VERSION='2026.09.01.3';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const DEBOUNCE_MS=260;
@@ -138,6 +138,12 @@
       catchUp('unknown-signal');
       return;
     }
+    try{
+      window.dispatchEvent?.(new CustomEvent('latyen:change-signal',{detail:{
+        orgId:String(row.org_id||orgId()),domain,lastTable:String(row.last_table||SIGNAL_TABLE),
+        revision:Number(row.revision)||0,changedAt:row.changed_at||new Date().toISOString()
+      }}));
+    }catch(e){}
     schedule(domain,String(row.last_table||SIGNAL_TABLE));
   }
 

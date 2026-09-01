@@ -10,7 +10,7 @@
   const titleWithVersion=title=>{const value=String(title||'Quản Lý Lát Yên');const ver=appVersionLabel();return value.includes(ver)?value:`${value} · ${ver}`;};
   function requestAppVersion(){
     if(window.__lyAppVersion)return;
-    try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-app-version.js?v=3.0.15';script.async=false;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}
+    try{if(typeof document==='undefined'||!document.createElement)return;const script=document.createElement('script');script.src='./ly-app-version.js?v=3.0.16';script.async=false;(document.head||document.documentElement||document.body)?.appendChild(script);}catch(e){}
   }
   function host(){let el=document.getElementById('lyInAppNotificationHost');if(el)return el;el=document.createElement('div');el.id='lyInAppNotificationHost';el.setAttribute('aria-live','polite');el.style.cssText='position:fixed;top:14px;right:14px;z-index:2147483646;width:min(405px,calc(100vw - 28px));display:flex;flex-direction:column;gap:10px;pointer-events:none;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif';document.body.appendChild(el);return el;}
   function showToast(body,title='Quản Lý Lát Yên',persistent=false,emoji='🔔'){
