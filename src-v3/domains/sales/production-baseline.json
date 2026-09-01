@@ -11,7 +11,7 @@
   "ipos": {
     "active": true,
     "cronJob": "ly_ipos_sync_every_minute",
-    "cronSchedule": "* * * * *",
+    "cronSchedule": "*/5 0-16,23 * * *",
     "salesWithSourceIpos": 226,
     "salesWithIposTranId": 226,
     "upsertRpc": "ly_ipos_upsert_sale",

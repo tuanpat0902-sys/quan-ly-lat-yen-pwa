@@ -14,6 +14,9 @@ assert.doesNotMatch(compatibility,/\.channel\s*\(/,'Legacy entry point must not 
 assert.doesNotMatch(compatibility,/postgres_changes/,'Legacy entry point must not duplicate Postgres Changes subscriptions');
 assert.doesNotMatch(compatibility,/loadCloud\s*\(/,'Realtime events must not trigger a full Legacy Cloud reload');
 assert.match(realtime,/pendingDomains/,'Authoritative Realtime must batch refreshes by data domain');
+assert.match(realtime,/SIGNAL_TABLE='ly_change_signals'/,'Authoritative Realtime must use the compact change-signal broker');
+assert.doesNotMatch(realtime,/for\s*\(const \[table,domain\].*\.on\('postgres_changes'/s,'Authoritative Realtime must not subscribe to every business table');
+assert.match(realtime,/HIDDEN_SUSPEND_MS/,'Hidden devices must release their Realtime subscription');
 assert.doesNotMatch(realtime,/loadCloud\s*\(/,'Authoritative Realtime must not call the full Legacy loader');
 
 console.log('Supabase egress + single Realtime owner guard: PASS');

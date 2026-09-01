@@ -23,7 +23,7 @@ assert.equal(baseline.tables.ly_sales.rls,true);
 assert.equal(baseline.tables.ly_sale_items.rls,true);
 assert.equal(baseline.ipos.active,true);
 assert.equal(baseline.ipos.cronJob,'ly_ipos_sync_every_minute');
-assert.equal(baseline.ipos.cronSchedule,'* * * * *');
+assert.equal(baseline.ipos.cronSchedule,'*/5 0-16,23 * * *');
 assert.equal(baseline.ipos.salesWithSourceIpos,226);
 assert.equal(baseline.ipos.salesWithIposTranId,226);
 assert.equal(baseline.integrity.orphanSaleItems,0);

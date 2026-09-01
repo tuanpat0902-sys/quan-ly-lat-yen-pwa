@@ -3,11 +3,13 @@
   if(window.__lyFreshCoreV2RealtimeV1)return;
   window.__lyFreshCoreV2RealtimeV1=true;
 
-  const VERSION='2026.09.01.1';
+  const VERSION='2026.09.01.2';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const DEBOUNCE_MS=260;
   const FRESH_SHADOW_MS=5000;
+  const HIDDEN_SUSPEND_MS=45000;
+  const SIGNAL_TABLE='ly_change_signals';
   const TABLE_DOMAIN={
     ly_warehouses:'masterData',ly_suppliers:'masterData',ly_ingredients:'ingredients',ly_prepared_items:'ingredients',
     ly_products:'products',ly_recipe_items:'products',ly_inventory:'inventory',ly_stock_transactions:'inventory',
@@ -16,12 +18,14 @@
     ly_cashflow_entries:'cashflow'
   };
 
-  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,batches:0,coalescedEvents:0,refreshes:0,projections:0,deferredProjections:0,deferredRenders:0,projectionErrors:0,catchups:0,catchupSkips:0,catchupErrors:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastCatchupAt:0,lastError:''};
+  const state={version:VERSION,phase:'waiting',enabled:false,connected:false,events:0,batches:0,coalescedEvents:0,refreshes:0,projections:0,deferredProjections:0,deferredRenders:0,projectionErrors:0,catchups:0,catchupSkips:0,catchupErrors:0,hiddenSuspends:0,hiddenResumes:0,errors:0,lastTable:'',lastDomain:'',lastAt:0,lastCatchupAt:0,lastError:''};
   let channel=null;
   let batchTimer=null;
   let projectionTimer=null;
   let pendingProjectionReason='';
   let catchupPromise=null;
+  let visibilityTimer=null;
+  let suspendedByVisibility=false;
   const pendingDomains=new Map();
 
   function legacySupabase(){try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;}
@@ -125,6 +129,18 @@
     batchTimer=setTimeout(()=>{flushBatch().catch(error=>{state.errors++;state.lastError=String(error?.message||error||'Realtime batch failed');});},DEBOUNCE_MS);
   }
 
+  function receiveSignal(payload){
+    const row=payload?.new||{};
+    const domain=String(row.domain||'');
+    if(!Object.values(TABLE_DOMAIN).includes(domain)){
+      state.errors++;
+      state.lastError=`Unknown Realtime domain: ${domain||'(empty)'}`;
+      catchUp('unknown-signal');
+      return;
+    }
+    schedule(domain,String(row.last_table||SIGNAL_TABLE));
+  }
+
   function freshShadow(){
     const shadow=window.__lyFreshCoreV2Shadow?.status?.()||{};
     return shadow.phase==='ready'&&Number(shadow.refreshAt||0)>0&&Date.now()-Number(shadow.refreshAt)<FRESH_SHADOW_MS;
@@ -164,8 +180,8 @@
     if(state.enabled)return true;
     const client=legacySupabase(),id=orgId(),current=core();
     if(!client||!id||!current||typeof client.channel!=='function')return false;
-    let next=client.channel(`latyen-v2-domain-${id}`);
-    for(const [table,domain] of Object.entries(TABLE_DOMAIN))next=next.on('postgres_changes',{event:'*',schema:'public',table,filter:`org_id=eq.${id}`},()=>schedule(domain,table));
+    const next=client.channel(`latyen-v2-broker-${id}`)
+      .on('postgres_changes',{event:'*',schema:'public',table:SIGNAL_TABLE,filter:`org_id=eq.${id}`},receiveSignal);
     channel=next.subscribe(statusValue=>{
       const wasConnected=state.connected;
       state.connected=statusValue==='SUBSCRIBED';
@@ -180,7 +196,7 @@
     return true;
   }
 
-  function disable(){
+  function disable(reason='disabled'){
     if(batchTimer)clearTimeout(batchTimer);
     if(projectionTimer)clearTimeout(projectionTimer);
     batchTimer=null;
@@ -192,11 +208,35 @@
     channel=null;
     state.enabled=false;
     state.connected=false;
-    state.phase='disabled';
+    state.phase=reason;
   }
 
-  function boot(){if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
+  function armHiddenSuspend(){
+    clearTimeout(visibilityTimer);
+    visibilityTimer=null;
+    if(!document.hidden)return;
+    visibilityTimer=setTimeout(()=>{
+      visibilityTimer=null;
+      if(!document.hidden||!state.enabled)return;
+      suspendedByVisibility=true;
+      state.hiddenSuspends++;
+      disable('suspended-hidden');
+    },HIDDEN_SUSPEND_MS);
+  }
 
-  window.__lyFreshCoreV2Realtime={version:VERSION,enable,disable,catchUp,flush:flushBatch,flushProjection:()=>projectLegacy(pendingProjectionReason||'manual'),status:()=>({...state,pendingProjection:pendingProjectionReason}),tableDomain:()=>({...TABLE_DOMAIN})};
+  function resumeVisible(){
+    clearTimeout(visibilityTimer);
+    visibilityTimer=null;
+    if(document.hidden){armHiddenSuspend();return;}
+    if(!suspendedByVisibility)return;
+    suspendedByVisibility=false;
+    state.hiddenResumes++;
+    enable();
+  }
+
+  function boot(){if(document.hidden){state.phase='suspended-hidden';suspendedByVisibility=true;return;}if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
+
+  document.addEventListener('visibilitychange',()=>document.hidden?armHiddenSuspend():resumeVisible());
+  window.__lyFreshCoreV2Realtime={version:VERSION,enable,disable,catchUp,flush:flushBatch,flushProjection:()=>projectLegacy(pendingProjectionReason||'manual'),status:()=>({...state,pendingProjection:pendingProjectionReason,suspendedByVisibility}),tableDomain:()=>({...TABLE_DOMAIN}),signalTable:SIGNAL_TABLE};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 })();

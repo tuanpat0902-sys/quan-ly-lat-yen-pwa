@@ -22,7 +22,7 @@ export const SALES_CONTRACT=Object.freeze({
   ipos:Object.freeze({
     active:true,
     cronJob:'ly_ipos_sync_every_minute',
-    cronSchedule:'* * * * *',
+    cronSchedule:'*/5 0-16,23 * * *',
     edgeFunction:'supabase/functions/ly-ipos-sync/index.ts',
     upsertRpc:'ly_ipos_upsert_sale',
     deleteRpc:'ly_ipos_delete_sale',
