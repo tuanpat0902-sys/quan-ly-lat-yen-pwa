@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.13",
-  "revision": "fresh-core-v3-shell-authoritative-v15",
-  "loaderAssetVersion": "20260830.3",
+  "appVersion": "3.0.14",
+  "revision": "fresh-core-v3-shell-authoritative-v16",
+  "loaderAssetVersion": "20260901.1",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.08.30.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-237",
-  "redeploy": "2026-08-31-ipos-incremental-sync-ui-build-45"
+  "moduleLoaderVersion": "2026.09.01.1",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-238",
+  "redeploy": "2026-09-01-supabase-egress-single-realtime-ui-build-46"
 }

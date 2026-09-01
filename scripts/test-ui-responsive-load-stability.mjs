@@ -97,7 +97,7 @@ assert.match(recovery,/VERSION='2026\.08\.29\.2'/,'lazy recovery version missing
 
 assert.match(app,/UI_BUILD='UI-2026\.08\.31\.45'/,'current Cloud release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.2/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-237/,'UI build 45 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-238/,'UI build 46 must force a fresh service-worker release');
 assert.match(sw,/async function navigationSource\(request\)\{const cached=await caches\.match\(INDEX_KEY\);if\(cached\)\{refreshNavigation\(request\)\.catch/,'warm navigations must render cached HTML immediately and refresh in background');
 assert.doesNotMatch(sw,/ly-ui-table-ergonomics\.js|ly-ui-design-system\.js|ly-ui-sales-workflow\.js|ly-panel-lazy-render-recovery\.js/,'non-critical presentation layers must stay outside critical precache budget');
 
