@@ -13,6 +13,12 @@ const recipeMigration = await readFile(
   new URL('../supabase/migrations/20260831153558_coalesce_ipos_recipe_reconciliation.sql', import.meta.url),
   'utf8'
 );
+const scheduleMigration = await readFile(
+  new URL('../supabase/migrations/20260901074248_reduce_ipos_sync_schedule_egress.sql', import.meta.url),
+  'utf8'
+);
+const performance = await readFile(new URL('../ly-performance-optimizer.js', import.meta.url),'utf8');
+const shell = await readFile(new URL('../index.html', import.meta.url),'utf8');
 
 assert.match(edge,/fetchSaleHeadersForDay/,'the lightweight sale list must be fetched separately');
 assert.match(edge,/ly_ipos_changed_sale_ids/,'stored iPOS versions must filter unchanged receipts');
@@ -29,5 +35,9 @@ assert.match(recipeMigration,/pg_advisory_xact_lock/,'concurrent recipe saves fo
 assert.match(recipeMigration,/set_config\('ly\.skip_ipos_recipe_reconcile','on',true\)[\s\S]*set_config\('ly\.skip_ipos_recipe_reconcile','off',true\)/,'row-level reconciliation must be suspended during full recipe replacement');
 assert.match(recipeMigration,/perform public\.ly_ipos_reconcile_product_inventory\(v_org,v_id\)/,'a completed recipe save must reconcile its historical receipts once');
 assert.match(recipeMigration,/current_setting\('ly\.skip_ipos_recipe_reconcile',true\)/,'direct recipe-row edits must retain automatic reconciliation');
+assert.match(scheduleMigration,/schedule=>'\*\/5 0-16,23 \* \* \*'/,'iPOS cron must run every five minutes only from 06:00 through 23:59 Vietnam time');
+assert.match(performance,/LIVE_MS=900000,FALLBACK_MS=120000/,'empty client fallback pulls must be sparse when Realtime is healthy');
+assert.match(performance,/reason!=='manual'&&quietHours\(\)&&pendingCount\(\)===0/,'automatic client reads must pause from midnight through 06:00 without blocking pending writes or manual refresh');
+assert.match(shell,/V269_PULL_INTERVAL_MS=900000/,'legacy fallback path must retain the same sparse pull floor');
 
 console.log('iPOS incremental synchronization checks passed');

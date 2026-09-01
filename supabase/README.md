@@ -29,7 +29,7 @@ The `lat-yen-chat` Edge Function also expects Edge Function environment variable
 
 Production job: `ly_ipos_sync_every_minute`
 
-Schedule: `* * * * *`
+Schedule: `*/5 0-16,23 * * *` (mỗi 5 phút từ 06:00 đến 23:59 giờ Việt Nam; tạm dừng 00:00–06:00)
 
 The job calls `/functions/v1/ly-ipos-sync` through `pg_net` and supplies the Cron secret from Vault.
 

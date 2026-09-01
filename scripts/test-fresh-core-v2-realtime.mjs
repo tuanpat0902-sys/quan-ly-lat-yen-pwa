@@ -62,11 +62,12 @@ assert.equal(catchups,0,'initial subscription must reuse the just-loaded Shadow 
 assert.equal(hydrations,1);
 assert.equal(safeRenders,1);
 assert.equal(fallbackRenders,0,'Realtime must use the interaction-safe Legacy renderer');
-assert.equal(handlers.length,17,'must subscribe exactly to V2-owned domain tables');
+assert.equal(handlers.length,1,'must subscribe only to the compact change-signal broker');
 assert.ok(handlers.every(item=>item.filter.filter==='org_id=eq.org-1'));
+assert.equal(handlers[0].filter.table,'ly_change_signals');
 
-for(const table of ['ly_warehouses','ly_ingredients','ly_sale_items','ly_inventory','ly_stock_transactions']){
-  handlers.find(item=>item.filter.table===table).callback({});
+for(const [domain,table] of [['masterData','ly_warehouses'],['ingredients','ly_ingredients'],['sales','ly_sale_items'],['inventory','ly_inventory'],['inventory','ly_stock_transactions']]){
+  handlers[0].callback({new:{domain,last_table:table}});
 }
 assert.equal(api.status().events,5);
 assert.equal(api.status().coalescedEvents,4,'events arriving together must be coalesced');
@@ -81,7 +82,7 @@ assert.equal(hydrations,2);
 assert.equal(safeRenders,2);
 
 deferRender=true;
-handlers.find(item=>item.filter.table==='ly_cashflow_entries').callback({});
+handlers[0].callback({new:{domain:'cashflow',last_table:'ly_cashflow_entries'}});
 await batchCallback();
 await flush();
 assert.equal(api.status().deferredRenders,1,'active editing must defer the render instead of rebuilding the form');
@@ -89,7 +90,7 @@ assert.equal(api.status().deferredRenders,1,'active editing must defer the rende
 deferRender=false;
 draftOpen=true;
 const beforeDraftHydrations=hydrations,beforeDraftRenders=safeRenders;
-handlers.find(item=>item.filter.table==='ly_cashflow_entries').callback({});
+handlers[0].callback({new:{domain:'cashflow',last_table:'ly_cashflow_entries'}});
 await batchCallback();
 await flush();
 assert.equal(hydrations,beforeDraftHydrations,'an open receipt must block realtime hydration');

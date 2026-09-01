@@ -1,0 +1,19 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+
+const sql=await fs.readFile(new URL('../supabase/migrations/20260901013552_add_change_signal_broker.sql',import.meta.url),'utf8');
+const retireSql=await fs.readFile(new URL('../supabase/migrations/20260901073845_retire_direct_business_realtime.sql',import.meta.url),'utf8');
+assert.match(sql,/create table public\.ly_change_signals/);
+assert.match(sql,/alter table public\.ly_change_signals enable row level security/);
+assert.match(sql,/org_id = ly_private\.ly_current_org\(\)/,'broker reads must stay organization-scoped');
+assert.match(sql,/grant select on public\.ly_change_signals to authenticated/);
+assert.match(sql,/current_setting\('ly\.suppress_change_signals',true\)='on'/,'bulk transactions must support signal coalescing');
+assert.match(sql,/ly_ipos_upsert_sale_with_inventory/);
+assert.match(sql,/ly_emit_change_signal\(p_org_id,'sales','ly_sales'\)/);
+assert.match(sql,/ly_emit_change_signal\(p_org_id,'inventory','ly_inventory'\)/);
+assert.match(sql,/alter publication supabase_realtime add table public\.ly_change_signals/);
+assert.doesNotMatch(sql,/alter publication supabase_realtime drop table public\.%I/,'phase 1 must preserve streams used by older clients');
+assert.match(retireSql,/alter publication supabase_realtime drop table public\.%I/);
+assert.match(retireSql,/ly_change_signals must be published before retiring direct business streams/);
+assert.doesNotMatch(sql,/grant (?:insert|update|delete).*ly_change_signals to authenticated/i,'clients must not write broker rows directly');
+console.log('Supabase compact change-signal broker migration: PASS');

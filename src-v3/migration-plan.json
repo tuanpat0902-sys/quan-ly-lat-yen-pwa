@@ -119,7 +119,7 @@
         "rlsVerifiedBothTables": true,
         "tables": ["ly_sales","ly_sale_items"],
         "productionBaselineCounts": {"sales":226,"saleItems":488,"iposSales":226,"orphanSaleItems":0},
-        "ipos": {"active":true,"cronJob":"ly_ipos_sync_every_minute","cronSchedule":"* * * * *","upsertRpc":"ly_ipos_upsert_sale","deleteRpc":"ly_ipos_delete_sale","reconciliationRpc":"ly_ipos_reconcile_absent_sales","protectedWritePath":true,"inventoryChangedBySync":false},
+        "ipos": {"active":true,"cronJob":"ly_ipos_sync_every_minute","cronSchedule":"*/5 0-16,23 * * *","upsertRpc":"ly_ipos_upsert_sale","deleteRpc":"ly_ipos_delete_sale","reconciliationRpc":"ly_ipos_reconcile_absent_sales","protectedWritePath":true,"inventoryChangedBySync":false},
         "repository": "not-implemented",
         "service": "not-implemented",
         "shadow": "not-implemented",
