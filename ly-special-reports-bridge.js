@@ -3,7 +3,7 @@
   'use strict';
   if(window.__lySpecialReportsBridgeV4)return;
   window.__lySpecialReportsBridgeV4=true;
-  const VERSION='2026.08.31.1';
+  const VERSION='2026.09.02.1';
   let loading=null;
   const stubs={};
   function loadRevenueCard(){
@@ -14,11 +14,11 @@
     });
   }
   function load(){
-    if(window.__lySpecialReportsModule){loadRevenueCard();return Promise.resolve(true);}
+    if(window.__lySpecialReportsModule?.version==='2026.09.02.1'){loadRevenueCard();return Promise.resolve(true);}
     if(loading)return loading;
     loading=new Promise(resolve=>{
       const s=document.createElement('script');
-      s.src='./ly-special-reports.js?v=20260831.1';
+      s.src='./ly-special-reports.js?v=20260902.1';
       s.async=true;
       s.onload=()=>{loadRevenueCard();resolve(true);};
       s.onerror=()=>{loading=null;resolve(false)};
