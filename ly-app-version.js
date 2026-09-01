@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='3.0.16',REVISION='fresh-core-v3-shell-authoritative-v18',UI_BUILD='UI-2026.09.01.48';
+  const VERSION='3.0.17',REVISION='fresh-core-v3-shell-authoritative-v19',UI_BUILD='UI-2026.09.02.49';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION&&window.__lyAppVersion?.uiBuild===UI_BUILD)return;
   const LABEL=`Ver ${VERSION} · ${UI_BUILD}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,uiBuild:UI_BUILD,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -12,11 +12,11 @@
   const ensureUITableErgonomics=()=>ensureScript(()=>window.__lyUITableErgonomics?.version==='2026.08.30.2','./ly-ui-table-ergonomics.js?v=20260830.2','ui-table-ergonomics');
   const ensureTableViewV2=()=>ensureScript(()=>window.__lyTableViewV2?.version==='2026.08.30.3','./ly-table-view-v2.js?v=20260830.3','table-view-v2');
   const ensureUISalesWorkflow=()=>ensureScript(()=>window.__lyUISalesWorkflow?.version==='2026.08.29.5','./ly-ui-sales-workflow.js?v=20260829.5','ui-sales-workflow');
-  const ensurePanelLazyRenderRecovery=()=>ensureScript(()=>window.__lyPanelLazyRenderRecovery?.version==='2026.08.29.2','./ly-panel-lazy-render-recovery.js?v=20260829.2','panel-lazy-render-recovery');
+  const ensurePanelLazyRenderRecovery=()=>ensureScript(()=>window.__lyPanelLazyRenderRecovery?.version==='2026.09.02.1','./ly-panel-lazy-render-recovery.js?v=20260902.1','panel-lazy-render-recovery');
   function ensureEmployeesParityRunner(){if(window.__lyFreshCoreV3EmployeesParityRunner){try{window.__lyFreshCoreV3EmployeesParityRunner.render?.();}catch(e){}return true;}if(document.querySelector?.('script[data-ly-bootstrap="v3-6-employees-parity"]'))return true;const script=document.createElement?.('script');if(!script)return false;script.src='./ly-fresh-core-v3-employees-parity-runner.js?v=20260828.3';script.async=true;script.dataset.lyBootstrap='v3-6-employees-parity';script.onload=()=>{try{window.__lyFreshCoreV3EmployeesParityRunner?.render?.();}catch(e){}};script.onerror=()=>script.remove?.();(document.head||document.documentElement).appendChild(script);return true;}
   function previousVersion(){try{return localStorage.getItem(STORAGE_KEY)||'';}catch(e){return '';}}
   function rememberVersion(){try{localStorage.setItem(STORAGE_KEY,`${VERSION}|${UI_BUILD}`);}catch(e){}}
-  function showUpdateNotice(){if(state.updateNoticeShown)return true;const previous=previousVersion();if(previous===`${VERSION}|${UI_BUILD}`)return true;const notifications=window.__lyInAppNotifications;if(typeof notifications?.show!=='function')return false;notifications.show(`Đã cập nhật lên ${LABEL}. Nhật ký dùng chung tín hiệu đồng bộ gọn, giảm tải Supabase và vẫn bắt kịp khi mở lại.`,'Quản Lý Lát Yên',false,'✨');rememberVersion();state.updateNoticeShown=true;return true;}
+  function showUpdateNotice(){if(state.updateNoticeShown)return true;const previous=previousVersion();if(previous===`${VERSION}|${UI_BUILD}`)return true;const notifications=window.__lyInAppNotifications;if(typeof notifications?.show!=='function')return false;notifications.show(`Đã cập nhật lên ${LABEL}. Số lượng trong lịch sử phiếu bán hàng nay cập nhật đúng theo chi tiết món iPOS.`,'Quản Lý Lát Yên',false,'✨');rememberVersion();state.updateNoticeShown=true;return true;}
   function ensureUILayers(){ensureUIStability();ensureUIFormErgonomics();ensureUIDesignSystem();ensureUITableErgonomics();ensureTableViewV2();ensureUISalesWorkflow();ensurePanelLazyRenderRecovery();}
   function boot(){ensureUILayers();mount();ensureEmployeesParityRunner();if(!showUpdateNotice())setTimeout(showUpdateNotice,600);}
   window.__LY_APP_VERSION=VERSION;window.__LY_APP_VERSION_LABEL=LABEL;window.__LY_UI_BUILD=UI_BUILD;

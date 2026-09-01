@@ -2,7 +2,7 @@
    Read-only report renderers extracted from Legacy index.html. Core business/save/chart helpers remain resident. */
 (()=>{
   'use strict';
-  if(window.__lySpecialReportsModule?.version==='2026.08.31.1')return;
+  if(window.__lySpecialReportsModule?.version==='2026.09.02.1')return;
   let salesCloudRefreshKey='';
   let salesCloudRefreshAt=0;
   let salesCloudRefreshRunning=false;
@@ -26,6 +26,7 @@
       db.products=products.map(x=>({...x}));
       invalidateDataIndexes?.();
       invalidateDerivedCaches?.();
+      refreshRecentSales?.();
       salesCloudRefreshAt=Date.now();
       const activeRange=saleReportRange?.();
       if(activeRange&&`${orgId}|${warehouseId}|${activeRange.start}|${activeRange.end}`===key)renderSaleReport();
@@ -581,5 +582,5 @@
   window.renderImportReport=renderImportReport;
   window.renderExportReport=renderExportReport;
   window.renderSaleReport=renderSaleReport;
-  window.__lySpecialReportsModule={version:'2026.08.31.1',refreshSalesReportCloud};
+  window.__lySpecialReportsModule={version:'2026.09.02.1',refreshSalesReportCloud};
 })();

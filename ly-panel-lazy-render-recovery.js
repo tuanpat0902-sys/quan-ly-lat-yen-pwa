@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.29.2';
+  const VERSION='2026.09.02.1';
   if(window.__lyPanelLazyRenderRecovery?.version===VERSION)return;
 
   const inflight=new Map();
@@ -39,8 +39,8 @@
   }
 
   async function ensureSpecialReportsBridge(){
-    if(window.__lySpecialReportsBridge?.version==='2026.08.31.1')return true;
-    return loadScript('./ly-special-reports-bridge.js?v=20260831.1','special-reports-bridge',()=>window.__lySpecialReportsBridge?.version==='2026.08.31.1');
+    if(window.__lySpecialReportsBridge?.version==='2026.09.02.1')return true;
+    return loadScript('./ly-special-reports-bridge.js?v=20260902.1','special-reports-bridge',()=>window.__lySpecialReportsBridge?.version==='2026.09.02.1');
   }
 
   async function recoverSales(){
