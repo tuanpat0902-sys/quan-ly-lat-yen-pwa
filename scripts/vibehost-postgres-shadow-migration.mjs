@@ -11,22 +11,28 @@ function quoteIdentifier(value) {
   return `"${String(value).replaceAll('"', '""')}"`;
 }
 
-function sourceConnectionConfig(connectionString) {
+function connectionConfig(connectionString, ssl) {
+  const url = new URL(connectionString);
   return {
-    connectionString,
+    host: url.hostname,
+    port: Number.parseInt(url.port || '5432', 10),
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    database: decodeURIComponent(url.pathname.replace(/^\//, '')),
+    connectionTimeoutMillis: 15_000,
     keepAlive: true,
-    ssl: { rejectUnauthorized: false },
+    ssl,
   };
+}
+
+function sourceConnectionConfig(connectionString) {
+  return connectionConfig(connectionString, { rejectUnauthorized: false });
 }
 
 function targetConnectionConfig(connectionString) {
   const hostname = new URL(connectionString).hostname;
   const isInternal = !hostname.includes('.') || hostname.endsWith('.internal');
-  return {
-    connectionString,
-    keepAlive: true,
-    ssl: isInternal ? false : { rejectUnauthorized: false },
-  };
+  return connectionConfig(connectionString, isInternal ? false : { rejectUnauthorized: false });
 }
 
 async function getSourceEnums(source) {
