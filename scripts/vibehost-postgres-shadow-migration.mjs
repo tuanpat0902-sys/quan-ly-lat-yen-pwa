@@ -121,7 +121,7 @@ async function addPrimaryAndUniqueConstraints(source, target, tableName) {
   const result = await source.query(`
     select conname, contype, pg_get_constraintdef(oid, true) as definition
       from pg_constraint
-     where conrelid = format('%I.%I', 'public', $1)::regclass
+     where conrelid = format('%I.%I', 'public', $1::text)::regclass
        and contype in ('p', 'u')
      order by case contype when 'p' then 0 else 1 end, conname
   `, [tableName]);
