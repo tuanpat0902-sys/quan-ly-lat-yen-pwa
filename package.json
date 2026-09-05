@@ -3,6 +3,7 @@
   "private": true,
   "version": "3.0.17",
   "scripts": {
+    "start": "node scripts/vibehost-static-server.mjs",
     "validate": "node scripts/validate.mjs",
     "stability": "node scripts/stability-audit.mjs",
     "perf:budget": "node scripts/performance-budget.mjs",
