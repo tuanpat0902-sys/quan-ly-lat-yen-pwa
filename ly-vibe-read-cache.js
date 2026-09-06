@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.06.1';
+  const VERSION='2026.09.06.2';
   const TABLES=new Set([
     'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
     'ly_products','ly_recipe_items','ly_inventory','ly_import_receipts',
@@ -32,10 +32,8 @@
     if(state.snapshot?.orgId===orgId&&Date.now()-state.lastSnapshotAt<15_000)return state.snapshot;
     if(state.pending)return state.pending;
     state.pending=(async()=>{
-      const token=await accessToken();
-      if(!token)throw new Error('missing-session');
       const response=await fetch(`/api/v1/snapshot?org_id=${encodeURIComponent(orgId)}`,{
-        headers:{Authorization:`Bearer ${token}`},cache:'no-store',credentials:'same-origin'
+        cache:'no-store',credentials:'same-origin'
       });
       if(!response.ok)throw new Error(`snapshot-${response.status}`);
       const payload=await response.json();

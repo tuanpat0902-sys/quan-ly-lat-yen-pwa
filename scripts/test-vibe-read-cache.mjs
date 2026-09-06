@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [client,api,mirror,ipos,bootstrap,server,start,loader]=await Promise.all([
+const [client,api,mirror,ipos,bootstrap,auth,server,start,loader]=await Promise.all([
   fs.readFile(new URL('../ly-vibe-read-cache.js',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-snapshot-api.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-supabase-mirror.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-ipos-worker.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-ipos-bootstrap.mjs',import.meta.url),'utf8'),
+  fs.readFile(new URL('./vibehost-auth-api.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-static-server.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-start.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8'),
@@ -29,6 +30,8 @@ assert.match(ipos,/rebuildIposInventory/,'iPOS synchronization must reconcile fo
 assert.doesNotMatch(ipos,/SUPABASE_/,'direct iPOS worker must not depend on Supabase');
 assert.match(bootstrap,/timingSafeEqual/,'one-time credential transfer must authenticate without plain comparison');
 assert.match(bootstrap,/aes-256-gcm/,'transferred iPOS credentials must be encrypted at rest');
+assert.match(auth,/HttpOnly; Secure; SameSite=Lax/,'Vibe session must use a secure HTTP-only cookie');
+assert.match(auth,/bcrypt\.compare/,'Vibe login must verify the migrated password hash');
 assert.match(loader,/await load\('vibeReadCache'\)/,'read cache must load before hydration');
-assert.match(loader,/ly-vibe-read-cache\.js\?v=20260906\.1/,'loader must request the versioned cache bridge');
+assert.match(loader,/ly-vibe-read-cache\.js\?v=20260906\.2/,'loader must request the versioned cache bridge');
 console.log('Vibe authenticated read-cache contract: PASS');

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { gzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { getVibePool } from './vibehost-db.mjs';
+import { authenticatedVibeUser } from './vibehost-auth-api.mjs';
 
 const gzipAsync = promisify(gzip);
 const schema = 'lat_yen_shadow_20260905';
@@ -136,7 +137,7 @@ export async function handleSnapshotApi(request, response, pathname, url) {
     return true;
   }
 
-  const token = bearerToken(request);
+  const token = bearerToken(request)||'cookie-session';
   const orgId = String(url.searchParams.get('org_id') || '');
   if (!token || !/^[0-9a-f-]{36}$/i.test(orgId)) {
     sendJson(response, 401, { error: 'Authentication required' });
@@ -148,8 +149,10 @@ export async function handleSnapshotApi(request, response, pathname, url) {
   }
 
   try {
-    const userId = await authenticatedUser(token);
-    if (!userId || !(await isMember(userId, orgId))) {
+    const vibeUser=await authenticatedVibeUser(request);
+    const userId=vibeUser?.id||await authenticatedUser(token);
+    const allowed=vibeUser?vibeUser.orgId===orgId:(userId&&await isMember(userId,orgId));
+    if (!allowed) {
       sendJson(response, 403, { error: 'Organization access denied' });
       return true;
     }

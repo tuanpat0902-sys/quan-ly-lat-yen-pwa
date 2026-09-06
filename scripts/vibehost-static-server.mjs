@@ -5,6 +5,7 @@ import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { handleSnapshotApi } from './vibehost-snapshot-api.mjs';
 import { handleIposBootstrap } from './vibehost-ipos-bootstrap.mjs';
+import { handleAuthApi } from './vibehost-auth-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
@@ -63,6 +64,7 @@ const server = createServer(async (request, response) => {
   }
 
   if (await handleIposBootstrap(request, response, pathname)) return;
+  if (await handleAuthApi(request, response, pathname)) return;
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.setHeader('Allow', 'GET, HEAD');
     return sendText(response, 405, 'Method Not Allowed');

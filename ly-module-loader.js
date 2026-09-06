@@ -1,9 +1,9 @@
 (()=>{
   'use strict';
-  if(window.__lyModuleLoaderV95)return;
-  window.__lyModuleLoaderV95=true;
+  if(window.__lyModuleLoaderV96)return;
+  window.__lyModuleLoaderV96=true;
 
-  const VERSION='2026.09.06.1';
+  const VERSION='2026.09.06.2';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,7 +12,7 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.18',test:()=>window.__lyAppVersion?.version==='3.0.18'},
+    appVersion:{src:'./ly-app-version.js?v=3.0.19',test:()=>window.__lyAppVersion?.version==='3.0.19'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
@@ -24,7 +24,7 @@
     chatLocalOnly:{src:'./ly-chat-local-only.js?v=20260827.1',test:()=>window.__lyChatLocalOnly?.version==='2026.08.27.1'},
     chatUnitSync:{src:'./ly-chat-unit-sync.js?v=20260826.8',test:()=>window.__lyChatUnitSync?.version==='2026.08.26.8'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
-    vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260906.1',test:()=>window.__lyVibeReadCache?.version==='2026.09.06.1'},
+    vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260906.2',test:()=>window.__lyVibeReadCache?.version==='2026.09.06.2'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
     domShim:{src:'./ly-legacy-dom-shim.js?v=20260824.4',test:()=>window.__lyLegacyDomShim?.version==='2026.08.24.4'},
