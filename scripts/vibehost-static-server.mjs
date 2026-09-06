@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { handleSnapshotApi } from './vibehost-snapshot-api.mjs';
+import { handleIposBootstrap } from './vibehost-ipos-bootstrap.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
@@ -52,11 +53,6 @@ async function findFile(pathname) {
 }
 
 const server = createServer(async (request, response) => {
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    response.setHeader('Allow', 'GET, HEAD');
-    return sendText(response, 405, 'Method Not Allowed');
-  }
-
   let pathname;
   let requestUrl;
   try {
@@ -66,6 +62,11 @@ const server = createServer(async (request, response) => {
     return sendText(response, 400, 'Bad Request');
   }
 
+  if (await handleIposBootstrap(request, response, pathname)) return;
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    response.setHeader('Allow', 'GET, HEAD');
+    return sendText(response, 405, 'Method Not Allowed');
+  }
   if (pathname === '/healthz') return sendText(response, 200, 'ok');
   if (await handleSnapshotApi(request, response, pathname, requestUrl)) return;
 
