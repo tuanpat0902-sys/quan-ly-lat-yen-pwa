@@ -34,7 +34,7 @@ function safeMessage(error) {
 }
 function sourceConfig() {
   return {
-    url: String(process.env.SUPABASE_URL || '').replace(/\/$/, ''),
+    url: String(process.env.LAT_YEN_SUPABASE_API_URL || process.env.SUPABASE_URL || '').replace(/\/$/, ''),
     key: String(process.env.SUPABASE_SECRET_KEY || ''),
   };
 }

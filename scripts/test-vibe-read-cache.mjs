@@ -10,12 +10,14 @@ const [client,api,mirror,server,start,loader]=await Promise.all([
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8'),
 ]);
 assert.match(api,/\/auth\/v1\/user/,'snapshot API must verify the active Supabase user');
+assert.match(api,/LAT_YEN_SUPABASE_API_URL/,'snapshot API must avoid host-reserved database URL variables');
 assert.match(api,/ly_org_members/,'snapshot API must enforce organization membership');
 assert.match(api,/gzipAsync/,'snapshot payload must be compressed');
 assert.doesNotMatch(client,/SECRET_KEY|service_role/,'browser bundle must not contain privileged keys');
 assert.match(client,/latyen:change-signal/,'fresh changes must bypass a potentially stale mirror');
 assert.match(client,/return original\(table,orderColumn,ascending\)/,'Supabase fallback must remain available');
 assert.match(mirror,/hour >= 6/,'mirror must pause recurring work from midnight to 06:00');
+assert.match(mirror,/LAT_YEN_SUPABASE_API_URL/,'mirror must use its dedicated Supabase API URL');
 assert.match(mirror,/updated_at.*created_at/,'mirror must prefer incremental timestamp reads');
 assert.match(server,/handleSnapshotApi/,'same-origin server must expose the authenticated snapshot API');
 assert.match(start,/startSupabaseMirror/,'production startup must enable the mirror worker');

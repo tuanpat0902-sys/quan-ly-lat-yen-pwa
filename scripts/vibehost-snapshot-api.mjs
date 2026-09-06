@@ -59,7 +59,7 @@ async function authenticatedUser(token) {
   const cached = authCache.get(tokenHash);
   if (cached && cached.expiresAt > Date.now()) return cached.userId;
 
-  const projectUrl = String(process.env.SUPABASE_URL || '').replace(/\/$/, '');
+  const projectUrl = String(process.env.LAT_YEN_SUPABASE_API_URL || process.env.SUPABASE_URL || '').replace(/\/$/, '');
   const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
   if (!projectUrl || !publishableKey) throw new Error('Supabase authentication verifier is unavailable');
   const controller = new AbortController();
