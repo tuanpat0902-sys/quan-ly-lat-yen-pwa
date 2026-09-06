@@ -28,6 +28,8 @@ assert.match(start,/startVibeIposWorker/,'production startup must support direct
 assert.match(ipos,/VIBE_IPOS_BACKFILL_FROM\|\|'2026-08-25'/,'iPOS backfill must cover the requested history');
 assert.match(ipos,/rebuildIposInventory/,'iPOS synchronization must reconcile formula inventory idempotently');
 assert.doesNotMatch(ipos,/SUPABASE_/,'direct iPOS worker must not depend on Supabase');
+assert.match(ipos,/ipos_payment_methods:JSON\.stringify/,'iPOS payment data must be encoded for PostgreSQL jsonb');
+assert.match(ipos,/ipos_toppings:JSON\.stringify/,'iPOS topping data must be encoded for PostgreSQL jsonb');
 assert.match(bootstrap,/timingSafeEqual/,'one-time credential transfer must authenticate without plain comparison');
 assert.match(bootstrap,/aes-256-gcm/,'transferred iPOS credentials must be encrypted at rest');
 assert.match(auth,/HttpOnly; Secure; SameSite=Lax/,'Vibe session must use a secure HTTP-only cookie');
