@@ -3,6 +3,7 @@ import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { handleSnapshotApi } from './vibehost-snapshot-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
@@ -57,13 +58,16 @@ const server = createServer(async (request, response) => {
   }
 
   let pathname;
+  let requestUrl;
   try {
-    pathname = decodeURIComponent(new URL(request.url || '/', 'http://localhost').pathname);
+    requestUrl = new URL(request.url || '/', 'http://localhost');
+    pathname = decodeURIComponent(requestUrl.pathname);
   } catch {
     return sendText(response, 400, 'Bad Request');
   }
 
   if (pathname === '/healthz') return sendText(response, 200, 'ok');
+  if (await handleSnapshotApi(request, response, pathname, requestUrl)) return;
 
   const file = await findFile(pathname);
   if (!file) return sendText(response, 404, 'Not Found');

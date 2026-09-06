@@ -10,4 +10,10 @@ try {
   console.error(`[migration] failed (${code}): ${message}`);
   console.error('[migration] source remains authoritative; static server will continue');
 }
+try {
+  const { startSupabaseMirror } = await import('./vibehost-supabase-mirror.mjs');
+  startSupabaseMirror();
+} catch (error) {
+  console.error(`[mirror] startup failed (${error?.code || 'UNKNOWN'}); source remains authoritative`);
+}
 await import('./vibehost-static-server.mjs');

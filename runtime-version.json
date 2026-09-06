@@ -1,8 +1,9 @@
 {
-  "appVersion": "3.0.17",
+  "appVersion": "3.0.18",
   "revision": "fresh-core-v3-shell-authoritative-v19",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-241",
-  "uiBuild": "UI-2026.09.02.49",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-242",
+  "uiBuild": "UI-2026.09.06.50",
+  "vibeReadCache": "authenticated-gzip-snapshot-with-supabase-fallback-and-quiet-hours",
   "uiUxRefresh": "deep-visual-hierarchy-forms-tables-modals-responsive-no-menu-change",
   "tableUx": "all-data-tables-fixed-desktop-reference-width-contained-horizontal-scroll-below-desktop",
   "tableViewV2": "employee-summary-and-activity-columns-owned-by-explicit-table-contract-without-global-auto-serial-interference",

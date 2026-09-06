@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.17",
+  "appVersion": "3.0.18",
   "revision": "fresh-core-v3-shell-authoritative-v19",
-  "loaderAssetVersion": "20260902.1",
+  "loaderAssetVersion": "20260906.1",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.02.1",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-241",
-  "redeploy": "2026-09-02-ipos-recent-sale-quantity-ui-build-49"
+  "moduleLoaderVersion": "2026.09.06.1",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-242",
+  "redeploy": "2026-09-06-vibe-authenticated-read-cache-ui-build-50"
 }
