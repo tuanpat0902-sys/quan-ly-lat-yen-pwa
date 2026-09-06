@@ -13,6 +13,7 @@ const incrementalMigration = await readFile(
   new URL('../supabase/migrations/20260831152338_optimize_ipos_incremental_sync.sql', import.meta.url),
   'utf8'
 );
+const vibeWorker = await readFile(new URL('./vibehost-ipos-worker.mjs', import.meta.url), 'utf8');
 
 assert.match(edge, /ly_ipos_upsert_sale_with_inventory/, 'changed iPOS sale details and inventory must be saved atomically');
 assert.match(incrementalMigration, /v_sale := public\.ly_ipos_upsert_sale[\s\S]*v_inventory := public\.ly_ipos_apply_sale_inventory/, 'the atomic wrapper must save the sale before rebuilding inventory');
@@ -20,5 +21,7 @@ assert.match(migration, /source_id,quantity,note,created_at[\s\S]*coalesce\(v_sa
 assert.match(migration, /from public\.ly_sales s[\s\S]*s\.source='iPOS'/, 'existing iPOS SALE movements must be backfilled to receipt time');
 assert.match(migration, /update public\.ly_activity_events e[\s\S]*entity_table='ly_stock_transactions'/, 'activity history must align with the stock movement time');
 assert.match(migration, /revoke all on function public\.ly_ipos_apply_sale_inventory\(uuid,uuid\) from public,anon,authenticated/, 'internal inventory function must not be public');
+assert.match(vibeWorker, /s\.id=t\.source_id[\s\S]*source_id:sale\.id[\s\S]*created_at:sale\.sold_at/, 'Vibe inventory movements must use the migrated source_id column and receipt business time');
+assert.doesNotMatch(vibeWorker, /t\.reference_id|occurred_at:sale\.sold_at/, 'Vibe worker must not use non-existent stock movement columns');
 
 console.log('iPOS inventory business-time checks passed');
