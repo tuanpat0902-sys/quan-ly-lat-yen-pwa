@@ -1,4 +1,5 @@
-import { randomUUID } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from 'node:crypto';
+import pg from 'pg';
 import { getVibePool } from './vibehost-db.mjs';
 import { invalidateSnapshot } from './vibehost-snapshot-api.mjs';
 
@@ -8,6 +9,7 @@ const intervalMs=5*60*1000;
 const detailConcurrency=5;
 let timer,running=false;
 const metadataCache=new Map();
+const credentialNames=['ly_ipos_authorization','ly_ipos_access_token'];
 
 function qi(value){return `"${String(value).replaceAll('"','""')}"`;}
 function number(value){const parsed=Number(value||0);return Number.isFinite(parsed)?parsed:0;}
@@ -33,9 +35,23 @@ async function writeRow(client,table,row,{conflict='id'}={}){
   const sql=`insert into ${qi(schema)}.${qi(table)} (${columns.map(qi)}) values (${columns.map((_,i)=>`$${i+1}`)}) on conflict (${qi(conflict)}) do ${mutable.length?`update set ${mutable.map(key=>`${qi(key)}=excluded.${qi(key)}`).join(',')}`:'nothing'} returning *`;
   return (await client.query(sql,columns.map(key=>data[key]))).rows[0];
 }
-function iposConfig(){
+function credentialKey(){const raw=String(process.env.VIBE_CREDENTIAL_KEY||'').trim();if(!raw)throw new Error('Vibe credential encryption is not configured');return createHash('sha256').update(raw).digest();}
+function encryptCredential(value){const iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',credentialKey(),iv),body=Buffer.concat([cipher.update(value,'utf8'),cipher.final()]);return `${iv.toString('base64url')}.${cipher.getAuthTag().toString('base64url')}.${body.toString('base64url')}`;}
+function decryptCredential(value){const [iv,tag,body]=String(value||'').split('.').map(part=>Buffer.from(part,'base64url'));const decipher=createDecipheriv('aes-256-gcm',credentialKey(),iv);decipher.setAuthTag(tag);return Buffer.concat([decipher.update(body),decipher.final()]).toString('utf8');}
+async function storedCredentials(client){
+  await client.query(`create table if not exists ${qi(schema)}.${qi('ly_runtime_secrets')}(name text primary key,encrypted_value text not null,created_at timestamptz not null default now(),updated_at timestamptz not null default now())`);
+  const result=await client.query(`select name,encrypted_value from ${qi(schema)}.${qi('ly_runtime_secrets')} where name=any($1::text[])`,[credentialNames]);
+  return Object.fromEntries(result.rows.map(row=>[row.name,decryptCredential(row.encrypted_value)]));
+}
+async function bootstrapCredentials(client){
+  const source=String(process.env.MIGRATION_SOURCE_DATABASE_URL||'').trim();if(!source)return {};
+  const sourcePool=new pg.Pool({connectionString:source,ssl:{rejectUnauthorized:false},max:1,connectionTimeoutMillis:10_000});
+  try{const result=await sourcePool.query('select name,decrypted_secret from vault.decrypted_secrets where name=any($1::text[])',[credentialNames]);for(const row of result.rows)await client.query(`insert into ${qi(schema)}.${qi('ly_runtime_secrets')}(name,encrypted_value,updated_at) values($1,$2,now()) on conflict(name) do update set encrypted_value=excluded.encrypted_value,updated_at=now()`,[row.name,encryptCredential(row.decrypted_secret)]);if(result.rows.length===credentialNames.length)console.log('[ipos-vibe] imported iPOS credentials into encrypted Vibe storage');return Object.fromEntries(result.rows.map(row=>[row.name,row.decrypted_secret]));}finally{await sourcePool.end();}
+}
+async function iposConfig(client){
   const value=name=>String(process.env[name]||'').trim();
-  const config={authorization:value('IPOS_AUTHORIZATION'),accessToken:value('IPOS_ACCESS_TOKEN'),companyUid:value('IPOS_COMPANY_UID'),brandUid:value('IPOS_BRAND_UID'),cityUid:value('IPOS_CITY_UID'),storeUid:value('IPOS_STORE_UID')};
+  let stored={};if(!value('IPOS_AUTHORIZATION')||!value('IPOS_ACCESS_TOKEN')){stored=await storedCredentials(client);if(!stored.ly_ipos_authorization||!stored.ly_ipos_access_token)stored={...stored,...await bootstrapCredentials(client)};}
+  const config={authorization:value('IPOS_AUTHORIZATION')||stored.ly_ipos_authorization,accessToken:value('IPOS_ACCESS_TOKEN')||stored.ly_ipos_access_token,companyUid:value('IPOS_COMPANY_UID'),brandUid:value('IPOS_BRAND_UID'),cityUid:value('IPOS_CITY_UID'),storeUid:value('IPOS_STORE_UID')};
   if(Object.values(config).some(item=>!item))throw new Error('iPOS credentials/configuration are incomplete');
   return config;
 }
@@ -98,8 +114,8 @@ async function rebuildIposInventory(client,ctx){
 }
 
 async function runSync({backfill=false}={}){
-  if(running||process.env.VIBE_IPOS_SYNC!=='1')return;running=true;const config=iposConfig(),client=await getVibePool().connect();
-  try{const ctx=await context(client),from=backfill?(process.env.VIBE_IPOS_BACKFILL_FROM||'2026-08-25'):localDate(),days=labels(from),summary={catalog:0,sales:0,days:days.length};await client.query('begin');summary.catalog=await syncCatalog(client,ctx,config);for(const label of days){const window=dayWindow(label),headersForDay=(await saleHeaders(config,window)).filter(row=>row.deleted!==true&&String(row.store_uid||config.storeUid)===config.storeUid),details=[];for(let i=0;i<headersForDay.length;i+=detailConcurrency)details.push(...await Promise.all(headersForDay.slice(i,i+detailConcurrency).map(row=>saleDetail(config,row,window))));for(const sale of details){await upsertSale(client,ctx,config,sale);summary.sales++;}const active=[...new Set(headersForDay.map(row=>canonical(row.tran_id)))];const dayStart=new Date(window.start).toISOString(),dayEnd=new Date(window.end).toISOString();const stale=await client.query(`select id from ${qi(schema)}.ly_sales where org_id=$1 and source='iPOS' and sold_at between $2 and $3 and not(ipos_tran_id=any($4::text[]))`,[ctx.org,dayStart,dayEnd,active]);for(const row of stale.rows){await client.query(`delete from ${qi(schema)}.ly_sale_items where org_id=$1 and sale_id=$2`,[ctx.org,row.id]);await client.query(`delete from ${qi(schema)}.ly_sales where org_id=$1 and id=$2`,[ctx.org,row.id]);}}
+  if(running||process.env.VIBE_IPOS_SYNC!=='1')return;running=true;const client=await getVibePool().connect();
+  try{const config=await iposConfig(client),ctx=await context(client),from=backfill?(process.env.VIBE_IPOS_BACKFILL_FROM||'2026-08-25'):localDate(),days=labels(from),summary={catalog:0,sales:0,days:days.length};await client.query('begin');summary.catalog=await syncCatalog(client,ctx,config);for(const label of days){const window=dayWindow(label),headersForDay=(await saleHeaders(config,window)).filter(row=>row.deleted!==true&&String(row.store_uid||config.storeUid)===config.storeUid),details=[];for(let i=0;i<headersForDay.length;i+=detailConcurrency)details.push(...await Promise.all(headersForDay.slice(i,i+detailConcurrency).map(row=>saleDetail(config,row,window))));for(const sale of details){await upsertSale(client,ctx,config,sale);summary.sales++;}const active=[...new Set(headersForDay.map(row=>canonical(row.tran_id)))];const dayStart=new Date(window.start).toISOString(),dayEnd=new Date(window.end).toISOString();const stale=await client.query(`select id from ${qi(schema)}.ly_sales where org_id=$1 and source='iPOS' and sold_at between $2 and $3 and not(ipos_tran_id=any($4::text[]))`,[ctx.org,dayStart,dayEnd,active]);for(const row of stale.rows){await client.query(`delete from ${qi(schema)}.ly_sale_items where org_id=$1 and sale_id=$2`,[ctx.org,row.id]);await client.query(`delete from ${qi(schema)}.ly_sales where org_id=$1 and id=$2`,[ctx.org,row.id]);}}
     summary.inventoryGroups=await rebuildIposInventory(client,ctx);await client.query('commit');invalidateSnapshot();console.log(`[ipos-vibe] synchronized ${summary.sales} sale(s), ${summary.catalog} product(s), ${summary.days} day(s)`);
   }catch(error){await client.query('rollback').catch(()=>{});console.error(`[ipos-vibe] failed: ${safeError(error)}`);}finally{client.release();running=false;}
 }
