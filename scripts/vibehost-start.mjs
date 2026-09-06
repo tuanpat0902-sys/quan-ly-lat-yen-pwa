@@ -16,4 +16,10 @@ try {
 } catch (error) {
   console.error(`[mirror] startup failed (${error?.code || 'UNKNOWN'}); source remains authoritative`);
 }
+try {
+  const { startVibeIposWorker } = await import('./vibehost-ipos-worker.mjs');
+  startVibeIposWorker();
+} catch (error) {
+  console.error(`[ipos-vibe] startup failed (${error?.code || 'UNKNOWN'}); existing Vibe data remains available`);
+}
 await import('./vibehost-static-server.mjs');

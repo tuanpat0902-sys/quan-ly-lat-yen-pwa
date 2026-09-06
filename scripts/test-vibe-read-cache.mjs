@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [client,api,mirror,server,start,loader]=await Promise.all([
+const [client,api,mirror,ipos,server,start,loader]=await Promise.all([
   fs.readFile(new URL('../ly-vibe-read-cache.js',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-snapshot-api.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-supabase-mirror.mjs',import.meta.url),'utf8'),
+  fs.readFile(new URL('./vibehost-ipos-worker.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-static-server.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-start.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8'),
@@ -21,6 +22,10 @@ assert.match(mirror,/LAT_YEN_SUPABASE_API_URL/,'mirror must use its dedicated Su
 assert.match(mirror,/updated_at.*created_at/,'mirror must prefer incremental timestamp reads');
 assert.match(server,/handleSnapshotApi/,'same-origin server must expose the authenticated snapshot API');
 assert.match(start,/startSupabaseMirror/,'production startup must enable the mirror worker');
+assert.match(start,/startVibeIposWorker/,'production startup must support direct iPOS-to-Vibe synchronization');
+assert.match(ipos,/VIBE_IPOS_BACKFILL_FROM\|\|'2026-08-25'/,'iPOS backfill must cover the requested history');
+assert.match(ipos,/rebuildIposInventory/,'iPOS synchronization must reconcile formula inventory idempotently');
+assert.doesNotMatch(ipos,/SUPABASE_/,'direct iPOS worker must not depend on Supabase');
 assert.match(loader,/await load\('vibeReadCache'\)/,'read cache must load before hydration');
 assert.match(loader,/ly-vibe-read-cache\.js\?v=20260906\.1/,'loader must request the versioned cache bridge');
 console.log('Vibe authenticated read-cache contract: PASS');
