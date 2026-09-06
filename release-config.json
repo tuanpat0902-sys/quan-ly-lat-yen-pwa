@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.19",
-  "revision": "fresh-core-v3-shell-authoritative-v20",
-  "loaderAssetVersion": "20260906.2",
+  "appVersion": "3.0.20",
+  "revision": "fresh-core-v3-shell-authoritative-v21",
+  "loaderAssetVersion": "20260906.3",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.06.2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-243",
-  "redeploy": "2026-09-06-vibe-local-auth-ui-build-51"
+  "moduleLoaderVersion": "2026.09.06.3",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-244",
+  "redeploy": "2026-09-06-legacy-url-redirect-ui-build-52"
 }
