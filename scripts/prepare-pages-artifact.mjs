@@ -6,6 +6,9 @@ const REVISION=RELEASE.revision;
 const LOADER_VERSION=RELEASE.loaderAssetVersion;
 const SIDEBAR_VERSION=RELEASE.sidebarVisualsAssetVersion;
 const SW_CACHE=RELEASE.serviceWorker;
+const VIBE_URL='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/';
+const REDIRECT_HTML=`<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=${VIBE_URL}"><title>Đang chuyển sang Quản Lý Lát Yên</title><link rel="canonical" href="${VIBE_URL}"><script>location.replace('${VIBE_URL}')</script></head><body><p>Đang chuyển sang <a href="${VIBE_URL}">Quản Lý Lát Yên trên Vibe Host</a>…</p></body></html>`;
+const REDIRECT_SW=`const TARGET='${VIBE_URL}';self.addEventListener('install',()=>self.skipWaiting());self.addEventListener('activate',event=>event.waitUntil((async()=>{await self.clients.claim();for(const client of await self.clients.matchAll({type:'window',includeUncontrolled:true}))try{await client.navigate(TARGET)}catch{}})()));self.addEventListener('fetch',event=>{if(event.request.mode==='navigate')event.respondWith(Response.redirect(TARGET,302))});`;
 const VERSION_BADGE=`<span class="badge" id="appVersionStatic">Ver ${APP_VERSION}</span>`;
 const RELEASE_GATE=`<script id="lyReleaseGate">(()=>{const EXPECTED_VERSION='${APP_VERSION}',EXPECTED_REVISION='${REVISION}',KEY='lat_yen_release_gate_'+EXPECTED_VERSION;let recovering=false;const releaseToken=EXPECTED_VERSION+'-'+EXPECTED_REVISION;function replaceUrl(extra){const url=new URL(location.href);url.searchParams.set('ly_release',releaseToken);if(extra)url.searchParams.set('ly_recovery',String(extra));location.replace(url.href);}async function clearRuntime(){try{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('lat-yen-')).map(k=>caches.delete(k)));}catch(e){}}async function recover(reason){if(recovering)return;recovering=true;let attempts=0;try{attempts=Number(sessionStorage.getItem(KEY)||0)+1;sessionStorage.setItem(KEY,String(attempts));}catch(e){}await clearRuntime();try{const regs=await navigator.serviceWorker?.getRegistrations?.()||[];for(const reg of regs){try{await reg.update?.();}catch(e){}if(attempts>=2){try{await reg.unregister?.();}catch(e){}}}}catch(e){}replaceUrl(reason+'-'+attempts);}function verify(){const current=window.__lyAppVersion||{};if(current.version&&current.version!==EXPECTED_VERSION)return recover('version');if(current.revision&&current.revision!==EXPECTED_REVISION)return recover('revision');}if('serviceWorker'in navigator){navigator.serviceWorker.addEventListener('controllerchange',()=>{let done=false;try{done=sessionStorage.getItem(KEY+'_controller')===releaseToken;if(!done)sessionStorage.setItem(KEY+'_controller',releaseToken);}catch(e){}if(!done)replaceUrl('controller');});navigator.serviceWorker.getRegistration?.().then(reg=>reg?.update?.()).catch(()=>{});}window.__lyExpectedRelease={version:EXPECTED_VERSION,revision:EXPECTED_REVISION,verify,recover};[500,1200,2500,5000].forEach(ms=>setTimeout(verify,ms));})();</script>`;
 const AUTH_SHIM=`<script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{let client=null;try{client=(typeof sb!=='undefined'&&sb)||window.sb||null;}catch(e){client=window.sb||null;}if(!client?.auth?.getSession)return false;const {data,error}=await client.auth.getSession();if(error)return false;const session=data?.session||null;window.__lyFreshSession=session;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.08.24.1'};})();</script>`;
@@ -62,13 +65,15 @@ const checks=[
   ['single auth owner',!output.includes('ly-auth-gate.js')],
   ['service worker cache',swOutput.includes(SW_CACHE)],
   ['bounded critical precache',swOutput.includes("const PRECACHE_ASSETS=[")&&!swOutput.includes('CORE_ASSETS')],
+  ['redirect-only Pages HTML',REDIRECT_HTML.includes('http-equiv="refresh"')&&REDIRECT_HTML.includes(VIBE_URL)&&!REDIRECT_HTML.includes('supabase')],
+  ['redirect-only Pages worker',REDIRECT_SW.includes('Response.redirect(TARGET,302)')&&REDIRECT_SW.includes('client.navigate(TARGET)')],
 ];
 for(const [name,ok]of checks)if(!ok)throw new Error(`Pages artifact check failed: ${name}`);
 
 if(process.argv.includes('--check')){
   console.log(`Pages artifact contract: PASS (Ver ${APP_VERSION})`);
 }else{
-  await fs.writeFile('index.html',output,'utf8');
-  await fs.writeFile('sw.js',swOutput,'utf8');
-  console.log(`Prepared GitHub Pages artifact for Ver ${APP_VERSION}`);
+  await fs.writeFile('index.html',REDIRECT_HTML,'utf8');
+  await fs.writeFile('sw.js',REDIRECT_SW,'utf8');
+  console.log(`Prepared redirect-only GitHub Pages artifact for Ver ${APP_VERSION}`);
 }
