@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.21",
-  "revision": "fresh-core-v3-shell-authoritative-v22",
+  "appVersion": "3.0.22",
+  "revision": "fresh-core-v3-shell-authoritative-v23",
   "loaderAssetVersion": "20260906.3",
   "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.09.06.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-245",
-  "redeploy": "2026-09-07-legacy-service-worker-redirect-ui-build-53"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-246",
+  "redeploy": "2026-09-07-vibe-auth-cache-cutover-ui-build-54"
 }
