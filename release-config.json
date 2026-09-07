@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.25",
-  "revision": "fresh-core-v3-shell-authoritative-v26",
+  "appVersion": "3.0.26",
+  "revision": "fresh-core-v3-shell-authoritative-v27",
   "loaderAssetVersion": "20260907.1",
   "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.09.07.1",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-249",
-  "redeploy": "2026-09-07-vibe-data-render-ui-build-57"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-250",
+  "redeploy": "2026-09-08-vibe-notification-ui-build-58"
 }

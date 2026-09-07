@@ -37797,8 +37797,9 @@ function loadEmployees(){
 
     let changed=cleaned.length!==all.length;
 
+    const warehouseIds=new Set((db.warehouses||[]).map(w=>String(w.id)));
     for(const e of cleaned){
-      if(!e.warehouse_id && currentWarehouseId){
+      if(currentWarehouseId&&(!e.warehouse_id||!warehouseIds.has(String(e.warehouse_id)))){
         e.warehouse_id=currentWarehouseId;
         changed=true;
       }
@@ -55508,7 +55509,7 @@ saveSaleReceipt=async function(){
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
 <script src="./ly-data-notifications.js?v=20260907.1"></script>
-<script src="./ly-notification-center.js?v=20260907.1"></script>
+<script src="./ly-notification-center.js?v=20260908.1"></script>
 <script src="./ly-inventory-alerts.js?v=20260824.1"></script>
 <script src="./ly-cloud-realtime.js?v=20260824.5"></script>
 <script src="./ly-ui-bootstrap-rescue.js?v=20260827.4"></script>

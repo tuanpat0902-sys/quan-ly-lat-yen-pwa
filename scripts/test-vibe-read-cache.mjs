@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [client,api,mirror,ipos,bootstrap,auth,server,start,loader]=await Promise.all([
+const [client,api,mirror,ipos,bootstrap,auth,server,start,loader,index]=await Promise.all([
   fs.readFile(new URL('../ly-vibe-read-cache.js',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-snapshot-api.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-supabase-mirror.mjs',import.meta.url),'utf8'),
@@ -11,6 +11,7 @@ const [client,api,mirror,ipos,bootstrap,auth,server,start,loader]=await Promise.
   fs.readFile(new URL('./vibehost-static-server.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-start.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8'),
+  fs.readFile(new URL('../index.html',import.meta.url),'utf8'),
 ]);
 assert.match(api,/\/auth\/v1\/user/,'snapshot API must verify the active Supabase user');
 assert.match(api,/LAT_YEN_SUPABASE_API_URL/,'snapshot API must avoid host-reserved database URL variables');
@@ -29,6 +30,8 @@ assert.match(start,/startSupabaseMirror/,'production startup must enable the mir
 assert.match(start,/startVibeIposWorker/,'production startup must support direct iPOS-to-Vibe synchronization');
 assert.match(ipos,/VIBE_IPOS_BACKFILL_FROM\|\|'2026-08-25'/,'iPOS backfill must cover the requested history');
 assert.match(ipos,/rebuildIposInventory/,'iPOS synchronization must reconcile formula inventory idempotently');
+assert.match(ipos,/syncSaleActivityEvents/,'direct iPOS synchronization must populate Vibe notifications');
+assert.match(ipos,/not exists\([\s\S]*entity_table='ly_sales'/,'iPOS notification writes must remain idempotent');
 assert.doesNotMatch(ipos,/SUPABASE_/,'direct iPOS worker must not depend on Supabase');
 assert.match(ipos,/ipos_payment_methods:JSON\.stringify/,'iPOS payment data must be encoded for PostgreSQL jsonb');
 assert.match(ipos,/ipos_toppings:JSON\.stringify/,'iPOS topping data must be encoded for PostgreSQL jsonb');
@@ -41,4 +44,5 @@ assert.match(loader,/ly-vibe-read-cache\.js\?v=20260907\.2/,'loader must request
 assert.match(client,/if\(VIBE_ONLY\)\{state\.source='vibe';throw error;\}/,'Vibe production must never fall back to Supabase reads');
 assert.match(client,/\(!VIBE_ONLY&&Date\.now\(\)<state\.bypassUntil\)/,'Vibe invalidation must never bypass into restricted Supabase reads');
 assert.match(client,/rows:table=>state\.snapshot\?\.tables\?\.\[table\]/,'assistant must be able to read the current Vibe snapshot');
+assert.match(index,/!e\.warehouse_id\|\|!warehouseIds\.has\(String\(e\.warehouse_id\)\)/,'orphaned employee records must be reattached to the active warehouse');
 console.log('Vibe authenticated read-cache contract: PASS');

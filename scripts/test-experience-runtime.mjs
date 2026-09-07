@@ -17,8 +17,9 @@ for(const file of modules){
 assert.match(pages,/no duplicated module-owned bootstrap/,'Pages artifact must keep notification modules under the single module-loader owner');
 assert.ok(loader.includes("load('notificationCenter')"),'notification center must load in the core experience chain');
 assert.ok(center.includes('lyNotificationButton')&&center.includes('lyNotificationOverlay')&&center.includes('ly-notify-panel'),'notification center UI contract is incomplete');
-assert.match(center,/VERSION='2026\.09\.07\.1'/,'Vibe notification center release is missing');
+assert.match(center,/VERSION='2026\.09\.08\.1'/,'Vibe notification center release is missing');
 assert.match(center,/api\/v1\/activity-events/,'notification center must read activity history from Vibe');
+assert.match(center,/\(VIBE_ONLY\|\|!state\.fullLoaded\)/,'opening the Vibe notification center must refresh recent activity');
 assert.match(data,/api\/v1\/activity-events/,'notification polling must read activity deltas from Vibe');
 assert.match(center,/height:min\(52dvh,480px\)/,'desktop notification center must remain near half a viewport tall');
 assert.match(center,/height:min\(50dvh,430px\)/,'mobile notification center must remain near half a viewport tall');

@@ -92,6 +92,18 @@ async function upsertSale(client,ctx,config,sale){
   return {id,soldAt};
 }
 
+async function syncSaleActivityEvents(client,ctx){
+  const result=await client.query(`with base as(select coalesce(max(id),0) max_id from ${qi(schema)}.ly_activity_events),missing as(
+    select s.* from ${qi(schema)}.ly_sales s
+    where s.org_id=$1 and s.source='iPOS' and not exists(
+      select 1 from ${qi(schema)}.ly_activity_events e
+      where e.org_id=s.org_id and e.entity_table='ly_sales' and e.entity_id::text=s.id::text and lower(e.event_type)='insert'
+    )) insert into ${qi(schema)}.ly_activity_events(id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at)
+    select base.max_id+row_number() over(order by missing.sold_at,missing.id),missing.org_id,'ly_sales',missing.id,'INSERT',missing.receipt_no,missing.total_amount,missing.sold_at
+    from missing cross join base order by missing.sold_at,missing.id`,[ctx.org]);
+  return result.rowCount||0;
+}
+
 async function rebuildIposInventory(client,ctx){
   const old=await client.query(`select t.warehouse_id,t.ingredient_id,sum(t.quantity)::numeric as quantity from ${qi(schema)}.ly_stock_transactions t join ${qi(schema)}.ly_sales s on s.id=t.source_id and s.org_id=t.org_id where t.org_id=$1 and s.source='iPOS' group by t.warehouse_id,t.ingredient_id`,[ctx.org]);
   await client.query(`delete from ${qi(schema)}.ly_stock_transactions t using ${qi(schema)}.ly_sales s where t.org_id=$1 and s.id=t.source_id and s.org_id=t.org_id and s.source='iPOS'`,[ctx.org]);
@@ -114,7 +126,7 @@ async function rebuildIposInventory(client,ctx){
 async function runSync({backfill=false}={}){
   if(running||process.env.VIBE_IPOS_SYNC!=='1')return;running=true;const client=await getVibePool().connect();
   try{await client.query(`create table if not exists ${qi(schema)}.${qi('ly_runtime_sync_state')}(name text primary key,value text not null,updated_at timestamptz not null default now())`);const completed=(await client.query(`select 1 from ${qi(schema)}.${qi('ly_runtime_sync_state')} where name='ipos_backfill' and value='complete'`)).rowCount>0,effectiveBackfill=backfill&&!completed,config=await iposConfig(client),ctx=await context(client),from=effectiveBackfill?(process.env.VIBE_IPOS_BACKFILL_FROM||'2026-08-25'):localDate(),days=labels(from),summary={catalog:0,sales:0,days:days.length};await client.query('begin');summary.catalog=await syncCatalog(client,ctx,config);for(const label of days){const window=dayWindow(label),headersForDay=(await saleHeaders(config,window)).filter(row=>row.deleted!==true&&String(row.store_uid||config.storeUid)===config.storeUid),details=[];for(let i=0;i<headersForDay.length;i+=detailConcurrency)details.push(...await Promise.all(headersForDay.slice(i,i+detailConcurrency).map(row=>saleDetail(config,row,window))));for(const sale of details){await upsertSale(client,ctx,config,sale);summary.sales++;}const active=[...new Set(headersForDay.map(row=>canonical(row.tran_id)))];const dayStart=new Date(window.start).toISOString(),dayEnd=new Date(window.end).toISOString();const stale=await client.query(`select id from ${qi(schema)}.ly_sales where org_id=$1 and source='iPOS' and sold_at between $2 and $3 and not(ipos_tran_id=any($4::text[]))`,[ctx.org,dayStart,dayEnd,active]);for(const row of stale.rows){await client.query(`delete from ${qi(schema)}.ly_sale_items where org_id=$1 and sale_id=$2`,[ctx.org,row.id]);await client.query(`delete from ${qi(schema)}.ly_sales where org_id=$1 and id=$2`,[ctx.org,row.id]);}}
-    summary.inventoryGroups=await rebuildIposInventory(client,ctx);if(effectiveBackfill)await client.query(`insert into ${qi(schema)}.${qi('ly_runtime_sync_state')}(name,value,updated_at) values('ipos_backfill','complete',now()) on conflict(name) do update set value='complete',updated_at=now()`);await client.query('commit');invalidateSnapshot();console.log(`[ipos-vibe] synchronized ${summary.sales} sale(s), ${summary.catalog} product(s), ${summary.days} day(s)`);
+    summary.activityEvents=await syncSaleActivityEvents(client,ctx);summary.inventoryGroups=await rebuildIposInventory(client,ctx);if(effectiveBackfill)await client.query(`insert into ${qi(schema)}.${qi('ly_runtime_sync_state')}(name,value,updated_at) values('ipos_backfill','complete',now()) on conflict(name) do update set value='complete',updated_at=now()`);await client.query('commit');invalidateSnapshot();console.log(`[ipos-vibe] synchronized ${summary.sales} sale(s), ${summary.activityEvents} notification(s), ${summary.catalog} product(s), ${summary.days} day(s)`);
   }catch(error){await client.query('rollback').catch(()=>{});console.error(`[ipos-vibe] failed: ${safeError(error)}`);}finally{client.release();running=false;}
 }
 export function startVibeIposWorker(){if(process.env.VIBE_IPOS_SYNC!=='1'||timer)return;void runSync({backfill:true});timer=setInterval(()=>{if(activeHour())void runSync();},intervalMs);timer.unref?.();console.log('[ipos-vibe] enabled: Vibe PostgreSQL authoritative, 5-minute active schedule');}
