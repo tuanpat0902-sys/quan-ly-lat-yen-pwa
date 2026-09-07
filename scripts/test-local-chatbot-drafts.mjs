@@ -16,7 +16,7 @@ assert.ok(!source.includes('data-assistant-voice'),'the unused voice button must
 assert.ok(source.includes('ly-assistant-send'),'send control must have an animated visual');
 assert.ok(source.includes('@keyframes ly-assistant-send'),'send icon animation must be defined');
 assert.ok(!source.includes('data-suggestion-message'),'suggestions must never be copied back into the chat input');
-assert.ok(source.includes('const answer=await askAi(content,reply.content,reply)'),'every response, including draft clarification, must be conversationally rewritten through the authenticated ChatGPT API');
+assert.ok(source.includes('answer=await askAi(content,reply.content,reply)'),'every response, including draft clarification, must pass through the safe assistant response gate');
 assert.ok(source.includes("mode:'business_draft'"),'ChatGPT must receive safe structured draft context without owning the transaction');
 assert.ok(source.includes("await retireDrafts();await addMessage"),'a new command must retire links to older drafts');
 assert.ok(source.includes("message.draft=null;message.draft_retired_at=now()"),'an opened form must retire its draft link while retaining the chat message');

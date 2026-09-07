@@ -126,7 +126,8 @@ async function snapshotFor(orgId) {
 }
 
 export async function handleSnapshotApi(request, response, pathname, url) {
-  if (pathname !== '/api/v1/snapshot') return false;
+  const activityRequest = pathname === '/api/v1/activity-events';
+  if (pathname !== '/api/v1/snapshot' && !activityRequest) return false;
   if (request.method !== 'GET') {
     response.setHeader('Allow', 'GET');
     sendJson(response, 405, { error: 'Method Not Allowed' });
@@ -154,6 +155,20 @@ export async function handleSnapshotApi(request, response, pathname, url) {
     const allowed=vibeUser?vibeUser.orgId===orgId:(userId&&await isMember(userId,orgId));
     if (!allowed) {
       sendJson(response, 403, { error: 'Organization access denied' });
+      return true;
+    }
+    if (activityRequest) {
+      const limit = Math.min(100, Math.max(1, Number.parseInt(url.searchParams.get('limit') || '20', 10) || 20));
+      const after = Math.max(0, Number.parseInt(url.searchParams.get('after') || '0', 10) || 0);
+      const values = [orgId];
+      let where = 'org_id = $1::uuid';
+      if (after) { values.push(after); where += ` and id > $${values.length}`; }
+      values.push(limit);
+      const result = await getVibePool().query(
+        `select id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at from ${quoteIdentifier(schema)}.ly_activity_events where ${where} order by id ${after ? 'asc' : 'desc'} limit $${values.length}`,
+        values,
+      );
+      sendJson(response, 200, { rows: result.rows });
       return true;
     }
     const snapshot = await snapshotFor(orgId);

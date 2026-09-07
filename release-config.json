@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.23",
-  "revision": "fresh-core-v3-shell-authoritative-v24",
+  "appVersion": "3.0.24",
+  "revision": "fresh-core-v3-shell-authoritative-v25",
   "loaderAssetVersion": "20260906.3",
   "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.09.06.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-247",
-  "redeploy": "2026-09-07-vibe-bootstrap-cutover-ui-build-55"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-248",
+  "redeploy": "2026-09-07-vibe-sync-settle-ui-build-56"
 }

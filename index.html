@@ -54010,8 +54010,8 @@ function lyFreshRequireOnline(){
 function lyFreshBusy(on,text='Đang tải Cloud…'){
   try{
     if(on)beginSyncProgress?.();
-    if(on)updateSyncProgress?.(35,text,'Supabase là nguồn dữ liệu duy nhất');
-    else finishSyncProgress?.({success:true,pending:0,stage:'Cloud đã sẵn sàng',detail:'Dữ liệu đã tải xong'});
+    if(on)updateSyncProgress?.(35,text,'Đang nhận snapshot từ PostgreSQL Vibe');
+    else finishSyncProgress?.({success:true,pending:0,stage:'Vibe đã sẵn sàng',detail:'Dữ liệu đã tải xong'});
   }catch(e){}
 }
 
@@ -54228,6 +54228,10 @@ loadCloud=async function(){
 };
 
 setupRealtime=function(){
+  if(location.hostname.endsWith('.tinhgon.xyz')){
+    setCloudStatus?.('Vibe • Đã đồng bộ','online');
+    return true;
+  }
   if(window.__lyFreshRealtime){
     try{sb.removeChannel(window.__lyFreshRealtime)}catch(e){}
     window.__lyFreshRealtime=null;
@@ -55509,14 +55513,14 @@ saveSaleReceipt=async function(){
 <script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
 <script src="./ly-menu-security.js?v=20260824.3"></script>
 <script src="./ly-inapp-notifications.js?v=20260824.2"></script>
-<script src="./ly-data-notifications.js?v=20260901.1"></script>
-<script src="./ly-notification-center.js?v=20260829.6"></script>
+<script src="./ly-data-notifications.js?v=20260907.1"></script>
+<script src="./ly-notification-center.js?v=20260907.1"></script>
 <script src="./ly-inventory-alerts.js?v=20260824.1"></script>
 <script src="./ly-cloud-realtime.js?v=20260824.5"></script>
 <script src="./ly-ui-bootstrap-rescue.js?v=20260827.4"></script>
 <script src="./ly-independent-bootstrap.js?v=20260827.6"></script>
 <script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
-<script src="./ly-local-chatbot.js?v=20260826.19"></script>
+<script src="./ly-local-chatbot.js?v=20260907.1"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 
 </body>

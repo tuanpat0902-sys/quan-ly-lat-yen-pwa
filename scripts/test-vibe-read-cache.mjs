@@ -23,6 +23,8 @@ assert.match(mirror,/hour >= 6/,'mirror must pause recurring work from midnight 
 assert.match(mirror,/LAT_YEN_SUPABASE_API_URL/,'mirror must use its dedicated Supabase API URL');
 assert.match(mirror,/updated_at.*created_at/,'mirror must prefer incremental timestamp reads');
 assert.match(server,/handleSnapshotApi/,'same-origin server must expose the authenticated snapshot API');
+assert.match(api,/\/api\/v1\/activity-events/,'Vibe must expose authenticated notification history');
+assert.match(api,/ly_activity_events/,'notification history must be read from Vibe PostgreSQL');
 assert.match(start,/startSupabaseMirror/,'production startup must enable the mirror worker');
 assert.match(start,/startVibeIposWorker/,'production startup must support direct iPOS-to-Vibe synchronization');
 assert.match(ipos,/VIBE_IPOS_BACKFILL_FROM\|\|'2026-08-25'/,'iPOS backfill must cover the requested history');

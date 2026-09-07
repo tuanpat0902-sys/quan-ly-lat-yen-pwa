@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.26.19';
+const VERSION='2026.09.07.1',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',aiMode:'local',aiRetryAt:0,openingDraftId:'',lastFocus:null};
@@ -475,6 +475,7 @@ function recentConversation(currentMessage){
 async function askAi(message,localReply,reply={}){
   const verifiedReportIntent=/(bao cao|thong ke|tong quan|doanh thu|ton kho|thu chi|dong tien|chi phi|nhap xuat|ban duoc|ban hang|ban chay|mon nao ban|loi nhuan|lai rong|lai lo|bang luong|quy luong|tien luong|luong nhan vien|luong)/.test(normalize(message));
   if(reply?.report||verifiedReportIntent){updateAssistantMode('local');return localReply;}
+  if(VIBE_ONLY){updateAssistantMode('local');return localReply;}
   const client=supabaseClient();
   if(!client?.functions?.invoke||Date.now()<state.aiRetryAt){updateAssistantMode('local');return localReply;}
   try{
@@ -694,9 +695,10 @@ async function handleDraftActionClick(event){
 }
 async function submitContent(value){
   const content=text(value);if(!content||state.thinking)return;
-  await retireDrafts();await addMessage({id:uid(),role:'user',content,created_at:now()});
-  const reply=assistantReply(content);
-  state.thinking=true;renderMessages();const answer=await askAi(content,reply.content,reply);state.thinking=false;await addMessage({id:uid(),role:'assistant',content:answer,draft:reply.draft||null,suggestions:reply.suggestions||null,created_at:now()});
+  state.thinking=true;
+  try{await retireDrafts();await addMessage({id:uid(),role:'user',content,created_at:now()});const reply=assistantReply(content),answer=await askAi(content,reply.content,reply);await addMessage({id:uid(),role:'assistant',content:answer,draft:reply.draft||null,suggestions:reply.suggestions||null,created_at:now()});}
+  catch(error){state.lastAiError=text(error?.message||error);await addMessage({id:uid(),role:'assistant',content:'Mình chưa thể lưu lịch sử câu trả lời, nhưng vẫn đang hoạt động trên thiết bị. Bạn gửi lại câu hỏi giúp mình nhé.',created_at:now()}).catch(()=>{});}
+  finally{state.thinking=false;renderMessages();}
 }
 async function submit(){
   const input=document.getElementById?.('lyAssistantInput'),content=text(input?.value);if(!content||state.thinking)return;
