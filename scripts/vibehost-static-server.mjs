@@ -78,7 +78,7 @@ const server = createServer(async (request, response) => {
   const extension = extname(file.path).toLowerCase();
   response.writeHead(200, {
     'Cache-Control': /(?:index\.html|sw\.js|manifest\.webmanifest)$/.test(file.path)
-      ? 'no-cache'
+      ? 'no-store, max-age=0, must-revalidate'
       : 'public, max-age=3600',
     'Content-Length': file.size,
     'Content-Type': contentTypes.get(extension) || 'application/octet-stream',

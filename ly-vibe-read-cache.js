@@ -1,13 +1,14 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.06.2';
+  const VERSION='2026.09.07.1';
   const TABLES=new Set([
     'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
     'ly_products','ly_recipe_items','ly_inventory','ly_import_receipts',
     'ly_import_items','ly_export_receipts','ly_export_items','ly_stocktake_receipts',
     'ly_stocktake_items','ly_sales','ly_sale_items','ly_stock_transactions','ly_cashflow_entries'
   ]);
-  const state={enabled:true,source:'supabase',lastSnapshotAt:0,lastError:'',bypassUntil:0,pending:null,snapshot:null};
+  const VIBE_ONLY=location.hostname.endsWith('.tinhgon.xyz');
+  const state={enabled:true,source:VIBE_ONLY?'vibe':'supabase',lastSnapshotAt:0,lastError:'',bypassUntil:0,pending:null,snapshot:null};
 
   function compare(left,right){
     if(left===right)return 0;
@@ -57,8 +58,9 @@
       }
       try{return ordered((await snapshot(orgId)).tables[table],orderColumn,ascending);}
       catch(error){
-        state.source='supabase';
         state.lastError=String(error?.message||error).slice(0,80);
+        if(VIBE_ONLY){state.source='vibe';throw error;}
+        state.source='supabase';
         state.bypassUntil=Date.now()+30_000;
         return original(table,orderColumn,ascending);
       }
