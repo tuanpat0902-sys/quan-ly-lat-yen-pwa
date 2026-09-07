@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.20",
-  "revision": "fresh-core-v3-shell-authoritative-v21",
+  "appVersion": "3.0.21",
+  "revision": "fresh-core-v3-shell-authoritative-v22",
   "loaderAssetVersion": "20260906.3",
   "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.09.06.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-244",
-  "redeploy": "2026-09-06-legacy-url-redirect-ui-build-52"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-245",
+  "redeploy": "2026-09-07-legacy-service-worker-redirect-ui-build-53"
 }

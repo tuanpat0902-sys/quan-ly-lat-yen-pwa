@@ -23,5 +23,7 @@ assert.match(migration, /update public\.ly_activity_events e[\s\S]*entity_table=
 assert.match(migration, /revoke all on function public\.ly_ipos_apply_sale_inventory\(uuid,uuid\) from public,anon,authenticated/, 'internal inventory function must not be public');
 assert.match(vibeWorker, /s\.id=t\.source_id[\s\S]*source_id:sale\.id[\s\S]*created_at:sale\.sold_at/, 'Vibe inventory movements must use the migrated source_id column and receipt business time');
 assert.doesNotMatch(vibeWorker, /t\.reference_id|occurred_at:sale\.sold_at/, 'Vibe worker must not use non-existent stock movement columns');
+assert.match(vibeWorker, /ly_runtime_sync_state[\s\S]*name='ipos_backfill' and value='complete'[\s\S]*effectiveBackfill=backfill&&!completed/, 'Vibe must run the expensive historical backfill only until it completes successfully');
+assert.doesNotMatch(vibeWorker, /Promise\.all\(\[\s*client\.query/, 'one PostgreSQL client must not execute concurrent queries');
 
 console.log('iPOS inventory business-time checks passed');

@@ -72,8 +72,8 @@ assert.match(app,/ensureUITableErgonomics\(\);ensureTableViewV2\(\)/,'V2 must la
 assert.doesNotMatch(sw,/ly-table-view-v2\.js/,'non-critical V2 presentation must remain outside critical precache');
 
 const release=JSON.parse(runtime);
-assert.equal(release.uiBuild,'UI-2026.09.06.52');
-assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-244');
+assert.equal(release.uiBuild,'UI-2026.09.07.53');
+assert.equal(release.serviceWorker,'lat-yen-fresh-core-v3-authoritative-245');
 assert.match(release.tableViewV2,/employee-summary-and-activity-columns/);
 assert.match(release.tableFirstPaint,/two-frame-atomic-panel-reveal/);
 

@@ -1,4 +1,5 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-244';
+const CACHE='lat-yen-fresh-core-v3-authoritative-245';
+const VIBE_URL='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
   INDEX_KEY,
@@ -20,7 +21,7 @@ self.addEventListener('activate',event=>{event.waitUntil((async()=>{
   if(oldKeys.length){
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
     for(const client of clients){
-      try{const url=new URL(client.url);url.searchParams.set('ly_release',CACHE);await client.navigate(url.href);}catch(e){}
+      try{if(location.hostname==='tuanpat0902-sys.github.io'){await client.navigate(VIBE_URL);continue;}const url=new URL(client.url);url.searchParams.set('ly_release',CACHE);await client.navigate(url.href);}catch(e){}
     }
   }
 })());});
@@ -34,5 +35,5 @@ function classifyMutation(request,url,body){const method=request.method.toUpperC
 async function readJsonSafe(request){try{const s=await request.clone().text();return s?JSON.parse(s):null;}catch(e){return null;}}
 async function postToClient(clientId,message){if(!clientId)return;try{const client=await self.clients.get(clientId);client?.postMessage(message);}catch(e){}}
 async function handleMutation(request,clientId){const url=new URL(request.url),bodyPromise=readJsonSafe(request),response=await fetch(request);if(!response.ok)return response;const table=classifyMutation(request,url,await bodyPromise);if(table)await postToClient(clientId,{type:'LAT_YEN_LOCAL_MUTATION_COMMITTED',entityTable:table,at:Date.now()});return response;}
-self.addEventListener('fetch',event=>{const request=event.request,url=new URL(request.url);if(isSupabaseOrigin(url)&&request.method!=='GET'&&request.method!=='HEAD'){event.respondWith(handleMutation(request,event.clientId));return;}if(request.method!=='GET'||url.origin!==location.origin)return;const isNavigation=request.mode==='navigate'||url.pathname.endsWith('/index.html')||url.pathname.endsWith('/');const isReleaseManifest=url.pathname.endsWith('/runtime-version.json');const isStatic=/\.(?:js|css|svg|png|jpg|jpeg|webp|ico|webmanifest|json)$/i.test(url.pathname);event.respondWith(isNavigation?navigationSource(request):isReleaseManifest?networkFirst(request):isStatic?cacheFirstStatic(request):networkFirst(request));});
+self.addEventListener('fetch',event=>{const request=event.request,url=new URL(request.url),isNavigation=request.mode==='navigate'||url.pathname.endsWith('/index.html')||url.pathname.endsWith('/');if(isNavigation&&location.hostname==='tuanpat0902-sys.github.io'){event.respondWith(Response.redirect(VIBE_URL,302));return;}if(isSupabaseOrigin(url)&&request.method!=='GET'&&request.method!=='HEAD'){event.respondWith(handleMutation(request,event.clientId));return;}if(request.method!=='GET'||url.origin!==location.origin)return;const isReleaseManifest=url.pathname.endsWith('/runtime-version.json');const isStatic=/\.(?:js|css|svg|png|jpg|jpeg|webp|ico|webmanifest|json)$/i.test(url.pathname);event.respondWith(isNavigation?navigationSource(request):isReleaseManifest?networkFirst(request):isStatic?cacheFirstStatic(request):networkFirst(request));});
 self.addEventListener('notificationclick',event=>{event.notification.close();const data=event.notification?.data||{},target=new URL(data.url||'./',self.location.origin).href;event.waitUntil((async()=>{const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});for(const client of windows){if(new URL(client.url).origin!==self.location.origin)continue;try{await client.focus();client.postMessage({type:'LAT_YEN_NOTIFICATION_OPEN',panel:data.panel||'',table:data.table||'',eventType:data.eventType||''});return;}catch(e){}}if(self.clients.openWindow)await self.clients.openWindow(target);})());});
