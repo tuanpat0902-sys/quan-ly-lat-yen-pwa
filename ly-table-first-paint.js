@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyTableFirstPaint)return;
-  const VERSION='2026.08.29.2';
+  const VERSION='2026.09.07.1';
   const root=document.documentElement;
   const state={version:VERSION,state:'pending',reason:'',atomic:true};
   const pendingScopes=new Set();
@@ -30,6 +30,7 @@
     settled=true;
     root.dataset.lyTableFirstPaintOwner='ready';
     root.removeAttribute('data-ly-table-first-paint');
+    root.removeAttribute('data-ly-table-atomic');
     state.state='ready';
     state.reason=reason;
     return true;

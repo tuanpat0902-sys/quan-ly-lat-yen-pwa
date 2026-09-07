@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.09.07.1',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
+const VERSION='2026.09.07.2',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',aiMode:'local',aiRetryAt:0,openingDraftId:'',lastFocus:null};
@@ -338,8 +338,9 @@ function draftSummary(draft){
   return `${title}${warehouse}${header?` · ${header}`:''}${receiptDiscount}: ${lines}.`;
 }
 function reportState(){
-  const legacy=legacyDb(),core=window.__lyFreshCoreV2?.store?.getState?.()||{};
-  return {warehouses:core.warehouses||legacy.warehouses||[],ingredients:core.ingredients||legacy.ingredients||[],products:core.products||legacy.products||[],inventory:core.inventoryData?.balances||legacy.inventory||[],sales:core.salesData?.sales||legacy.sales||[],saleItems:core.salesData?.items||legacy.saleItems||[],imports:core.importsData?.receipts||window.__lyFreshHeaders?.imports||[],exports:core.exportsData?.receipts||window.__lyFreshHeaders?.exports||[],cashflow:core.cashflowEntries||window.__lyFreshCashflow||legacy.cashflows||[]};
+  const legacy=legacyDb(),core=window.__lyFreshCoreV2?.store?.getState?.()||{},vibe=window.__lyVibeReadCache?.rows;
+  const pick=(table,...sources)=>{const direct=typeof vibe==='function'?vibe(table):[];if(direct.length)return direct;return sources.find(rows=>Array.isArray(rows)&&rows.length)||[];};
+  return {warehouses:pick('ly_warehouses',core.warehouses,legacy.warehouses),ingredients:pick('ly_ingredients',core.ingredients,legacy.ingredients),products:pick('ly_products',core.products,legacy.products),inventory:pick('ly_inventory',core.inventoryData?.balances,legacy.inventory),sales:pick('ly_sales',core.salesData?.sales,legacy.sales),saleItems:pick('ly_sale_items',core.salesData?.items,legacy.saleItems),imports:pick('ly_import_receipts',core.importsData?.receipts,window.__lyFreshHeaders?.imports),exports:pick('ly_export_receipts',core.exportsData?.receipts,window.__lyFreshHeaders?.exports),cashflow:pick('ly_cashflow_entries',core.cashflowEntries,window.__lyFreshCashflow,legacy.cashflows)};
 }
 function parseReportDate(value){const parts=text(value).split(/[\/-]/).map(Number);if(parts.length!==3)return null;const [year,month,day]=parts[0]>999?parts:[parts[2],parts[1],parts[0]],date=new Date(year,month-1,day);return date.getFullYear()===year&&date.getMonth()===month-1&&date.getDate()===day?date:null;}
 function displayDate(date){return new Intl.DateTimeFormat('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date);}

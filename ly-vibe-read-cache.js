@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.07.1';
+  const VERSION='2026.09.07.2';
   const TABLES=new Set([
     'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
     'ly_products','ly_recipe_items','ly_inventory','ly_import_receipts',
@@ -52,7 +52,7 @@
     if(typeof original!=='function'||original.__lyVibeWrapped)return false;
     async function cachedFetch(table,orderColumn=null,ascending=true){
       const orgId=String(window.__lyFreshOrgId||'');
-      if(!state.enabled||!TABLES.has(table)||!orgId||Date.now()<state.bypassUntil){
+      if(!state.enabled||!TABLES.has(table)||!orgId||(!VIBE_ONLY&&Date.now()<state.bypassUntil)){
         state.source='supabase';
         return original(table,orderColumn,ascending);
       }
@@ -73,9 +73,9 @@
   window.addEventListener('latyen:change-signal',()=>{
     state.snapshot=null;
     state.lastSnapshotAt=0;
-    state.bypassUntil=Date.now()+45_000;
+    state.bypassUntil=VIBE_ONLY?0:Date.now()+45_000;
   });
-  window.__lyVibeReadCache={version:VERSION,install,status:()=>({...state,pending:!!state.pending,snapshot:undefined}),enable(value=true){state.enabled=!!value;}};
+  window.__lyVibeReadCache={version:VERSION,install,rows:table=>state.snapshot?.tables?.[table]||[],status:()=>({...state,pending:!!state.pending,snapshot:undefined}),enable(value=true){state.enabled=!!value;}};
   if(!install()){
     let attempts=0;
     const timer=setInterval(()=>{attempts+=1;if(install()||attempts>=100)clearInterval(timer);},50);

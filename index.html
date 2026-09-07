@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <script>if(location.host.startsWith('tuanpat0902-sys.'))location='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/'</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260906.3" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260907.1" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)return false;const data=await response.json();const session=data?.session||null;window.__lyFreshSession=session;window.__lyFreshOrgId=session?.org_id||null;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.09.07.2',provider:'vibe'};})();</script>
 <style>
@@ -11639,7 +11639,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260906.3"></script>
+<script src="./ly-module-loader.js?v=20260907.1"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -28554,7 +28554,7 @@ function receiptRowsByKey(encodedKey){
     m.warehouse_id===currentWarehouseId &&
     m.transaction_type==='IMPORT' &&
     receiptGroupKeyForMovement(m)===key
-  );
+  ).sort((a,b)=>Number(a._line_order||0)-Number(b._line_order||0)||new Date(a.created_at||0)-new Date(b.created_at||0));
 }
 
 function recalcIngredientCostFromImports(ingredientId){
@@ -28694,6 +28694,7 @@ function importReceiptHistoryTable(){
 
         <div id="importDay${dayIndex}" class="import-day-body import-day-collapsible">
           ${receipts.map((g,receiptIndex)=>{
+            g.rows.sort((a,b)=>Number(a._line_order||0)-Number(b._line_order||0)||new Date(a.created_at||0)-new Date(b.created_at||0));
             const encoded=encodeURIComponent(g.groupKey);
 
             return `
@@ -31704,7 +31705,7 @@ async function ensureSupplierForImport(name){
 }
 
 async function saveImportMovementLocalFirst({
-  ingredientId,quantity,note,referenceId,unitCost,totalCost,supplierId,createdAt
+  ingredientId,quantity,note,referenceId,unitCost,totalCost,supplierId,createdAt,lineOrder
 }){
   const localRow={
     id:uid(),
@@ -31718,6 +31719,7 @@ async function saveImportMovementLocalFirst({
     total_cost:Number(totalCost||0),
     supplier_id:supplierId||null,
     created_at:createdAt||new Date().toISOString(),
+    _line_order:Number(lineOrder||0),
     _local_only:true,
     _sync_status:'pending'
   };
@@ -31726,8 +31728,6 @@ async function saveImportMovementLocalFirst({
   invalidateDataIndexes();
   cacheSave();
 
-  // V191: không insert từng movement rời rạc nữa.
-  // Cả phiếu sẽ được commit atomically sau khi các dòng local đã hoàn tất.
   return {
     row:localRow,
     pending:true,
@@ -31823,22 +31823,19 @@ async function saveImportReceipt(){
     }
     if(result)result.innerHTML='<b>Đang lưu phiếu nhập kho…</b>';
 
-    // Nếu sửa phiếu, hoàn tác phiếu cũ trước.
     if(editKey){
       const reverted=await revertReceiptForEdit(encodeURIComponent(editKey));
       affectedByEdit=reverted.affected;
     }
 
-    for(const line of lines){
+    for(const [lineIndex,line] of lines.entries()){
       const ing=(db.ingredients||[]).find(i=>i.id===line.ingredient_id);
       if(!ing)throw new Error('Không tìm thấy nguyên liệu/ dụng cụ trong phiếu');
 
-      // 1. Nhà cung cấp local-first.
       const supplierResult=await ensureSupplierForImport(line.supplier_name);
       const supplier=supplierResult.supplier;
       if(supplierResult.pending)pending=true;
 
-      // 2. Tính tồn và giá vốn.
       const oldQty=stock(ing.id);
       const oldCost=Number(ing.cost||0);
       const newQty=oldQty+Number(line.quantity);
@@ -31850,17 +31847,14 @@ async function saveImportReceipt(){
 
       grandTotal+=lineTotal;
 
-      // 3. Tồn kho local-first.
       const inv=stageImportInventoryLocal(currentWarehouseId,ing.id,newQty);
       if(inv?._sync_status==='pending')pending=true;
 
-      // 4. Giá vốn cập nhật local ngay, Cloud best-effort.
       ing.cost=newAvg;
       ing.updated_at=createdAt;
       cacheSave();
 
       try{
-        // Chỉ thử Cloud nếu id trông không phải id local/Excel.
         if(!String(ing.id).startsWith('excel_') && !String(ing.id).startsWith('local_')){
           const costUpdate=await sb.from('ingredients')
             .update({cost:newAvg,updated_at:createdAt})
@@ -31875,7 +31869,6 @@ async function saveImportReceipt(){
         console.warn('Ingredient cost sync pending:',e);
       }
 
-      // 5. Ghi movement local trước, Cloud sau.
       const movementNote=
         `Phiếu:${receiptNo} | Ngày nhập:${receiptDate} | `+
         (supplier?`NCC:${supplier.name} | `:'')+
@@ -31890,7 +31883,8 @@ async function saveImportReceipt(){
         unitCost:line.unit_cost,
         totalCost:lineTotal,
         supplierId:supplier?.id||null,
-        createdAt
+        createdAt,
+        lineOrder:lineIndex+1
       });
 
       if(movementResult.pending)pending=true;
@@ -31899,7 +31893,6 @@ async function saveImportReceipt(){
       affectedByEdit.add(ing.id);
     }
 
-    // 6. V191: sau khi toàn bộ dòng đã stage local, commit cả phiếu atomic.
     if(navigator.onLine){
       try{
         const importSync=
@@ -54047,7 +54040,7 @@ function lyFreshSynthMovements({
   const out=[];
   const supplierMap=new Map((suppliers||[]).map(x=>[x.id,x]));
 
-  for(const item of importItems||[]){
+  for(const [itemIndex,item] of (importItems||[]).entries()){
     const h=(imports||[]).find(x=>x.id===item.receipt_id);
     if(!h)continue;
     const sp=supplierMap.get(item.supplier_id);
@@ -54061,6 +54054,7 @@ function lyFreshSynthMovements({
       unit_cost:Number(item.unit_cost||0),
       total_cost:Number(item.total_cost||0),
       supplier_id:item.supplier_id||null,
+      _line_order:Number(item.line_order||itemIndex+1),
       note:`Phiếu:${h.receipt_no} | Ngày nhập:${h.receipt_date}`+
         (sp?` | NCC:${sp.name}`:'')+
         ` | Giá nhập:${Number(item.unit_cost||0)} | Thành tiền:${Number(item.total_cost||0)}`+
@@ -54445,11 +54439,11 @@ saveImportReceipt=async function(){
   try{
     if(btn){btn.disabled=true;btn.textContent='Đang ghi Cloud…'}
     const items=[];
-    for(const line of lines){
+    for(const [lineIndex,line] of lines.entries()){
       const supplierId=await lyFreshEnsureSupplier(line.supplier_name);
       items.push({
         ingredient_id:line.ingredient_id,supplier_id:supplierId,
-        quantity:Number(line.quantity||0),unit_cost:Number(line.unit_cost||0)
+        quantity:Number(line.quantity||0),unit_cost:Number(line.unit_cost||0),line_order:lineIndex+1
       });
     }
     const rpcResult=await lyFreshRunRpc('ly_save_import',{
@@ -55520,7 +55514,7 @@ saveSaleReceipt=async function(){
 <script src="./ly-ui-bootstrap-rescue.js?v=20260827.4"></script>
 <script src="./ly-independent-bootstrap.js?v=20260827.6"></script>
 <script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
-<script src="./ly-local-chatbot.js?v=20260907.1"></script>
+<script src="./ly-local-chatbot.js?v=20260907.2"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 
 </body>
