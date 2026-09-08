@@ -4,7 +4,12 @@
   'use strict';
   if(window.__lyFinanceUIV1)return;
   window.__lyFinanceUIV1=true;
-  const VERSION='2026.09.08.1';
+  const VERSION='2026.09.08.2';
+
+  function installCategoryStyle(){
+    if(document.getElementById('lyFinanceCategoryStyle'))return;
+    const style=document.createElement('style');style.id='lyFinanceCategoryStyle';style.textContent=`.finance-inventory-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}.finance-inventory-category-card{padding:11px 13px;border:1px solid #99f6e4;border-left:4px solid #0f766e;border-radius:9px;background:#f0fdfa}.finance-inventory-category-card.tool{border-color:#bfdbfe;border-left-color:#2563eb;background:#eff6ff}.finance-inventory-category-card span{display:block;margin-bottom:4px;color:#475569;font-size:10.5px;font-weight:700}.finance-inventory-category-card b{display:block;color:#0f766e;font-size:15px}.finance-inventory-category-card.tool b{color:#1d4ed8}@media(max-width:560px){.finance-inventory-category-grid{grid-template-columns:1fr}}`;document.head.appendChild(style);
+  }
 
   function financeViewState(){
     const now=new Date();
@@ -33,6 +38,7 @@
 
   function renderFinance(){
     if(!E.finance)return;
+    installCategoryStyle();
     const view=financeViewState();
   
     E.finance.innerHTML=`
@@ -494,16 +500,25 @@
           <div class="stock-flow-arrow">→</div>
   
           <div class="stock-flow-box ending">
-            <span>Tồn cuối kỳ</span>
+            <span>Tổng tồn cuối kỳ</span>
             <b class="${closingInventoryValue<0?'neg':''}">
               ${money(closingInventoryValue)}
             </b>
           </div>
         </div>
+
+        <div class="finance-inventory-category-grid" aria-label="Tồn kho theo phân loại">
+          <div class="finance-inventory-category-card ingredient">
+            <span>Tồn kho nguyên liệu</span>
+            <b>${money(closingIngredientInventoryValue)}</b>
+          </div>
+          <div class="finance-inventory-category-card tool">
+            <span>Tồn kho dụng cụ</span>
+            <b>${money(closingToolInventoryValue)}</b>
+          </div>
+        </div>
   
         <div class="finance-stock-subfacts">
-          <span>Tồn nguyên liệu cuối kỳ: <b>${money(closingIngredientInventoryValue)}</b></span>
-          <span>Tồn dụng cụ cuối kỳ: <b>${money(closingToolInventoryValue)}</b></span>
           <span>
             Xuất luân chuyển:
             <b>${money(exportInventoryOnlyValue)}</b>

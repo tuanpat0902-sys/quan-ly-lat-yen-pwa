@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.27",
-  "revision": "fresh-core-v3-shell-authoritative-v28",
+  "appVersion": "3.0.28",
+  "revision": "fresh-core-v3-shell-authoritative-v29",
   "loaderAssetVersion": "20260907.1",
   "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.09.07.1",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-251",
-  "redeploy": "2026-09-08-inventory-category-ui-build-59"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-252",
+  "redeploy": "2026-09-08-inventory-category-stability-build-60"
 }

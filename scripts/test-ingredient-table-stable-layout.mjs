@@ -35,7 +35,10 @@ assert.match(index,/data-ly-purchase-cell="1" data-ly-ingredient-column="purchas
 assert.match(index,/id="igInventoryCategory"[\s\S]*Nguyên liệu[\s\S]*Dụng cụ/,'ingredient form must expose the inventory category field');
 assert.match(index,/data-ly-ingredient-column="category">Phân loại/,'ingredient table must show inventory category');
 assert.match(index,/categoryValues\[ingredientInventoryCategory\(i\)\]\+=value/,'inventory valuation must aggregate materials and tools separately');
-assert.match(finance,/Tồn nguyên liệu cuối kỳ:[\s\S]*Tồn dụng cụ cuối kỳ:/,'finance report must display material and tool inventory separately');
+assert.match(index,/saveIngredientInventoryCategory\('\$\{i\.id\}',this\.value,this\)/,'category edits must retain their active control instead of replacing the table');
+const categorySave=index.match(/async function saveIngredientInventoryCategory[\s\S]*?\n}\n\nfunction ingredientTable/)?.[0]||'';
+assert.doesNotMatch(categorySave,/renderIngredients/,'category edits must not rerender the table and reset its scroll position');
+assert.match(finance,/finance-inventory-category-grid[\s\S]*Tồn kho nguyên liệu[\s\S]*Tồn kho dụng cụ/,'finance report must display prominent material and tool inventory cards');
 assert.match(categoryApi,/inventory_category[\s\S]*\['ingredient','tool'\]/,'Vibe category API must validate and persist both categories');
 assert.match(server,/handleIngredientCategoryApi/,'Vibe server must expose category persistence');
 assert.match(loader,/loadCriticalTablePresentation[\s\S]*Promise\.all\([\s\S]*load\('ingredientTableUX'\)/,'ingredient geometry must load in parallel inside the global first-paint gate');

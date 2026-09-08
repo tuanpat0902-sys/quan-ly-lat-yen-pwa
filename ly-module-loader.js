@@ -12,7 +12,7 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.27',test:()=>window.__lyAppVersion?.version==='3.0.27'},
+    appVersion:{src:'./ly-app-version.js?v=3.0.28',test:()=>window.__lyAppVersion?.version==='3.0.28'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
@@ -64,7 +64,7 @@
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
     activityHistory:{src:'./ly-activity-history.js?v=20260831.1',test:()=>window.__lyActivityHistoryModule?.version==='2026.08.31.1'},
     employeesUI:{src:'./ly-employees.js?v=20260830.2',test:()=>window.__lyEmployeesModule?.version==='2026.08.30.2'},
-    financeUI:{src:'./ly-finance.js?v=20260908.1',test:()=>window.__lyFinanceModule?.version==='2026.09.08.1'},
+    financeUI:{src:'./ly-finance.js?v=20260908.2',test:()=>window.__lyFinanceModule?.version==='2026.09.08.2'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
     cashflowUI:{src:'./ly-cashflow.js?v=20260825.2',test:()=>window.__lyCashflowModule?.version==='2026.08.25.2'}
   };

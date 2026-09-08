@@ -27224,22 +27224,32 @@ function toggleIngredientStockFilter(filter){
 function ingredientInventoryCategory(i){return i?.inventory_category==='tool'?'tool':'ingredient'}
 function ingredientInventoryCategoryLabel(i){return ingredientInventoryCategory(i)==='tool'?'Dụng cụ':'Nguyên liệu'}
 
-async function saveIngredientInventoryCategory(id,category){
-  const value=category==='tool'?'tool':'ingredient',item=(db.ingredients||[]).find(i=>i.id===id);
+function refreshIngredientCategorySummary(){
+  const rows=purchasedWarehouseIngredientsInDisplayOrder(),summary=rows.reduce((out,i)=>{const key=ingredientInventoryCategory(i);out[key].count++;out[key].value+=stock(i.id)*Number(i.cost||0);return out},{ingredient:{count:0,value:0},tool:{count:0,value:0}});
+  document.querySelectorAll('[data-ly-category-summary]').forEach(node=>{const key=node.dataset.lyCategorySummary;node.innerHTML=`<b>${key==='tool'?'Dụng cụ':'Nguyên liệu'}:</b> ${summary[key].count} mặt hàng • ${money(summary[key].value)}`;});
+}
+
+async function saveIngredientInventoryCategory(id,category,control){
+  const value=category==='tool'?'tool':'ingredient',item=(db.ingredients||[]).find(i=>i.id===id),previous=ingredientInventoryCategory(item);
   if(item){item.inventory_category=value;cacheSave?.();invalidateDerivedCaches?.();}
-  if(location.hostname.endsWith('.tinhgon.xyz')&&id){
-    const response=await fetch('/api/v1/ingredient-category',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({ingredient_id:id,inventory_category:value})});
-    if(!response.ok)throw new Error('Không lưu được phân loại trên Vibe');
-    window.dispatchEvent(new CustomEvent('latyen:change-signal',{detail:{domain:'ingredients'}}));
+  refreshIngredientCategorySummary();
+  try{
+    if(location.hostname.endsWith('.tinhgon.xyz')&&id){
+      const response=await fetch('/api/v1/ingredient-category',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({ingredient_id:id,inventory_category:value})});
+      if(!response.ok)throw new Error('Không lưu được phân loại trên Vibe');
+    }
+  }catch(error){
+    if(item){item.inventory_category=previous;cacheSave?.();invalidateDerivedCaches?.();}
+    if(control)control.value=previous;
+    refreshIngredientCategorySummary();
+    throw error;
   }
-  renderIngredients?.();renderDashboard?.();if(document.getElementById('financeReportArea'))renderFinanceData?.();
+  renderDashboard?.();if(document.getElementById('financeReportArea'))renderFinanceData?.();
 }
 
 function ingredientTable(rows,type){
   if(!rows.length)return '<div class="empty">Chưa có nguyên liệu/ dụng cụ</div>';
 
-  // Nguyên liệu/Dụng cụ phải pha chế là công thức quy đổi ảo,
-  // không quản lý tồn kho riêng.
   if(type==='prepared'){
     return `
       <div class="prepared-virtual-note">
@@ -27369,7 +27379,7 @@ function ingredientTable(rows,type){
 
     </div>
 
-    <div class="ingredient-category-summary"><span><b>Nguyên liệu:</b> ${categorySummary.ingredient.count} mặt hàng • ${money(categorySummary.ingredient.value)}</span><span><b>Dụng cụ:</b> ${categorySummary.tool.count} mặt hàng • ${money(categorySummary.tool.value)}</span></div>
+    <div class="ingredient-category-summary"><span data-ly-category-summary="ingredient"><b>Nguyên liệu:</b> ${categorySummary.ingredient.count} mặt hàng • ${money(categorySummary.ingredient.value)}</span><span data-ly-category-summary="tool"><b>Dụng cụ:</b> ${categorySummary.tool.count} mặt hàng • ${money(categorySummary.tool.value)}</span></div>
 
     ${activeFilter!=='all'?`
       <div class="ingredient-filter-active-note">
@@ -27417,7 +27427,7 @@ function ingredientTable(rows,type){
                   :''}
               </td>
 
-              <td data-ly-ingredient-column="category"><select aria-label="Phân loại ${esc(i.name)}" onchange="saveIngredientInventoryCategory('${i.id}',this.value).catch(e=>alert(e.message))"><option value="ingredient" ${ingredientInventoryCategory(i)==='ingredient'?'selected':''}>Nguyên liệu</option><option value="tool" ${ingredientInventoryCategory(i)==='tool'?'selected':''}>Dụng cụ</option></select></td>
+              <td data-ly-ingredient-column="category"><select aria-label="Phân loại ${esc(i.name)}" onchange="saveIngredientInventoryCategory('${i.id}',this.value,this).catch(e=>alert(e.message))"><option value="ingredient" ${ingredientInventoryCategory(i)==='ingredient'?'selected':''}>Nguyên liệu</option><option value="tool" ${ingredientInventoryCategory(i)==='tool'?'selected':''}>Dụng cụ</option></select></td>
               <td data-ly-ingredient-column="unit">${esc(i.unit)}</td>
               <td data-ly-purchase-cell="1" data-ly-ingredient-column="purchase">${esc(window.__lyUnitConversions?.packagingText?.(i)||i.purchase_unit||i.unit||'—')}</td>
               <td class="right stock-qty" data-ly-ingredient-column="stock"><b>${num(stock(i.id))}</b></td>
