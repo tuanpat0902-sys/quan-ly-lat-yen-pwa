@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <script>if(location.host.startsWith('tuanpat0902-sys.'))location='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/'</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260907.1" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260909.1" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)return false;const data=await response.json();const session=data?.session||null;window.__lyFreshSession=session;window.__lyFreshOrgId=session?.org_id||null;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.09.07.2',provider:'vibe'};})();</script>
 <style>
@@ -11560,7 +11560,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260907.1"></script>
+<script src="./ly-module-loader.js?v=20260909.1"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -55452,30 +55452,11 @@ saveSaleReceipt=async function(){
 };
 </script>
 
-<script id="lyVersionInfoInline">(()=>{const APP_VERSION='2.1.68',REVISION='fresh-core-v2-authoritative-v69';function render(){const root=document.getElementById('settings');if(!root)return false;let card=document.getElementById('lyVersionInfoCard');if(!card){card=document.createElement('div');card.id='lyVersionInfoCard';card.className='card ly-version-card';root.appendChild(card);}card.innerHTML='<div class="ly-version-head"><div><h3>Phiên bản phần mềm</h3><div class="ly-version-primary">Ver '+APP_VERSION+'</div></div><span class="ly-version-state">Đang hoạt động</span></div><div class="ly-version-summary"><span>Revision: <b>'+REVISION+'</b></span></div>';return true}function boot(){render()}document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();window.__lyVersionInfo={version:APP_VERSION,revision:REVISION,render};})();</script>
-
-<script src="./ly-app-version.js?v=2.1.68"></script>
-<script src="./ly-supabase-bootstrap.js?v=20260824.2"></script>
-<script src="./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4"></script>
-<script src="./ly-fresh-core-v2-shadow.js?v=20260824.7"></script>
-<script src="./ly-legacy-dom-shim.js?v=20260824.4"></script>
-<script src="./ly-legacy-state-shim.js?v=20260824.4"></script>
-<script src="./ly-legacy-helper-shim.js?v=20260824.2"></script>
-<script src="./ly-legacy-model-shim.js?v=20260824.2"></script>
-<script src="./ly-legacy-list-shim.js?v=20260824.1"></script>
 <script src="./ly-sidebar-visuals.js?v=20260831.2"></script>
 <script src="./ly-ingredient-usage-history-reconcile.js?v=20260830.1"></script>
 <script src="./ly-compact-admin-layout.js?v=20260825.4"></script>
-<script src="./ly-menu-security.js?v=20260824.3"></script>
-<script src="./ly-inapp-notifications.js?v=20260824.2"></script>
-<script src="./ly-data-notifications.js?v=20260907.1"></script>
-<script src="./ly-notification-center.js?v=20260908.1"></script>
-<script src="./ly-inventory-alerts.js?v=20260824.1"></script>
-<script src="./ly-cloud-realtime.js?v=20260824.5"></script>
 <script src="./ly-ui-bootstrap-rescue.js?v=20260827.4"></script>
 <script src="./ly-independent-bootstrap.js?v=20260827.6"></script>
-<script src="./ly-warehouse-delete-ux.js?v=20260824.3"></script>
-<script src="./ly-local-chatbot.js?v=20260907.2"></script>
 <script src="./ly-simulation-personnel.js?v=20260824.1"></script>
 
 </body>

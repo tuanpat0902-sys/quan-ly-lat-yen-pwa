@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.09.07.2',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
+const VERSION='2026.09.09.1',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',aiMode:'local',aiRetryAt:0,openingDraftId:'',lastFocus:null};
@@ -124,12 +124,22 @@ function quantityNear(message,itemName){
   }
   return {quantity:null,unit:''};
 }
+function packagedQuantityNear(message,itemName,item){
+  const source=normalize(message),name=normalize(itemName),number='(\\d+(?:[.,]\\d+)?|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',pack='(chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)',measure='(?:\\s+\\d+(?:[.,]\\d+)?\\s*(?:kg|ky|kilogram|g|gram|ml|l|lit))?';
+  let at=source.indexOf(name);
+  while(at>=0){
+    const before=source.slice(Math.max(0,at-64),at),match=before.match(new RegExp(`${number}\\s*${pack}${measure}\\s*$`));
+    if(match){const unit=canonicalUnit(match[2]),purchase=canonicalUnit(item?.purchase_unit||item?.purchaseUnit),base=canonicalUnit(item?.unit);if(unit&&(unit===purchase||unit===base))return {quantity:parsedQuantity(match[1]),unit};}
+    at=source.indexOf(name,at+name.length);
+  }
+  return null;
+}
 function containsPhrase(source,phrase){const escaped=phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');return new RegExp(`(?:^|[^a-z0-9])${escaped}(?=$|[^a-z0-9])`).test(source);}
 function extractItems(message,kind){
   const source=normalize(message),catalog=collectionFor(kind).filter(item=>item?.id&&normalize(item.name).length>1),matched=catalog.filter(item=>containsPhrase(source,normalize(item.name))).sort((a,b)=>normalize(b.name).length-normalize(a.name).length),exact=matched.filter(item=>{
     const name=normalize(item.name),parents=matched.filter(parent=>String(parent.id)!==String(item.id)&&normalize(parent.name).includes(name));if(!parents.length)return true;
     let residual=source;for(const parent of parents){const phrase=normalize(parent.name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+');residual=residual.replace(new RegExp(`(?:^|[^a-z0-9])${phrase}(?=$|[^a-z0-9])`,'g'),' ');}return containsPhrase(residual,name);
-  }),items=exact.map(item=>{const mentioned=quantityNear(message,item.name),amount=amountForItem(mentioned,item),quantity=amount.quantity,pricing=inventoryPricingNear(message,item.name);return {id:item.id,name:item.name,unit:text(item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null),input_quantity:mentioned.quantity,input_unit:canonicalUnit(mentioned.unit||item.unit),quoted_unit_cost:pricing.unit_cost,quoted_total:pricing.total,quoted_discount:kind==='sale'?discountMentionNear(message,item.name):null};}),groups=new Map();
+  }),items=exact.map(item=>{const packaged=packagedQuantityNear(message,item.name,item),mentioned=packaged||quantityNear(message,item.name),amount=packaged?{quantity:packaged.quantity,unit:packaged.unit}:amountForItem(mentioned,item),quantity=amount.quantity,pricing=inventoryPricingNear(message,item.name);return {id:item.id,name:item.name,unit:text(packaged?.unit||item.unit||amount.unit),quantity:kind==='stocktake'?quantity:(quantity!==null&&quantity>0?quantity:null),input_quantity:mentioned.quantity,input_unit:canonicalUnit(mentioned.unit||item.unit),quoted_unit_cost:pricing.unit_cost,quoted_total:pricing.total,quoted_discount:kind==='sale'?discountMentionNear(message,item.name):null};}),groups=new Map();
   for(const item of catalog){
     if(exact.some(row=>String(row.id)===String(item.id)))continue;
     const words=normalize(item.name).split(' ');let phrase='';

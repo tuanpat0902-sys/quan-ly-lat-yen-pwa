@@ -37,8 +37,14 @@ async function saveProduct(client,user,input){
   await client.query(`delete from ${qi(schema)}.ly_recipe_items where org_id=$1::uuid and product_id=$2::uuid`,[user.orgId,id]);
   const recipe=[];
   for(const item of input.recipe_items||[]){const ingredientId=uuid(item.ingredient_id),quantity=number(item.quantity);if(!ingredientId||quantity<=0)continue;recipe.push(await insert(client,'ly_recipe_items',{org_id:user.orgId,product_id:id,ingredient_id:ingredientId,quantity}));}
-  await rebuildVibeIposInventory(client,{org:user.orgId,warehouse:warehouseId});
-  return {id,row,recipe_items:recipe};
+  return {id,row,recipe_items:recipe,reconcile:{org:user.orgId,warehouse:warehouseId}};
+}
+
+async function reconcileProductInventory(ctx){
+  let client;
+  try{client=await acquireClient();await client.query('begin');await rebuildVibeIposInventory(client,ctx);await client.query('commit');invalidateSnapshot(ctx.org);}
+  catch(error){if(client)await client.query('rollback').catch(()=>{});console.error(`[business-mutation-reconcile] ${String(error?.message||error).slice(0,220)}`);}
+  finally{client?.release();}
 }
 
 async function saveEmployee(client,user,value){
@@ -56,6 +62,6 @@ export async function handleBusinessMutationApi(request,response,pathname){
     if(pathname==='/api/v1/business/employees'&&request.method==='GET'){await ensureEmployees(client);const warehouseId=uuid(new URL(request.url,'http://localhost').searchParams.get('warehouse_id'));if(!warehouseId||!await warehouseAllowed(client,user.orgId,warehouseId)){json(response,400,{error:'Invalid warehouse'});return true;}const rows=await client.query(`select * from ${qi(schema)}.ly_employees where org_id=$1::uuid and warehouse_id=$2::uuid order by active desc,name,code`,[user.orgId,warehouseId]);json(response,200,{rows:rows.rows});return true;}
     if(employeeMatch&&request.method==='DELETE'){await ensureEmployees(client);await client.query(`delete from ${qi(schema)}.ly_employees where id=$1::uuid and org_id=$2::uuid`,[employeeMatch[1],user.orgId]);invalidateSnapshot(user.orgId);json(response,200,{ok:true});return true;}
     if(request.method!=='POST'){response.setHeader('allow','GET, POST, DELETE');json(response,405,{error:'Method Not Allowed'});return true;}
-    const input=await readBody(request);await client.query('begin');let result;if(pathname.endsWith('/ingredient'))result=await saveIngredient(client,user,input);else if(pathname.endsWith('/product'))result=await saveProduct(client,user,input);else result=await saveEmployee(client,user,input.employee||{});await client.query('commit');invalidateSnapshot(user.orgId);json(response,200,result);
+    const input=await readBody(request);await client.query('begin');let result;if(pathname.endsWith('/ingredient'))result=await saveIngredient(client,user,input);else if(pathname.endsWith('/product'))result=await saveProduct(client,user,input);else result=await saveEmployee(client,user,input.employee||{});await client.query('commit');invalidateSnapshot(user.orgId);const reconcile=result?.reconcile;if(reconcile)delete result.reconcile;json(response,200,result);if(reconcile)queueMicrotask(()=>reconcileProductInventory(reconcile));
   }catch(error){if(client)await client.query('rollback').catch(()=>{});console.error(`[business-mutation] ${String(error?.message||error).slice(0,220)}`);json(response,503,{error:'Không thể lưu dữ liệu trên Vibe Host'});}finally{client?.release();}return true;
 }

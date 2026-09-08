@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV97)return;
   window.__lyModuleLoaderV97=true;
 
-  const VERSION='2026.09.07.1';
+  const VERSION='2026.09.09.1';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,12 +12,12 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.33',test:()=>window.__lyAppVersion?.version==='3.0.33'},
+    appVersion:{src:'./ly-app-version.js?v=3.0.34',test:()=>window.__lyAppVersion?.version==='3.0.34'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
     freshCoreV3EmployeesParityRunner:{src:'./ly-fresh-core-v3-employees-parity-runner.js?v=20260828.1',test:()=>window.__lyFreshCoreV3EmployeesParityRunner?.version==='2026.08.28.1'},
-    localAssistant:{src:'./ly-local-chatbot.js?v=20260907.2',test:()=>window.__lyLocalAssistant?.version==='2026.09.07.2'},
+    localAssistant:{src:'./ly-local-chatbot.js?v=20260909.1',test:()=>window.__lyLocalAssistant?.version==='2026.09.09.1'},
     chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260827.5',test:()=>window.__lyChatLanguagePlus?.version==='2026.08.27.5'},
     chatLegacyInventoryUnitGuard:{src:'./ly-chat-legacy-inventory-unit-guard.js?v=20260827.1',test:()=>window.__lyChatLegacyInventoryUnitGuard?.version==='2026.08.27.1'},
     chatResponseGate:{src:'./ly-chat-response-gate.js?v=20260827.1',test:()=>window.__lyChatResponseGate?.version==='2026.08.27.1'},
@@ -70,7 +70,7 @@
     cashflowUI:{src:'./ly-cashflow.js?v=20260825.2',test:()=>window.__lyCashflowModule?.version==='2026.08.25.2'}
   };
 
-  function ensureTableFirstPaintGate(){const root=document.documentElement;root.setAttribute?.('data-ly-table-first-paint','pending');root.setAttribute?.('data-ly-table-atomic','1');let style=document.getElementById?.('lyTableFirstPaintCritical');if(!style){style=document.createElement?.('style');if(style){style.id='lyTableFirstPaintCritical';style.textContent='html[data-ly-table-first-paint="pending"] main .panel.active{visibility:hidden!important}html[data-ly-table-first-paint="pending"] main{min-height:60vh}html[data-ly-table-atomic="1"] main .panel table:not([data-ly-table-paint-ready="1"]){visibility:hidden!important}';(document.head||root).appendChild?.(style);}}setTimeout(()=>{if(root.dataset.lyTableFirstPaintOwner!=='ready'){root.removeAttribute?.('data-ly-table-first-paint');root.removeAttribute?.('data-ly-table-atomic');}},1400);return true;}
+  function ensureTableFirstPaintGate(){const root=document.documentElement;root.setAttribute?.('data-ly-table-first-paint','pending');root.setAttribute?.('data-ly-table-atomic','1');let style=document.getElementById?.('lyTableFirstPaintCritical');if(!style){style=document.createElement?.('style');if(style){style.id='lyTableFirstPaintCritical';style.textContent='html[data-ly-table-first-paint="pending"] main{min-height:60vh}html[data-ly-table-atomic="1"] main .panel table:not([data-ly-table-paint-ready="1"]){visibility:hidden!important}';(document.head||root).appendChild?.(style);}}setTimeout(()=>{if(root.dataset.lyTableFirstPaintOwner!=='ready'){root.removeAttribute?.('data-ly-table-first-paint');root.removeAttribute?.('data-ly-table-atomic');}},1400);return true;}
 
   function load(name){
     const module=modules[name];

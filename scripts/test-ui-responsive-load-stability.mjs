@@ -15,7 +15,7 @@ const sw=await fs.readFile(new URL('../sw.js',import.meta.url),'utf8');
 const index=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 
 assert.match(index,/viewport-fit=cover/,'mobile viewport must keep safe-area support');
-assert.match(loader,/function ensureTableFirstPaintGate\(\)[\s\S]*data-ly-table-first-paint[\s\S]*visibility:hidden!important/,'unfinished table presentation must be hidden synchronously by the parser-blocking loader');
+assert.doesNotMatch(loader,/\.panel\.active\{visibility:hidden!important\}/,'startup must never hide the entire active panel while data or table assets are settling');
 assert.match(firstPaint,/VERSION='2026\.09\.07\.1'/);
 assert.match(firstPaint,/requestAnimationFrame[\s\S]*window\.__lyUITableErgonomics\?\.apply\?\.[\s\S]*window\.__lyTableViewV2\?\.apply\?\./,'first paint must settle both table owners before reveal');
 assert.match(firstPaint,/function flush[\s\S]*frame\(\(\)=>[\s\S]*targets\.forEach\(markReady\)[\s\S]*function schedule[\s\S]*frame\(\(\)=>flush/,'table reveal must wait for layout application and a stable animation frame');
@@ -96,9 +96,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.09\.02\.1'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.09\.08\.62'/,'current Vibe release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.09\.09\.66'/,'current Vibe release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.2/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-257/,'UI build 65 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-258/,'UI build 66 must force a fresh service-worker release');
 assert.match(index,/tuanpat0902-sys\.[^\n]+quan-ly-lat-yen-pwa-live\.n1\.tinhgon\.xyz/,'legacy GitHub Pages address must redirect to Vibe Host before loading Supabase');
 assert.match(sw,/location\.hostname==='tuanpat0902-sys\.github\.io'[\s\S]*Response\.redirect\(VIBE_URL,302\)/,'legacy service worker must redirect cached clients to Vibe Host');
 assert.match(sw,/async function navigationSource\(request\)\{try\{return await refreshNavigation\(request\);\}catch\(e\)\{return caches\.match\(INDEX_KEY\);\}\}/,'navigations must prefer the network release and use cached HTML only while offline');

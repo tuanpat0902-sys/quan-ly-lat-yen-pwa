@@ -62,6 +62,7 @@ assert.match(businessApi,/authenticatedVibeUser[\s\S]*client\.query\('begin'\)[\
 assert.match(businessApi,/let client[\s\S]*client=await acquireClient\(\)[\s\S]*client\?\.release\(\)/,'connection failures must not crash the Vibe process');
 assert.match(businessApi,/employeeMatch[\s\S]*request\.method==='DELETE'/,'employee deletes must be persisted on Vibe Host');
 assert.match(businessApi,/rebuildVibeIposInventory/,'recipe edits must reconcile historical iPOS inventory');
+assert.match(businessApi,/json\(response,200,result\);if\(reconcile\)queueMicrotask/,'recipe save response must not wait for the historical inventory rebuild');
 assert.match(staticServer,/handleBusinessMutationApi/,'the production server must expose Vibe business mutations');
 assert.match(employees,/danger sm" onclick="deleteEmployee\('\$\{e\.id\}'\)"/,'employee rows must expose an explicit delete action');
 assert.match(finance,/tổng giá trị thiếu hụt ước tính[\s\S]*không phải tồn kho ròng/,'negative-stock estimate must explain that it is not the net inventory value');
