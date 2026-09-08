@@ -505,14 +505,12 @@
   white-space:nowrap;
 }
 
-/* Desktop: luôn vừa chiều ngang phiếu */
 @media(min-width:901px){
   .import-receipt-modal{
     width:min(1180px, calc(100vw - 40px)) !important;
   }
 }
 
-/* Tablet: co cột nhưng vẫn không tạo thanh cuộn ngang */
 @media(min-width:701px) and (max-width:900px){
   .import-receipt-modal{
     width:calc(100vw - 20px) !important;
@@ -531,7 +529,6 @@
   }
 }
 
-/* Mobile: chuyển thành thẻ dọc, tuyệt đối không trượt ngang */
 @media(max-width:700px){
   .import-receipt-modal{
     width:calc(100vw - 12px) !important;
@@ -551,7 +548,6 @@
 
 
 
-/* Khung modal vừa giao diện thay vì kéo quá rộng */
 .import-receipt-modal{
   width:min(980px, calc(100vw - 48px)) !important;
   max-width:980px !important;
@@ -561,7 +557,6 @@
   box-sizing:border-box !important;
 }
 
-/* Chặn mọi phần tử con làm nở chiều ngang */
 .import-receipt-modal *,
 .import-receipt-modal *::before,
 .import-receipt-modal *::after{
@@ -574,7 +569,6 @@
   overflow-x:hidden !important;
 }
 
-/* Thu gọn phần đầu phiếu */
 .import-receipt-modal .form-grid{
   grid-template-columns:minmax(180px,.8fr) minmax(180px,.8fr) minmax(260px,1.4fr) !important;
   gap:10px !important;
@@ -585,7 +579,6 @@
   grid-column:auto !important;
 }
 
-/* Các cột mặt hàng co vừa 100% khung */
 .import-receipt-modal .import-receipt-columns,
 .import-receipt-modal .import-receipt-line{
   display:grid !important;
@@ -603,7 +596,6 @@
   align-items:center;
 }
 
-/* Inputs gọn hơn */
 .import-receipt-modal input,
 .import-receipt-modal select{
   width:100% !important;
@@ -650,7 +642,6 @@
   padding-top:10px !important;
 }
 
-/* Tablet: vẫn giữ toàn bộ cột trên màn hình */
 @media(min-width:701px) and (max-width:1000px){
   .import-receipt-modal{
     width:calc(100vw - 24px) !important;
@@ -678,7 +669,6 @@
   }
 }
 
-/* Điện thoại: dạng card, không bao giờ sinh scroll ngang */
 @media(max-width:700px){
   .import-receipt-modal{
     width:calc(100vw - 14px) !important;
@@ -710,7 +700,6 @@
   }
 }
 
-/* Modal container bên ngoài cũng không được tạo scrollbar ngang */
 #modal,
 #modalBox{
   overflow-x:hidden !important;
@@ -1079,7 +1068,6 @@
   white-space:nowrap;
 }
 
-/* Phiếu nhập kho: 7 cột khớp tuyệt đối */
 .inline-import-form .import-receipt-columns,
 .inline-import-form .import-receipt-line{
   display:grid !important;
@@ -1099,7 +1087,6 @@
 .inline-import-form .import-receipt-line > *{min-width:0}
 .inline-import-form .irLineTotal{text-align:right!important;white-space:nowrap}
 
-/* Công thức đồ uống: 5 cột */
 #inlineRecipeForm .recipe-lines-head,
 #inlineRecipeForm .recipe-line{
   display:grid !important;
@@ -1117,7 +1104,6 @@
   white-space:nowrap!important;
 }
 
-/* Công thức pha chế nguyên liệu/ dụng cụ: 5 cột */
 .prepared-recipe-head,
 #preparedRecipeLines .prepared-recipe-line{
   display:grid !important;
@@ -1146,7 +1132,6 @@
   white-space:nowrap;
 }
 
-/* Phiếu kiểm kê: 5 cột */
 .inline-import-form .stocktake-receipt-columns,
 .inline-import-form .stocktake-receipt-line{
   display:grid !important;
@@ -1169,7 +1154,6 @@
   justify-content:flex-start;
 }
 
-/* Thành phần trong bảng danh sách công thức */
 .recipe-component-name{
   display:inline-block;
   min-width:120px;
@@ -1186,7 +1170,6 @@
   min-width:55px;
 }
 
-/* Desktop/tablet: không cho CSS cũ ép các dòng về 2 cột */
 @media (min-width:701px){
   .inline-import-form .import-receipt-columns{display:grid!important}
   .inline-import-form .stocktake-receipt-columns{display:grid!important}
@@ -1194,7 +1177,6 @@
   .prepared-recipe-head{display:grid!important}
 }
 
-/* Mobile: chuyển mỗi dòng thành card có nhãn để không lệch cột */
 @media(max-width:700px){
   .inline-import-form .import-receipt-columns,
   .inline-import-form .stocktake-receipt-columns,
@@ -1297,7 +1279,6 @@
   padding:7px 11px !important;
 }
 
-/* Phiếu nhập: 7 cột cân đối hơn */
 #imports .inline-import-form .import-receipt-columns,
 #imports .inline-import-form .import-receipt-line{
   grid-template-columns:
@@ -1334,13 +1315,11 @@
   font-size:18px !important;
 }
 
-/* Phần đầu phiếu gọn hơn */
 #imports .inline-import-form .form-grid{
   grid-template-columns:minmax(180px,.75fr) minmax(180px,.75fr) minmax(260px,1.5fr) !important;
   gap:9px !important;
 }
 
-/* Báo cáo nhập kho thu gọn */
 #imports .import-report-filter{
   gap:8px !important;
 }
@@ -1363,7 +1342,6 @@
   word-break:break-word;
 }
 
-/* Bảng báo cáo/lịch sử: chữ nhỏ hơn và nhiều nội dung hơn */
 #imports table{
   font-size:12px !important;
 }
@@ -1375,7 +1353,6 @@
   padding:8px 7px !important;
 }
 
-/* Desktop nhỏ: tiếp tục giữ một hàng thay vì vỡ cột */
 @media (min-width:701px) and (max-width:1100px){
   #imports .inline-import-form .import-receipt-columns,
   #imports .inline-import-form .import-receipt-line{
@@ -1397,7 +1374,6 @@
   }
 }
 
-/* Mobile giữ dạng card */
 @media(max-width:700px){
   #imports{
     font-size:12px;
@@ -1414,7 +1390,6 @@
 html{font-size:13px!important}
 body{font-size:13px!important;line-height:1.35!important}
 
-/* Nội dung chung */
 main,.content,.panel,.card,.modal,.sidebar{font-size:12px!important}
 h1{font-size:21px!important;line-height:1.2!important}
 h2{font-size:19px!important;line-height:1.25!important}
@@ -1422,12 +1397,10 @@ h3{font-size:16px!important;line-height:1.25!important}
 h4{font-size:14px!important}
 p,.muted,.hint,.note{font-size:11.5px!important}
 
-/* Menu trái */
 .sidebar button,
 .sidebar .nav-item,
 nav button{font-size:12px!important;line-height:1.2!important}
 
-/* Form */
 label{font-size:10.5px!important}
 input,select,textarea,button{
   font-size:11.5px!important;
@@ -1441,7 +1414,6 @@ textarea{padding:7px 8px!important}
 button{padding:7px 10px!important}
 button.sm,.sm{font-size:10.5px!important;padding:5px 8px!important}
 
-/* Bảng */
 table{font-size:11.5px!important}
 th{
   font-size:10.5px!important;
@@ -1454,16 +1426,13 @@ td{
   line-height:1.25!important;
 }
 
-/* Card và khoảng cách */
 .card{padding:14px!important}
 .section-gap{margin-top:12px!important}
 .toolbar{gap:7px!important;margin-bottom:10px!important}
 .form-grid{gap:8px!important}
 
-/* Badge, trạng thái */
 .badge,.pill,.chip{font-size:9.5px!important;padding:3px 6px!important}
 
-/* Modal / form inline */
 .modal-head h3,
 .inline-recipe-head h3{font-size:17px!important}
 .recipe-section-title b{font-size:13px!important}
@@ -1474,20 +1443,16 @@ td{
 .stocktake-receipt-columns,
 .prepared-recipe-head{font-size:9.5px!important}
 
-/* Các số liệu dashboard/report */
 .metric .value,
 .report-summary-grid .metric .value{font-size:18px!important}
 .metric .muted,
 .report-summary-grid .metric .muted{font-size:10.5px!important}
 
-/* Header app */
 .brand-title,.app-title{font-size:18px!important}
 header{font-size:11.5px!important}
 
-/* Đơn vị riêng */
 .ingredient-unit-cell{font-size:11px!important;min-height:34px!important}
 
-/* Mobile nhỏ hơn thêm một mức */
 @media(max-width:700px){
   html,body{font-size:12px!important}
   h1{font-size:19px!important}
@@ -1513,28 +1478,24 @@ header{font-size:11.5px!important}
 }
 .action-btn:active{transform:translateY(0)}
 
-/* Thêm nguyên liệu/ dụng cụ có sẵn */
 .action-add-stock{
   background:#087f73!important;
   color:#fff!important;
   border-color:#087f73!important;
 }
 
-/* Thêm nguyên liệu/ dụng cụ pha chế */
 .action-add-prepared{
   background:#2563eb!important;
   color:#fff!important;
   border-color:#2563eb!important;
 }
 
-/* Xuất dữ liệu */
 .action-export{
   background:#64748b!important;
   color:#fff!important;
   border-color:#64748b!important;
 }
 
-/* Màu chức năng dùng chung */
 button.danger,.danger{
   background:#dc2626!important;
   color:#fff!important;
@@ -1574,7 +1535,6 @@ nav.sidebar button{
   letter-spacing:.05px;
 }
 
-/* Mục đang được chọn */
 .sidebar button.active,
 .sidebar .nav-item.active,
 .sidebar .nav-parent.active,
@@ -1587,7 +1547,6 @@ nav.sidebar button.active{
   box-shadow:0 2px 6px rgba(8,127,115,.20);
 }
 
-/* Mục con đang chọn */
 .sidebar .subnav button.active,
 .sidebar .submenu button.active,
 .sidebar .nav-child.active{
@@ -1597,21 +1556,18 @@ nav.sidebar button.active{
   font-weight:800 !important;
 }
 
-/* Hover để dễ nhận biết mục sắp chọn */
 .sidebar button:hover,
 .sidebar .nav-item:hover{
   background:#edf7f5;
   color:#076f66;
 }
 
-/* Giữ mục active nổi bật khi hover */
 .sidebar button.active:hover,
 .sidebar .nav-item.active:hover{
   background:#087f73 !important;
   color:#fff !important;
 }
 
-/* Tăng nhẹ khoảng bấm nhưng vẫn compact */
 .sidebar button,
 .sidebar .nav-item{
   min-height:38px;
@@ -1620,12 +1576,10 @@ nav.sidebar button.active{
 
 
 
-/* Toàn bộ menu trái */
 #nav{
   font-size:14px !important;
 }
 
-/* Tất cả nút menu */
 #nav > button,
 #nav .nav-group-toggle,
 #nav .nav-submenu > button{
@@ -1640,14 +1594,12 @@ nav.sidebar button.active{
   color:#0f172a !important;
 }
 
-/* Mục cấp 1 bình thường */
 #nav > button{
   background:#ffffff !important;
   border:1px solid #d7dee7 !important;
   margin-bottom:7px !important;
 }
 
-/* Nhóm Quản lý Nguyên liệu/ Dụng cụ */
 #nav .nav-group-toggle{
   background:#eef5f4 !important;
   border:1px solid #d3e2df !important;
@@ -1655,7 +1607,6 @@ nav.sidebar button.active{
   font-weight:800 !important;
 }
 
-/* Mục con */
 #nav .nav-submenu{
   padding-left:10px !important;
   border-left:2px solid #d9e7e5 !important;
@@ -1669,7 +1620,6 @@ nav.sidebar button.active{
   font-weight:700 !important;
 }
 
-/* ACTIVE: áp dụng trực tiếp cho mọi nút được JS gắn class active */
 #nav button.active{
   background:#087f73 !important;
   border-color:#087f73 !important;
@@ -1679,7 +1629,6 @@ nav.sidebar button.active{
   box-shadow:0 3px 8px rgba(8,127,115,.22) !important;
 }
 
-/* Active ở submenu cũng phải xanh đậm, không xanh nhạt */
 #nav .nav-submenu > button.active{
   background:#087f73 !important;
   color:#ffffff !important;
@@ -1687,26 +1636,22 @@ nav.sidebar button.active{
   font-weight:900 !important;
 }
 
-/* Hover */
 #nav button:hover:not(.active){
   background:#e8f5f2 !important;
   color:#066b62 !important;
   border-color:#a8d7d1 !important;
 }
 
-/* Không để rule cũ ghi đè màu chữ active */
 #nav button.active *,
 #nav .nav-submenu > button.active *{
   color:#ffffff !important;
 }
 
-/* Chevron giữ cùng màu */
 #nav .nav-group-toggle .nav-chevron{
   font-weight:900 !important;
   font-size:13px !important;
 }
 
-/* Menu trái rộng rãi hơn một chút nếu có container riêng */
 aside,
 .sidebar,
 .leftbar{
@@ -4816,21 +4761,10 @@ table.global-sticky-header-table th.auto-stt-head{
   }
 }
 
-/* ===== V125 CLEAN STICKY TABLE SYSTEM ===== */
-
-/*
-  Nguyên nhân gốc đã sửa:
-  1) Header được chuyển từ TBODY tự sinh của browser sang THEAD thật.
-  2) table không còn overflow:hidden (làm sticky bị cắt).
-  3) Không dùng overlay clone khi cuộn nội bộ bảng.
-*/
-
-/* TABLE KHÔNG ĐƯỢC TỰ CLIP STICKY HEADER */
 table{
   overflow:visible!important;
 }
 
-/* Wrapper mới là vùng chịu trách nhiệm clip/scroll/bo góc */
 .scroll{
   position:relative!important;
   overflow:auto!important;
@@ -4838,7 +4772,6 @@ table{
   border-radius:10px;
 }
 
-/* Header chuẩn sau khi JS normalize thành THEAD */
 .scroll > table > thead,
 .scroll table > thead{
   position:relative!important;
@@ -4859,18 +4792,15 @@ table.global-sticky-header-table > thead > tr > td{
   background-clip:padding-box!important;
 }
 
-/* STT header có màu hơi khác để dễ nhận biết */
 table.global-sticky-header-table > thead .auto-stt-head,
 table.global-sticky-header-table > thead .att-col-stt{
   background:#e2ebf3!important;
 }
 
-/* Không dùng overlay giả của V124 nữa */
 .table-scroll-sticky-overlay{
   display:none!important;
 }
 
-/* Thanh trạng thái tồn kho/tóm tắt: bám khi cuộn trang thật */
 .ingredient-stock-summary,
 .salary-report-summary,
 .employee-report-kpis,
@@ -4882,7 +4812,6 @@ table.global-sticky-header-table > thead .att-col-stt{
   background:#fff!important;
 }
 
-/* Nếu thanh tóm tắt đang sticky, tạo lớp nền rõ để không lẫn với nội dung bên dưới */
 .ingredient-stock-summary{
   padding:7px 8px!important;
   margin:0 0 8px!important;
@@ -4891,17 +4820,14 @@ table.global-sticky-header-table > thead .att-col-stt{
   box-shadow:0 2px 6px rgba(15,23,42,.05);
 }
 
-/* Fixed header khi cuộn cả trang */
 #pageStickyTableDock{
   z-index:9999!important;
 }
 
-/* Bảng chấm công giữ sticky cột trái, nhưng header dọc dùng THEAD chung */
 .attendance-table > thead > tr > th{
   top:var(--sticky-row-top,0px)!important;
 }
 
-/* Rule cũ nth-child không được làm mất sticky header */
 .attendance-table th.att-col-stt,
 .attendance-table th.att-col-date,
 .attendance-table th.att-col-status{
@@ -4909,28 +4835,23 @@ table.global-sticky-header-table > thead .att-col-stt{
   z-index:90!important;
 }
 
-/* Rõ viền phía dưới header để dễ theo dõi khi cuộn */
 table.global-sticky-header-table > thead{
   background:#eaf1f6!important;
 }
 
-/* Fix browser table painting */
 table.global-sticky-header-table{
   border-collapse:separate!important;
   border-spacing:0!important;
 }
 
-/* Khi modal có bảng, sticky chỉ trong modal scroll của nó */
 .modal-box .scroll table > thead > tr > th{
   z-index:120!important;
 }
 
-/* ===== V128 PERFORMANCE ===== */
 .panel:not(.active){
   display:none!important;
 }
 
-/* Reduce expensive paint effects on very long tables. */
 table tbody tr,
 table td,
 table th{
@@ -27300,6 +27221,20 @@ function toggleIngredientStockFilter(filter){
   );
 }
 
+function ingredientInventoryCategory(i){return i?.inventory_category==='tool'?'tool':'ingredient'}
+function ingredientInventoryCategoryLabel(i){return ingredientInventoryCategory(i)==='tool'?'Dụng cụ':'Nguyên liệu'}
+
+async function saveIngredientInventoryCategory(id,category){
+  const value=category==='tool'?'tool':'ingredient',item=(db.ingredients||[]).find(i=>i.id===id);
+  if(item){item.inventory_category=value;cacheSave?.();invalidateDerivedCaches?.();}
+  if(location.hostname.endsWith('.tinhgon.xyz')&&id){
+    const response=await fetch('/api/v1/ingredient-category',{method:'PATCH',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({ingredient_id:id,inventory_category:value})});
+    if(!response.ok)throw new Error('Không lưu được phân loại trên Vibe');
+    window.dispatchEvent(new CustomEvent('latyen:change-signal',{detail:{domain:'ingredients'}}));
+  }
+  renderIngredients?.();renderDashboard?.();if(document.getElementById('financeReportArea'))renderFinanceData?.();
+}
+
 function ingredientTable(rows,type){
   if(!rows.length)return '<div class="empty">Chưa có nguyên liệu/ dụng cụ</div>';
 
@@ -27367,6 +27302,7 @@ function ingredientTable(rows,type){
   }
 
   const summary=ingredientStockSummary(rows);
+  const categorySummary=rows.reduce((out,i)=>{const key=ingredientInventoryCategory(i);out[key].count++;out[key].value+=stock(i.id)*Number(i.cost||0);return out},{ingredient:{count:0,value:0},tool:{count:0,value:0}});
   const activeFilter=getIngredientStockFilter();
 
   const filteredRows=
@@ -27433,6 +27369,8 @@ function ingredientTable(rows,type){
 
     </div>
 
+    <div class="ingredient-category-summary"><span><b>Nguyên liệu:</b> ${categorySummary.ingredient.count} mặt hàng • ${money(categorySummary.ingredient.value)}</span><span><b>Dụng cụ:</b> ${categorySummary.tool.count} mặt hàng • ${money(categorySummary.tool.value)}</span></div>
+
     ${activeFilter!=='all'?`
       <div class="ingredient-filter-active-note">
         <span>
@@ -27453,6 +27391,7 @@ function ingredientTable(rows,type){
         <tr>
           <th data-ly-ingredient-column="stt">STT</th>
           <th data-ly-ingredient-column="name">Tên</th>
+          <th data-ly-ingredient-column="category">Phân loại</th>
           <th data-ly-ingredient-column="unit">Đơn vị</th>
           <th data-ly-purchase-column="1" data-ly-ingredient-column="purchase">Đơn vị mua/đóng gói</th>
           <th class="right" data-ly-ingredient-column="stock">Tồn</th>
@@ -27478,6 +27417,7 @@ function ingredientTable(rows,type){
                   :''}
               </td>
 
+              <td data-ly-ingredient-column="category"><select aria-label="Phân loại ${esc(i.name)}" onchange="saveIngredientInventoryCategory('${i.id}',this.value).catch(e=>alert(e.message))"><option value="ingredient" ${ingredientInventoryCategory(i)==='ingredient'?'selected':''}>Nguyên liệu</option><option value="tool" ${ingredientInventoryCategory(i)==='tool'?'selected':''}>Dụng cụ</option></select></td>
               <td data-ly-ingredient-column="unit">${esc(i.unit)}</td>
               <td data-ly-purchase-cell="1" data-ly-ingredient-column="purchase">${esc(window.__lyUnitConversions?.packagingText?.(i)||i.purchase_unit||i.unit||'—')}</td>
               <td class="right stock-qty" data-ly-ingredient-column="stock"><b>${num(stock(i.id))}</b></td>
@@ -27500,7 +27440,7 @@ function ingredientTable(rows,type){
           }).join('')
           :`
             <tr>
-              <td colspan="10">
+              <td colspan="11">
                 <div class="ingredient-filter-empty">
                   Không có mặt hàng thuộc trạng thái <b>${esc(filterLabel)}</b>.
                   <button
@@ -28005,7 +27945,7 @@ function openIngredientInline(id='',forcedType=''){
 
   let i=db.ingredients.find(x=>x.id===id)||{
     name:'',unit:'g',minimum_stock:0,cost:0,
-    ingredient_type:forcedType||'purchased',batch_output_qty:1
+    ingredient_type:forcedType||'purchased',inventory_category:'ingredient',batch_output_qty:1
   };
   const type=i.ingredient_type||forcedType||'purchased';
   const items=id?preparedRecipeFor(id):[];
@@ -28029,6 +27969,7 @@ function openIngredientInline(id='',forcedType=''){
 
       <div class="ingredient-basic-grid">
         <div><label>Tên nguyên liệu/ dụng cụ</label><input id="igName" value="${esc(i.name)}" placeholder="Tên nguyên liệu/ dụng cụ"></div>
+        ${type==='purchased'?`<div><label>Phân loại tồn kho</label><select id="igInventoryCategory"><option value="ingredient" ${ingredientInventoryCategory(i)==='ingredient'?'selected':''}>Nguyên liệu</option><option value="tool" ${ingredientInventoryCategory(i)==='tool'?'selected':''}>Dụng cụ</option></select></div>`:''}
         <div>
           <label>Đơn vị tính</label>
           <select id="igUnit" onchange="toggleOtherIngredientUnit();updateIngredientConversionHint()">
@@ -28167,6 +28108,7 @@ async function saveIngredient(id){
   const unitEl=document.getElementById('igUnit');
   const unitOtherEl=document.getElementById('igUnitOther');
   const typeEl=document.getElementById('igType');
+  const categoryEl=document.getElementById('igInventoryCategory');
   const minEl=document.getElementById('igMin');
   const costEl=document.getElementById('igCost');
   const batchEl=document.getElementById('igBatchOutput');
@@ -28191,6 +28133,7 @@ async function saveIngredient(id){
     unit,
     minimum_stock:type==='prepared'?0:Number(minEl?.value||0),
     ingredient_type:type,
+    inventory_category:type==='prepared'?'ingredient':(categoryEl?.value==='tool'?'tool':'ingredient'),
     batch_output_qty:type==='prepared'?Number(batchEl?.value||1):1,
     active:true,
     updated_at:new Date().toISOString()
@@ -38423,6 +38366,7 @@ function financeInventorySnapshot(endDate){
   let netValue=0;
   let negativeItems=0;
   let positiveItems=0;
+  const categoryValues={ingredient:0,tool:0};
 
   const items=rows.map(i=>{
     const quantity=
@@ -38444,6 +38388,7 @@ function financeInventorySnapshot(endDate){
     }
 
     netValue+=value;
+    categoryValues[ingredientInventoryCategory(i)]+=value;
 
     return {
       id:i.id,
@@ -38451,7 +38396,8 @@ function financeInventorySnapshot(endDate){
       unit:i.unit,
       quantity,
       unitCost,
-      value
+      value,
+      inventoryCategory:ingredientInventoryCategory(i)
     };
   });
 
@@ -38462,7 +38408,8 @@ function financeInventorySnapshot(endDate){
     negativeItems,
     positiveValue,
     deficitValue,
-    netValue
+    netValue,
+    categoryValues
   };
 
   inventorySnapshotCache.set(
@@ -54302,7 +54249,7 @@ function lyFreshProjectCoreState(){
 saveIngredient=async function(id){
   if(!lyFreshRequireOnline())return;
   const nameEl=$('igName'),unitEl=$('igUnit'),unitOtherEl=$('igUnitOther'),
-        typeEl=$('igType'),minEl=$('igMin'),costEl=$('igCost'),
+        typeEl=$('igType'),categoryEl=$('igInventoryCategory'),minEl=$('igMin'),costEl=$('igCost'),
         batchEl=$('igBatchOutput'),btn=$('igSaveBtn'),status=$('igSaveStatus');
   if(!nameEl||!unitEl||!typeEl)return alert('Không tìm thấy biểu mẫu nguyên liệu/ dụng cụ.');
   const unit=unitEl.value==='khác'?(unitOtherEl?.value||'').trim():unitEl.value;
@@ -54323,6 +54270,7 @@ saveIngredient=async function(id){
   const payload={
     id:id||null,warehouse_id:currentWarehouseId,code:null,name:nameEl.value.trim(),unit,
     ingredient_type:type,batch_output_qty:batch,
+    inventory_category:type==='prepared'?'ingredient':(categoryEl?.value==='tool'?'tool':'ingredient'),
     minimum_stock:type==='prepared'?0:Number(minEl?.value||0),
     cost:calculatedCost,active:true
   };
@@ -54336,6 +54284,7 @@ saveIngredient=async function(id){
     );
     const {data,error}=rpcResult;
     if(error)throw error;
+    if(location.hostname.endsWith('.tinhgon.xyz'))await saveIngredientInventoryCategory(data,payload.inventory_category);
     const {data:verify,error:ve}=await sb.from('ly_ingredients').select('id').eq('id',data).eq('org_id',window.__lyFreshOrgId).single();
     if(ve||!verify)throw ve||new Error('Cloud chưa xác nhận nguyên liệu.');
     const {data:membership,error:membershipError}=await sb.from('ly_inventory')

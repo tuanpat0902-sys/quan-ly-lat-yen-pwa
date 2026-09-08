@@ -77,11 +77,11 @@ assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded
 assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
-assert.match(ingredientTable,/VERSION='2026\.08\.30\.1'/,'fixed-reference ingredient table layout version missing');
-assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1040px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
+assert.match(ingredientTable,/VERSION='2026\.09\.08\.1'/,'fixed-reference ingredient table layout version missing');
+assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1120px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
 assert.match(ingredientTable,/scrollbar-gutter:stable!important/,'ingredient stock table must reserve scrollbar space without resizing columns');
-assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:17%!important/,'purchase packaging column must have a stable width contract');
-assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:13%!important/,'ingredient action column must remain visible');
+assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:15%!important/,'purchase packaging column must have a stable width contract');
+assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:12%!important/,'ingredient action column must remain visible');
 assert.match(ingredientTable,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)/,'purchase column must settle before supplier removal');
 assert.match(ingredientTable,/markStableColumns\(table\)/,'column width metadata must be restored after every table render');
 assert.match(ingredientTable,/@media\(max-width:0px\)/,'ingredient tables must not replace the desktop reference grid with phone cards');
@@ -96,9 +96,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.09\.02\.1'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.09\.08\.58'/,'current Vibe release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.09\.08\.59'/,'current Vibe release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.2/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-250/,'UI build 58 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-251/,'UI build 59 must force a fresh service-worker release');
 assert.match(index,/tuanpat0902-sys\.[^\n]+quan-ly-lat-yen-pwa-live\.n1\.tinhgon\.xyz/,'legacy GitHub Pages address must redirect to Vibe Host before loading Supabase');
 assert.match(sw,/location\.hostname==='tuanpat0902-sys\.github\.io'[\s\S]*Response\.redirect\(VIBE_URL,302\)/,'legacy service worker must redirect cached clients to Vibe Host');
 assert.match(sw,/async function navigationSource\(request\)\{try\{return await refreshNavigation\(request\);\}catch\(e\)\{return caches\.match\(INDEX_KEY\);\}\}/,'navigations must prefer the network release and use cached HTML only while offline');

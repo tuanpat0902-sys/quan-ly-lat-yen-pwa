@@ -17,6 +17,7 @@ const authCache = new Map();
 const snapshotCache = new Map();
 const pendingSnapshots = new Map();
 const requestWindows = new Map();
+let ingredientCategoryReady;
 
 function quoteIdentifier(value) {
   return `"${String(value).replaceAll('"', '""')}"`;
@@ -91,6 +92,8 @@ async function isMember(userId, orgId) {
 
 async function buildSnapshot(orgId) {
   const pool = getVibePool();
+  ingredientCategoryReady||=pool.query(`alter table ${quoteIdentifier(schema)}.ly_ingredients add column if not exists inventory_category text not null default 'ingredient'`).catch(error=>{ingredientCategoryReady=null;throw error;});
+  await ingredientCategoryReady;
   const tableResults = await Promise.all(tables.map((table) => pool.query(
     `select * from ${quoteIdentifier(schema)}.${quoteIdentifier(table)} where org_id = $1::uuid`,
     [orgId],

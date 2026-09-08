@@ -4,7 +4,7 @@
   'use strict';
   if(window.__lyFinanceUIV1)return;
   window.__lyFinanceUIV1=true;
-  const VERSION='2026.08.25.1';
+  const VERSION='2026.09.08.1';
 
   function financeViewState(){
     const now=new Date();
@@ -217,6 +217,9 @@
   
     const closingInventoryValue=
       inventoryPeriod.closing.netValue;
+
+    const closingIngredientInventoryValue=Number(inventoryPeriod.closing.categoryValues?.ingredient||0);
+    const closingToolInventoryValue=Number(inventoryPeriod.closing.categoryValues?.tool||0);
   
     const inventoryDeficitValue=
       inventoryPeriod.closing.deficitValue;
@@ -348,9 +351,7 @@
             ${money(closingInventoryValue)}
           </strong>
           <small>
-            ${inventoryNegativeItems
-              ?`${inventoryNegativeItems} mặt hàng âm kho`
-              :'Không có mặt hàng âm kho'}
+            Nguyên liệu ${money(closingIngredientInventoryValue)} • Dụng cụ ${money(closingToolInventoryValue)}
           </small>
         </div>
       </div>
@@ -501,6 +502,8 @@
         </div>
   
         <div class="finance-stock-subfacts">
+          <span>Tồn nguyên liệu cuối kỳ: <b>${money(closingIngredientInventoryValue)}</b></span>
+          <span>Tồn dụng cụ cuối kỳ: <b>${money(closingToolInventoryValue)}</b></span>
           <span>
             Xuất luân chuyển:
             <b>${money(exportInventoryOnlyValue)}</b>
