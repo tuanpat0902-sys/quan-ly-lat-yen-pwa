@@ -7,6 +7,7 @@ import { handleSnapshotApi } from './vibehost-snapshot-api.mjs';
 import { handleIposBootstrap } from './vibehost-ipos-bootstrap.mjs';
 import { handleAuthApi } from './vibehost-auth-api.mjs';
 import { handleIngredientCategoryApi } from './vibehost-ingredient-category-api.mjs';
+import { handleBusinessMutationApi } from './vibehost-business-mutation-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
@@ -67,6 +68,7 @@ const server = createServer(async (request, response) => {
   if (await handleIposBootstrap(request, response, pathname)) return;
   if (await handleAuthApi(request, response, pathname)) return;
   if (await handleIngredientCategoryApi(request, response, pathname)) return;
+  if (await handleBusinessMutationApi(request, response, pathname)) return;
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.setHeader('Allow', 'GET, HEAD');
     return sendText(response, 405, 'Method Not Allowed');

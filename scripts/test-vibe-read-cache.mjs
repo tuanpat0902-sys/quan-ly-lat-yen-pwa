@@ -29,7 +29,7 @@ assert.match(api,/ly_activity_events/,'notification history must be read from Vi
 assert.match(start,/startSupabaseMirror/,'production startup must enable the mirror worker');
 assert.match(start,/startVibeIposWorker/,'production startup must support direct iPOS-to-Vibe synchronization');
 assert.match(ipos,/VIBE_IPOS_BACKFILL_FROM\|\|'2026-08-25'/,'iPOS backfill must cover the requested history');
-assert.match(ipos,/rebuildIposInventory/,'iPOS synchronization must reconcile formula inventory idempotently');
+assert.match(ipos,/rebuildVibeIposInventory/,'iPOS synchronization must reconcile formula inventory idempotently');
 assert.match(ipos,/syncSaleActivityEvents/,'direct iPOS synchronization must populate Vibe notifications');
 assert.match(ipos,/not exists\([\s\S]*entity_table='ly_sales'/,'iPOS notification writes must remain idempotent');
 assert.doesNotMatch(ipos,/SUPABASE_/,'direct iPOS worker must not depend on Supabase');

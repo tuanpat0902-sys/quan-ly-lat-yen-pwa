@@ -12,7 +12,7 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.29',test:()=>window.__lyAppVersion?.version==='3.0.29'},
+    appVersion:{src:'./ly-app-version.js?v=3.0.30',test:()=>window.__lyAppVersion?.version==='3.0.30'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
@@ -25,6 +25,7 @@
     chatUnitSync:{src:'./ly-chat-unit-sync.js?v=20260826.8',test:()=>window.__lyChatUnitSync?.version==='2026.08.26.8'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260907.2',test:()=>window.__lyVibeReadCache?.version==='2026.09.07.2'},
+    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260908.1',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.08.1'},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260824.4',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.08.24.4'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
     domShim:{src:'./ly-legacy-dom-shim.js?v=20260824.4',test:()=>window.__lyLegacyDomShim?.version==='2026.08.24.4'},
@@ -63,8 +64,8 @@
     branding:{src:'./ly-branding-sync.js?v=20260901.1',test:()=>window.__lyBrandingSync?.version==='2026.09.01.1'},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
     activityHistory:{src:'./ly-activity-history.js?v=20260831.1',test:()=>window.__lyActivityHistoryModule?.version==='2026.08.31.1'},
-    employeesUI:{src:'./ly-employees.js?v=20260830.2',test:()=>window.__lyEmployeesModule?.version==='2026.08.30.2'},
-    financeUI:{src:'./ly-finance.js?v=20260908.3',test:()=>window.__lyFinanceModule?.version==='2026.09.08.3'},
+    employeesUI:{src:'./ly-employees.js?v=20260908.1',test:()=>window.__lyEmployeesModule?.version==='2026.09.08.1'},
+    financeUI:{src:'./ly-finance.js?v=20260908.4',test:()=>window.__lyFinanceModule?.version==='2026.09.08.4'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
     cashflowUI:{src:'./ly-cashflow.js?v=20260825.2',test:()=>window.__lyCashflowModule?.version==='2026.08.25.2'}
   };
@@ -118,6 +119,7 @@
     try{await window.__lySupabaseReady;}catch(e){}
     await waitForLegacyShell();
     await load('vibeReadCache');
+    await load('vibeBusinessWrites');
     await Promise.all([load('hydration'),load('shadow'),load('domShim'),load('stateShim'),load('helperShim'),load('modelShim'),load('listShim'),load('formDraftGuard')]);
     await load('freshCoreV3Runtime');
     try{await window.__lyFreshCoreV3Runtime?.boot?.();}catch(e){}

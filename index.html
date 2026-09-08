@@ -54260,7 +54260,8 @@ saveIngredient=async function(id){
   if(!lyFreshRequireOnline())return;
   const nameEl=$('igName'),unitEl=$('igUnit'),unitOtherEl=$('igUnitOther'),
         typeEl=$('igType'),categoryEl=$('igInventoryCategory'),minEl=$('igMin'),costEl=$('igCost'),
-        batchEl=$('igBatchOutput'),btn=$('igSaveBtn'),status=$('igSaveStatus');
+        batchEl=$('igBatchOutput'),
+        btn=$('igSaveBtn'),status=$('igSaveStatus');
   if(!nameEl||!unitEl||!typeEl)return alert('Không tìm thấy biểu mẫu nguyên liệu/ dụng cụ.');
   const unit=unitEl.value==='khác'?(unitOtherEl?.value||'').trim():unitEl.value;
   const type=typeEl.value||'purchased';

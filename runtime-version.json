@@ -1,8 +1,8 @@
 {
-  "appVersion": "3.0.29",
-  "revision": "fresh-core-v3-shell-authoritative-v30",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-253",
-  "uiBuild": "UI-2026.09.08.61",
+  "appVersion": "3.0.30",
+  "revision": "fresh-core-v3-shell-authoritative-v31",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-254",
+  "uiBuild": "UI-2026.09.08.62",
   "vibeReadCache": "local-vibe-authenticated-gzip-snapshot-and-direct-ipos-sync",
   "uiUxRefresh": "deep-visual-hierarchy-forms-tables-modals-responsive-no-menu-change",
   "tableUx": "all-data-tables-fixed-desktop-reference-width-contained-horizontal-scroll-below-desktop",

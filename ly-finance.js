@@ -4,7 +4,7 @@
   'use strict';
   if(window.__lyFinanceUIV1)return;
   window.__lyFinanceUIV1=true;
-  const VERSION='2026.09.08.3';
+  const VERSION='2026.09.08.4';
 
   function installCategoryStyle(){
     if(document.getElementById('lyFinanceCategoryStyle'))return;
@@ -549,8 +549,9 @@
         ${inventoryNegativeItems?`
           <div class="finance-inventory-warning">
             ⚠ Có <b>${inventoryNegativeItems}</b> mặt hàng âm kho,
-            giá trị âm ước tính
+            tổng giá trị thiếu hụt ước tính
             <b>${money(inventoryDeficitValue)}</b>.
+            Đây là tổng riêng các dòng âm theo giá vốn hiện tại, không phải tồn kho ròng sau khi bù các dòng dương.
           </div>
         `:''}
   
