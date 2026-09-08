@@ -92,16 +92,23 @@ async function isMember(userId, orgId) {
 
 async function buildSnapshot(orgId) {
   const pool = getVibePool();
-  ingredientCategoryReady||=pool.query(`alter table ${quoteIdentifier(schema)}.ly_ingredients add column if not exists inventory_category text not null default 'ingredient'`).catch(error=>{ingredientCategoryReady=null;throw error;});
-  await ingredientCategoryReady;
-  const tableResults = await Promise.all(tables.map((table) => pool.query(
-    `select * from ${quoteIdentifier(schema)}.${quoteIdentifier(table)} where org_id = $1::uuid`,
-    [orgId],
-  )));
-  const signals = await pool.query(
-    `select domain, revision, changed_at from ${quoteIdentifier(schema)}.ly_change_signals where org_id = $1::uuid order by domain`,
-    [orgId],
-  );
+  const client = await pool.connect();
+  let tableResults, signals;
+  try {
+    ingredientCategoryReady||=client.query(`alter table ${quoteIdentifier(schema)}.ly_ingredients add column if not exists inventory_category text not null default 'ingredient'`).catch(error=>{ingredientCategoryReady=null;throw error;});
+    await ingredientCategoryReady;
+    tableResults=[];
+    for(const table of tables)tableResults.push(await client.query(
+      `select * from ${quoteIdentifier(schema)}.${quoteIdentifier(table)} where org_id = $1::uuid`,
+      [orgId],
+    ));
+    signals = await client.query(
+      `select domain, revision, changed_at from ${quoteIdentifier(schema)}.ly_change_signals where org_id = $1::uuid order by domain`,
+      [orgId],
+    );
+  } finally {
+    client.release();
+  }
   const data = Object.fromEntries(tables.map((table, index) => [table, tableResults[index].rows]));
   const revisions = Object.fromEntries(signals.rows.map((row) => [row.domain, Number(row.revision)]));
   const payload = {

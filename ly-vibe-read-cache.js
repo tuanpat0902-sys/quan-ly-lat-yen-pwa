@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.07.2';
+  const VERSION='2026.09.08.3';
   const TABLES=new Set([
     'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
     'ly_products','ly_recipe_items','ly_inventory','ly_import_receipts',
@@ -33,9 +33,7 @@
     if(state.snapshot?.orgId===orgId&&Date.now()-state.lastSnapshotAt<15_000)return state.snapshot;
     if(state.pending)return state.pending;
     state.pending=(async()=>{
-      const response=await fetch(`/api/v1/snapshot?org_id=${encodeURIComponent(orgId)}`,{
-        cache:'no-store',credentials:'same-origin'
-      });
+      let response;for(let attempt=0;attempt<3;attempt++){response=await fetch(`/api/v1/snapshot?org_id=${encodeURIComponent(orgId)}`,{cache:'no-store',credentials:'same-origin'});if(response.ok||![502,503,504].includes(response.status))break;await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));}
       if(!response.ok)throw new Error(`snapshot-${response.status}`);
       const payload=await response.json();
       if(payload?.orgId!==orgId||!payload?.tables)throw new Error('invalid-snapshot');
@@ -59,7 +57,7 @@
       try{return ordered((await snapshot(orgId)).tables[table],orderColumn,ascending);}
       catch(error){
         state.lastError=String(error?.message||error).slice(0,80);
-        if(VIBE_ONLY){state.source='vibe';throw error;}
+        if(VIBE_ONLY){state.source='vibe';if(state.snapshot)return ordered(state.snapshot.tables?.[table],orderColumn,ascending);throw error;}
         state.source='supabase';
         state.bypassUntil=Date.now()+30_000;
         return original(table,orderColumn,ascending);
@@ -71,7 +69,6 @@
     return true;
   }
   window.addEventListener('latyen:change-signal',()=>{
-    state.snapshot=null;
     state.lastSnapshotAt=0;
     state.bypassUntil=VIBE_ONLY?0:Date.now()+45_000;
   });
