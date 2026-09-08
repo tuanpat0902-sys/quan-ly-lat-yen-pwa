@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.32",
-  "revision": "fresh-core-v3-shell-authoritative-v33",
+  "appVersion": "3.0.33",
+  "revision": "fresh-core-v3-shell-authoritative-v34",
   "loaderAssetVersion": "20260907.1",
   "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.09.07.1",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-256",
-  "redeploy": "2026-09-08-vibe-pool-pressure-build-64"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-257",
+  "redeploy": "2026-09-08-vibe-save-single-flight-build-65"
 }

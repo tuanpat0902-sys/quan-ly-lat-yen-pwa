@@ -13,10 +13,10 @@ function connectionConfig(connectionString) {
     user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
     database: decodeURIComponent(url.pathname.replace(/^\//, '')),
-    connectionTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 15_000,
     idleTimeoutMillis: 30_000,
     keepAlive: true,
-    max: 5,
+    max: 10,
     ssl: isInternal ? false : { rejectUnauthorized: false },
   };
 }
