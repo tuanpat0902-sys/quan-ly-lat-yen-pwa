@@ -4,11 +4,11 @@
   'use strict';
   if(window.__lyFinanceUIV1)return;
   window.__lyFinanceUIV1=true;
-  const VERSION='2026.09.08.2';
+  const VERSION='2026.09.08.3';
 
   function installCategoryStyle(){
     if(document.getElementById('lyFinanceCategoryStyle'))return;
-    const style=document.createElement('style');style.id='lyFinanceCategoryStyle';style.textContent=`.finance-inventory-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}.finance-inventory-category-card{padding:11px 13px;border:1px solid #99f6e4;border-left:4px solid #0f766e;border-radius:9px;background:#f0fdfa}.finance-inventory-category-card.tool{border-color:#bfdbfe;border-left-color:#2563eb;background:#eff6ff}.finance-inventory-category-card span{display:block;margin-bottom:4px;color:#475569;font-size:10.5px;font-weight:700}.finance-inventory-category-card b{display:block;color:#0f766e;font-size:15px}.finance-inventory-category-card.tool b{color:#1d4ed8}@media(max-width:560px){.finance-inventory-category-grid{grid-template-columns:1fr}}`;document.head.appendChild(style);
+    const style=document.createElement('style');style.id='lyFinanceCategoryStyle';style.textContent=`.finance-stock-flow .stock-flow-box,.finance-inventory-category-card{box-sizing:border-box;min-height:64px;display:flex;flex-direction:column;justify-content:center;padding:11px 13px}.finance-stock-flow .stock-flow-box span,.finance-inventory-category-card span{display:block;margin-bottom:5px;color:#475569;font-size:11px;font-weight:600;line-height:1.25}.finance-stock-flow .stock-flow-box b,.finance-inventory-category-card b{display:block;font-size:14px;line-height:1.25}.finance-inventory-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}.finance-inventory-category-card{border:1px solid #99f6e4;border-left:4px solid #0f766e;border-radius:9px;background:#f0fdfa}.finance-inventory-category-card.tool{border-color:#bfdbfe;border-left-color:#2563eb;background:#eff6ff}.finance-inventory-category-card b{color:#0f766e}.finance-inventory-category-card.tool b{color:#1d4ed8}.finance-inventory-category-card b.neg{color:#dc2626}.finance-inventory-reconciliation{margin-top:8px;padding:7px 10px;border-radius:8px;background:#f8fafc;color:#475569;font-size:10.5px;font-weight:600}.finance-inventory-reconciliation.ok{color:#047857}.finance-inventory-reconciliation.error{background:#fef2f2;color:#b91c1c}@media(max-width:560px){.finance-inventory-category-grid{grid-template-columns:1fr}}`;document.head.appendChild(style);
   }
 
   function financeViewState(){
@@ -226,6 +226,7 @@
 
     const closingIngredientInventoryValue=Number(inventoryPeriod.closing.categoryValues?.ingredient||0);
     const closingToolInventoryValue=Number(inventoryPeriod.closing.categoryValues?.tool||0);
+    const categoryInventoryDifference=closingInventoryValue-closingIngredientInventoryValue-closingToolInventoryValue;
   
     const inventoryDeficitValue=
       inventoryPeriod.closing.deficitValue;
@@ -510,12 +511,18 @@
         <div class="finance-inventory-category-grid" aria-label="Tồn kho theo phân loại">
           <div class="finance-inventory-category-card ingredient">
             <span>Tồn kho nguyên liệu</span>
-            <b>${money(closingIngredientInventoryValue)}</b>
+            <b class="${closingIngredientInventoryValue<0?'neg':''}">${money(closingIngredientInventoryValue)}</b>
           </div>
           <div class="finance-inventory-category-card tool">
             <span>Tồn kho dụng cụ</span>
-            <b>${money(closingToolInventoryValue)}</b>
+            <b class="${closingToolInventoryValue<0?'neg':''}">${money(closingToolInventoryValue)}</b>
           </div>
+        </div>
+
+        <div class="finance-inventory-reconciliation ${Math.abs(categoryInventoryDifference)<0.5?'ok':'error'}">
+          ${Math.abs(categoryInventoryDifference)<0.5
+            ?`✓ Khớp số liệu: Nguyên liệu + Dụng cụ = ${money(closingInventoryValue)}`
+            :`⚠ Lệch đối chiếu tồn kho: ${money(categoryInventoryDifference)}`}
         </div>
   
         <div class="finance-stock-subfacts">

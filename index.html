@@ -27427,7 +27427,7 @@ function ingredientTable(rows,type){
                   :''}
               </td>
 
-              <td data-ly-ingredient-column="category"><select aria-label="Phân loại ${esc(i.name)}" onchange="saveIngredientInventoryCategory('${i.id}',this.value,this).catch(e=>alert(e.message))"><option value="ingredient" ${ingredientInventoryCategory(i)==='ingredient'?'selected':''}>Nguyên liệu</option><option value="tool" ${ingredientInventoryCategory(i)==='tool'?'selected':''}>Dụng cụ</option></select></td>
+              <td data-ly-ingredient-column="category"><span class="badge ${ingredientInventoryCategory(i)==='tool'?'info':''}">${ingredientInventoryCategoryLabel(i)}</span></td>
               <td data-ly-ingredient-column="unit">${esc(i.unit)}</td>
               <td data-ly-purchase-cell="1" data-ly-ingredient-column="purchase">${esc(window.__lyUnitConversions?.packagingText?.(i)||i.purchase_unit||i.unit||'—')}</td>
               <td class="right stock-qty" data-ly-ingredient-column="stock"><b>${num(stock(i.id))}</b></td>
