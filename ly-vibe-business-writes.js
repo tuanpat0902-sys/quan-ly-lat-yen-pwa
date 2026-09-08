@@ -1,14 +1,21 @@
 (()=>{
   'use strict';
   if(window.__lyVibeBusinessWrites)return;
-  const VERSION='2026.09.08.1';
+  const VERSION='2026.09.08.2';
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
   async function post(path,payload){const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
+  async function request(path,options={}){const response=await fetch(path,{credentials:'same-origin',...options}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   function settle(){invalidateDataIndexes?.();invalidateDerivedCaches?.();cacheSave?.();}
+  const employeeKey=row=>String(row?.code||'').trim().toLocaleLowerCase('vi');
+  function dedupeEmployees(rows){const kept=new Map();for(const row of rows||[]){const key=employeeKey(row)||String(row?.id||'');const previous=kept.get(key);if(!previous||String(row.updated_at||row.created_at||'')>=String(previous.updated_at||previous.created_at||'')){if(previous?.id&&previous.id!==row.id)markEmployeeDeleted?.(previous.id);kept.set(key,row);}else if(row?.id)markEmployeeDeleted?.(row.id);}return [...kept.values()];}
+  function fromVibeEmployee(row){return {...row,id:String(row.legacy_id||row.id),vibe_id:row.id,warehouse_id:row.warehouse_id};}
+  async function syncEmployees(){if(!usesVibe()||typeof currentWarehouseId==='undefined'||!currentWarehouseId)return;const local=dedupeEmployees(window.loadEmployees?.()||[]);for(const employee of local){const saved=await post('/api/v1/business/employees',{employee:{...employee,legacy_id:employee.id,warehouse_id:currentWarehouseId}});employee.vibe_id=saved.id;}const cloud=await request(`/api/v1/business/employees?warehouse_id=${encodeURIComponent(currentWarehouseId)}`),merged=dedupeEmployees((cloud.rows||[]).map(fromVibeEmployee));saveEmployees?.(merged);renderEmployees?.();}
 
   function install(){
     if(typeof window.saveIngredient!=='function'||typeof window.saveRecipe!=='function')return false;
-    const legacyIngredient=window.saveIngredient,legacyRecipe=window.saveRecipe;
+    const legacyIngredient=window.saveIngredient,legacyRecipe=window.saveRecipe,legacyEmployee=window.saveEmployee,legacyDeleteEmployee=window.deleteEmployee,legacyLoadEmployees=window.loadEmployees;
+    if(typeof legacyEmployee!=='function'||typeof legacyDeleteEmployee!=='function'||typeof legacyLoadEmployees!=='function')return false;
+    window.loadEmployees=function(){return dedupeEmployees(legacyLoadEmployees());};
     window.saveIngredient=async function(id){
       if(!usesVibe())return legacyIngredient(id);
       const nameEl=$('igName'),unitEl=$('igUnit'),otherEl=$('igUnitOther'),typeEl=$('igType'),categoryEl=$('igInventoryCategory'),minEl=$('igMin'),costEl=$('igCost'),batchEl=$('igBatchOutput'),purchaseEl=$('igPurchaseUnit'),ratioEl=$('igConversionRatio'),btn=$('igSaveBtn'),status=$('igSaveStatus');
@@ -23,8 +30,10 @@
       const nameEl=$('rpName'),priceEl=$('rpPrice'),skuEl=$('rpSku'),unitEl=$('rpUnit');if(!nameEl||!priceEl||!skuEl)return alert('Không tìm thấy biểu mẫu công thức.');const lines=[...document.querySelectorAll('#recipeLines .recipe-line')].map(row=>({ingredient_id:row.querySelector('.rlIng')?.value||'',quantity:Number(row.querySelector('.rlQty')?.value||0)})).filter(row=>row.ingredient_id&&row.quantity>0);if(!nameEl.value.trim()||!lines.length)return alert('Nhập tên món và ít nhất 1 nguyên liệu.');
       try{const product={id:id||null,warehouse_id:currentWarehouseId,name:nameEl.value.trim(),sku:skuEl.value.trim()||null,unit:(unitEl?.value||'ly').trim()||'ly',selling_price:Number(priceEl.value||0),active:true},saved=await post('/api/v1/business/product',{product,recipe_items:lines}),rowIndex=(db.products||[]).findIndex(row=>row.id===saved.id);if(rowIndex>=0)db.products[rowIndex]={...db.products[rowIndex],...saved.row};else db.products.push(saved.row);db.recipeItems=(db.recipeItems||[]).filter(row=>row.product_id!==saved.id);db.recipeItems.push(...(saved.recipe_items||[]));saveProductUnit?.(saved.id,saved.row?.unit||product.unit);assignProductToWarehouse?.(saved.id,currentWarehouseId);settle();toggleRecipeForm?.(false);renderRecipes?.();renderSales?.();renderDashboard?.();toastMsg('Đã lưu món và công thức trên Vibe Host');}catch(error){alert('Lỗi công thức: '+(error?.message||error));}
     };
+    window.saveEmployee=async function(id=''){if(!usesVibe())return legacyEmployee(id);const code=String($('empCode')?.value||'').trim(),before=new Set((window.loadEmployees?.()||[]).map(row=>String(row.id)));legacyEmployee(id);const employee=(window.loadEmployees?.()||[]).find(row=>id?String(row.id)===String(id):(code?employeeKey(row)===employeeKey({code}):!before.has(String(row.id))));if(!employee)return;try{const saved=await post('/api/v1/business/employees',{employee:{...employee,legacy_id:employee.id,warehouse_id:currentWarehouseId}});employee.vibe_id=saved.id;saveEmployees?.(window.loadEmployees());toastMsg('Đã đồng bộ nhân viên lên Vibe Host');}catch(error){alert('Lỗi lưu nhân viên: '+(error?.message||error));}};
+    window.deleteEmployee=async function(id){if(!usesVibe())return legacyDeleteEmployee(id);const employee=(window.loadEmployees?.()||[]).find(row=>String(row.id)===String(id));legacyDeleteEmployee(id);if((window.loadEmployees?.()||[]).some(row=>String(row.id)===String(id)))return;const vibeId=employee?.vibe_id||(/^[0-9a-f-]{36}$/i.test(String(id))?id:'');if(vibeId)try{await request(`/api/v1/business/employee/${vibeId}`,{method:'DELETE'});}catch(error){alert('Đã xóa trên thiết bị nhưng chưa xóa được trên Vibe Host: '+(error?.message||error));}};
     window.__lyVibeBusinessWrites={version:VERSION};return true;
   }
-  const boot=()=>{if(!install())setTimeout(boot,50)};
+  const boot=()=>{if(!install())setTimeout(boot,50);else syncEmployees().catch(error=>console.error('[employee-sync]',error));};
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();
 })();

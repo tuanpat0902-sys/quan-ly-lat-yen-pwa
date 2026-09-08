@@ -56,7 +56,10 @@ for(const rpc of ['ly_save_ingredient','ly_save_product','ly_save_import','ly_sa
 assert.match(index,/id:id\|\|null,warehouse_id:currentWarehouseId,code:null/,'ingredient payload must carry the selected warehouse');
 assert.match(vibeWrites,/usesVibe[\s\S]*\/api\/v1\/business\/ingredient/,'ingredient edits on Vibe Host must bypass restricted Supabase services');
 assert.match(vibeWrites,/usesVibe[\s\S]*\/api\/v1\/business\/product/,'recipe edits on Vibe Host must bypass restricted Supabase services');
+assert.match(vibeWrites,/syncEmployees[\s\S]*\/api\/v1\/business\/employees/,'employees must be de-duplicated and synchronized with Vibe Host');
 assert.match(businessApi,/authenticatedVibeUser[\s\S]*client\.query\('begin'\)[\s\S]*client\.query\('commit'\)/,'Vibe business writes must be authenticated and transactional');
+assert.match(businessApi,/let client[\s\S]*client=await getVibePool\(\)\.connect\(\)[\s\S]*client\?\.release\(\)/,'connection failures must not crash the Vibe process');
+assert.match(businessApi,/employeeMatch[\s\S]*request\.method==='DELETE'/,'employee deletes must be persisted on Vibe Host');
 assert.match(businessApi,/rebuildVibeIposInventory/,'recipe edits must reconcile historical iPOS inventory');
 assert.match(staticServer,/handleBusinessMutationApi/,'the production server must expose Vibe business mutations');
 assert.match(employees,/danger sm" onclick="deleteEmployee\('\$\{e\.id\}'\)"/,'employee rows must expose an explicit delete action');

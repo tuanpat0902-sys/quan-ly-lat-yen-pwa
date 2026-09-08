@@ -6,7 +6,7 @@ const schema='lat_yen_shadow_20260905';
 function qi(value){return `"${String(value).replaceAll('"','""')}"`;}
 function json(response,status,payload){const body=Buffer.from(JSON.stringify(payload));response.writeHead(status,{'cache-control':'no-store','content-length':body.length,'content-type':'application/json; charset=utf-8','x-content-type-options':'nosniff'});response.end(body);}
 async function body(request){const chunks=[];let size=0;for await(const chunk of request){size+=chunk.length;if(size>4096)throw new Error('Payload too large');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
-export async function ensureIngredientCategoryColumn(){await getVibePool().query(`alter table ${qi(schema)}.ly_ingredients add column if not exists inventory_category text not null default 'ingredient'`);}
+export async function ensureIngredientCategoryColumn(executor=getVibePool()){await executor.query(`alter table ${qi(schema)}.ly_ingredients add column if not exists inventory_category text not null default 'ingredient'`);}
 export async function handleIngredientCategoryApi(request,response,pathname){
   if(pathname!=='/api/v1/ingredient-category')return false;
   if(request.method!=='PATCH'){response.setHeader('allow','PATCH');json(response,405,{error:'Method Not Allowed'});return true;}
