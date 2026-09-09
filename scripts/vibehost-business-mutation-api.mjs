@@ -9,7 +9,7 @@ const schema='lat_yen_shadow_20260905',metaCache=new Map();
 function qi(value){return `"${String(value).replaceAll('"','""')}"`;}
 function json(response,status,payload){const body=Buffer.from(JSON.stringify(payload));response.writeHead(status,{'cache-control':'no-store','content-length':body.length,'content-type':'application/json; charset=utf-8','x-content-type-options':'nosniff'});response.end(body);}
 async function readBody(request){const chunks=[];let size=0;for await(const chunk of request){size+=chunk.length;if(size>131072)throw new Error('Payload too large');chunks.push(chunk);}return JSON.parse(Buffer.concat(chunks).toString('utf8'));}
-function uuid(value){const text=String(value||'');return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(text)?text:'';}
+function uuid(value){const text=String(value||'').trim();return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(text)?text.toLowerCase():'';}
 function number(value,fallback=0){const result=Number(value);return Number.isFinite(result)?result:fallback;}
 async function acquireClient(){let lastError;for(let attempt=0;attempt<3;attempt++)try{return await getVibePool().connect();}catch(error){lastError=error;await new Promise(resolve=>setTimeout(resolve,200*(attempt+1)));}throw lastError;}
 async function columns(table,executor=getVibePool()){if(metaCache.has(table))return metaCache.get(table);const result=await executor.query('select column_name from information_schema.columns where table_schema=$1 and table_name=$2',[schema,table]);const value=new Set(result.rows.map(row=>row.column_name));metaCache.set(table,value);return value;}
@@ -18,7 +18,7 @@ async function insert(client,table,row){const allowed=await columns(table,client
 async function warehouseAllowed(client,orgId,warehouseId){return (await client.query(`select 1 from ${qi(schema)}.ly_warehouses where id=$1::uuid and org_id=$2::uuid and active is not false`,[warehouseId,orgId])).rowCount>0;}
 async function resolveRecipeIngredient(client,orgId,item){
   const raw=String(item?.ingredient_id||'').replace(/^ref:/,'').trim(),direct=uuid(raw);
-  if(direct&&await client.query(`select 1 from ${qi(schema)}.ly_ingredients where id=$1::uuid and org_id=$2::uuid`,[direct,orgId]).then(result=>result.rowCount>0))return direct;
+  if(direct)return await client.query(`select 1 from ${qi(schema)}.ly_ingredients where id=$1::uuid and org_id=$2::uuid`,[direct,orgId]).then(result=>result.rowCount>0)?direct:'';
   const name=String(item?.ingredient_name||'').trim();if(!raw&&!name)return '';
   const rows=(await client.query(`select id from ${qi(schema)}.ly_ingredients where org_id=$1::uuid and active is not false and (($2<>'' and lower(coalesce(code,''))=lower($2)) or ($3<>'' and lower(name)=lower($3))) order by case when lower(coalesce(code,''))=lower($2) then 0 else 1 end limit 2`,[orgId,raw,name])).rows;
   return rows.length===1?rows[0].id:'';

@@ -94,9 +94,12 @@ async function buildSnapshot(orgId) {
   const pool = getVibePool();
   const client = await pool.connect();
   let tableResults, signals;
+  let transactionStarted = false;
   try {
     ingredientCategoryReady||=client.query(`alter table ${quoteIdentifier(schema)}.ly_ingredients add column if not exists inventory_category text not null default 'ingredient'`).catch(error=>{ingredientCategoryReady=null;throw error;});
     await ingredientCategoryReady;
+    await client.query('begin isolation level repeatable read read only');
+    transactionStarted = true;
     tableResults=[];
     for(const table of tables)tableResults.push(await client.query(
       `select * from ${quoteIdentifier(schema)}.${quoteIdentifier(table)} where org_id = $1::uuid`,
@@ -106,7 +109,10 @@ async function buildSnapshot(orgId) {
       `select domain, revision, changed_at from ${quoteIdentifier(schema)}.ly_change_signals where org_id = $1::uuid order by domain`,
       [orgId],
     );
+    await client.query('commit');
+    transactionStarted = false;
   } finally {
+    if (transactionStarted) await client.query('rollback').catch(() => {});
     client.release();
   }
   const data = Object.fromEntries(tables.map((table, index) => [table, tableResults[index].rows]));
@@ -124,15 +130,24 @@ async function buildSnapshot(orgId) {
 }
 
 async function snapshotFor(orgId) {
-  const cached = snapshotCache.get(orgId);
-  if (cached && cached.expiresAt > Date.now()) return cached;
-  if (pendingSnapshots.has(orgId)) return pendingSnapshots.get(orgId);
-  const pending = buildSnapshot(orgId).then((snapshot) => {
-    snapshotCache.set(orgId, snapshot);
-    return snapshot;
-  }).finally(() => pendingSnapshots.delete(orgId));
-  pendingSnapshots.set(orgId, pending);
-  return pending;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const cached = snapshotCache.get(orgId);
+    if (cached && cached.expiresAt > Date.now()) return cached;
+    let entry = pendingSnapshots.get(orgId);
+    if (!entry) {
+      entry = { invalidated: false, pending: null };
+      entry.pending = buildSnapshot(orgId).then((snapshot) => {
+        if (!entry.invalidated) snapshotCache.set(orgId, snapshot);
+        return snapshot;
+      }).finally(() => {
+        if (pendingSnapshots.get(orgId) === entry) pendingSnapshots.delete(orgId);
+      });
+      pendingSnapshots.set(orgId, entry);
+    }
+    const snapshot = await entry.pending;
+    if (!entry.invalidated) return snapshot;
+  }
+  throw new Error('Snapshot changed repeatedly; retry the request');
 }
 
 export async function handleSnapshotApi(request, response, pathname, url) {
@@ -185,7 +200,7 @@ export async function handleSnapshotApi(request, response, pathname, url) {
     const acceptsGzip = /(?:^|,)\s*gzip\s*(?:,|$)/i.test(String(request.headers['accept-encoding'] || ''));
     const body = acceptsGzip ? snapshot.compressed : snapshot.body;
     response.writeHead(200, {
-      'Cache-Control': 'private, max-age=15, stale-while-revalidate=30',
+      'Cache-Control': 'no-store',
       ...(acceptsGzip ? { 'Content-Encoding': 'gzip' } : {}),
       'Content-Length': body.length,
       'Content-Type': 'application/json; charset=utf-8',
@@ -204,6 +219,15 @@ export async function handleSnapshotApi(request, response, pathname, url) {
 }
 
 export function invalidateSnapshot(orgId) {
-  if (orgId) snapshotCache.delete(String(orgId));
-  else snapshotCache.clear();
+  if (orgId) {
+    const key = String(orgId);
+    snapshotCache.delete(key);
+    const entry = pendingSnapshots.get(key);
+    if (entry) entry.invalidated = true;
+    pendingSnapshots.delete(key);
+  } else {
+    snapshotCache.clear();
+    for (const entry of pendingSnapshots.values()) entry.invalidated = true;
+    pendingSnapshots.clear();
+  }
 }

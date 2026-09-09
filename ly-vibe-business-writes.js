@@ -1,17 +1,30 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.09.4';
+  const VERSION='2026.09.09.5';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
   async function post(path,payload){const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   async function request(path,options={}){const response=await fetch(path,{credentials:'same-origin',...options}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   function settle(){invalidateDataIndexes?.();invalidateDerivedCaches?.();cacheSave?.();}
-  async function refreshFromVibe(){window.dispatchEvent?.(new CustomEvent('latyen:change-signal',{detail:{source:'vibe-write'}}));await window.loadCloud?.();}
+  async function refreshFromVibe(){
+    window.dispatchEvent?.(new CustomEvent('latyen:change-signal',{detail:{source:'vibe-write'}}));
+    if(typeof window.loadCloud!=='function')throw new Error('Chưa sẵn sàng tải lại dữ liệu Cloud.');
+    const deadline=Date.now()+30000;
+    for(;;){
+      const result=await window.loadCloud();
+      if(result?.deferred){if(Date.now()>=deadline)throw new Error('Cloud đang bận. Vui lòng tải lại dữ liệu để kiểm tra.');await new Promise(resolve=>setTimeout(resolve,100));continue;}
+      if(result===false||result?.ok===false)throw new Error(result?.error?.message||'Không tải lại được dữ liệu Cloud để xác nhận.');
+      return result;
+    }
+  }
+  function recipeMatches(rows,lines){const key=row=>JSON.stringify([String(row.ingredient_id),Number(row.quantity)]);return Array.isArray(rows)&&rows.length===lines.length&&JSON.stringify(rows.map(key).sort())===JSON.stringify(lines.map(key).sort());}
+  function productMatches(row,product){return !!row&&['name','unit'].every(key=>String(row[key]||'')===String(product[key]||''))&&String(row.sku||'')===String(product.sku||'')&&Number(row.selling_price)===product.selling_price;}
+  let recipeSaving=false;
   const employeeKey=row=>String(row?.code||'').trim().toLocaleLowerCase('vi');
-  function dedupeEmployees(rows){const kept=new Map();for(const row of rows||[]){const key=employeeKey(row)||String(row?.id||'');const previous=kept.get(key);if(!previous||String(row.updated_at||row.created_at||'')>=String(previous.updated_at||previous.created_at||'')){if(previous?.id&&previous.id!==row.id)markEmployeeDeleted?.(previous.id);kept.set(key,row);}else if(row?.id)markEmployeeDeleted?.(row.id);}return [...kept.values()];}
+  function dedupeEmployees(rows){const kept=new Map();for(const row of rows||[]){const key=employeeKey(row)||String(row?.id||'');const previous=kept.get(key);if(!previous||String(row.updated_at||row.created_at||'')>=String(previous.updated_at||previous.created_at||''))kept.set(key,row);}return [...kept.values()];}
   function fromVibeEmployee(row){return {...row,id:String(row.legacy_id||row.id),vibe_id:row.id,warehouse_id:row.warehouse_id};}
-  async function syncEmployees(){if(!usesVibe()||typeof currentWarehouseId==='undefined'||!currentWarehouseId)return;const local=dedupeEmployees(window.loadEmployees?.()||[]);for(const employee of local){const saved=await post('/api/v1/business/employees',{employee:{...employee,legacy_id:employee.id,warehouse_id:currentWarehouseId}});employee.vibe_id=saved.id;}const cloud=await request(`/api/v1/business/employees?warehouse_id=${encodeURIComponent(currentWarehouseId)}`),merged=dedupeEmployees((cloud.rows||[]).map(fromVibeEmployee));saveEmployees?.(merged);renderEmployees?.();}
+  async function syncEmployees(){if(!usesVibe()||typeof currentWarehouseId==='undefined'||!currentWarehouseId)return;const warehouseId=currentWarehouseId,cloud=await request(`/api/v1/business/employees?warehouse_id=${encodeURIComponent(warehouseId)}`);if(currentWarehouseId!==warehouseId)return;const merged=dedupeEmployees((cloud.rows||[]).map(fromVibeEmployee));saveEmployees?.(merged);renderEmployees?.();}
 
   function install(){
     if(typeof window.saveIngredient!=='function'||typeof window.saveRecipe!=='function')return false;
@@ -29,8 +42,10 @@
     };
     window.saveRecipe=async function(id){
       if(!usesVibe())return legacyRecipe(id);
+      if(recipeSaving)return;
       const nameEl=$('rpName'),priceEl=$('rpPrice'),skuEl=$('rpSku'),unitEl=$('rpUnit'),btn=$('rpSaveBtn');if(!nameEl||!priceEl||!skuEl)return alert('Không tìm thấy biểu mẫu công thức.');const rawLines=[...document.querySelectorAll('#recipeLines .recipe-line')],invalid=rawLines.find(row=>row.querySelector('.rlIng')?.value&&Number(row.querySelector('.rlQty')?.value||0)<=0),lines=rawLines.map(row=>{const select=row.querySelector('.rlIng');return {ingredient_id:select?.value||'',ingredient_name:String(select?.selectedOptions?.[0]?.textContent||'').trim(),quantity:Number(row.querySelector('.rlQty')?.value||0)};}).filter(row=>row.ingredient_id&&row.quantity>0);if(invalid){invalid.querySelector('.rlQty')?.focus();return alert('Định lượng nguyên liệu phải lớn hơn 0.');}if(!nameEl.value.trim()||!lines.length)return alert('Nhập tên món và ít nhất 1 nguyên liệu.');
-      try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…'}const product={id:id||null,warehouse_id:currentWarehouseId,name:nameEl.value.trim(),sku:skuEl.value.trim()||null,unit:(unitEl?.value||'ly').trim()||'ly',selling_price:Number(priceEl.value||0),active:true},saved=await post('/api/v1/business/product',{product,recipe_items:lines});if(!Array.isArray(saved.recipe_items)||saved.recipe_items.length!==lines.length)throw new Error('Cloud chưa xác nhận đầy đủ thành phần công thức.');saveProductUnit?.(saved.id,saved.row?.unit||product.unit);assignProductToWarehouse?.(saved.id,currentWarehouseId);await refreshFromVibe();const persisted=(db.recipeItems||[]).filter(row=>row.product_id===saved.id);if(persisted.length!==lines.length)throw new Error('Dữ liệu công thức tải lại chưa đầy đủ. Vui lòng lưu lại.');toggleRecipeForm?.(false);renderRecipes?.();renderSales?.();renderDashboard?.();toastMsg('Đã lưu món và công thức trên Vibe Host');}catch(error){alert('Lỗi công thức: '+(error?.message||error));}finally{if(btn){btn.disabled=false;btn.textContent=id?'Lưu thay đổi':'Tạo công thức';}}
+      recipeSaving=true;
+      try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…'}const product={id:id||null,warehouse_id:currentWarehouseId,name:nameEl.value.trim(),sku:skuEl.value.trim()||null,unit:(unitEl?.value||'ly').trim()||'ly',selling_price:Number(priceEl.value||0),active:true},saved=await post('/api/v1/business/product',{product,recipe_items:lines});if(!Array.isArray(saved.recipe_items)||!recipeMatches(saved.recipe_items.map(row=>({...row,ingredient_id:''})),lines.map(row=>({...row,ingredient_id:''})))||saved.recipe_items.some(row=>!row.ingredient_id)||!productMatches(saved.row,product))throw new Error('Cloud chưa xác nhận đầy đủ thành phần công thức.');saveProductUnit?.(saved.id,saved.row?.unit||product.unit);assignProductToWarehouse?.(saved.id,currentWarehouseId);await refreshFromVibe();const persisted=(db.recipeItems||[]).filter(row=>row.product_id===saved.id);if(!recipeMatches(persisted,saved.recipe_items)||!productMatches((db.products||[]).find(row=>row.id===saved.id),product))throw new Error('Dữ liệu công thức tải lại chưa đầy đủ. Vui lòng lưu lại.');toggleRecipeForm?.(false);renderRecipes?.();renderSales?.();renderDashboard?.();toastMsg('Đã lưu món và công thức trên Vibe Host');}catch(error){alert('Lỗi công thức: '+(error?.message||error));}finally{recipeSaving=false;if(btn){btn.disabled=false;btn.textContent=id?'Lưu thay đổi':'Tạo công thức';}}
     };
     window.saveImportReceipt=async function(){
       if(!usesVibe())return legacyImport?.();const receiptNo=String($('receiptNo')?.value||'').trim(),receiptDate=String($('receiptDate')?.value||'').trim(),note=String($('receiptNote')?.value||'').trim(),items=window.getImportReceiptLines?.()||[],editKey=$('inlineImportReceiptForm')?.dataset?.editKey||'',btn=$('saveReceiptBtn'),status=$('receiptResult');if(!receiptNo||!items.length)return alert('Nhập số phiếu và ít nhất 1 mặt hàng.');
