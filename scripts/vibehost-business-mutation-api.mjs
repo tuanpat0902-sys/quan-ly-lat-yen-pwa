@@ -33,11 +33,14 @@ async function saveIngredient(client,user,input){
 async function saveProduct(client,user,input){
   const value=input?.product||{},warehouseId=uuid(value.warehouse_id),id=uuid(value.id)||randomUUID(),name=String(value.name||'').trim();
   if(!warehouseId||!name||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid product');
+  const requestedRecipe=Array.isArray(input?.recipe_items)?input.recipe_items:[],validRecipe=requestedRecipe.map(item=>({ingredient_id:uuid(item?.ingredient_id),quantity:number(item?.quantity)})).filter(item=>item.ingredient_id&&item.quantity>0);
+  if(!validRecipe.length||validRecipe.length!==requestedRecipe.length)throw new Error('Invalid recipe items');
   const row=await upsert(client,'ly_products',{id,org_id:user.orgId,warehouse_id:warehouseId,name,sku:String(value.sku||'').trim()||null,unit:String(value.unit||'ly').trim()||'ly',selling_price:Math.max(number(value.selling_price),0),active:value.active!==false});
   await client.query(`delete from ${qi(schema)}.ly_recipe_items where org_id=$1::uuid and product_id=$2::uuid`,[user.orgId,id]);
-  const recipe=[];
-  for(const item of input.recipe_items||[]){const ingredientId=uuid(item.ingredient_id),quantity=number(item.quantity);if(!ingredientId||quantity<=0)continue;recipe.push(await insert(client,'ly_recipe_items',{org_id:user.orgId,product_id:id,ingredient_id:ingredientId,quantity}));}
-  return {id,row,recipe_items:recipe,reconcile:{org:user.orgId,warehouse:warehouseId}};
+  for(const item of validRecipe)await insert(client,'ly_recipe_items',{org_id:user.orgId,product_id:id,ingredient_id:item.ingredient_id,quantity:item.quantity});
+  const persisted=(await client.query(`select * from ${qi(schema)}.ly_recipe_items where org_id=$1::uuid and product_id=$2::uuid order by created_at,id`,[user.orgId,id])).rows;
+  if(persisted.length!==validRecipe.length)throw new Error('Recipe persistence verification failed');
+  return {id,row,recipe_items:persisted,reconcile:{org:user.orgId,warehouse:warehouseId}};
 }
 
 async function reconcileProductInventory(ctx){

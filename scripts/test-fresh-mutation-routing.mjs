@@ -63,6 +63,10 @@ assert.match(businessApi,/authenticatedVibeUser[\s\S]*client\.query\('begin'\)[\
 assert.match(businessApi,/let client[\s\S]*client=await acquireClient\(\)[\s\S]*client\?\.release\(\)/,'connection failures must not crash the Vibe process');
 assert.match(businessApi,/employeeMatch[\s\S]*request\.method==='DELETE'/,'employee deletes must be persisted on Vibe Host');
 assert.match(businessApi,/rebuildVibeIposInventory/,'recipe edits must reconcile historical iPOS inventory');
+const productHandler=businessApi.slice(businessApi.indexOf('async function saveProduct'),businessApi.indexOf('async function reconcileProductInventory'));
+assert.ok(productHandler.indexOf("throw new Error('Invalid recipe items')")<productHandler.indexOf('delete from ${qi(schema)}.ly_recipe_items'),'invalid or empty recipes must be rejected before existing ingredients are deleted');
+assert.match(productHandler,/Recipe persistence verification failed/,'recipe children must be verified inside the same transaction');
+assert.match(vibeWrites,/business\/product[\s\S]*await refreshFromVibe\(\)[\s\S]*Dữ liệu công thức tải lại chưa đầy đủ/,'recipe save must reload and verify authoritative Cloud children before reporting success');
 for(const handler of ['saveDocument','saveSale','saveWarehouse','saveSupplier','saveCashflow'])assert.match(businessApi,new RegExp(`function ${handler}\\(`),`${handler} must be implemented by the Vibe PostgreSQL service`);
 assert.match(businessApi,/json\(response,200,result\);if\(reconcile\)queueMicrotask/,'recipe save response must not wait for the historical inventory rebuild');
 assert.match(staticServer,/handleBusinessMutationApi/,'the production server must expose Vibe business mutations');
