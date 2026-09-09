@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.09.3';
+  const VERSION='2026.09.09.4';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
@@ -29,7 +29,7 @@
     };
     window.saveRecipe=async function(id){
       if(!usesVibe())return legacyRecipe(id);
-      const nameEl=$('rpName'),priceEl=$('rpPrice'),skuEl=$('rpSku'),unitEl=$('rpUnit'),btn=$('rpSaveBtn');if(!nameEl||!priceEl||!skuEl)return alert('Không tìm thấy biểu mẫu công thức.');const rawLines=[...document.querySelectorAll('#recipeLines .recipe-line')],invalid=rawLines.find(row=>row.querySelector('.rlIng')?.value&&Number(row.querySelector('.rlQty')?.value||0)<=0),lines=rawLines.map(row=>({ingredient_id:row.querySelector('.rlIng')?.value||'',quantity:Number(row.querySelector('.rlQty')?.value||0)})).filter(row=>row.ingredient_id&&row.quantity>0);if(invalid){invalid.querySelector('.rlQty')?.focus();return alert('Định lượng nguyên liệu phải lớn hơn 0.');}if(!nameEl.value.trim()||!lines.length)return alert('Nhập tên món và ít nhất 1 nguyên liệu.');
+      const nameEl=$('rpName'),priceEl=$('rpPrice'),skuEl=$('rpSku'),unitEl=$('rpUnit'),btn=$('rpSaveBtn');if(!nameEl||!priceEl||!skuEl)return alert('Không tìm thấy biểu mẫu công thức.');const rawLines=[...document.querySelectorAll('#recipeLines .recipe-line')],invalid=rawLines.find(row=>row.querySelector('.rlIng')?.value&&Number(row.querySelector('.rlQty')?.value||0)<=0),lines=rawLines.map(row=>{const select=row.querySelector('.rlIng');return {ingredient_id:select?.value||'',ingredient_name:String(select?.selectedOptions?.[0]?.textContent||'').trim(),quantity:Number(row.querySelector('.rlQty')?.value||0)};}).filter(row=>row.ingredient_id&&row.quantity>0);if(invalid){invalid.querySelector('.rlQty')?.focus();return alert('Định lượng nguyên liệu phải lớn hơn 0.');}if(!nameEl.value.trim()||!lines.length)return alert('Nhập tên món và ít nhất 1 nguyên liệu.');
       try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…'}const product={id:id||null,warehouse_id:currentWarehouseId,name:nameEl.value.trim(),sku:skuEl.value.trim()||null,unit:(unitEl?.value||'ly').trim()||'ly',selling_price:Number(priceEl.value||0),active:true},saved=await post('/api/v1/business/product',{product,recipe_items:lines});if(!Array.isArray(saved.recipe_items)||saved.recipe_items.length!==lines.length)throw new Error('Cloud chưa xác nhận đầy đủ thành phần công thức.');saveProductUnit?.(saved.id,saved.row?.unit||product.unit);assignProductToWarehouse?.(saved.id,currentWarehouseId);await refreshFromVibe();const persisted=(db.recipeItems||[]).filter(row=>row.product_id===saved.id);if(persisted.length!==lines.length)throw new Error('Dữ liệu công thức tải lại chưa đầy đủ. Vui lòng lưu lại.');toggleRecipeForm?.(false);renderRecipes?.();renderSales?.();renderDashboard?.();toastMsg('Đã lưu món và công thức trên Vibe Host');}catch(error){alert('Lỗi công thức: '+(error?.message||error));}finally{if(btn){btn.disabled=false;btn.textContent=id?'Lưu thay đổi':'Tạo công thức';}}
     };
     window.saveImportReceipt=async function(){

@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.36",
-  "revision": "fresh-core-v3-shell-authoritative-v37",
-  "loaderAssetVersion": "20260909.3",
+  "appVersion": "3.0.37",
+  "revision": "fresh-core-v3-shell-authoritative-v38",
+  "loaderAssetVersion": "20260909.4",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.09.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-260",
+  "moduleLoaderVersion": "2026.09.09.4",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-261",
   "redeploy": "2026-09-09-vibe-persistent-business-writes-build-67"
 }

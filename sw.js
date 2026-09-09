@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-260';
+const CACHE='lat-yen-fresh-core-v3-authoritative-261';
 const VIBE_URL='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[

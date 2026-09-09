@@ -98,7 +98,7 @@ assert.match(recovery,/VERSION='2026\.09\.02\.1'/,'lazy recovery version missing
 
 assert.match(app,/UI_BUILD='UI-2026\.09\.09\.67'/,'current Vibe release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.2/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-260/,'UI build 68 must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-261/,'UI build 69 must force a fresh service-worker release');
 assert.match(index,/tuanpat0902-sys\.[^\n]+quan-ly-lat-yen-pwa-live\.n1\.tinhgon\.xyz/,'legacy GitHub Pages address must redirect to Vibe Host before loading Supabase');
 assert.match(sw,/location\.hostname==='tuanpat0902-sys\.github\.io'[\s\S]*Response\.redirect\(VIBE_URL,302\)/,'legacy service worker must redirect cached clients to Vibe Host');
 assert.match(sw,/async function navigationSource\(request\)\{try\{return await refreshNavigation\(request\);\}catch\(e\)\{return caches\.match\(INDEX_KEY\);\}\}/,'navigations must prefer the network release and use cached HTML only while offline');

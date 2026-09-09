@@ -16,6 +16,13 @@ async function columns(table,executor=getVibePool()){if(metaCache.has(table))ret
 async function upsert(client,table,row){const allowed=await columns(table,client),data={...row};if(allowed.has('created_at')&&!data.created_at)data.created_at=new Date().toISOString();if(allowed.has('updated_at'))data.updated_at=new Date().toISOString();const names=Object.keys(data).filter(key=>allowed.has(key)&&data[key]!==undefined),mutable=names.filter(key=>key!=='id'&&key!=='created_at');const sql=`insert into ${qi(schema)}.${qi(table)}(${names.map(qi).join(',')}) values(${names.map((_,index)=>`$${index+1}`).join(',')}) on conflict(id) do update set ${mutable.map(key=>`${qi(key)}=excluded.${qi(key)}`).join(',')} returning *`;return (await client.query(sql,names.map(key=>data[key]))).rows[0];}
 async function insert(client,table,row){const allowed=await columns(table,client),data={...row};if(allowed.has('id')&&!data.id)data.id=randomUUID();if(allowed.has('created_at')&&!data.created_at)data.created_at=new Date().toISOString();if(allowed.has('updated_at'))data.updated_at=new Date().toISOString();const names=Object.keys(data).filter(key=>allowed.has(key)&&data[key]!==undefined);return (await client.query(`insert into ${qi(schema)}.${qi(table)}(${names.map(qi).join(',')}) values(${names.map((_,index)=>`$${index+1}`).join(',')}) returning *`,names.map(key=>data[key]))).rows[0];}
 async function warehouseAllowed(client,orgId,warehouseId){return (await client.query(`select 1 from ${qi(schema)}.ly_warehouses where id=$1::uuid and org_id=$2::uuid and active is not false`,[warehouseId,orgId])).rowCount>0;}
+async function resolveRecipeIngredient(client,orgId,item){
+  const raw=String(item?.ingredient_id||'').replace(/^ref:/,'').trim(),direct=uuid(raw);
+  if(direct&&await client.query(`select 1 from ${qi(schema)}.ly_ingredients where id=$1::uuid and org_id=$2::uuid`,[direct,orgId]).then(result=>result.rowCount>0))return direct;
+  const name=String(item?.ingredient_name||'').trim();if(!raw&&!name)return '';
+  const rows=(await client.query(`select id from ${qi(schema)}.ly_ingredients where org_id=$1::uuid and active is not false and (($2<>'' and lower(coalesce(code,''))=lower($2)) or ($3<>'' and lower(name)=lower($3))) order by case when lower(coalesce(code,''))=lower($2) then 0 else 1 end limit 2`,[orgId,raw,name])).rows;
+  return rows.length===1?rows[0].id:'';
+}
 async function ensureEmployees(executor=getVibePool()){await executor.query(`create table if not exists ${qi(schema)}.ly_employees(id uuid primary key,org_id uuid not null,warehouse_id uuid not null,legacy_id text not null,code text not null,name text not null,role text,phone text,hire_date date,shift text,attendance_mode text,base_salary numeric,hourly_rate numeric,standard_days numeric,address text,emergency_contact text,note text,bank_account text,id_number text,active boolean not null default true,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(org_id,warehouse_id,code))`);}
 
 async function saveIngredient(client,user,input){
@@ -33,8 +40,9 @@ async function saveIngredient(client,user,input){
 async function saveProduct(client,user,input){
   const value=input?.product||{},warehouseId=uuid(value.warehouse_id),id=uuid(value.id)||randomUUID(),name=String(value.name||'').trim();
   if(!warehouseId||!name||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid product');
-  const requestedRecipe=Array.isArray(input?.recipe_items)?input.recipe_items:[],validRecipe=requestedRecipe.map(item=>({ingredient_id:uuid(item?.ingredient_id),quantity:number(item?.quantity)})).filter(item=>item.ingredient_id&&item.quantity>0);
-  if(!validRecipe.length||validRecipe.length!==requestedRecipe.length)throw new Error('Invalid recipe items');
+  const requestedRecipe=Array.isArray(input?.recipe_items)?input.recipe_items:[],validRecipe=[];
+  for(const item of requestedRecipe){const ingredientId=await resolveRecipeIngredient(client,user.orgId,item),quantity=number(item?.quantity);if(!ingredientId||quantity<=0)throw new Error(`Invalid recipe item reference (${requestedRecipe.length} requested)`);validRecipe.push({ingredient_id:ingredientId,quantity});}
+  if(!validRecipe.length)throw new Error('Invalid recipe items');
   const row=await upsert(client,'ly_products',{id,org_id:user.orgId,warehouse_id:warehouseId,name,sku:String(value.sku||'').trim()||null,unit:String(value.unit||'ly').trim()||'ly',selling_price:Math.max(number(value.selling_price),0),active:value.active!==false});
   await client.query(`delete from ${qi(schema)}.ly_recipe_items where org_id=$1::uuid and product_id=$2::uuid`,[user.orgId,id]);
   for(const item of validRecipe)await insert(client,'ly_recipe_items',{org_id:user.orgId,product_id:id,ingredient_id:item.ingredient_id,quantity:item.quantity});

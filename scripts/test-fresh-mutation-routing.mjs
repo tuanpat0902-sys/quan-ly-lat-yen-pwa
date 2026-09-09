@@ -66,6 +66,8 @@ assert.match(businessApi,/rebuildVibeIposInventory/,'recipe edits must reconcile
 const productHandler=businessApi.slice(businessApi.indexOf('async function saveProduct'),businessApi.indexOf('async function reconcileProductInventory'));
 assert.ok(productHandler.indexOf("throw new Error('Invalid recipe items')")<productHandler.indexOf('delete from ${qi(schema)}.ly_recipe_items'),'invalid or empty recipes must be rejected before existing ingredients are deleted');
 assert.match(productHandler,/Recipe persistence verification failed/,'recipe children must be verified inside the same transaction');
+assert.match(productHandler,/resolveRecipeIngredient/,'legacy recipe ingredient references must be resolved before persistence');
+assert.match(vibeWrites,/ingredient_name:String\(select\?\.selectedOptions/,'recipe writes must include a stable ingredient-name fallback for legacy identifiers');
 assert.match(vibeWrites,/business\/product[\s\S]*await refreshFromVibe\(\)[\s\S]*Dữ liệu công thức tải lại chưa đầy đủ/,'recipe save must reload and verify authoritative Cloud children before reporting success');
 for(const handler of ['saveDocument','saveSale','saveWarehouse','saveSupplier','saveCashflow'])assert.match(businessApi,new RegExp(`function ${handler}\\(`),`${handler} must be implemented by the Vibe PostgreSQL service`);
 assert.match(businessApi,/json\(response,200,result\);if\(reconcile\)queueMicrotask/,'recipe save response must not wait for the historical inventory rebuild');
