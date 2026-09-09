@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.09.1';
+  const VERSION='2026.09.09.2';
   const TABLES=new Set([
     'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
     'ly_products','ly_recipe_items','ly_inventory','ly_import_receipts',
@@ -34,13 +34,16 @@
         entry.promise=(async()=>{
           let response;
           for(let attempt=0;attempt<3;attempt++){
-            response=await fetch(`/api/v1/snapshot?org_id=${encodeURIComponent(orgId)}`,{cache:'no-store',credentials:'same-origin'});
+            const controller=typeof AbortController==='function'?new AbortController():null;
+            const timeout=controller?setTimeout(()=>controller.abort(),15000):null;
+            try{response=await fetch(`/api/v1/snapshot?org_id=${encodeURIComponent(orgId)}`,{cache:'no-store',credentials:'same-origin',...(controller?{signal:controller.signal}:{})});}
+            finally{if(timeout!==null)clearTimeout(timeout);}
             if(response.ok||![502,503,504].includes(response.status))break;
             if(attempt<2)await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));
           }
           if(!response.ok)throw new Error(`snapshot-${response.status}`);
           const payload=await response.json();
-          if(payload?.orgId!==orgId||!payload?.tables)throw new Error('invalid-snapshot');
+          if(payload?.orgId!==orgId||!payload?.tables||[...TABLES].some(table=>!Array.isArray(payload.tables[table])))throw new Error('invalid-snapshot');
           if(entry.generation!==generation||String(window.__lyFreshOrgId||'')!==orgId)return payload;
           state.snapshot=payload;
           state.lastSnapshotAt=Date.now();

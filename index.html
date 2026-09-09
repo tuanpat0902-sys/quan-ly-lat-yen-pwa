@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <script>if(location.host.startsWith('tuanpat0902-sys.'))location='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/'</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260909.5" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260909.6" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)return false;const data=await response.json();const session=data?.session||null;window.__lyFreshSession=session;window.__lyFreshOrgId=session?.org_id||null;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.09.07.2',provider:'vibe'};})();</script>
 <style>
@@ -4061,6 +4061,11 @@ aside,
 .ingredient-stock-row.stock-critical td:first-child{box-shadow:inset 3px 0 0 #f04438}
 .ingredient-stock-row.stock-low td:first-child{box-shadow:inset 3px 0 0 #f79009}
 .ingredient-stock-row.stock-ok td:first-child{box-shadow:inset 3px 0 0 #12b76a}
+#ingredients .ingredient-stock-row.stock-ok{--ingredient-row-bg:#ecfdf3}
+#ingredients .ingredient-stock-row.stock-low{--ingredient-row-bg:#fff8df}
+#ingredients .ingredient-stock-row.stock-critical{--ingredient-row-bg:#ffeadb}
+#ingredients .ingredient-stock-row.stock-out{--ingredient-row-bg:#fee4e2}
+#ingredients table.ingredient-stock-table .ingredient-stock-row[data-stock-status]>td{background:var(--ingredient-row-bg)!important;color:#1d2939}
 
 /* ===== V116 FIX DELETE RECIPE ===== */
 .recipe-list-head{
@@ -11560,7 +11565,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260909.5"></script>
+<script src="./ly-module-loader.js?v=20260909.6"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -27406,7 +27411,6 @@ function ingredientTable(rows,type){
           <th data-ly-purchase-column="1" data-ly-ingredient-column="purchase">Đơn vị mua/đóng gói</th>
           <th class="right" data-ly-ingredient-column="stock">Tồn</th>
           <th class="right" data-ly-ingredient-column="minimum">Tối thiểu</th>
-          <th data-ly-ingredient-column="status">Trạng thái</th>
           <th class="right" data-ly-ingredient-column="cost">Giá vốn bình quân/đv</th>
           <th class="right" data-ly-ingredient-column="value">Giá trị</th>
           <th data-ly-ingredient-column="actions"></th>
@@ -27417,7 +27421,7 @@ function ingredientTable(rows,type){
             const cost=Number(i.cost||0);
             const status=ingredientStockStatus(i);
 
-            return `<tr class="ingredient-stock-row ${status.className}" data-stock-status="${status.key}">
+            return `<tr class="ingredient-stock-row ${status.className}" data-stock-status="${status.key}" title="${esc(status.label)}" aria-label="${esc(i.name)}: ${esc(status.label)}">
               <td class="ingredient-stock-stt" data-ly-ingredient-column="stt">${index+1}</td>
 
               <td data-ly-ingredient-column="name">
@@ -27433,12 +27437,6 @@ function ingredientTable(rows,type){
               <td class="right stock-qty" data-ly-ingredient-column="stock"><b>${num(stock(i.id))}</b></td>
               <td class="right" data-ly-ingredient-column="minimum">${num(i.minimum_stock)}</td>
 
-              <td data-ly-ingredient-column="status">
-                <span class="stock-status-badge ${status.className}">
-                  <span class="stock-status-dot"></span>${status.label}
-                </span>
-              </td>
-
               <td class="right" data-ly-ingredient-column="cost">${money(cost)}</td>
               <td class="right" data-ly-ingredient-column="value">${money(stock(i.id)*cost)}</td>
 
@@ -27450,7 +27448,7 @@ function ingredientTable(rows,type){
           }).join('')
           :`
             <tr>
-              <td colspan="11">
+              <td colspan="10">
                 <div class="ingredient-filter-empty">
                   Không có mặt hàng thuộc trạng thái <b>${esc(filterLabel)}</b>.
                   <button
@@ -54087,6 +54085,7 @@ function lyFreshSynthMovements({
 loadCloud=async function(){
   if(!window.__lyFreshOrgId)return {ok:false};
   if(window.__lyFreshLoading)return {ok:false,deferred:true};
+  const loadingOrgId=window.__lyFreshOrgId;
   window.__lyFreshLoading=true;
   lyFreshBusy(true,'Đang tải dữ liệu Cloud…');
   setCloudStatus?.('Đang tải Cloud…');
@@ -54115,6 +54114,8 @@ loadCloud=async function(){
       lyFreshFetch('ly_cashflow_entries','entry_date',false)
     ]);
 
+    if(window.__lyFreshOrgId!==loadingOrgId)throw new Error('Phiên làm việc đã thay đổi. Vui lòng tải lại dữ liệu.');
+    if([warehouses,suppliers,ingredients,preparedItems,products,recipeItems,inventory,importReceipts,importItems,exportReceipts,exportItems,stocktakeReceipts,stocktakeItems,sales,saleItems,transactions,cashflowEntries].some(rows=>!Array.isArray(rows)))throw new Error('Dữ liệu tải về chưa đầy đủ. Dữ liệu hiện tại được giữ lại.');
     const mappedSales=(sales||[]).map(s=>({
       ...s,
       _fresh_note:s.note||'',

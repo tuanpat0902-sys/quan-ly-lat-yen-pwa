@@ -13,8 +13,8 @@ const [layout,units,sidebar,conversion,index,loader,finance,categoryApi,server]=
   fs.readFile(new URL('./vibehost-static-server.mjs',import.meta.url),'utf8')
 ]);
 
-assert.match(layout,/VERSION='2026\.09\.08\.1'/);
-assert.match(layout,/width:100%!important;min-width:1120px!important;max-width:none!important;table-layout:fixed!important/);
+assert.match(layout,/VERSION='2026\.09\.09\.1'/);
+assert.match(layout,/width:100%!important;min-width:1020px!important;max-width:none!important;table-layout:fixed!important/);
 assert.match(layout,/scrollbar-gutter:stable!important/);
 assert.match(layout,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)[\s\S]*removeSupplierColumn\(table\)[\s\S]*markStableColumns\(table\)/,'purchase-unit insertion, supplier removal and stable sizing must run in deterministic order');
 
@@ -22,7 +22,10 @@ const widths=Object.fromEntries(
   [...layout.matchAll(/data-ly-ingredient-column="([^"]+)"\]\{width:(\d+)%!important/g)]
     .map(match=>[match[1],Number(match[2])])
 );
-assert.deepEqual(widths,{stt:5,name:13,category:8,unit:6,purchase:15,stock:7,minimum:7,status:9,cost:10,value:8,actions:12});
+assert.deepEqual(widths,{stt:5,name:16,category:8,unit:6,purchase:17,stock:7,minimum:7,cost:11,value:9,actions:14});
+assert.doesNotMatch(index,/data-ly-ingredient-column="status"/,'stock state is represented by row colors, without a separate column');
+for(const status of ['ok','low','critical','out'])assert.match(index,new RegExp('ingredient-stock-row\\.stock-'+status+'\\{--ingredient-row-bg:#[a-f0-9]+\\}'),'each stock status must have a row background');
+assert.match(index,/data-stock-status="\$\{status.key\}" title="\$\{esc\(status.label\)\}" aria-label=/,'status labels remain available on each colored row');
 assert.equal(Object.values(widths).reduce((sum,value)=>sum+value,0),100,'desktop ingredient columns must fill the table exactly');
 
 assert.match(units,/VERSION='2026\.08\.29\.5'/);
@@ -45,7 +48,7 @@ assert.match(categoryApi,/inventory_category[\s\S]*\['ingredient','tool'\]/,'Vib
 assert.match(server,/handleIngredientCategoryApi/,'Vibe server must expose category persistence');
 assert.match(loader,/loadCriticalTablePresentation[\s\S]*Promise\.all\([\s\S]*load\('ingredientTableUX'\)/,'ingredient geometry must load in parallel inside the global first-paint gate');
 assert.match(units,/updateIngredientFormHint,packagingText,enhanceIngredientTables/,'first render must use the canonical purchase packaging formatter');
-assert.match(loader,/ly-ingredient-table-ux\.js\?v=20260908\.1/);
+assert.match(loader,/ly-ingredient-table-ux\.js\?v=20260909\.1/);
 assert.match(layout,/@media\(max-width:0px\)\{/,'ingredient tables must not switch to mobile cards; their desktop reference widths stay scrollable');
 assert.match(layout,/markSupportingTables\(\)/,'prepared and history table column contracts must be restored after rerenders');
 assert.match(layout,/if\(rowIndex>0\)cell\.dataset\.lyLabel=labels\[index\]\|\|'Thao tác'/,'main ingredient mobile cards must receive labels after the STT column is inserted');

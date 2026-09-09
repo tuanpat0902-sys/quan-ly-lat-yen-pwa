@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientTableUX)return;
-  const VERSION='2026.09.08.1';
+  const VERSION='2026.09.09.1';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   let scheduled=false;
 
@@ -30,20 +30,19 @@
     style.textContent=`
       #ingredients .scroll:has(>table.ingredient-stock-table:not(.prepared-virtual-table)){width:100%!important;max-width:100%!important;overflow:auto!important;scrollbar-gutter:stable!important;scrollbar-width:auto!important}
       #ingredients .ingredient-category-summary{display:flex;flex-wrap:wrap;gap:8px 18px;margin:8px 2px;padding:8px 10px;border:1px solid #dce8e6;border-radius:9px;background:#f8fcfb;color:#344054;font-size:12px}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){width:100%!important;min-width:1120px!important;max-width:none!important;table-layout:fixed!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table){width:100%!important;min-width:1020px!important;max-width:none!important;table-layout:fixed!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th,
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td{box-sizing:border-box!important;min-width:0!important;max-width:none!important;white-space:normal!important;overflow:hidden!important;word-break:normal!important;overflow-wrap:break-word!important;text-overflow:ellipsis!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="stt"]{width:5%!important;text-align:center!important;white-space:nowrap!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="name"]{width:13%!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="name"]{width:16%!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="category"]{width:8%!important;text-align:center!important;white-space:nowrap!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="unit"]{width:6%!important;text-align:center!important;white-space:nowrap!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="purchase"]{width:15%!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="purchase"]{width:17%!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="stock"]{width:7%!important;white-space:nowrap!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="minimum"]{width:7%!important;white-space:nowrap!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="status"]{width:9%!important;white-space:nowrap!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="cost"]{width:10%!important;white-space:nowrap!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="value"]{width:8%!important;white-space:nowrap!important}
-      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="actions"]{width:12%!important;white-space:nowrap!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="cost"]{width:11%!important;white-space:nowrap!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="value"]{width:9%!important;white-space:nowrap!important}
+      #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) [data-ly-ingredient-column="actions"]{width:14%!important;white-space:nowrap!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) th:last-child,
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:last-child{min-width:112px!important;white-space:nowrap!important}
       #ingredients table.ingredient-stock-table:not(.prepared-virtual-table) td:last-child button{display:inline-block!important;width:auto!important;max-width:none!important;margin:2px!important;white-space:nowrap!important}

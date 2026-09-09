@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyChatUnitSync)return;
-  const VERSION='2026.08.26.8';
+  const VERSION='2026.09.09.1';
   const fold=value=>String(value??'').replace(/\u2060/g,'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const escRe=value=>String(value??'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
   const fmt=value=>{const n=Number(value);return Number.isInteger(n)?String(n):String(Number(n.toFixed(6)));};
@@ -74,7 +74,8 @@
     out=out.replace(left,(full,q,u,n)=>{const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim();if(!Number.isFinite(value)||canonical(source)===rule.base)return full;return `${q} ${visibleUnit(source)} (${fmt(value)} ${rule.base}) ${n}`;});
     const right=new RegExp(`(${namePattern})\\s*(?:x|:)?\\s*${number}\\s*(${unitPattern})(?=$|[\\s,;:.!?])`,'giu');
     out=out.replace(right,(full,n,q,u)=>{const quantity=Number(String(q).replace(',','.')),value=convert(quantity,u,item),source=String(u||'').trim();if(!Number.isFinite(value)||canonical(source)===rule.base)return full;return `${n} ${q} ${visibleUnit(source)} (${fmt(value)} ${rule.base})`;});
-    return normalizeConvertedPricing(out,item);
+    // Keep the quoted price in the same purchase unit as the displayed quantity.
+    return out;
   }
 
   function normalizeIngredientSpelling(message){

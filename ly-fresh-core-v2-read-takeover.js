@@ -1,11 +1,11 @@
 (()=>{
 'use strict';
 if(window.__lyFreshCoreV2ReadTakeover)return;
-const VERSION='2026.08.24.5';
+const VERSION='2026.09.09.1';
 const MAX_WAIT_MS=60000,STARTED_AT=Date.now(),RESUME_ARM_MS=3000;
 const state={version:VERSION,enabled:false,phase:'waiting',hits:0,fallbacks:0,lastTable:'',lastAt:0,lastError:'',foregrounds:0,foregroundRefreshes:0,foregroundCoalesced:0,foregroundErrors:0,foregroundFastPaths:0,foregroundLegacyFallbacks:0,hydrations:0,hydrationErrors:0,deferredHydrations:0,deferredRenders:0};
 let originalFetch=null,originalLoadCloud=null,resumeArmedUntil=0,pendingResumeRefresh=null,hydrationRequested=false,deferredHydrationTimer=null,pendingHydration=false;
-function coreReady(){const core=window.__lyFreshCoreV2,shadow=window.__lyFreshCoreV2Shadow?.status?.(),org=String(window.__lyFreshOrgId||'');if(!core?.store?.getState||shadow?.phase!=='ready')return null;if(org&&shadow?.orgId&&String(shadow.orgId)!==org)return null;return core;}
+function coreReady(){if(typeof location!=='undefined'&&location.hostname.endsWith('.tinhgon.xyz'))return null;const core=window.__lyFreshCoreV2,shadow=window.__lyFreshCoreV2Shadow?.status?.(),org=String(window.__lyFreshOrgId||'');if(!core?.store?.getState||shadow?.phase!=='ready')return null;if(org&&shadow?.orgId&&String(shadow.orgId)!==org)return null;return core;}
 function rowsFor(table,s){switch(String(table||'')){case'ly_warehouses':return s.warehouses;case'ly_suppliers':return s.suppliers;case'ly_ingredients':return s.ingredients;case'ly_prepared_items':return s.preparedItems;case'ly_products':return s.products;case'ly_recipe_items':return s.recipeItems;case'ly_inventory':return s.inventoryData?.balances;case'ly_import_receipts':return s.importsData?.receipts;case'ly_import_items':return s.importsData?.items;case'ly_export_receipts':return s.exportsData?.receipts;case'ly_export_items':return s.exportsData?.items;case'ly_stocktake_receipts':return s.stocktakeData?.receipts;case'ly_stocktake_items':return s.stocktakeData?.items;case'ly_sales':return s.salesData?.sales;case'ly_sale_items':return s.salesData?.items;case'ly_stock_transactions':return s.inventoryData?.transactions;case'ly_cashflow_entries':return s.cashflowEntries;default:return null;}}
 function compareValues(a,b){if(a==null&&b==null)return 0;if(a==null)return-1;if(b==null)return 1;const an=Number(a),bn=Number(b);if(Number.isFinite(an)&&Number.isFinite(bn)&&String(a).trim()!==''&&String(b).trim()!=='')return an-bn;return String(a).localeCompare(String(b));}
 function copyAndSort(rows,orderColumn,ascending=true){const out=rows.map(row=>row&&typeof row==='object'?{...row}:row);if(orderColumn){const dir=ascending===false?-1:1;out.sort((a,b)=>compareValues(a?.[orderColumn],b?.[orderColumn])*dir);}return out;}

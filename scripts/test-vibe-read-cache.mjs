@@ -40,7 +40,7 @@ assert.match(bootstrap,/aes-256-gcm/,'transferred iPOS credentials must be encry
 assert.match(auth,/HttpOnly; Secure; SameSite=Lax/,'Vibe session must use a secure HTTP-only cookie');
 assert.match(auth,/bcrypt\.compare/,'Vibe login must verify the migrated password hash');
 assert.match(loader,/await load\('vibeReadCache'\)/,'read cache must load before hydration');
-assert.match(loader,/ly-vibe-read-cache\.js\?v=20260909\.1/,'loader must request the versioned cache bridge');
+assert.match(loader,/ly-vibe-read-cache\.js\?v=20260909\.2/,'loader must request the versioned cache bridge');
 assert.match(api,/for\(const table of tables\)/,'a snapshot must reuse one database connection instead of exhausting the pool');
 assert.match(client,/\[502,503,504\]/,'temporary snapshot failures must be retried');
 assert.match(client,/if\(VIBE_ONLY\)\{state\.source='vibe';[\s\S]*throw error;\}/,'Vibe production must never fall back to Supabase reads');

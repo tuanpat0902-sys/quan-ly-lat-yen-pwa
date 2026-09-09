@@ -15,7 +15,8 @@ vm.runInNewContext(browserSource, {
   window, location: { hostname: 'test.tinhgon.xyz' }, Date, setTimeout,
   fetch: () => { const request = deferred(); requests.push(request); return request.promise; },
 });
-const respond = (index, orgId, id) => requests[index].resolve({ ok: true, json: async () => ({ orgId, tables: { ly_products: [{ id }] } }) });
+const tableNames=['ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items','ly_products','ly_recipe_items','ly_inventory','ly_import_receipts','ly_import_items','ly_export_receipts','ly_export_items','ly_stocktake_receipts','ly_stocktake_items','ly_sales','ly_sale_items','ly_stock_transactions','ly_cashflow_entries'];
+const respond = (index, orgId, id) => requests[index].resolve({ ok: true, json: async () => ({ orgId, tables: {...Object.fromEntries(tableNames.map(table=>[table,[]])),ly_products:[{id}]} }) });
 const first = window.lyFreshFetch('ly_products');
 const shared = window.lyFreshFetch('ly_products');
 assert.equal(requests.length, 1, 'concurrent readers share a request');
@@ -32,6 +33,9 @@ assert.equal(window.__lyVibeReadCache.rows('ly_products').length, 0);
 const other = window.lyFreshFetch('ly_products');
 requests[2].resolve({ ok: false, status: 500 });
 await assert.rejects(other, /snapshot-500/, 'another organization must never receive stale rows');
+const partial=window.lyFreshFetch('ly_products');
+requests[3].resolve({ok:true,json:async()=>({orgId:'b',tables:{ly_products:[]}})});
+await assert.rejects(partial,/invalid-snapshot/,'partial response must not blank all missing tables');
 
 const serverSource = await readFile(new URL('./vibehost-snapshot-api.mjs', import.meta.url), 'utf8');
 const builds = [];

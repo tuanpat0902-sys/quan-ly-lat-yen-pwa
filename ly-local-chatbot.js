@@ -1,12 +1,12 @@
 (()=>{
 'use strict';
-const VERSION='2026.09.09.1',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
+const VERSION='2026.09.09.2',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',aiMode:'local',aiRetryAt:0,openingDraftId:'',lastFocus:null};
 const text=value=>String(value??'').trim();
 const esc=value=>text(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const normalize=value=>text(value).toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
+const normalize=value=>text(value).replace(/\u2060/g,'').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
 function originalPhrase(message,folded){
   const target=normalize(folded),raw=text(message).normalize('NFC');
   if(!target)return text(folded);
@@ -128,7 +128,7 @@ function packagedQuantityNear(message,itemName,item){
   const source=normalize(message),name=normalize(itemName),number='(\\d+(?:[.,]\\d+)?|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',pack='(chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)',measure='(?:\\s+\\d+(?:[.,]\\d+)?\\s*(?:kg|ky|kilogram|g|gram|ml|l|lit))?';
   let at=source.indexOf(name);
   while(at>=0){
-    const before=source.slice(Math.max(0,at-64),at),match=before.match(new RegExp(`${number}\\s*${pack}${measure}\\s*$`));
+    const before=source.slice(Math.max(0,at-64),at),after=source.slice(at+name.length),match=before.match(new RegExp(`${number}\\s*${pack}${measure}\\s*$`))||after.match(new RegExp(`^\\s*(?:x|:)?\\s*${number}\\s*${pack}(?=\\s|$)`));
     if(match){const unit=canonicalUnit(match[2]),purchase=canonicalUnit(item?.purchase_unit||item?.purchaseUnit),base=canonicalUnit(item?.unit);if(unit&&(unit===purchase||unit===base))return {quantity:parsedQuantity(match[1]),unit};}
     at=source.indexOf(name,at+name.length);
   }
@@ -548,7 +548,11 @@ function fillDraftItems(draft,contract,form){
   while(rows.length>1){rows.pop().remove();}
   const add=form.querySelector(contract.add);
   while(rows.length<draft.items.length&&add){add.click();rows=[...holder.querySelectorAll(contract.row)];}
-  draft.items.forEach((item,index)=>{const row=rows[index];if(!row)return;const select=row.querySelector(contract.select),quantity=row.querySelector(contract.quantity),unitCost=contract.unitCost?row.querySelector(contract.unitCost):null,itemDiscountType=row.querySelector('.srItemDiscountType'),itemDiscountValue=row.querySelector('.srItemDiscountValue');if(select){select.value=String(item.id);signal(select,'change');}if(quantity){quantity.value=item.quantity===null?'':String(item.quantity);signal(quantity,'input');}if(unitCost&&item.unit_cost!==null&&item.unit_cost!==undefined){unitCost.value=String(item.unit_cost);signal(unitCost,'input');}if(item.discount&&itemDiscountType&&itemDiscountValue){itemDiscountType.value=item.discount.type;signal(itemDiscountType,'change');itemDiscountValue.value=String(item.discount.value);signal(itemDiscountValue,'input');}});
+  draft.items.forEach((item,index)=>{const row=rows[index];if(!row)return;const select=row.querySelector(contract.select),quantity=row.querySelector(contract.quantity),unitCost=contract.unitCost?row.querySelector(contract.unitCost):null,itemDiscountType=row.querySelector('.srItemDiscountType'),itemDiscountValue=row.querySelector('.srItemDiscountValue');if(select){select.value=String(item.id);signal(select,'change');}
+    // Ingredient selection can default to the purchase unit; pair the number with its actual draft unit.
+    const unit=row.querySelector(draft.kind==='import'?'.irUnit':draft.kind==='export'?'.erUnit':'.unusedUnit');
+    if(unit){const option=[...(unit.options||[])].find(option=>canonicalUnit(option.value)===canonicalUnit(item.unit));if(option){unit.value=option.value;signal(unit,'change');}}
+    if(quantity){quantity.value=item.quantity===null?'':String(item.quantity);signal(quantity,'input');}if(unitCost&&item.unit_cost!==null&&item.unit_cost!==undefined){unitCost.value=String(item.unit_cost);signal(unitCost,'input');}if(item.discount&&itemDiscountType&&itemDiscountValue){itemDiscountType.value=item.discount.type;signal(itemDiscountType,'change');itemDiscountValue.value=String(item.discount.value);signal(itemDiscountValue,'input');}});
 }
 async function openRecipeDraft(draft){
   await navigate('recipes');

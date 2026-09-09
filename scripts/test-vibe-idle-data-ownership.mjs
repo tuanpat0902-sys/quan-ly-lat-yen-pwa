@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import vm from 'node:vm';
+const db={warehouses:[{id:'w'}],products:[{id:'p'}],recipeItems:[{id:'r'}]};
+let refreshes=0;
+const window={__lyFreshOrgId:'org',__lyFreshCoreV2:{store:{getState:()=>({warehouses:[],products:[]})},refreshCoreDomains:async()=>{refreshes++;}},__lyFreshCoreV2Shadow:{status:()=>({phase:'ready',orgId:'org'})},addEventListener(){},removeEventListener(){}};
+const context=vm.createContext({window,db,location:{hostname:'app.tinhgon.xyz'},document:{hidden:false},navigator:{onLine:true},Date,setTimeout:()=>0,clearTimeout(){},console});
+const hydration=await fs.readFile(new URL('../ly-fresh-core-v2-legacy-hydration.js',import.meta.url),'utf8');
+vm.runInContext(hydration,context);
+assert.equal(window.__lyFreshCoreV2LegacyHydration.hydrate({warehouses:[],products:[]}),false);
+assert.equal(db.products[0].id,'p','legacy empty state cannot wipe confirmed Vibe data');
+const reads=await fs.readFile(new URL('../ly-fresh-core-v2-read-takeover.js',import.meta.url),'utf8');
+vm.runInContext(reads.replace('setTimeout(boot,0);','window.testResume=onVisibilityCapture;'),context);
+window.testResume();
+assert.equal(refreshes,0,'resume must not refresh and project obsolete V2 data on Vibe');
+console.log('Vibe idle resume preserves authoritative data: PASS');

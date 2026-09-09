@@ -21,7 +21,7 @@ function makeRow(kind,id=''){
 function mountKind(kind){
   const spec=kinds[kind];rows[kind]=[];
   const classList={open:false,contains(name){return name==='open'&&this.open;}};
-  const add={click(){rows[kind].push(makeRow(kind));}};
+  const add={click(){const row=makeRow(kind),query=row.querySelector.bind(row),unit={...control(),value:'hộp',options:['hộp','g','kg','lít'].map(value=>({value}))};row.querySelector=selector=>selector==='.irUnit'||selector==='.erUnit'?unit:query(selector);rows[kind].push(row);}};
   const form={classList,querySelector(selector){return selector.includes('addImportReceiptLine')||selector.includes('addExportReceiptLine')||selector.includes('addSaleReceiptLine')?add:null;},scrollIntoView(){}};
   const holder={querySelectorAll(selector){return selector===spec.rowSelector?rows[kind]:[];}};
   const toggle={click(){classList.open=true;opened.push(kind);if(kind==='stocktake'&&!rows[kind].length){rows[kind].push(makeRow(kind,'i1'),makeRow(kind,'i2'));}else if(kind!=='stocktake'&&!rows[kind].length)add.click();}};
@@ -53,6 +53,8 @@ const replacementImport=assistant.assistantReply('Tạo phiếu nhập 4 kg Đư
 
 const pricedImport=assistant.assistantReply('Nhập 1 kg Bột cacao, thành tiền nhập 100.000').draft;
 const packagedImport=assistant.assistantReply('Nhập 1 hộp (500 g) Bột cacao').draft;assert.equal(packagedImport.items[0].quantity,1);assert.equal(packagedImport.items[0].unit,'hop');await assistant.executeDraft(packagedImport);assert.equal(rows.import[0].querySelector('.irQty').value,'1','package quantity must not be replaced by the parenthetical base weight');
+assert.equal(rows.import[0].querySelector('.irUnit').value,'hộp','receipt uses the accented package option paired with its count');
+const baseImport=assistant.assistantReply('Nhập 500 g Bột cacao').draft;await assistant.executeDraft(baseImport);assert.equal(rows.import[0].querySelector('.irQty').value,'500');assert.equal(rows.import[0].querySelector('.irUnit').value,'g','base quantities must override the purchase-unit default');
 assert.equal(pricedImport.items[0].quantity,1000,'kg must be converted to the ingredient base unit g');assert.equal(pricedImport.items[0].unit_cost,100,'total amount must derive unit cost after conversion');await assistant.executeDraft(pricedImport);assert.equal(rows.import[0].querySelector('.irQty').value,'1000');assert.equal(rows.import[0].querySelector('.irUnitCost').value,'100');
 const convertedPriceImport=assistant.assistantReply('Nhập 10 kg Bột cacao đơn giá 10 nghìn').draft;assert.equal(convertedPriceImport.items[0].quantity,10000);assert.equal(convertedPriceImport.items[0].unit_cost,10);await assistant.executeDraft(convertedPriceImport);assert.equal(rows.import[0].querySelector('.irQty').value,'10000');assert.equal(rows.import[0].querySelector('.irUnitCost').value,'10','the real form must receive the converted base-unit price');
 const multiPriceImport=assistant.assistantReply('Nhập 15kg đá đơn giá 10 nghìn, 15kg bột cacao giá 12 nghìn, 1,2l sữa giá 30 nghìn').draft;await assistant.executeDraft(multiPriceImport);const importByIngredient=id=>rows.import.find(row=>row.querySelector('.irIngredient').value===id);assert.equal(importByIngredient('i4').querySelector('.irUnitCost').value,'10000');assert.equal(importByIngredient('i3').querySelector('.irUnitCost').value,'12');assert.equal(importByIngredient('i2').querySelector('.irUnitCost').value,'30000','each import form row must receive its own parsed unit price');
