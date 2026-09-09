@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='3.0.34',REVISION='fresh-core-v3-shell-authoritative-v35',UI_BUILD='UI-2026.09.09.66';
+  const VERSION='3.0.35',REVISION='fresh-core-v3-shell-authoritative-v36',UI_BUILD='UI-2026.09.09.67';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION&&window.__lyAppVersion?.uiBuild===UI_BUILD)return;
   const LABEL=`Ver ${VERSION} · ${UI_BUILD}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,uiBuild:UI_BUILD,label:LABEL,mounted:false,updateNoticeShown:false};

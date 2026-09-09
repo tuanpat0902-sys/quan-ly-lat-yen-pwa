@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.34",
-  "revision": "fresh-core-v3-shell-authoritative-v35",
-  "loaderAssetVersion": "20260909.1",
+  "appVersion": "3.0.35",
+  "revision": "fresh-core-v3-shell-authoritative-v36",
+  "loaderAssetVersion": "20260909.2",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.09.1",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-258",
-  "redeploy": "2026-09-09-vibe-load-save-chatbot-build-66"
+  "moduleLoaderVersion": "2026.09.09.2",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-259",
+  "redeploy": "2026-09-09-vibe-persistent-business-writes-build-67"
 }
