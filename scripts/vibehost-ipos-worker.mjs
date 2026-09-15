@@ -11,12 +11,12 @@ const detailConcurrency=5;
 let timer,running=false;
 let forcedRecovery=false;
 const metadataCache=new Map();
-const credentialNames=['ly_ipos_authorization','ly_ipos_access_token'];
+const credentialNames=['ly_ipos_authorization','ly_ipos_access_token','ly_ipos_login_email','ly_ipos_login_password'];
 
 function qi(value){return `"${String(value).replaceAll('"','""')}"`;}
 function number(value){const parsed=Number(value||0);return Number.isFinite(parsed)?parsed:0;}
 function canonical(value){const raw=String(value||'').trim();return /^EDT_(.+)_[0-9]+$/.exec(raw)?.[1]||raw;}
-function safeError(error){return String(error?.message||error).replace(/(?:authorization|access_token)[^\s,}]*/gi,'[credential-redacted]').slice(0,400);}
+function safeError(error){return String(error?.message||error).replace(/(?:authorization|access_token|password)[^\s,}]*/gi,'[credential-redacted]').slice(0,400);}
 function localDate(date=new Date()){return new Date(date.getTime()+zoneOffset).toISOString().slice(0,10);}
 function dayWindow(label){const [year,month,day]=label.split('-').map(Number);const start=Date.UTC(year,month-1,day)-zoneOffset;return {label,start,end:start+86_400_000-1};}
 function labels(from,to=localDate()){const result=[];let cursor=dayWindow(from).start;const end=dayWindow(to).start;for(;cursor<=end;cursor+=86_400_000)result.push(localDate(new Date(cursor)));return result;}
@@ -60,12 +60,21 @@ async function bootstrapCredentials(client){
 async function iposConfig(client){
   const value=name=>String(process.env[name]||'').trim();
   let stored=await storedCredentials(client);if(!stored.ly_ipos_authorization||!stored.ly_ipos_access_token)stored={...stored,...await bootstrapCredentials(client)};
-  const config={authorization:stored.ly_ipos_authorization||value('IPOS_AUTHORIZATION'),accessToken:stored.ly_ipos_access_token||value('IPOS_ACCESS_TOKEN'),companyUid:value('IPOS_COMPANY_UID'),brandUid:value('IPOS_BRAND_UID'),cityUid:value('IPOS_CITY_UID'),storeUid:value('IPOS_STORE_UID')};
-  if(Object.values(config).some(item=>!item))throw new Error('iPOS credentials/configuration are incomplete');
+  const config={authorization:stored.ly_ipos_authorization||value('IPOS_AUTHORIZATION'),accessToken:stored.ly_ipos_access_token||value('IPOS_ACCESS_TOKEN'),loginEmail:stored.ly_ipos_login_email||value('IPOS_LOGIN_EMAIL'),loginPassword:stored.ly_ipos_login_password||value('IPOS_LOGIN_PASSWORD'),companyUid:value('IPOS_COMPANY_UID'),brandUid:value('IPOS_BRAND_UID'),cityUid:value('IPOS_CITY_UID'),storeUid:value('IPOS_STORE_UID'),client,authorizationRefreshed:false};
+  if([config.authorization,config.accessToken,config.companyUid,config.brandUid,config.cityUid,config.storeUid].some(item=>!item))throw new Error('iPOS credentials/configuration are incomplete');
   return config;
 }
 function headers(config){return {accept:'application/json, text/plain, */*',authorization:config.authorization,access_token:config.accessToken,fabi_type:'pos-cms',origin:'https://fabi.ipos.vn',referer:'https://fabi.ipos.vn/','accept-language':'vi','x-client-timezone':String(zoneOffset),'user-agent':'lat-yen-vibe-ipos/1.0'};}
-async function iposJson(url,config){return withTransientRetry(async()=>{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),30_000);try{const response=await fetch(url,{headers:headers(config),signal:controller.signal});if(!response.ok){const error=new Error(`iPOS ${response.status}: ${(await response.text()).slice(0,200)}`);error.status=response.status;throw error;}return response.json();}finally{clearTimeout(timeout);}});}
+async function refreshIposAuthorization(config){
+  if(!config.loginEmail||!config.loginPassword)throw Object.assign(new Error('iPOS login credentials are required to renew the expired session'),{status:401});
+  const response=await fetch('https://posapi.ipos.vn/api/accounts/v1/user/login',{method:'POST',headers:{accept:'application/json, text/plain, */*','content-type':'application/json',access_token:config.accessToken,fabi_type:'pos-cms',origin:'https://fabi.ipos.vn',referer:'https://fabi.ipos.vn/','user-agent':'lat-yen-vibe-ipos/1.0'},body:JSON.stringify({email:config.loginEmail.toLowerCase().trim(),password:config.loginPassword})});
+  const payload=await response.json().catch(()=>null),token=String(payload?.data?.data?.token||'').trim();if(!response.ok||!token)throw Object.assign(new Error(`iPOS session renewal failed (${response.status})`),{status:response.status||401});
+  await config.client.query(`insert into ${qi(schema)}.${qi('ly_runtime_secrets')}(name,encrypted_value,updated_at) values('ly_ipos_authorization',$1,now()) on conflict(name) do update set encrypted_value=excluded.encrypted_value,updated_at=now()`,[encryptCredential(token)]);config.authorization=token;config.authorizationRefreshed=true;console.log('[ipos-vibe] expired iPOS session renewed automatically');
+}
+async function iposJson(url,config){
+  const request=()=>withTransientRetry(async()=>{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),30_000);try{const response=await fetch(url,{headers:headers(config),signal:controller.signal});if(!response.ok){const error=new Error(`iPOS ${response.status}: ${(await response.text()).slice(0,200)}`);error.status=response.status;throw error;}return response.json();}finally{clearTimeout(timeout);}});
+  try{return await request();}catch(error){if(classifyIposFailure(error).needsReconnect&&!config.authorizationRefreshed&&config.loginEmail&&config.loginPassword){await refreshIposAuthorization(config);return request();}throw error;}
+}
 function arrayPayload(payload){if(Array.isArray(payload))return payload;for(const key of ['data','result','items','sales'])if(Array.isArray(payload?.[key]))return payload[key];throw new Error('Unexpected iPOS array response');}
 function objectPayload(payload){const data=payload?.data;return data&&typeof data==='object'&&!Array.isArray(data)?data:null;}
 async function catalog(config,endpoint){const url=new URL(`https://posapi.ipos.vn/api/mdata/v1/${endpoint}`);url.searchParams.set('skip_limit','true');for(const key of ['companyUid','brandUid','cityUid'])url.searchParams.set(key.replace('Uid','_uid'),config[key]);return arrayPayload(await iposJson(url,config));}

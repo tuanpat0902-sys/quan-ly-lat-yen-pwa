@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 import {classifyIposFailure,failedHealth,mayAttempt,recoveryStartDay,successfulHealth,withTransientRetry} from './vibehost-ipos-recovery.mjs';
 
 assert.deepEqual(classifyIposFailure(Object.assign(new Error('jwt expired'),{status:401})),{code:'AUTH_EXPIRED',retryable:false,needsReconnect:true});
@@ -10,4 +11,10 @@ const now=new Date('2026-09-15T12:00:00Z'),failed=failedHealth({},Object.assign(
 assert.equal(failed.status,'needs_reconnect');assert.equal(failed.next_retry_at,'2026-09-15T13:00:00.000Z');assert.equal(mayAttempt(failed,now.getTime()),false);
 assert.equal(recoveryStartDay({last_success_day:'2026-08-01'},'2026-09-15',14),'2026-09-02');
 assert.equal(successfulHealth(now,{sales:2}).status,'healthy');
+const worker=await fs.readFile(new URL('./vibehost-ipos-worker.mjs',import.meta.url),'utf8');
+const bootstrap=await fs.readFile(new URL('./vibehost-ipos-bootstrap.mjs',import.meta.url),'utf8');
+assert.match(worker,/api\/accounts\/v1\/user\/login/,'expired sessions must use the verified iPOS CMS login endpoint');
+assert.match(worker,/!config\.authorizationRefreshed&&config\.loginEmail&&config\.loginPassword/,'automatic renewal must run at most once per synchronization');
+assert.match(worker,/ly_ipos_authorization[\s\S]*encryptCredential\(token\)/,'renewed authorization must be encrypted at rest');
+assert.match(bootstrap,/ly_ipos_login_password[\s\S]*encrypt\(value\)/,'optional iPOS login credentials must be encrypted at rest');
 console.log('Vibe iPOS self-healing retry, circuit-breaker and catch-up policy: PASS');
