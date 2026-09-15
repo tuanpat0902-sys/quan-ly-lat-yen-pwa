@@ -14,6 +14,7 @@ assert.equal(successfulHealth(now,{sales:2}).status,'healthy');
 const worker=await fs.readFile(new URL('./vibehost-ipos-worker.mjs',import.meta.url),'utf8');
 const bootstrap=await fs.readFile(new URL('./vibehost-ipos-bootstrap.mjs',import.meta.url),'utf8');
 assert.match(worker,/api\/accounts\/v1\/user\/login/,'expired sessions must use the verified iPOS CMS login endpoint');
+assert.match(worker,/payload\?\.data\?\.token/,'session renewal must accept the raw iPOS response beneath the CMS HTTP wrapper');
 assert.match(worker,/!config\.authorizationRefreshed&&config\.loginEmail&&config\.loginPassword/,'automatic renewal must run at most once per synchronization');
 assert.match(worker,/ly_ipos_authorization[\s\S]*encryptCredential\(token\)/,'renewed authorization must be encrypted at rest');
 assert.match(worker,/accessToken:value\('IPOS_ACCESS_TOKEN'\)\|\|stored\.ly_ipos_access_token/,'the current Vibe application token must override an old migrated copy');
