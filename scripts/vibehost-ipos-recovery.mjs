@@ -52,3 +52,9 @@ export function recoveryStartDay(health,today,maxDays=14){
   const floorLabel=floor.toISOString().slice(0,10);
   return candidate<floorLabel?floorLabel:candidate>today?today:candidate;
 }
+
+export function lookbackStartDay(today,days=7){
+  const count=Math.min(31,Math.max(1,Math.trunc(Number(days)||7)));
+  const start=new Date(`${today}T00:00:00Z`);start.setUTCDate(start.getUTCDate()-count+1);
+  return start.toISOString().slice(0,10);
+}
