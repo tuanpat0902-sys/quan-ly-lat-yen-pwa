@@ -38,8 +38,8 @@ export function failedHealth(previous,error,now=new Date()){
   };
 }
 
-export function successfulHealth(now=new Date(),summary={}){
-  return {status:'healthy',error_code:null,consecutive_failures:0,last_error_at:null,next_retry_at:null,last_success_at:now.toISOString(),last_success_day:now.toISOString().slice(0,10),summary};
+export function successfulHealth(now=new Date(),summary={},businessDay=now.toISOString().slice(0,10)){
+  return {status:'healthy',error_code:null,consecutive_failures:0,last_error_at:null,next_retry_at:null,last_success_at:now.toISOString(),last_success_day:businessDay,summary};
 }
 
 export function mayAttempt(health,now=Date.now()){
