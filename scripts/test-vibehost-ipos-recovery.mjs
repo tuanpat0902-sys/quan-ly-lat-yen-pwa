@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {classifyIposFailure,failedHealth,mayAttempt,recoveryStartDay,successfulHealth,withTransientRetry} from './vibehost-ipos-recovery.mjs';
+
+assert.deepEqual(classifyIposFailure(Object.assign(new Error('jwt expired'),{status:401})),{code:'AUTH_EXPIRED',retryable:false,needsReconnect:true});
+let calls=0;
+const value=await withTransientRetry(async()=>{calls++;if(calls<3)throw Object.assign(new Error('temporary'),{status:503});return 'ok';},{sleep:async()=>{}});
+assert.equal(value,'ok');assert.equal(calls,3);
+calls=0;await assert.rejects(()=>withTransientRetry(async()=>{calls++;throw Object.assign(new Error('jwt expired'),{status:401});},{sleep:async()=>{}}));assert.equal(calls,1);
+const now=new Date('2026-09-15T12:00:00Z'),failed=failedHealth({},Object.assign(new Error('jwt expired'),{status:401}),now);
+assert.equal(failed.status,'needs_reconnect');assert.equal(failed.next_retry_at,'2026-09-15T13:00:00.000Z');assert.equal(mayAttempt(failed,now.getTime()),false);
+assert.equal(recoveryStartDay({last_success_day:'2026-08-01'},'2026-09-15',14),'2026-09-02');
+assert.equal(successfulHealth(now,{sales:2}).status,'healthy');
+console.log('Vibe iPOS self-healing retry, circuit-breaker and catch-up policy: PASS');
