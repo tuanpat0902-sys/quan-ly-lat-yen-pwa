@@ -60,7 +60,7 @@ async function bootstrapCredentials(client){
 async function iposConfig(client){
   const value=name=>String(process.env[name]||'').trim();
   let stored=await storedCredentials(client);if(!stored.ly_ipos_authorization||!stored.ly_ipos_access_token)stored={...stored,...await bootstrapCredentials(client)};
-  const config={authorization:stored.ly_ipos_authorization||value('IPOS_AUTHORIZATION'),accessToken:stored.ly_ipos_access_token||value('IPOS_ACCESS_TOKEN'),loginEmail:stored.ly_ipos_login_email||value('IPOS_LOGIN_EMAIL'),loginPassword:stored.ly_ipos_login_password||value('IPOS_LOGIN_PASSWORD'),companyUid:value('IPOS_COMPANY_UID'),brandUid:value('IPOS_BRAND_UID'),cityUid:value('IPOS_CITY_UID'),storeUid:value('IPOS_STORE_UID'),client,authorizationRefreshed:false};
+  const config={authorization:stored.ly_ipos_authorization||value('IPOS_AUTHORIZATION'),accessToken:value('IPOS_ACCESS_TOKEN')||stored.ly_ipos_access_token,loginEmail:value('IPOS_LOGIN_EMAIL')||stored.ly_ipos_login_email,loginPassword:value('IPOS_LOGIN_PASSWORD')||stored.ly_ipos_login_password,companyUid:value('IPOS_COMPANY_UID'),brandUid:value('IPOS_BRAND_UID'),cityUid:value('IPOS_CITY_UID'),storeUid:value('IPOS_STORE_UID'),client,authorizationRefreshed:false};
   if([config.authorization,config.accessToken,config.companyUid,config.brandUid,config.cityUid,config.storeUid].some(item=>!item))throw new Error('iPOS credentials/configuration are incomplete');
   return config;
 }
@@ -68,7 +68,7 @@ function headers(config){return {accept:'application/json, text/plain, */*',auth
 async function refreshIposAuthorization(config){
   if(!config.loginEmail||!config.loginPassword)throw Object.assign(new Error('iPOS login credentials are required to renew the expired session'),{status:401});
   const response=await fetch('https://posapi.ipos.vn/api/accounts/v1/user/login',{method:'POST',headers:{accept:'application/json, text/plain, */*','content-type':'application/json',access_token:config.accessToken,fabi_type:'pos-cms',origin:'https://fabi.ipos.vn',referer:'https://fabi.ipos.vn/','user-agent':'lat-yen-vibe-ipos/1.0'},body:JSON.stringify({email:config.loginEmail.toLowerCase().trim(),password:config.loginPassword})});
-  const payload=await response.json().catch(()=>null),token=String(payload?.data?.data?.token||'').trim();if(!response.ok||!token)throw Object.assign(new Error(`iPOS session renewal failed (${response.status})`),{status:response.status||401});
+  const payload=await response.json().catch(()=>null),token=String(payload?.data?.data?.token||'').trim();if(!response.ok||!token){const reason=String(payload?.error?.message||payload?.message?.message||payload?.message||payload?.code||'authentication rejected').slice(0,120);throw Object.assign(new Error(`iPOS session renewal failed (${response.status}): ${reason}`),{status:response.status||401});}
   await config.client.query(`insert into ${qi(schema)}.${qi('ly_runtime_secrets')}(name,encrypted_value,updated_at) values('ly_ipos_authorization',$1,now()) on conflict(name) do update set encrypted_value=excluded.encrypted_value,updated_at=now()`,[encryptCredential(token)]);config.authorization=token;config.authorizationRefreshed=true;console.log('[ipos-vibe] expired iPOS session renewed automatically');
 }
 async function iposJson(url,config){
