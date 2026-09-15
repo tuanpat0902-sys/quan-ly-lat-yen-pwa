@@ -16,5 +16,6 @@ const bootstrap=await fs.readFile(new URL('./vibehost-ipos-bootstrap.mjs',import
 assert.match(worker,/api\/accounts\/v1\/user\/login/,'expired sessions must use the verified iPOS CMS login endpoint');
 assert.match(worker,/!config\.authorizationRefreshed&&config\.loginEmail&&config\.loginPassword/,'automatic renewal must run at most once per synchronization');
 assert.match(worker,/ly_ipos_authorization[\s\S]*encryptCredential\(token\)/,'renewed authorization must be encrypted at rest');
+assert.match(worker,/runSync\(\{backfill:true,force:true\}\)/,'a fresh deployment must attempt one immediate recovery despite an old circuit-breaker state');
 assert.match(bootstrap,/ly_ipos_login_password[\s\S]*encrypt\(value\)/,'optional iPOS login credentials must be encrypted at rest');
 console.log('Vibe iPOS self-healing retry, circuit-breaker and catch-up policy: PASS');
