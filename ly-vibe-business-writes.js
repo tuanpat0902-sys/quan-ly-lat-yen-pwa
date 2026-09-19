@@ -1,11 +1,24 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.09.5';
+  const VERSION='2026.09.19.1';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
   async function post(path,payload){const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   async function request(path,options={}){const response=await fetch(path,{credentials:'same-origin',...options}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
+  function receiptId(value){return typeof lyFreshRef==='function'?lyFreshRef(value):'';}
+  async function confirmReceiptDeletion(kind,encoded){
+    const rows=kind==='import'?window.receiptRowsByKey?.(encoded):window.exportReceiptRows?.(encoded),id=receiptId(rows?.[0]?.reference_id||encoded);
+    if(!id)return alert('Không xác định được mã phiếu trên Vibe Host. Chưa có dữ liệu nào bị xóa.');
+    const receiptNo=kind==='import'?window.receiptNumberFromMovement?.(rows?.[0]):window.exportReceiptNumberFromMovement?.(rows?.[0]);
+    if(!await window.appConfirm?.(`Xóa phiếu ${receiptNo||id} và hoàn tác tồn kho liên quan?`,'Xóa phiếu'))return false;
+    let result;
+    try{result=await request(`/api/v1/business/${kind}/${encodeURIComponent(id)}`,{method:'DELETE'});}
+    catch(error){alert('Không thể xóa phiếu: '+(error?.message||error));return false;}
+    try{await refreshFromVibe();window.toastMsg?.(`Đã xóa phiếu ${result.receipt_no||receiptNo||''} trên Vibe Host`);}
+    catch(error){alert('Phiếu đã xóa trên Vibe Host nhưng danh sách chưa tải lại. Vui lòng tải lại trang.');}
+    return true;
+  }
   function settle(){invalidateDataIndexes?.();invalidateDerivedCaches?.();cacheSave?.();}
   async function refreshFromVibe(){
     window.dispatchEvent?.(new CustomEvent('latyen:change-signal',{detail:{source:'vibe-write'}}));
@@ -28,7 +41,7 @@
 
   function install(){
     if(typeof window.saveIngredient!=='function'||typeof window.saveRecipe!=='function')return false;
-    const legacyIngredient=window.saveIngredient,legacyRecipe=window.saveRecipe,legacyWarehouse=window.saveWarehouse,legacySupplier=window.saveSupplier,legacyCashflow=window.addCashflowEntry,legacyImport=window.saveImportReceipt,legacyExport=window.saveExportReceipt,legacyStocktake=window.saveStocktakeReceipt,legacySale=window.saveSaleReceipt,legacyEmployee=window.saveEmployee,legacyDeleteEmployee=window.deleteEmployee,legacyLoadEmployees=window.loadEmployees;
+    const legacyIngredient=window.saveIngredient,legacyRecipe=window.saveRecipe,legacyWarehouse=window.saveWarehouse,legacySupplier=window.saveSupplier,legacyCashflow=window.addCashflowEntry,legacyImport=window.saveImportReceipt,legacyExport=window.saveExportReceipt,legacyDeleteImport=window.deleteImportReceipt,legacyDeleteExport=window.deleteExportReceipt,legacyStocktake=window.saveStocktakeReceipt,legacySale=window.saveSaleReceipt,legacyEmployee=window.saveEmployee,legacyDeleteEmployee=window.deleteEmployee,legacyLoadEmployees=window.loadEmployees;
     if(typeof legacyEmployee!=='function'||typeof legacyDeleteEmployee!=='function'||typeof legacyLoadEmployees!=='function')return false;
     window.loadEmployees=function(){return dedupeEmployees(legacyLoadEmployees());};
     window.saveIngredient=async function(id){
@@ -49,12 +62,14 @@
     };
     window.saveImportReceipt=async function(){
       if(!usesVibe())return legacyImport?.();const receiptNo=String($('receiptNo')?.value||'').trim(),receiptDate=String($('receiptDate')?.value||'').trim(),note=String($('receiptNote')?.value||'').trim(),items=window.getImportReceiptLines?.()||[],editKey=$('inlineImportReceiptForm')?.dataset?.editKey||'',btn=$('saveReceiptBtn'),status=$('receiptResult');if(!receiptNo||!items.length)return alert('Nhập số phiếu và ít nhất 1 mặt hàng.');
-      try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}const saved=await post('/api/v1/business/import',{header:{id:typeof lyFreshRef==='function'?lyFreshRef(editKey):null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note},items});await refreshFromVibe();window.toggleImportReceiptForm?.(false);window.toastMsg?.(`Đã lưu phiếu nhập ${receiptNo} trên Vibe Host`);return saved.id;}catch(error){if(status)status.textContent=`Lỗi: ${error?.message||error}`;alert('Lỗi phiếu nhập: '+(error?.message||error));return false;}finally{if(btn){btn.disabled=false;btn.textContent=editKey?'Lưu thay đổi phiếu':'Xác nhận nhập kho';}}
+      try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}const saved=await post('/api/v1/business/import',{header:{id:receiptId(editKey)||null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note},items});try{await refreshFromVibe();window.toggleImportReceiptForm?.(false);window.toastMsg?.(`Đã lưu phiếu nhập ${receiptNo} trên Vibe Host`);}catch(error){if(status)status.textContent='Đã lưu trên Vibe Host nhưng danh sách chưa tải lại. Vui lòng tải lại trang.';window.toastMsg?.('Phiếu đã lưu trên Vibe Host; vui lòng tải lại trang.');}return saved.id;}catch(error){if(status)status.textContent=`Lỗi: ${error?.message||error}`;alert('Lỗi phiếu nhập: '+(error?.message||error));return false;}finally{if(btn){btn.disabled=false;btn.textContent=editKey?'Lưu thay đổi phiếu':'Xác nhận nhập kho';}}
     };
     window.saveExportReceipt=async function(){
       if(!usesVibe())return legacyExport?.();const receiptNo=String($('exportReceiptNo')?.value||'').trim(),receiptDate=String($('exportReceiptDate')?.value||'').trim(),reason=String($('exportReceiptReason')?.value||'').trim(),financeTreatment=$('exportFinanceTreatment')?.value==='expense'?'expense':'inventory',items=window.getExportReceiptLines?.()||[],editKey=$('inlineExportReceiptForm')?.dataset?.editReferenceId||'',btn=$('saveExportReceiptBtn'),status=$('exportReceiptResult');if(!receiptNo||!items.length)return alert('Nhập số phiếu và ít nhất 1 mặt hàng.');
-      try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}const saved=await post('/api/v1/business/export',{header:{id:typeof lyFreshRef==='function'?lyFreshRef(editKey):null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,reason,finance_treatment:financeTreatment},items});await refreshFromVibe();window.toggleExportReceiptForm?.(false);window.toastMsg?.(`Đã lưu phiếu xuất ${receiptNo} trên Vibe Host`);return saved.id;}catch(error){if(status)status.textContent=`Lỗi: ${error?.message||error}`;alert('Lỗi phiếu xuất: '+(error?.message||error));return false;}finally{if(btn){btn.disabled=false;btn.textContent=editKey?'Lưu thay đổi phiếu xuất':'Xác nhận xuất kho';}}
+      try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}const saved=await post('/api/v1/business/export',{header:{id:receiptId(editKey)||null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,reason,finance_treatment:financeTreatment},items});try{await refreshFromVibe();window.toggleExportReceiptForm?.(false);window.toastMsg?.(`Đã lưu phiếu xuất ${receiptNo} trên Vibe Host`);}catch(error){if(status)status.textContent='Đã lưu trên Vibe Host nhưng danh sách chưa tải lại. Vui lòng tải lại trang.';window.toastMsg?.('Phiếu đã lưu trên Vibe Host; vui lòng tải lại trang.');}return saved.id;}catch(error){if(status)status.textContent=`Lỗi: ${error?.message||error}`;alert('Lỗi phiếu xuất: '+(error?.message||error));return false;}finally{if(btn){btn.disabled=false;btn.textContent=editKey?'Lưu thay đổi phiếu xuất':'Xác nhận xuất kho';}}
     };
+    window.deleteImportReceipt=async function(encoded){return usesVibe()?confirmReceiptDeletion('import',encoded):legacyDeleteImport?.(encoded);};
+    window.deleteExportReceipt=async function(encoded){return usesVibe()?confirmReceiptDeletion('export',encoded):legacyDeleteExport?.(encoded);};
     window.saveStocktakeReceipt=async function(){
       if(!usesVibe())return legacyStocktake?.();const receiptNo=String($('stocktakeReceiptNo')?.value||'').trim(),receiptDate=String($('stocktakeReceiptDate')?.value||'').trim(),note=String($('stocktakeReceiptNote')?.value||'').trim(),lines=window.getStocktakeReceiptLines?.()||[],editKey=String($('inlineStocktakeForm')?.dataset?.editKey||''),btn=$('saveStocktakeReceiptBtn'),status=$('stocktakeReceiptResult');if(!receiptNo||!lines.length)return alert('Nhập số phiếu kiểm kê.');
       try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}const saved=await post('/api/v1/business/stocktake',{header:{id:typeof lyFreshRef==='function'?lyFreshRef(editKey):null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note},items:lines.map((line,index)=>({ingredient_id:line.ingredient_id,actual_qty:Number(line.actual||0),line_order:Number(line.line_order||index+1)}))});await refreshFromVibe();window.toggleStocktakeForm?.(false);window.toastMsg?.(`Đã lưu phiếu kiểm kê ${receiptNo} trên Vibe Host`);return saved.id;}catch(error){if(status)status.textContent=`Lỗi: ${error?.message||error}`;alert('Lỗi kiểm kê: '+(error?.message||error));return false;}finally{if(btn){btn.disabled=false;btn.textContent=editKey?'Lưu thay đổi phiếu':'Lưu phiếu kiểm kê';}}

@@ -81,10 +81,18 @@ async function existingDocumentEffect(client,orgId,kind,id){
   const rows=(await client.query(`select * from ${qi(schema)}.${qi(config[0])} where org_id=$1::uuid and receipt_id=$2::uuid`,[orgId,id])).rows;
   for(const row of rows){const value=config[1]===null?number(row.diff_qty):config[1]*number(row.quantity);effect.set(row.ingredient_id,(effect.get(row.ingredient_id)||0)+value);}return effect;
 }
+async function documentHeader(client,orgId,kind,id){
+  const table={import:'ly_import_receipts',export:'ly_export_receipts',stocktake:'ly_stocktake_receipts'}[kind];
+  return (await client.query(`select * from ${qi(schema)}.${qi(table)} where id=$1::uuid and org_id=$2::uuid for update`,[id,orgId])).rows[0]||null;
+}
+async function recalculateImportCosts(client,orgId,ingredientIds){
+  for(const ingredientId of ingredientIds)await client.query(`update ${qi(schema)}.ly_ingredients i set cost=coalesce((select sum(x.quantity*x.unit_cost)/nullif(sum(x.quantity),0) from ${qi(schema)}.ly_import_items x where x.org_id=$1::uuid and x.ingredient_id=$2::uuid),0),updated_at=now() where i.org_id=$1::uuid and i.id=$2::uuid`,[orgId,ingredientId]);
+}
 async function saveDocument(client,user,kind,input){
   const names={import:['ly_import_receipts','ly_import_items'],export:['ly_export_receipts','ly_export_items'],stocktake:['ly_stocktake_receipts','ly_stocktake_items']}[kind];if(!names)throw new Error('Invalid document');
-  const value=input?.header||{},warehouseId=uuid(value.warehouse_id),id=uuid(value.id)||randomUUID(),receiptNo=String(value.receipt_no||'').trim();if(!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid document');
-  const previous=await existingDocumentEffect(client,user.orgId,kind,id);for(const [ingredientId,delta] of previous)await adjustInventory(client,user.orgId,warehouseId,ingredientId,-delta);
+  const value=input?.header||{},warehouseId=uuid(value.warehouse_id),requestedId=String(value.id||'').trim(),id=requestedId?uuid(requestedId):randomUUID(),receiptNo=String(value.receipt_no||'').trim();if(!id||!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid document');
+  const previousHeader=requestedId?await documentHeader(client,user.orgId,kind,id):null;if(requestedId&&!previousHeader)throw new Error('Phiếu cần sửa không tồn tại trên Vibe Host');
+  const previous=await existingDocumentEffect(client,user.orgId,kind,id);for(const [ingredientId,delta] of previous)await adjustInventory(client,user.orgId,previousHeader?.warehouse_id||warehouseId,ingredientId,-delta);
   await client.query(`delete from ${qi(schema)}.${qi(names[1])} where org_id=$1::uuid and receipt_id=$2::uuid`,[user.orgId,id]);
   const totalAmount=(input.items||[]).reduce((sum,item)=>sum+Math.max(number(item.quantity),0)*Math.max(number(item.unit_cost),0),0),header=await upsert(client,names[0],{id,org_id:user.orgId,warehouse_id:warehouseId,receipt_no:receiptNo,receipt_date:value.receipt_date||new Date().toISOString().slice(0,10),note:value.note||'',reason:value.reason||'',finance_treatment:value.finance_treatment||'inventory',total_amount:totalAmount}),items=[],importIngredients=new Set();
   for(const [index,item] of (input.items||[]).entries()){
@@ -95,8 +103,19 @@ async function saveDocument(client,user,kind,input){
       const quantity=Math.max(number(item.quantity),0),sign=kind==='import'?1:-1,supplierId=kind==='import'?await ensureSupplier(client,user.orgId,item.supplier_name):null,unitCost=Math.max(number(item.unit_cost),0);if(quantity<=0)continue;items.push(await insert(client,names[1],{org_id:user.orgId,receipt_id:id,ingredient_id:ingredientId,supplier_id:supplierId,quantity,unit_cost:unitCost,total_cost:quantity*unitCost,line_order:index+1}));await adjustInventory(client,user.orgId,warehouseId,ingredientId,sign*quantity);if(kind==='import')importIngredients.add(ingredientId);
     }
   }
-  for(const ingredientId of importIngredients)await client.query(`update ${qi(schema)}.ly_ingredients i set cost=coalesce((select sum(x.quantity*x.unit_cost)/nullif(sum(x.quantity),0) from ${qi(schema)}.ly_import_items x where x.org_id=$1::uuid and x.ingredient_id=$2::uuid),i.cost),updated_at=now() where i.org_id=$1::uuid and i.id=$2::uuid`,[user.orgId,ingredientId]);
+  if(kind==='import')await recalculateImportCosts(client,user.orgId,new Set([...previous.keys(),...importIngredients]));
   return {id,header,items};
+}
+async function deleteDocument(client,user,kind,id){
+  const names={import:['ly_import_receipts','ly_import_items'],export:['ly_export_receipts','ly_export_items']}[kind];
+  if(!names||!uuid(id))throw new Error('Invalid document');
+  const header=await documentHeader(client,user.orgId,kind,id);if(!header)return {ok:false,error:'Phiếu không tồn tại hoặc đã được xóa'};
+  const effect=await existingDocumentEffect(client,user.orgId,kind,id);
+  for(const [ingredientId,delta] of effect)await adjustInventory(client,user.orgId,header.warehouse_id,ingredientId,-delta);
+  await client.query(`delete from ${qi(schema)}.${qi(names[1])} where org_id=$1::uuid and receipt_id=$2::uuid`,[user.orgId,id]);
+  await client.query(`delete from ${qi(schema)}.${qi(names[0])} where org_id=$1::uuid and id=$2::uuid`,[user.orgId,id]);
+  if(kind==='import')await recalculateImportCosts(client,user.orgId,effect.keys());
+  return {ok:true,id,receipt_no:header.receipt_no,deleted_items:effect.size};
 }
 async function saveSale(client,user,input){
   const value=input?.header||{},warehouseId=uuid(value.warehouse_id),id=uuid(value.id)||randomUUID(),receiptNo=String(value.receipt_no||'').trim();if(!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid sale');
@@ -109,13 +128,14 @@ async function saveSale(client,user,input){
 }
 
 export async function handleBusinessMutationApi(request,response,pathname){
-  const employeeMatch=/^\/api\/v1\/business\/employee\/([0-9a-f-]{36})$/i.exec(pathname),known=['/api/v1/business/ingredient','/api/v1/business/product','/api/v1/business/employees','/api/v1/business/warehouse','/api/v1/business/supplier','/api/v1/business/cashflow','/api/v1/business/import','/api/v1/business/export','/api/v1/business/stocktake','/api/v1/business/sale'];if(!known.includes(pathname)&&!employeeMatch)return false;
+  const employeeMatch=/^\/api\/v1\/business\/employee\/([0-9a-f-]{36})$/i.exec(pathname),documentMatch=/^\/api\/v1\/business\/(import|export)\/([0-9a-f-]{36})$/i.exec(pathname),known=['/api/v1/business/ingredient','/api/v1/business/product','/api/v1/business/employees','/api/v1/business/warehouse','/api/v1/business/supplier','/api/v1/business/cashflow','/api/v1/business/import','/api/v1/business/export','/api/v1/business/stocktake','/api/v1/business/sale'];if(!known.includes(pathname)&&!employeeMatch&&!documentMatch)return false;
   let client;
   try{
     const user=await authenticatedVibeUser(request);if(!user){json(response,401,{error:'Authentication required'});return true;}
     client=await acquireClient();
     if(pathname==='/api/v1/business/employees'&&request.method==='GET'){await ensureEmployees(client);const warehouseId=uuid(new URL(request.url,'http://localhost').searchParams.get('warehouse_id'));if(!warehouseId||!await warehouseAllowed(client,user.orgId,warehouseId)){json(response,400,{error:'Invalid warehouse'});return true;}const rows=await client.query(`select * from ${qi(schema)}.ly_employees where org_id=$1::uuid and warehouse_id=$2::uuid order by active desc,name,code`,[user.orgId,warehouseId]);json(response,200,{rows:rows.rows});return true;}
     if(employeeMatch&&request.method==='DELETE'){await ensureEmployees(client);await client.query(`delete from ${qi(schema)}.ly_employees where id=$1::uuid and org_id=$2::uuid`,[employeeMatch[1],user.orgId]);invalidateSnapshot(user.orgId);json(response,200,{ok:true});return true;}
+    if(documentMatch&&request.method==='DELETE'){await client.query('begin');const result=await deleteDocument(client,user,documentMatch[1].toLowerCase(),documentMatch[2]);if(!result.ok){await client.query('rollback');json(response,404,result);return true;}await client.query('commit');invalidateSnapshot(user.orgId);json(response,200,result);return true;}
     if(request.method!=='POST'){response.setHeader('allow','GET, POST, DELETE');json(response,405,{error:'Method Not Allowed'});return true;}
     const input=await readBody(request);await client.query('begin');let result;if(pathname.endsWith('/ingredient'))result=await saveIngredient(client,user,input);else if(pathname.endsWith('/product'))result=await saveProduct(client,user,input);else if(pathname.endsWith('/warehouse'))result=await saveWarehouse(client,user,input.warehouse||{});else if(pathname.endsWith('/supplier'))result=await saveSupplier(client,user,input.supplier||{});else if(pathname.endsWith('/cashflow'))result=await saveCashflow(client,user,input.cashflow||{});else if(pathname.endsWith('/import'))result=await saveDocument(client,user,'import',input);else if(pathname.endsWith('/export'))result=await saveDocument(client,user,'export',input);else if(pathname.endsWith('/stocktake'))result=await saveDocument(client,user,'stocktake',input);else if(pathname.endsWith('/sale'))result=await saveSale(client,user,input);else result=await saveEmployee(client,user,input.employee||{});await client.query('commit');invalidateSnapshot(user.orgId);const reconcile=result?.reconcile;if(reconcile)delete result.reconcile;json(response,200,result);if(reconcile)queueMicrotask(()=>reconcileProductInventory(reconcile));
   }catch(error){if(client)await client.query('rollback').catch(()=>{});console.error(`[business-mutation] ${String(error?.message||error).slice(0,220)}`);json(response,503,{error:'Không thể lưu dữ liệu trên Vibe Host'});}finally{client?.release();}return true;
