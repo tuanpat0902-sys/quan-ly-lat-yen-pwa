@@ -3,7 +3,7 @@
   if(window.__lyFreshCoreV2CashflowTakeoverV1)return;
   window.__lyFreshCoreV2CashflowTakeoverV1=true;
 
-  const VERSION='2026.08.24.3';
+  const VERSION='2026.09.19.1';
   const MAX_WAIT_MS=60000;
   const STARTED_AT=Date.now();
   const TABLE='ly_cashflow_entries';
@@ -14,7 +14,7 @@
   let suppressNextLoad=false;
 
   function legacySupabase(){try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;}
-  function coreReady(){const core=window.__lyFreshCoreV2;const cashflow=core?.domains?.cashflow;return cashflow?.refresh&&cashflow?.create&&cashflow?.update&&cashflow?.remove?core:null;}
+  function coreReady(){if(typeof location!=='undefined'&&location.hostname.endsWith('.tinhgon.xyz'))return null;const core=window.__lyFreshCoreV2;const cashflow=core?.domains?.cashflow;return cashflow?.refresh&&cashflow?.create&&cashflow?.update&&cashflow?.remove?core:null;}
   function response(data,error=null){return error?{data:null,error,status:400,statusText:'V2 cashflow mutation failed'}:{data,error:null,status:200,statusText:'OK'};}
 
   function legacyProjection(entries){
@@ -117,7 +117,7 @@
     suppressNextLoad=false;state.enabled=false;state.phase='disabled';
   }
 
-  function boot(){if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
+  function boot(){if(typeof location!=='undefined'&&location.hostname.endsWith('.tinhgon.xyz')){state.phase='vibe-owned';return;}if(enable())return;if(Date.now()-STARTED_AT>=MAX_WAIT_MS){state.phase='idle-no-context';return;}setTimeout(boot,500);}
 
   window.__lyFreshCoreV2CashflowTakeover={version:VERSION,enable,disable,status:()=>({...state})};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);

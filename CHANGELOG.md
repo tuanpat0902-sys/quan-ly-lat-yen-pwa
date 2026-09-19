@@ -2,6 +2,12 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.43 — 19/09/2026
+
+- Lịch sử Thu/Chi của kho đang chọn đọc trực tiếp từ Vibe Host khi mở màn hình và sau khi lưu, tránh danh sách trống do lớp dữ liệu cũ.
+- Chỉ báo lưu và hiển thị thành công sau khi đọc lại được phiếu; giữ phiếu vừa lưu trên giao diện nếu việc đọc lịch sử tạm thời thất bại.
+- Chuẩn hóa ngày Thu/Chi để bộ lọc theo ngày/tháng không loại nhầm phiếu.
+
 ## Ver 3.0.42 — 19/09/2026
 
 - Sửa lưu phiếu kiểm kê trên Vibe Host: ghi giá trị thiếu/thừa bắt buộc ở đầu phiếu và tính lại từ từng dòng kiểm kê trước khi hoàn tất giao dịch.

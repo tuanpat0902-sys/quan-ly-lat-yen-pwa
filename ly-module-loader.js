@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV97)return;
   window.__lyModuleLoaderV97=true;
 
-  const VERSION='2026.09.19.2';
+  const VERSION='2026.09.19.3';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,7 +12,7 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.42',test:()=>window.__lyAppVersion?.version==='3.0.42'},
+    appVersion:{src:'./ly-app-version.js?v=3.0.43',test:()=>window.__lyAppVersion?.version==='3.0.43'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
@@ -25,7 +25,7 @@
     chatUnitSync:{src:'./ly-chat-unit-sync.js?v=20260909.1',test:()=>window.__lyChatUnitSync?.version==='2026.09.09.1'},
     supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260909.2',test:()=>window.__lyVibeReadCache?.version==='2026.09.09.2'},
-    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260919.2',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.19.2'&&!window.__lyVibeBusinessWrites?.installing},
+    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260919.3',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.19.3'&&!window.__lyVibeBusinessWrites?.installing},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260909.1',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.09.09.1'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
     domShim:{src:'./ly-legacy-dom-shim.js?v=20260824.4',test:()=>window.__lyLegacyDomShim?.version==='2026.08.24.4'},
@@ -39,7 +39,7 @@
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
     documentsTakeover:{src:'./ly-fresh-core-v2-documents-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2DocumentsTakeover?.version==='2026.08.24.3'},
     salesTakeover:{src:'./ly-fresh-core-v2-sales-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2SalesTakeover?.version==='2026.08.24.3'},
-    cashflowTakeover:{src:'./ly-fresh-core-v2-cashflow-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2CashflowTakeover?.version==='2026.08.24.3'},
+    cashflowTakeover:{src:'./ly-fresh-core-v2-cashflow-takeover.js?v=20260919.1',test:()=>window.__lyFreshCoreV2CashflowTakeover?.version==='2026.09.19.1'},
     masterDataTakeover:{src:'./ly-fresh-core-v2-masterdata-takeover.js?v=20260823.5',test:()=>window.__lyFreshCoreV2MasterDataTakeover?.version==='2026.08.23.5'},
     readTakeover:{src:'./ly-fresh-core-v2-read-takeover.js?v=20260909.1',test:()=>window.__lyFreshCoreV2ReadTakeover?.version==='2026.09.09.1'},
     manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js?v=20260824.2',test:()=>window.__lyFreshCoreV2ManualRefresh?.version==='2026.08.24.2'},
@@ -67,7 +67,7 @@
     employeesUI:{src:'./ly-employees.js?v=20260908.1',test:()=>window.__lyEmployeesModule?.version==='2026.09.08.1'},
     financeUI:{src:'./ly-finance.js?v=20260908.4',test:()=>window.__lyFinanceModule?.version==='2026.09.08.4'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},
-    cashflowUI:{src:'./ly-cashflow.js?v=20260825.2',test:()=>window.__lyCashflowModule?.version==='2026.08.25.2'}
+    cashflowUI:{src:'./ly-cashflow.js?v=20260919.1',test:()=>window.__lyCashflowModule?.version==='2026.09.19.1'}
   };
 
   function ensureTableFirstPaintGate(){const root=document.documentElement;root.setAttribute?.('data-ly-table-first-paint','pending');root.setAttribute?.('data-ly-table-atomic','1');let style=document.getElementById?.('lyTableFirstPaintCritical');if(!style){style=document.createElement?.('style');if(style){style.id='lyTableFirstPaintCritical';style.textContent='html[data-ly-table-first-paint="pending"] main{min-height:60vh}html[data-ly-table-atomic="1"] main .panel table:not([data-ly-table-paint-ready="1"]){visibility:hidden!important}';(document.head||root).appendChild?.(style);}}setTimeout(()=>{if(root.dataset.lyTableFirstPaintOwner!=='ready'){root.removeAttribute?.('data-ly-table-first-paint');root.removeAttribute?.('data-ly-table-atomic');}},1400);return true;}

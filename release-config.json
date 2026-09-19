@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.42",
-  "revision": "fresh-core-v3-shell-authoritative-v43",
-  "loaderAssetVersion": "20260919.2",
+  "appVersion": "3.0.43",
+  "revision": "fresh-core-v3-shell-authoritative-v44",
+  "loaderAssetVersion": "20260919.3",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.19.2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-266",
-  "redeploy": "2026-09-19-stocktake-save-ver-3.0.42"
+  "moduleLoaderVersion": "2026.09.19.3",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-267",
+  "redeploy": "2026-09-19-vibe-cashflow-history-ver-3.0.43"
 }
