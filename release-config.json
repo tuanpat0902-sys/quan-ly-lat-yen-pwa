@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.41",
-  "revision": "fresh-core-v3-shell-authoritative-v42",
+  "appVersion": "3.0.42",
+  "revision": "fresh-core-v3-shell-authoritative-v43",
   "loaderAssetVersion": "20260919.2",
   "sidebarVisualsAssetVersion": "20260831.2",
   "moduleLoaderVersion": "2026.09.19.2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-265",
-  "redeploy": "2026-09-19-fast-receipt-delete-ver-3.0.41"
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-266",
+  "redeploy": "2026-09-19-stocktake-save-ver-3.0.42"
 }
