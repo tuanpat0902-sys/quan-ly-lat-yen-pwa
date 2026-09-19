@@ -86,7 +86,9 @@ async function documentHeader(client,orgId,kind,id){
   return (await client.query(`select * from ${qi(schema)}.${qi(table)} where id=$1::uuid and org_id=$2::uuid for update`,[id,orgId])).rows[0]||null;
 }
 async function recalculateImportCosts(client,orgId,ingredientIds){
-  for(const ingredientId of ingredientIds)await client.query(`update ${qi(schema)}.ly_ingredients i set cost=coalesce((select sum(x.quantity*x.unit_cost)/nullif(sum(x.quantity),0) from ${qi(schema)}.ly_import_items x where x.org_id=$1::uuid and x.ingredient_id=$2::uuid),0),updated_at=now() where i.org_id=$1::uuid and i.id=$2::uuid`,[orgId,ingredientId]);
+  const ids=[...ingredientIds];if(!ids.length)return [];
+  const result=await client.query(`with target as(select unnest($2::uuid[]) id),costs as(select x.ingredient_id,sum(x.quantity*x.unit_cost)/nullif(sum(x.quantity),0) cost from ${qi(schema)}.ly_import_items x where x.org_id=$1::uuid and x.ingredient_id=any($2::uuid[]) group by x.ingredient_id) update ${qi(schema)}.ly_ingredients i set cost=coalesce(costs.cost,0),updated_at=now() from target left join costs on costs.ingredient_id=target.id where i.org_id=$1::uuid and i.id=target.id returning i.id,i.cost`,[orgId,ids]);
+  return result.rows;
 }
 async function saveDocument(client,user,kind,input){
   const names={import:['ly_import_receipts','ly_import_items'],export:['ly_export_receipts','ly_export_items'],stocktake:['ly_stocktake_receipts','ly_stocktake_items']}[kind];if(!names)throw new Error('Invalid document');
@@ -111,11 +113,12 @@ async function deleteDocument(client,user,kind,id){
   if(!names||!uuid(id))throw new Error('Invalid document');
   const header=await documentHeader(client,user.orgId,kind,id);if(!header)return {ok:false,error:'Phiếu không tồn tại hoặc đã được xóa'};
   const effect=await existingDocumentEffect(client,user.orgId,kind,id);
-  for(const [ingredientId,delta] of effect)await adjustInventory(client,user.orgId,header.warehouse_id,ingredientId,-delta);
+  const ingredientIds=[...effect.keys()],deltas=[...effect.values()];
+  const inventory=ingredientIds.length?(await client.query(`insert into ${qi(schema)}.ly_inventory(org_id,warehouse_id,ingredient_id,quantity,updated_at) select $1::uuid,$2::uuid,changes.ingredient_id,-changes.delta,now() from unnest($3::uuid[],$4::numeric[]) as changes(ingredient_id,delta) on conflict(org_id,warehouse_id,ingredient_id) do update set quantity=${qi('ly_inventory')}.quantity+excluded.quantity,updated_at=now() returning ingredient_id,warehouse_id,quantity`,[user.orgId,header.warehouse_id,ingredientIds,deltas])).rows:[];
   await client.query(`delete from ${qi(schema)}.${qi(names[1])} where org_id=$1::uuid and receipt_id=$2::uuid`,[user.orgId,id]);
   await client.query(`delete from ${qi(schema)}.${qi(names[0])} where org_id=$1::uuid and id=$2::uuid`,[user.orgId,id]);
-  if(kind==='import')await recalculateImportCosts(client,user.orgId,effect.keys());
-  return {ok:true,id,receipt_no:header.receipt_no,deleted_items:effect.size};
+  const costs=kind==='import'?await recalculateImportCosts(client,user.orgId,ingredientIds):[];
+  return {ok:true,id,receipt_no:header.receipt_no,deleted_items:effect.size,inventory,costs};
 }
 async function saveSale(client,user,input){
   const value=input?.header||{},warehouseId=uuid(value.warehouse_id),id=uuid(value.id)||randomUUID(),receiptNo=String(value.receipt_no||'').trim();if(!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid sale');

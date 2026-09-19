@@ -1,12 +1,23 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.19.1';
+  const VERSION='2026.09.19.2';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
   async function post(path,payload){const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   async function request(path,options={}){const response=await fetch(path,{credentials:'same-origin',...options}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   function receiptId(value){return typeof lyFreshRef==='function'?lyFreshRef(value):'';}
+  function applyDeletedReceipt(kind,result){
+    const id=String(result.id||''),movementType=kind==='import'?'IMPORT':'EXPORT';
+    db.movements=(db.movements||[]).filter(row=>!(String(row.reference_id||'')===id&&String(row.transaction_type||'').toUpperCase()===movementType));
+    for(const changed of result.inventory||[]){const row=(db.inventory||[]).find(item=>String(item.warehouse_id)===String(changed.warehouse_id)&&String(item.ingredient_id)===String(changed.ingredient_id));if(row)row.quantity=Number(changed.quantity);else db.inventory?.push({...changed,org_id:window.__lyFreshOrgId});}
+    for(const changed of result.costs||[]){const row=(db.ingredients||[]).find(item=>String(item.id)===String(changed.id));if(row)row.cost=Number(changed.cost);}
+    const headers=window.__lyFreshHeaders,headerKey=kind==='import'?'imports':'exports',itemKey=kind==='import'?'importItems':'exportItems';
+    if(headers){headers[headerKey]=(headers[headerKey]||[]).filter(row=>String(row.id)!==id);headers[itemKey]=(headers[itemKey]||[]).filter(row=>String(row.receipt_id)!==id);}
+    window.invalidateDataIndexes?.();window.invalidateDerivedCaches?.();
+    const scrollY=window.scrollY;window.renderImports?.();if(Number.isFinite(scrollY))window.scrollTo?.(0,scrollY);
+    setTimeout(()=>{window.renderIngredients?.();window.renderDashboard?.();window.renderFinanceData?.();},0);
+  }
   async function confirmReceiptDeletion(kind,encoded){
     const rows=kind==='import'?window.receiptRowsByKey?.(encoded):window.exportReceiptRows?.(encoded),id=receiptId(rows?.[0]?.reference_id||encoded);
     if(!id)return alert('Không xác định được mã phiếu trên Vibe Host. Chưa có dữ liệu nào bị xóa.');
@@ -15,8 +26,9 @@
     let result;
     try{result=await request(`/api/v1/business/${kind}/${encodeURIComponent(id)}`,{method:'DELETE'});}
     catch(error){alert('Không thể xóa phiếu: '+(error?.message||error));return false;}
-    try{await refreshFromVibe();window.toastMsg?.(`Đã xóa phiếu ${result.receipt_no||receiptNo||''} trên Vibe Host`);}
-    catch(error){alert('Phiếu đã xóa trên Vibe Host nhưng danh sách chưa tải lại. Vui lòng tải lại trang.');}
+    try{applyDeletedReceipt(kind,result);window.toastMsg?.(`Đã xóa phiếu ${result.receipt_no||receiptNo||''} trên Vibe Host`);}
+    catch(error){window.toastMsg?.('Phiếu đã xóa trên Vibe Host; đang tải lại danh sách.');}
+    setTimeout(()=>refreshFromVibe().catch(error=>console.warn('[receipt-delete-refresh]',error)),0);
     return true;
   }
   function settle(){invalidateDataIndexes?.();invalidateDerivedCaches?.();cacheSave?.();}
