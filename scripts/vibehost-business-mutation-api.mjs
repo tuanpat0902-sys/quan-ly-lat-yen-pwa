@@ -136,7 +136,7 @@ async function saveSale(client,user,input){
 }
 
 export async function handleBusinessMutationApi(request,response,pathname){
-  const employeeMatch=/^\/api\/v1\/business\/employee\/([0-9a-f-]{36})$/i.exec(pathname),documentMatch=/^\/api\/v1\/business\/(import|export)\/([0-9a-f-]{36})$/i.exec(pathname),known=['/api/v1/business/ingredient','/api/v1/business/product','/api/v1/business/employees','/api/v1/business/warehouse','/api/v1/business/supplier','/api/v1/business/cashflow','/api/v1/business/import','/api/v1/business/export','/api/v1/business/stocktake','/api/v1/business/sale'];if(!known.includes(pathname)&&!employeeMatch&&!documentMatch)return false;
+  const employeeMatch=/^\/api\/v1\/business\/employee\/([0-9a-f-]{36})$/i.exec(pathname),documentMatch=/^\/api\/v1\/business\/(import|export)\/([0-9a-f-]{36})$/i.exec(pathname),cashflowMatch=/^\/api\/v1\/business\/cashflow\/([0-9a-f-]{36})$/i.exec(pathname),known=['/api/v1/business/ingredient','/api/v1/business/product','/api/v1/business/employees','/api/v1/business/warehouse','/api/v1/business/supplier','/api/v1/business/cashflow','/api/v1/business/import','/api/v1/business/export','/api/v1/business/stocktake','/api/v1/business/sale'];if(!known.includes(pathname)&&!employeeMatch&&!documentMatch&&!cashflowMatch)return false;
   let client;
   try{
     const user=await authenticatedVibeUser(request);if(!user){json(response,401,{error:'Authentication required'});return true;}
@@ -148,6 +148,13 @@ export async function handleBusinessMutationApi(request,response,pathname){
       json(response,200,{rows:rows.rows});return true;
     }
     if(pathname==='/api/v1/business/employees'&&request.method==='GET'){await ensureEmployees(client);const warehouseId=uuid(new URL(request.url,'http://localhost').searchParams.get('warehouse_id'));if(!warehouseId||!await warehouseAllowed(client,user.orgId,warehouseId)){json(response,400,{error:'Invalid warehouse'});return true;}const rows=await client.query(`select * from ${qi(schema)}.ly_employees where org_id=$1::uuid and warehouse_id=$2::uuid order by active desc,name,code`,[user.orgId,warehouseId]);json(response,200,{rows:rows.rows});return true;}
+    if(cashflowMatch&&request.method==='DELETE'){
+      const id=uuid(cashflowMatch[1]),warehouseId=uuid(new URL(request.url,'http://localhost').searchParams.get('warehouse_id'));
+      if(!id||!warehouseId||!await warehouseAllowed(client,user.orgId,warehouseId)){json(response,400,{error:'Invalid cashflow entry or warehouse'});return true;}
+      const deleted=await client.query(`delete from ${qi(schema)}.ly_cashflow_entries where id=$1::uuid and org_id=$2::uuid and warehouse_id=$3::uuid returning id`,[id,user.orgId,warehouseId]);
+      if(!deleted.rowCount){json(response,404,{error:'Không tìm thấy phiếu Thu/Chi trong kho đang chọn.'});return true;}
+      invalidateSnapshot(user.orgId);json(response,200,{ok:true,id});return true;
+    }
     if(employeeMatch&&request.method==='DELETE'){await ensureEmployees(client);await client.query(`delete from ${qi(schema)}.ly_employees where id=$1::uuid and org_id=$2::uuid`,[employeeMatch[1],user.orgId]);invalidateSnapshot(user.orgId);json(response,200,{ok:true});return true;}
     if(documentMatch&&request.method==='DELETE'){await client.query('begin');const result=await deleteDocument(client,user,documentMatch[1].toLowerCase(),documentMatch[2]);if(!result.ok){await client.query('rollback');json(response,404,result);return true;}await client.query('commit');invalidateSnapshot(user.orgId);json(response,200,result);return true;}
     if(request.method!=='POST'){response.setHeader('allow','GET, POST, DELETE');json(response,405,{error:'Method Not Allowed'});return true;}

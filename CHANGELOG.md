@@ -2,6 +2,11 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.47 — 20/09/2026
+
+- Chuyển thao tác Xóa phiếu Thu/Chi khỏi Supabase sang Vibe Host, xác thực theo tổ chức và kho đang chọn; chỉ cập nhật giao diện sau khi máy chủ xác nhận xóa.
+- Bổ sung kiểm thử xóa thành công, lỗi và hủy; không xóa dữ liệu thật khi kiểm thử.
+
 ## Ver 3.0.46 — 20/09/2026
 
 - Sửa triệt để trang Thu/Chi trống dù báo cáo tài chính có 2 khoản chi: lớp tương thích cũ ghi đè hàm lọc Thu/Chi; chuyển báo cáo sang hàm lọc riêng không bị ghi đè.

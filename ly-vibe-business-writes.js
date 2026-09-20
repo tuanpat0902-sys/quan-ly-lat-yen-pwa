@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.20.2';
+  const VERSION='2026.09.20.4';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
@@ -44,6 +44,7 @@
     }
   }
   let cashflowReadAt=0,cashflowReadWarehouse='',cashflowReadPending=null;
+  const cashflowDeleting=new Set();
   function cashflowRow(row){return {id:row.id,warehouse_id:row.warehouse_id,type:row.entry_type,date:String(row.entry_date||'').slice(0,10),category:row.category,amount:Number(row.amount||0),note:row.note||'',finance_scope:row.finance_scope||undefined,created_at:row.created_at,updated_at:row.updated_at};}
   function projectCashflowRow(row){const mapped=cashflowRow(row),all=window.__lyFreshCashflow||[];window.__lyFreshCashflow=[...all.filter(item=>String(item.id)!==String(mapped.id)),mapped];window.invalidateDerivedCaches?.();}
   async function refreshCashflow(force=false){
@@ -81,7 +82,7 @@
 
   function install(){
     if(typeof window.saveIngredient!=='function'||typeof window.saveRecipe!=='function')return false;
-    const legacyIngredient=window.saveIngredient,legacyRecipe=window.saveRecipe,legacyWarehouse=window.saveWarehouse,legacySupplier=window.saveSupplier,legacyCashflow=window.addCashflowEntry,legacyImport=window.saveImportReceipt,legacyExport=window.saveExportReceipt,legacyDeleteImport=window.deleteImportReceipt,legacyDeleteExport=window.deleteExportReceipt,legacyStocktake=window.saveStocktakeReceipt,legacySale=window.saveSaleReceipt,legacyEmployee=window.saveEmployee,legacyDeleteEmployee=window.deleteEmployee,legacyLoadEmployees=window.loadEmployees;
+    const legacyIngredient=window.saveIngredient,legacyRecipe=window.saveRecipe,legacyWarehouse=window.saveWarehouse,legacySupplier=window.saveSupplier,legacyCashflow=window.addCashflowEntry,legacyDeleteCashflow=window.deleteCashflowEntry,legacyImport=window.saveImportReceipt,legacyExport=window.saveExportReceipt,legacyDeleteImport=window.deleteImportReceipt,legacyDeleteExport=window.deleteExportReceipt,legacyStocktake=window.saveStocktakeReceipt,legacySale=window.saveSaleReceipt,legacyEmployee=window.saveEmployee,legacyDeleteEmployee=window.deleteEmployee,legacyLoadEmployees=window.loadEmployees;
     if(typeof legacyEmployee!=='function'||typeof legacyDeleteEmployee!=='function'||typeof legacyLoadEmployees!=='function')return false;
     window.loadEmployees=function(){return dedupeEmployees(legacyLoadEmployees());};
     window.saveIngredient=async function(id){
@@ -121,6 +122,28 @@
     window.saveWarehouse=async function(id){if(!usesVibe())return legacyWarehouse?.(id);const name=String($('wName')?.value||'').trim();if(!name)return alert('Nhập tên kho');try{const saved=await post('/api/v1/business/warehouse',{warehouse:{id:id||null,name,address:String($('wAddress')?.value||''),active:true}});currentWarehouseId=saved.id;await refreshFromVibe();closeModal?.();toastMsg('Đã lưu kho trên Vibe Host');return saved.id;}catch(error){alert('Lỗi kho: '+(error?.message||error));return false;}};
     window.saveSupplier=async function(id){if(!usesVibe())return legacySupplier?.(id);const name=String($('spName')?.value||'').trim();if(!name)return alert('Nhập tên nhà cung cấp');try{const saved=await post('/api/v1/business/supplier',{supplier:{id:id||null,name,phone:String($('spPhone')?.value||''),address:String($('spAddress')?.value||''),note:String($('spNote')?.value||'')}});await refreshFromVibe();closeModal?.();toastMsg('Đã lưu nhà cung cấp trên Vibe Host');return saved.id;}catch(error){alert('Lỗi nhà cung cấp: '+(error?.message||error));return false;}};
     window.addCashflowEntry=async function(){if(!usesVibe())return legacyCashflow?.();const type=$('cashflowType')?.value||'expense',date=$('cashflowDate')?.value||new Date().toISOString().slice(0,10),category=String($('cashflowCategory')?.value||'').trim(),amount=Math.max(0,Number($('cashflowAmount')?.value||0)),note=String($('cashflowNote')?.value||'').trim(),editId=typeof cashflowEditId!=='undefined'?cashflowEditId:'',existing=editId?loadCashflow?.().find(row=>row.id===editId):null;if(!category||amount<=0)return alert('Nhập nội dung và số tiền.');try{const saved=await post('/api/v1/business/cashflow',{cashflow:{id:existing?.id||null,warehouse_id:currentWarehouseId,entry_type:type,entry_date:date,category,amount,note,finance_scope:type==='expense'&&typeof INVENTORY_PAYMENT_CASHFLOW_CATEGORY!=='undefined'&&category===INVENTORY_PAYMENT_CASHFLOW_CATEGORY?'inventory_asset':null}});if(saved.row)projectCashflowRow(saved.row);cashflowReadAt=0;let confirmed=false;try{const refreshed=await refreshCashflow(true);confirmed=refreshed&&(window.__lyFreshCashflow||[]).some(row=>String(row.id)===String(saved.id));}catch(error){console.warn('[cashflow-history-refresh]',error);}if(!confirmed&&saved.row)projectCashflowRow(saved.row);if(typeof cashflowEditId!=='undefined')cashflowEditId='';if(typeof cashflowFormOpen!=='undefined')cashflowFormOpen=false;renderCashflow?.();renderFinanceData?.();toastMsg(confirmed?'Đã lưu và hiển thị phiếu Thu/Chi trên Vibe Host':'Phiếu đã lưu trên Vibe Host; lịch sử đang chờ đồng bộ.');return saved.id;}catch(error){alert('Lỗi lưu Thu/Chi: '+(error?.message||error));return false;}};
+    window.deleteCashflowEntry=async function(id){
+      if(!usesVibe())return legacyDeleteCashflow?.(id);
+      const entry=(window.__lyFreshCashflow||[]).find(row=>String(row.id)===String(id)&&String(row.warehouse_id)===String(currentWarehouseId));
+      if(!entry)return alert('Không tìm thấy phiếu Thu/Chi trong kho đang chọn. Hãy tải lại dữ liệu.');
+      if(cashflowDeleting.has(String(id)))return false;
+      if(!await window.appConfirm?.('Xóa khoản thu/chi này?','Xóa phiếu Thu/Chi'))return false;
+      cashflowDeleting.add(String(id));
+      const warehouseId=currentWarehouseId;
+      try{
+        const result=await request(`/api/v1/business/cashflow/${encodeURIComponent(id)}?warehouse_id=${encodeURIComponent(warehouseId)}`,{method:'DELETE'});
+        if(result?.ok!==true||String(result.id)!==String(id))throw new Error('Vibe Host chưa xác nhận xóa phiếu Thu/Chi.');
+        window.__lyFreshCashflow=(window.__lyFreshCashflow||[]).filter(row=>String(row.id)!==String(id));
+        cashflowReadAt=0;
+        window.invalidateDerivedCaches?.();
+        if(typeof cashflowEditId!=='undefined'&&String(cashflowEditId)===String(id)){cashflowEditId='';cashflowFormOpen=false;}
+        window.renderCashflow?.();window.renderFinanceData?.();
+        window.toastMsg?.('Đã xóa phiếu Thu/Chi trên Vibe Host');
+        setTimeout(()=>refreshFromVibe().catch(error=>console.warn('[cashflow-delete-refresh]',error)),0);
+        return true;
+      }catch(error){alert('Lỗi xóa Thu/Chi: '+(error?.message||error));return false;}
+      finally{cashflowDeleting.delete(String(id));}
+    };
     window.saveEmployee=async function(id=''){if(!usesVibe())return legacyEmployee(id);const code=String($('empCode')?.value||'').trim(),before=new Set((window.loadEmployees?.()||[]).map(row=>String(row.id)));legacyEmployee(id);const employee=(window.loadEmployees?.()||[]).find(row=>id?String(row.id)===String(id):(code?employeeKey(row)===employeeKey({code}):!before.has(String(row.id))));if(!employee)return;try{const saved=await post('/api/v1/business/employees',{employee:{...employee,legacy_id:employee.id,warehouse_id:currentWarehouseId}});employee.vibe_id=saved.id;saveEmployees?.(window.loadEmployees());toastMsg('Đã đồng bộ nhân viên lên Vibe Host');}catch(error){alert('Lỗi lưu nhân viên: '+(error?.message||error));}};
     window.deleteEmployee=async function(id){if(!usesVibe())return legacyDeleteEmployee(id);const employee=(window.loadEmployees?.()||[]).find(row=>String(row.id)===String(id));legacyDeleteEmployee(id);if((window.loadEmployees?.()||[]).some(row=>String(row.id)===String(id)))return;const vibeId=employee?.vibe_id||(/^[0-9a-f-]{36}$/i.test(String(id))?id:'');if(vibeId)try{await request(`/api/v1/business/employee/${vibeId}`,{method:'DELETE'});}catch(error){alert('Đã xóa trên thiết bị nhưng chưa xóa được trên Vibe Host: '+(error?.message||error));}};
     window.__lyVibeBusinessWrites={version:VERSION,installing:false,refreshCashflow};return true;

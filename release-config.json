@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.46",
-  "revision": "fresh-core-v3-shell-authoritative-v47",
-  "loaderAssetVersion": "20260920.3",
+  "appVersion": "3.0.47",
+  "revision": "fresh-core-v3-shell-authoritative-v48",
+  "loaderAssetVersion": "20260920.4",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.20.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-270",
-  "redeploy": "2026-09-20-cashflow-filter-shim-collision-ver-3.0.46"
+  "moduleLoaderVersion": "2026.09.20.4",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-271",
+  "redeploy": "2026-09-20-vibe-cashflow-delete-ver-3.0.47"
 }
