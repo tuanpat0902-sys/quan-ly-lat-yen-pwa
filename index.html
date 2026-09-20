@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <script>if(location.host.startsWith('tuanpat0902-sys.'))location='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/'</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260920.4" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260920.5" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)return false;const data=await response.json();const session=data?.session||null;window.__lyFreshSession=session;window.__lyFreshOrgId=session?.org_id||null;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.09.07.2',provider:'vibe'};})();</script>
 <style>
@@ -11534,7 +11534,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.0.47</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.0.48</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11565,7 +11565,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260920.4"></script>
+<script src="./ly-module-loader.js?v=20260920.5"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -12477,15 +12477,16 @@ let v219DeferredTimer=null;
 /* ===== V240 OPEN-DRAFT PROTECTION ===== */
 const V240_DRAFT_SELECTOR=[
   '.inline-import-form.open',
+  '#ingredientInlinePanel.open',
+  '.cashflow-entry-card',
   '#modal.open',
   '[data-ly-draft-open="1"]'
 ].join(',');
 let v240DeferredStatusShown=false;
 
 function v240ActiveDraft(){
-  return document.querySelector(
-    V240_DRAFT_SELECTOR
-  );
+  return [...document.querySelectorAll(V240_DRAFT_SELECTOR)]
+    .find(el=>!el.closest('.panel')||el.closest('.panel').classList.contains('active'))||null;
 }
 
 function v240HasActiveDraft(){
@@ -12528,6 +12529,11 @@ function v240ClearDeferredStatus(){
 window.v240HasActiveDraft=v240HasActiveDraft;
 window.v240MarkProjectionDeferred=v240MarkProjectionDeferred;
 window.v240ClearDeferredStatus=v240ClearDeferredStatus;
+window.v240DeferOpenFormRender=()=>{
+  v219DeferredRender=true;
+  v240MarkProjectionDeferred();
+  v233ScheduleDeferredFlush();
+};
 
 function v219EditableElement(el){
   if(!el)return false;
@@ -27813,7 +27819,11 @@ function togglePreparedIngredientList(force=null){
   return collapsed;
 }
 
-function renderIngredients(){
+function renderIngredients(forceReset=false){
+  if(!forceReset&&$('ingredientInlinePanel')?.classList.contains('open')){
+    window.v240DeferOpenFormRender();
+    return;
+  }
   const scoped=warehouseIngredients();
   const purchased=purchasedWarehouseIngredientsInDisplayOrder();
   const prepared=scoped.filter(i=>i.ingredient_type==='prepared');
@@ -29175,7 +29185,7 @@ function editExportReceipt(encodedReferenceId){
   }
 
   // Render lại để form luôn ở trạng thái sạch trước khi nạp dữ liệu sửa.
-  renderImports();
+  renderImports(true);
   toggleExportReceiptForm(true);
 
   const first=rows[0];
@@ -31025,7 +31035,12 @@ function warehouseReceiptHistoryTable(){
   }).join('');
 }
 
-function renderImports(){
+function renderImports(forceReset=false){
+  // Background Cloud refreshes must never replace an in-progress receipt form.
+  if(forceReset!==true&&E.imports?.querySelector('#inlineImportReceiptForm.open,#inlineExportReceiptForm.open')){
+    window.v240DeferOpenFormRender();
+    return;
+  }
   const defaultReceipt=newImportReceiptNo();
   const defaultExportReceipt=newExportReceiptNo();
   const defaultDate=todayLocalISO();
@@ -31385,7 +31400,7 @@ function editImportReceipt(encodedKey){
   const rows=receiptRowsByKey(encodedKey);
   if(!rows.length)return alert('Không tìm thấy phiếu nhập');
 
-  renderImports();
+  renderImports(true);
   toggleImportReceiptForm(true);
 
   const first=rows[0];
@@ -32452,7 +32467,11 @@ function toggleRecipeList(force=null){
 }
 
 function tv2(root){(window.queueMicrotask||setTimeout)(()=>window.__lyTableViewV2?.apply?.(root),0)}
-function renderRecipes(){
+function renderRecipes(forceReset=false){
+  if(!forceReset&&$('inlineRecipeForm')?.classList.contains('open')){
+    window.v240DeferOpenFormRender();
+    return;
+  }
   const products=warehouseProducts();
 
   E.recipes.innerHTML=`
@@ -33391,7 +33410,7 @@ function editSaleReceipt(saleId){
   const receiptMeta=
     saleReceiptDiscountMeta(sale);
 
-  renderSales();
+  renderSales(true);
   toggleSaleReceiptForm(true);
 
   const form=$('inlineSaleReceiptForm');
@@ -34404,7 +34423,11 @@ function resolvedSaleSource(){
   return ($('saleCustomSource')?.value||'').trim()||'manual';
 }
 
-function renderSales(){
+function renderSales(forceReset=false){
+  if(!forceReset&&$('inlineSaleReceiptForm')?.classList.contains('open')){
+    window.v240DeferOpenFormRender();
+    return;
+  }
   const salesPanel=document.getElementById('sales');
   if(!salesPanel)return;
 
@@ -36335,7 +36358,7 @@ function editStocktakeReceipt(encodedKey){
     })
     .map(x=>x.row);
 
-  renderStocktake();
+  renderStocktake(true);
 
   const form=$('inlineStocktakeForm');
   if(!form)return;
@@ -37194,7 +37217,11 @@ function updateStocktakeScrollButtons(){
   }
 }
 
-function renderStocktake(){
+function renderStocktake(forceReset=false){
+  if(!forceReset&&$('inlineStocktakeForm')?.classList.contains('open')){
+    window.v240DeferOpenFormRender();
+    return;
+  }
   const receiptNo=newStocktakeReceiptNo();
   const date=todayLocalISO();
 
@@ -37883,7 +37910,7 @@ function editCashflowEntry(id){
   cashflowEditId=id;
   cashflowFormOpen=true;
 
-  renderCashflow();
+  renderCashflow(true);
 
   setTimeout(
     ()=>
@@ -38099,7 +38126,7 @@ function toggleCashflowForm(force){
 
   cashflowFormOpen=next;
 
-  renderCashflow();
+  renderCashflow(true);
 
   if(cashflowFormOpen){
     setTimeout(
@@ -39582,14 +39609,14 @@ function previewPayrollRow(row,employeeId,month){
   if(out)out.innerHTML=`<b>${money(total)}</b>`;
 }
 
-function deleteEmployee(id){
+function deleteEmployee(id,confirmed=false){
   const employee=loadEmployees().find(x=>String(x.id)===String(id));
   if(!employee){
     alert('Không tìm thấy nhân viên cần xóa.');
     return;
   }
 
-  const ok=window.confirm(
+  const ok=confirmed||window.confirm(
     `Bạn có chắc muốn xóa nhân viên "${employee.name}"?\n\n`+
     `Nhân viên sẽ bị xóa khỏi danh sách, chấm công và bảng lương.`
   );

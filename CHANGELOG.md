@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.48 — 20/09/2026
+
+- Hoãn dựng lại các màn hình nguyên liệu, Nhập/Xuất, kiểm kê, công thức, bán hàng và Thu/Chi khi biểu mẫu đang mở; dữ liệu mới được hiển thị sau khi hoàn tất thao tác.
+- Bản cập nhật không tự điều hướng tab Vibe đang mở; chỉ báo có phiên bản mới để người dùng hoàn tất phiếu rồi tự tải lại.
+- Sau khi máy chủ xác nhận lưu phiếu, nếu danh sách tạm thời chưa tải lại, thông báo đúng trạng thái và giữ mã phiếu để lần lưu tiếp theo cập nhật, không tạo trùng.
+- Nhân viên chỉ được đưa vào danh sách sau khi Vibe Host xác nhận lưu; xóa trên máy chủ trước khi xóa trên thiết bị, tránh mất hoặc tái xuất hiện dữ liệu khi lỗi kết nối.
+
 ## Ver 3.0.47 — 20/09/2026
 
 - Chuyển thao tác Xóa phiếu Thu/Chi khỏi Supabase sang Vibe Host, xác thực theo tổ chức và kho đang chọn; chỉ cập nhật giao diện sau khi máy chủ xác nhận xóa.

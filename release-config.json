@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.47",
-  "revision": "fresh-core-v3-shell-authoritative-v48",
-  "loaderAssetVersion": "20260920.4",
+  "appVersion": "3.0.48",
+  "revision": "fresh-core-v3-shell-authoritative-v49",
+  "loaderAssetVersion": "20260920.5",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.20.4",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-271",
-  "redeploy": "2026-09-20-vibe-cashflow-delete-ver-3.0.47"
+  "moduleLoaderVersion": "2026.09.20.5",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-272",
+  "redeploy": "2026-09-20-preserve-import-draft-ver-3.0.48"
 }

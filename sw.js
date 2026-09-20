@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-271';
+const CACHE='lat-yen-fresh-core-v3-authoritative-272';
 const VIBE_URL='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
@@ -21,7 +21,7 @@ self.addEventListener('activate',event=>{event.waitUntil((async()=>{
   if(oldKeys.length){
     const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
     for(const client of clients){
-      try{if(location.hostname==='tuanpat0902-sys.github.io'){await client.navigate(VIBE_URL);continue;}const url=new URL(client.url);url.searchParams.set('ly_release',CACHE);await client.navigate(url.href);}catch(e){}
+      try{if(location.hostname==='tuanpat0902-sys.github.io'){await client.navigate(VIBE_URL);continue;}client.postMessage({type:'LAT_YEN_UPDATE_AVAILABLE',release:CACHE});}catch(e){}
     }
   }
 })());});

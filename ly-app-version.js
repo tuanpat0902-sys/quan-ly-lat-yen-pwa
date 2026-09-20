@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='3.0.47',REVISION='fresh-core-v3-shell-authoritative-v48',UI_BUILD='UI-2026.09.20.4';
+  const VERSION='3.0.48',REVISION='fresh-core-v3-shell-authoritative-v49',UI_BUILD='UI-2026.09.20.5';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION&&window.__lyAppVersion?.uiBuild===UI_BUILD)return;
   const LABEL=`Ver ${VERSION} · ${UI_BUILD}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,uiBuild:UI_BUILD,label:LABEL,mounted:false,updateNoticeShown:false};
@@ -25,4 +25,8 @@
   [0,50,250,800,1800,3500,6000].forEach(delay=>setTimeout(()=>{ensureUILayers();mount();ensureEmployeesParityRunner();},delay));
   window.addEventListener?.('focus',()=>{ensureUILayers();mount();ensureEmployeesParityRunner();});
   window.addEventListener?.('latyen:branding-updated',()=>setTimeout(mount,0));
+  navigator.serviceWorker?.addEventListener?.('message',event=>{
+    if(event.data?.type!=='LAT_YEN_UPDATE_AVAILABLE')return;
+    window.toastMsg?.('Có phiên bản mới. Hãy hoàn tất phiếu đang nhập rồi tải lại trang.');
+  });
 })();
