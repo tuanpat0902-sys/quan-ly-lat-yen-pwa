@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const source=readFileSync(new URL('../ly-sale-order-detail.js',import.meta.url),'utf8');
+assert.match(html,/onclick="viewSaleReceiptDetails\('\$\{s\.id\}'\)"/,'recent sale rows need a detail button');
+assert.match(html,/ly-sale-order-detail\.js\?v=20260920\.1/,'the detail handler must load');
+let modal='';
+const sale={id:'sale-1',warehouse_id:'warehouse-1',receipt_no:'200331',sold_at:'2026-09-20T15:09:57Z',source:'iPOS',subtotal:39000,item_discount_total:2000,receipt_discount:1000,total_amount:36000,note:'Ít đá'};
+const item={sale_id:'sale-1',product_id:'product-1',quantity:1,unit_price:39000,line_subtotal:39000,item_discount:2000,line_total:37000,ipos_toppings:'[{"name":"Trân châu"}]'};
+const indexes={saleById:new Map([[sale.id,sale]]),saleItemsBySale:new Map([[sale.id,[item]]]),productById:new Map([['product-1',{name:'Ô Long nhài Cốm',unit:'Ly'}]])};
+const context={window:{},db:{sales:[sale],saleItems:[item],products:[]},currentWarehouseId:'warehouse-1',getDataIndexes:()=>indexes,openModal:markup=>{modal=markup},alert:message=>{throw new Error(message)},esc:value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;'),num:value=>String(value),money:value=>`${Number(value).toLocaleString('vi-VN')} đ`,saleReceiptGeneralNote:s=>s.note,saleReceiptNumber:s=>s.receipt_no,lyFreshSaleHistoryTime:()=> '22:09:57 20/09/2026'};
+vm.runInNewContext(source,context);
+assert.equal(context.window.viewSaleReceiptDetails('sale-1'),true);
+for(const visible of ['Chi tiết đơn hàng 200331','Ô Long nhài Cốm','Trân châu','Ít đá','36.000 đ'])assert.ok(modal.includes(visible),`Missing ${visible}`);
+assert.ok(modal.includes('Giảm theo món')&&modal.includes('Giảm toàn phiếu'));
+context.currentWarehouseId='another-warehouse';
+assert.throws(()=>context.window.viewSaleReceiptDetails('sale-1'),/Không tìm thấy đơn hàng/,'a receipt in another warehouse must not be shown');
+console.log('Sale order detail modal: PASS');

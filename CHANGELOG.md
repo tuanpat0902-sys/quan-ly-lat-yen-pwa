@@ -2,6 +2,10 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.50 — 20/09/2026
+
+- Thêm nút Chi tiết trong lịch sử phiếu bán hàng để xem món, topping iPOS, số lượng, đơn giá, giảm giá, tổng thanh toán và ghi chú mà không mở chế độ sửa.
+
 ## Ver 3.0.49 — 20/09/2026
 
 - Sửa bảng chi tiết Nhập/Xuất: cột Loại và Số phiếu có độ rộng rõ ràng, màn hình hẹp cuộn ngang thay vì cắt chữ.
