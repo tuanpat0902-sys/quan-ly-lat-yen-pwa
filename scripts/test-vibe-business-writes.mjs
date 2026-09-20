@@ -63,6 +63,19 @@ const deleteCashflow=await setup();deleteCashflow.ctx.__lyFreshCashflow=[{id:cas
 const failedCashflowDelete=await setup({cashflowDeleteFailed:true});failedCashflowDelete.ctx.__lyFreshCashflow=[{id:cashflowDeleteId,warehouse_id:'w',amount:200}];assert.equal(await failedCashflowDelete.ctx.deleteCashflowEntry(cashflowDeleteId),false);assert.equal(failedCashflowDelete.ctx.__lyFreshCashflow.length,1,'failed deletion must leave the visible row intact');assert.match(failedCashflowDelete.alerts.at(-1),/Lỗi xóa Thu\/Chi/);
 const cancelledCashflowDelete=await setup({deleteCancelled:true});cancelledCashflowDelete.ctx.__lyFreshCashflow=[{id:cashflowDeleteId,warehouse_id:'w'}];assert.equal(await cancelledCashflowDelete.ctx.deleteCashflowEntry(cashflowDeleteId),false);assert.equal(cancelledCashflowDelete.calls.filter(call=>call.options.method==='DELETE').length,0);
 const savedButNotReloaded=await setup({failed:true});assert.equal(await savedButNotReloaded.ctx.saveImportReceipt(),'saved');assert.equal(savedButNotReloaded.alerts.length,0,'confirmed writes must not be reported as failed solely because refresh failed');
+for(const [kind,method,formId,key] of [
+  ['import','saveImportReceipt','inlineImportReceiptForm','editKey'],
+  ['export','saveExportReceipt','inlineExportReceiptForm','editReferenceId'],
+  ['stocktake','saveStocktakeReceipt','inlineStocktakeForm','editKey']
+]){
+  const retry=await setup({failed:true});
+  retry.ctx.$(formId).dataset[key]='';
+  assert.equal(await retry.ctx[method](),'saved');
+  assert.equal(await retry.ctx[method](),'saved');
+  const writes=retry.calls.filter(call=>call.path===`/api/v1/business/${kind}`);
+  assert.ok(!JSON.parse(writes[0].options.body).header.id);
+  assert.equal(JSON.parse(writes[1].options.body).header.id,'saved',`${kind} retry must update the confirmed receipt instead of duplicating it`);
+}
 for(const kind of ['import','export']){const test=await setup({receiptType:kind.toUpperCase()});const result=await test.ctx[kind==='import'?'deleteImportReceipt':'deleteExportReceipt']('ref:11111111-1111-4111-8111-111111111111');assert.equal(result,true);assert.equal(test.calls.filter(call=>call.options.method==='DELETE').length,1);assert.match(test.calls.at(-1).path,new RegExp(`/api/v1/business/${kind}/`));assert.equal(test.legacyReceiptDeletes.length,0);assert.equal(test.ctx.db.movements.length,0,'local receipt should disappear immediately after Vibe confirms deletion');assert.equal(test.ctx.db.inventory[0].quantity,8);}
 const failedDelete=await setup({deleteFailed:true});assert.equal(await failedDelete.ctx.deleteImportReceipt('ref:11111111-1111-4111-8111-111111111111'),false);assert.equal(failedDelete.ctx.db.movements.length,1);assert.equal(failedDelete.alerts.length,1);
 const cancelledDelete=await setup({deleteCancelled:true});assert.equal(await cancelledDelete.ctx.deleteExportReceipt('ref:11111111-1111-4111-8111-111111111111'),false);assert.equal(cancelledDelete.calls.filter(call=>call.options.method==='DELETE').length,0);
