@@ -2,6 +2,11 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.46 — 20/09/2026
+
+- Sửa triệt để trang Thu/Chi trống dù báo cáo tài chính có 2 khoản chi: lớp tương thích cũ ghi đè hàm lọc Thu/Chi; chuyển báo cáo sang hàm lọc riêng không bị ghi đè.
+- Kiểm thử tái hiện lỗi trên đúng trạng thái hai giao dịch ngày 19/09/2026 và lớp tương thích đang hoạt động.
+
 ## Ver 3.0.45 — 20/09/2026
 
 - Sửa lịch sử Thu/Chi trống trong khi báo cáo tài chính vẫn có giao dịch: hai màn hình dùng chung dữ liệu Cloud; phản hồi rỗng từ lượt đọc phụ không còn xóa các khoản đang hiển thị.

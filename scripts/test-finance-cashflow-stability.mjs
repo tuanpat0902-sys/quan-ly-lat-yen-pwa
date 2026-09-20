@@ -4,6 +4,7 @@ import vm from 'node:vm';
 
 const financeSource=await fs.readFile(new URL('../ly-finance.js',import.meta.url),'utf8');
 const cashflowSource=await fs.readFile(new URL('../ly-cashflow.js',import.meta.url),'utf8');
+const legacyListShim=await fs.readFile(new URL('../ly-legacy-list-shim.js',import.meta.url),'utf8');
 const indexSource=(await fs.readFile(new URL('../index.html',import.meta.url),'utf8')).replace(/\r\n/g,'\n');
 
 const elements={
@@ -58,6 +59,21 @@ assert.match(sharedContext.cashflowCategoryOptions('expense'),/Thanh toán Nhậ
 assert.equal(sharedContext.isInventoryPurchaseCashflow({category:'Thanh toán Nhập kho (không tính P&L)'}),true,'finance report must recognize the shared category');
 assert.doesNotMatch(cashflowSource,/const INVENTORY_PAYMENT_CASHFLOW_CATEGORY/,'lazy UI module must not hide the shared business rule in a private scope');
 
+const reportRangeStart=indexSource.indexOf('function cashflowReportEntriesInRange(){');
+const reportRangeEnd=indexSource.indexOf('\n}',reportRangeStart)+2;
+assert.ok(reportRangeStart>0&&reportRangeEnd>reportRangeStart,'Thu/Chi must own a range filter distinct from the legacy list shim');
+const reportRangeContext={window:null,cashflowRange:()=>({start:'2026-09-01',end:'2026-09-30'}),loadCashflow:()=>[
+  {id:'expense-200',date:'2026-09-19',amount:200,created_at:'2026-09-19T10:00:00Z'},
+  {id:'expense-100',date:'2026-09-19',amount:100,created_at:'2026-09-19T11:00:00Z'}
+]};
+reportRangeContext.window=reportRangeContext;
+vm.createContext(reportRangeContext);
+vm.runInContext(indexSource.slice(reportRangeStart,reportRangeEnd),reportRangeContext);
+vm.runInContext(legacyListShim,reportRangeContext);
+assert.equal(reportRangeContext.cashflowFilteredList().length,0,'legacy shim reproduces the empty report from a missing V2 store');
+assert.equal(reportRangeContext.cashflowReportEntriesInRange().length,2,'Thu/Chi must keep the same two Cloud entries as Finance after shim installation');
+assert.match(cashflowSource,/const list=cashflowReportEntriesInRange\(\)/,'Thu/Chi renderer must use the protected Cloud range filter');
+
 const cashflowElements={
   cashflowReportArea:{innerHTML:''},
   cashflowReportMode:{value:'month'},
@@ -68,7 +84,7 @@ const cashflowContext={
   window:null,E:{cashflow:{}},console,Number,String,Array,Date,
   $:id=>cashflowElements[id]||null,
   cashflowRange:()=>({start:'2026-08-01',end:'2026-08-31',label:'Tháng 08/2026'}),
-  cashflowFilteredList:()=>[
+  cashflowReportEntriesInRange:()=>[
     {entry_type:'income',entry_date:'2026-08-24',category:'Thu khác',amount:800000},
     {entry_type:'expense',entry_date:'2026-08-18',category:'Tiền thuê mặt bằng',amount:3500000},
     {type:'chi',date:'2026-08-19',category:'Điện nước',amount:650000}
