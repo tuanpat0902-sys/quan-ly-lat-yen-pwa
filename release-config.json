@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.48",
-  "revision": "fresh-core-v3-shell-authoritative-v49",
-  "loaderAssetVersion": "20260920.5",
+  "appVersion": "3.0.49",
+  "revision": "fresh-core-v3-shell-authoritative-v50",
+  "loaderAssetVersion": "20260920.6",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.20.5",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-272",
-  "redeploy": "2026-09-20-preserve-import-draft-ver-3.0.48"
+  "moduleLoaderVersion": "2026.09.20.6",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-273",
+  "redeploy": "2026-09-20-warehouse-receipt-date-layout-ver-3.0.49"
 }

@@ -2,6 +2,12 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.49 — 20/09/2026
+
+- Sửa bảng chi tiết Nhập/Xuất: cột Loại và Số phiếu có độ rộng rõ ràng, màn hình hẹp cuộn ngang thay vì cắt chữ.
+- Ngày nhập kho trong báo cáo và lịch sử lấy theo ngày đã chọn trên phiếu, kể cả khi máy chủ trả về ngày kèm giờ; không còn tự rơi về ngày tạo bản ghi.
+- Bắt buộc ngày phiếu hợp lệ khi lưu trên Vibe Host và cảnh báo nếu ngày máy chủ xác nhận khác ngày người dùng chọn.
+
 ## Ver 3.0.48 — 20/09/2026
 
 - Hoãn dựng lại các màn hình nguyên liệu, Nhập/Xuất, kiểm kê, công thức, bán hàng và Thu/Chi khi biểu mẫu đang mở; dữ liệu mới được hiển thị sau khi hoàn tất thao tác.

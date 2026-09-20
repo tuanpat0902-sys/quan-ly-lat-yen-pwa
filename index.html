@@ -6,7 +6,7 @@
 <title>QUẢN LÝ LÁT YÊN</title>
 <script>if(location.host.startsWith('tuanpat0902-sys.'))location='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/'</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="preload" href="./ly-module-loader.js?v=20260920.5" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260920.6" as="script">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)return false;const data=await response.json();const session=data?.session||null;window.__lyFreshSession=session;window.__lyFreshOrgId=session?.org_id||null;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.09.07.2',provider:'vibe'};})();</script>
 <style>
@@ -11534,7 +11534,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.0.48</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.0.49</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11565,7 +11565,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260920.5"></script>
+<script src="./ly-module-loader.js?v=20260920.6"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -28480,10 +28480,19 @@ function receiptNumberFromMovement(m){
   return (note.match(/Phiếu:([^|.]+)/i)?.[1]||m?.reference_id||'Không số').trim();
 }
 
+function businessReceiptDateISO(value){
+  if(value instanceof Date && Number.isFinite(value.getTime())){
+    return value.toISOString().slice(0,10);
+  }
+  const match=String(value||'').trim().match(/^(\d{4}-\d{2}-\d{2})(?:$|[T\s])/);
+  return match?.[1]||'';
+}
+
 function receiptDateFromMovement(m){
   const note=String(m?.note||'');
   const saved=(note.match(/Ngày nhập:([^|]+)/i)?.[1]||'').trim();
-  if(/^\d{4}-\d{2}-\d{2}$/.test(saved))return saved;
+  const date=businessReceiptDateISO(m?._receipt_date)||businessReceiptDateISO(saved);
+  if(date)return date;
   const d=new Date(m?.created_at||Date.now());
   const y=d.getFullYear();
   const mo=String(d.getMonth()+1).padStart(2,'0');
@@ -28835,10 +28844,10 @@ function exportReceiptNumberFromMovement(m){
 }
 
 function exportReceiptDateFromMovement(m){
-  return (
+  return businessReceiptDateISO(m?._receipt_date)||businessReceiptDateISO((
     String(m?.note||'').match(/Ngày xuất:([^|]+)/i)?.[1] ||
     ''
-  ).trim();
+  ).trim());
 }
 
 function exportReceiptGeneralNoteFromMovement(m){
@@ -30630,7 +30639,19 @@ function renderWarehouseMovementReport(){
 
         <div class="scroll">
           <table class="warehouse-combined-detail-table">
+            <colgroup>
+              <col style="width:44px">
+              <col style="width:116px">
+              <col style="width:104px">
+              <col style="width:190px">
+              <col>
+              <col style="width:72px">
+              <col style="width:96px">
+              <col style="width:120px">
+              <col style="width:120px">
+            </colgroup>
             <tr>
+              <th>STT</th>
               <th>Ngày</th>
               <th>Loại</th>
               <th>Số phiếu</th>
@@ -30641,13 +30662,14 @@ function renderWarehouseMovementReport(){
               <th class="right">Thành tiền</th>
             </tr>
 
-            ${detailRows.map(x=>{
+            ${detailRows.map((x,index)=>{
               const ing=(db.ingredients||[]).find(
                 i=>i.id===x.ingredient_id
               );
 
               return `
                 <tr>
+                  <td>${index+1}</td>
                   <td>${formatVNDate(x.date)}</td>
                   <td>
                     <span class="warehouse-movement-badge ${
@@ -35860,7 +35882,7 @@ function stocktakeReceiptNumberFromMovement(m){
 }
 
 function stocktakeReceiptDateFromMovement(m){
-  return (String(m?.note||'').match(/Ngày kiểm kê:([^|]+)/i)?.[1]||'').trim();
+  return businessReceiptDateISO(m?._receipt_date)||businessReceiptDateISO((String(m?.note||'').match(/Ngày kiểm kê:([^|]+)/i)?.[1]||'').trim());
 }
 
 function stocktakeReceiptGroupKey(m){
@@ -54038,7 +54060,8 @@ function lyFreshSynthMovements({
       total_cost:Number(item.total_cost||0),
       supplier_id:item.supplier_id||null,
       _line_order:Number(item.line_order||itemIndex+1),
-      note:`Phiếu:${h.receipt_no} | Ngày nhập:${h.receipt_date}`+
+      _receipt_date:businessReceiptDateISO(h.receipt_date),
+      note:`Phiếu:${h.receipt_no} | Ngày nhập:${businessReceiptDateISO(h.receipt_date)}`+
         (sp?` | NCC:${sp.name}`:'')+
         ` | Giá nhập:${Number(item.unit_cost||0)} | Thành tiền:${Number(item.total_cost||0)}`+
         (h.note?` | ${h.note}`:''),
@@ -54059,7 +54082,8 @@ function lyFreshSynthMovements({
       reference_id:h.id,
       unit_cost:Number(item.unit_cost||0),
       total_cost:Number(item.total_cost||0),
-      note:`Phiếu xuất:${h.receipt_no} | Ngày xuất:${h.receipt_date} | `+
+      _receipt_date:businessReceiptDateISO(h.receipt_date),
+      note:`Phiếu xuất:${h.receipt_no} | Ngày xuất:${businessReceiptDateISO(h.receipt_date)} | `+
         `Đơn giá:${Number(item.unit_cost||0)} | Thành tiền:${Number(item.total_cost||0)} | `+
         `Tài chính:${h.finance_treatment||'inventory'} | Lý do:${h.reason||''}`,
       created_at:item.created_at||h.created_at,
@@ -54077,7 +54101,8 @@ function lyFreshSynthMovements({
       transaction_type:'ADJUSTMENT',
       quantity:Number(item.diff_qty||0),
       reference_id:h.id,
-      note:`Kiểm kê | Phiếu kiểm kê:${h.receipt_no} | Ngày kiểm kê:${h.receipt_date} | `+
+      _receipt_date:businessReceiptDateISO(h.receipt_date),
+      note:`Kiểm kê | Phiếu kiểm kê:${h.receipt_no} | Ngày kiểm kê:${businessReceiptDateISO(h.receipt_date)} | `+
         `Phiên:${h.id} | STT kiểm kê:${item.line_order||1} | `+
         `Trước:${Number(item.system_qty||0)} | Thực tế:${Number(item.actual_qty||0)} | `+
         `Đơn giá:${Number(item.unit_cost||0)} | Tiền chênh lệch:${Number(item.diff_value||0)} | `+

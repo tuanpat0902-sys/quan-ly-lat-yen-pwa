@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
-  if(window.__lyUITableErgonomics?.version==='2026.08.30.2')return;
-  const VERSION='2026.08.30.2',STYLE_ID='lyUITableErgonomicsStyle',LONG_TABLE_ROWS=12;
+  if(window.__lyUITableErgonomics?.version==='2026.09.20.1')return;
+  const VERSION='2026.09.20.1',STYLE_ID='lyUITableErgonomicsStyle',LONG_TABLE_ROWS=12;
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const CSS=`
 .scroll[data-ly-table-shell="1"]{width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important;overflow-x:hidden!important;overflow-y:visible!important;overscroll-behavior:auto;scrollbar-gutter:auto!important;contain:layout paint;border:1px solid var(--border,#e4e7ec)!important;border-radius:12px!important;background:var(--card,#fff)!important}
@@ -20,6 +20,7 @@ table[data-ly-table-ux="1"] [data-ly-cell-kind="date"],table[data-ly-table-ux="1
 table[data-ly-table-ux="1"] [data-ly-cell-kind="actions"]{text-align:right!important;white-space:normal!important}
 table[data-ly-table-ux="1"] [data-ly-cell-kind="actions"] button,table[data-ly-table-ux="1"] [data-ly-cell-kind="actions"] a{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:auto!important;max-width:100%!important;margin:2px!important;white-space:nowrap!important}
 table[data-ly-table-ux="1"] th[data-ly-cell-kind="number"]{width:12%}table[data-ly-table-ux="1"] th[data-ly-cell-kind="date"]{width:15%}table[data-ly-table-ux="1"] th[data-ly-cell-kind="status"]{width:12%}table[data-ly-table-ux="1"] th[data-ly-cell-kind="actions"]{width:14%}table[data-ly-table-ux="1"] th[data-ly-cell-kind="text-long"]{width:24%}
+.scroll[data-ly-table-shell="1"]>table.warehouse-combined-detail-table[data-ly-table-wide="1"]{table-layout:fixed!important}
 table[data-ly-table-ux="1"][data-ly-table-dense="1"] th,table[data-ly-table-ux="1"][data-ly-table-dense="1"] td{padding:7px 8px!important;font-size:12.5px!important}
 table[data-ly-table-ux="1"][data-ly-table-dense="1"] th[data-ly-cell-kind="actions"]{width:12%}
 @media(hover:hover) and (pointer:fine){table[data-ly-table-ux="1"] tbody tr:hover td{background:#f5f8fb!important}table[data-ly-table-ux="1"] tbody tr:focus-within td{background:#f0f6ff!important}}
@@ -40,10 +41,10 @@ table[data-ly-table-ux="1"][data-ly-table-dense="1"] th[data-ly-cell-kind="actio
     if(t?.dataset?.lyTv2Active==='1'||!t||t.classList?.contains('prepared-virtual-table'))return false;
     const h=headerCells(t);if(h.length<2)return false;
     const editable=!!t.querySelector?.('input,select,textarea,[contenteditable="true"]');
-    const complex=isComplex(t,h.length),compactFit=t.classList?.contains('salary-report-table')&&h.length<=4,wide=!compactFit&&(editable||complex);
+    const complex=isComplex(t,h.length),compactFit=t.classList?.contains('salary-report-table')&&h.length<=4,reportDetail=t.classList?.contains('warehouse-combined-detail-table'),wide=!compactFit&&(editable||complex||reportDetail);
     const labels=h.map((c,i)=>String(c.textContent||`Cột ${i+1}`).trim()||`Cột ${i+1}`);
     const kinds=labels.map((x,i)=>classifyHeader(x,i,labels.length));
-    const referenceWidth=Math.min(1280,Math.max(760,h.length*120));
+    const referenceWidth=reportDetail?1220:Math.min(1280,Math.max(760,h.length*120));
     t.dataset.lyTableUx='1';t.dataset.lyTableColumns=String(h.length);t.style?.setProperty?.('--ly-table-min-width',`${referenceWidth}px`);t.style?.setProperty?.('--ly-table-reference-width',`${referenceWidth}px`);
     if(h.length>=7)t.dataset.lyTableDense='1';else delete t.dataset.lyTableDense;if(editable)t.dataset.lyTableEditable='1';else delete t.dataset.lyTableEditable;if(complex)t.dataset.lyTableComplex='1';else delete t.dataset.lyTableComplex;if(compactFit)t.dataset.lyTableCompactFit='1';else delete t.dataset.lyTableCompactFit;if(wide)t.dataset.lyTableWide='1';else delete t.dataset.lyTableWide;
     ensureShell(t);h.forEach((c,i)=>c.dataset.lyCellKind=kinds[i]||'text');[...t.rows].forEach((r,ri)=>{if(r.parentElement?.tagName==='THEAD'||ri===0&&r.querySelector?.('th'))return;[...r.cells].forEach((c,i)=>{c.dataset.lyLabel=labels[i]||`Cột ${i+1}`;c.dataset.lyCellKind=kinds[i]||'text';if(!String(c.textContent||'').trim()&&!c.children.length)c.dataset.lyEmpty='1';else delete c.dataset.lyEmpty;delete c.dataset.lyValue;});});syncShell(t);return true;

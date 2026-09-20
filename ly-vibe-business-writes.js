@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.20.5';
+  const VERSION='2026.09.20.6';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
@@ -102,8 +102,45 @@
       try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…'}const product={id:id||null,warehouse_id:currentWarehouseId,name:nameEl.value.trim(),sku:skuEl.value.trim()||null,unit:(unitEl?.value||'ly').trim()||'ly',selling_price:Number(priceEl.value||0),active:true},saved=await post('/api/v1/business/product',{product,recipe_items:lines});if(btn)btn.setAttribute?.('onclick',`saveRecipe('${saved.id}')`);if(!Array.isArray(saved.recipe_items)||!recipeMatches(saved.recipe_items.map(row=>({...row,ingredient_id:''})),lines.map(row=>({...row,ingredient_id:''})))||saved.recipe_items.some(row=>!row.ingredient_id)||!productMatches(saved.row,product))throw new Error('Cloud chưa xác nhận đầy đủ thành phần công thức.');saveProductUnit?.(saved.id,saved.row?.unit||product.unit);assignProductToWarehouse?.(saved.id,currentWarehouseId);try{await refreshFromVibe();const persisted=(db.recipeItems||[]).filter(row=>row.product_id===saved.id);if(!recipeMatches(persisted,saved.recipe_items)||!productMatches((db.products||[]).find(row=>row.id===saved.id),product))throw new Error('Dữ liệu công thức tải lại chưa đầy đủ.');toggleRecipeForm?.(false);renderRecipes?.();renderSales?.();renderDashboard?.();toastMsg('Đã lưu món và công thức trên Vibe Host');}catch(error){toastMsg('Công thức đã lưu trên Vibe Host; danh sách đang chờ đồng bộ.');}return saved.id;}catch(error){alert('Lỗi công thức: '+(error?.message||error));return false;}finally{recipeSaving=false;if(btn){btn.disabled=false;btn.textContent=id?'Lưu thay đổi':'Tạo công thức';}}
     };
     window.saveImportReceipt=async function(){
-      if(!usesVibe())return legacyImport?.();const receiptNo=String($('receiptNo')?.value||'').trim(),receiptDate=String($('receiptDate')?.value||'').trim(),note=String($('receiptNote')?.value||'').trim(),items=window.getImportReceiptLines?.()||[],editKey=$('inlineImportReceiptForm')?.dataset?.editKey||'',btn=$('saveReceiptBtn'),status=$('receiptResult');if(!receiptNo||!items.length)return alert('Nhập số phiếu và ít nhất 1 mặt hàng.');
-      try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}const saved=await post('/api/v1/business/import',{header:{id:receiptId(editKey)||null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note},items});if($('inlineImportReceiptForm'))$('inlineImportReceiptForm').dataset.editKey=`ref:${saved.id}`;try{await refreshFromVibe();window.toggleImportReceiptForm?.(false);window.renderImports?.();window.toastMsg?.(`Đã lưu phiếu nhập ${receiptNo} trên Vibe Host`);}catch(error){if(status)status.textContent='Đã lưu trên Vibe Host nhưng danh sách chưa tải lại. Vui lòng tải lại trang.';window.toastMsg?.('Phiếu đã lưu trên Vibe Host; vui lòng tải lại trang.');}return saved.id;}catch(error){if(status)status.textContent=`Lỗi: ${error?.message||error}`;alert('Lỗi phiếu nhập: '+(error?.message||error));return false;}finally{if(btn){btn.disabled=false;btn.textContent=editKey?'Lưu thay đổi phiếu':'Xác nhận nhập kho';}}
+      if(!usesVibe())return legacyImport?.();
+      const receiptNo=String($('receiptNo')?.value||'').trim();
+      const receiptDate=String($('receiptDate')?.value||'').trim();
+      const note=String($('receiptNote')?.value||'').trim();
+      const items=window.getImportReceiptLines?.()||[];
+      const form=$('inlineImportReceiptForm'),editKey=form?.dataset?.editKey||'';
+      const btn=$('saveReceiptBtn'),status=$('receiptResult');
+      if(!receiptNo||!items.length)return alert('Nhập số phiếu và ít nhất 1 mặt hàng.');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(receiptDate))return alert('Chọn ngày nhập kho hợp lệ.');
+      try{
+        if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}
+        const saved=await post('/api/v1/business/import',{
+          header:{id:receiptId(editKey)||null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note},items
+        });
+        // A confirmed receipt must become an edit target before any refresh attempt.
+        if(form)form.dataset.editKey=`ref:${saved.id}`;
+        const confirmedDate=String(saved.header?.receipt_date||'').slice(0,10);
+        if(confirmedDate&&confirmedDate!==receiptDate){
+          if(status)status.textContent=`Phiếu đã lưu nhưng ngày máy chủ xác nhận là ${confirmedDate}, khác ngày đã chọn ${receiptDate}.`;
+          alert('Ngày nhập kho trên máy chủ khác ngày đã chọn. Phiếu được giữ để kiểm tra và sửa lại.');
+          return saved.id;
+        }
+        try{
+          await refreshFromVibe();
+          window.toggleImportReceiptForm?.(false);
+          window.renderImports?.();
+          window.toastMsg?.(`Đã lưu phiếu nhập ${receiptNo} ngày ${receiptDate} trên Vibe Host`);
+        }catch(error){
+          if(status)status.textContent='Đã lưu trên Vibe Host nhưng danh sách chưa tải lại. Vui lòng tải lại trang.';
+          window.toastMsg?.('Phiếu đã lưu trên Vibe Host; vui lòng tải lại trang.');
+        }
+        return saved.id;
+      }catch(error){
+        if(status)status.textContent=`Lỗi: ${error?.message||error}`;
+        alert('Lỗi phiếu nhập: '+(error?.message||error));
+        return false;
+      }finally{
+        if(btn){btn.disabled=false;btn.textContent=form?.dataset?.editKey?'Lưu thay đổi phiếu':'Xác nhận nhập kho';}
+      }
     };
     window.saveExportReceipt=async function(){
       if(!usesVibe())return legacyExport?.();const receiptNo=String($('exportReceiptNo')?.value||'').trim(),receiptDate=String($('exportReceiptDate')?.value||'').trim(),reason=String($('exportReceiptReason')?.value||'').trim(),financeTreatment=$('exportFinanceTreatment')?.value==='expense'?'expense':'inventory',items=window.getExportReceiptLines?.()||[],editKey=$('inlineExportReceiptForm')?.dataset?.editReferenceId||'',btn=$('saveExportReceiptBtn'),status=$('exportReceiptResult');if(!receiptNo||!items.length)return alert('Nhập số phiếu và ít nhất 1 mặt hàng.');

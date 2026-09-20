@@ -13,6 +13,12 @@ const tables = Object.freeze([
   'ly_stocktake_receipts', 'ly_stocktake_items', 'ly_sales', 'ly_sale_items',
   'ly_stock_transactions', 'ly_cashflow_entries',
 ]);
+const businessDateColumns=Object.freeze({
+  ly_import_receipts:'receipt_date',
+  ly_export_receipts:'receipt_date',
+  ly_stocktake_receipts:'receipt_date',
+  ly_cashflow_entries:'entry_date'
+});
 const authCache = new Map();
 const snapshotCache = new Map();
 const pendingSnapshots = new Map();
@@ -101,10 +107,14 @@ async function buildSnapshot(orgId) {
     await client.query('begin isolation level repeatable read read only');
     transactionStarted = true;
     tableResults=[];
-    for(const table of tables)tableResults.push(await client.query(
-      `select * from ${quoteIdentifier(schema)}.${quoteIdentifier(table)} where org_id = $1::uuid`,
-      [orgId],
-    ));
+    for(const table of tables){
+      const dateColumn=businessDateColumns[table];
+      const selection=dateColumn?`*, ${quoteIdentifier(dateColumn)}::text as ${quoteIdentifier(dateColumn)}`:'*';
+      tableResults.push(await client.query(
+        `select ${selection} from ${quoteIdentifier(schema)}.${quoteIdentifier(table)} where org_id = $1::uuid`,
+        [orgId],
+      ));
+    }
     signals = await client.query(
       `select domain, revision, changed_at from ${quoteIdentifier(schema)}.ly_change_signals where org_id = $1::uuid order by domain`,
       [orgId],

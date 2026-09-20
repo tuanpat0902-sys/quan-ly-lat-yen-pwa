@@ -92,12 +92,13 @@ async function recalculateImportCosts(client,orgId,ingredientIds){
 }
 async function saveDocument(client,user,kind,input){
   const names={import:['ly_import_receipts','ly_import_items'],export:['ly_export_receipts','ly_export_items'],stocktake:['ly_stocktake_receipts','ly_stocktake_items']}[kind];if(!names)throw new Error('Invalid document');
-  const value=input?.header||{},warehouseId=uuid(value.warehouse_id),requestedId=String(value.id||'').trim(),id=requestedId?uuid(requestedId):randomUUID(),receiptNo=String(value.receipt_no||'').trim();if(!id||!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid document');
+  const value=input?.header||{},warehouseId=uuid(value.warehouse_id),requestedId=String(value.id||'').trim(),id=requestedId?uuid(requestedId):randomUUID(),receiptNo=String(value.receipt_no||'').trim(),receiptDate=String(value.receipt_date||'').trim();if(!id||!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid document');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(receiptDate))throw new Error('Vui lòng chọn ngày trên phiếu hợp lệ.');
   const previousHeader=requestedId?await documentHeader(client,user.orgId,kind,id):null;if(requestedId&&!previousHeader)throw new Error('Phiếu cần sửa không tồn tại trên Vibe Host');
   const previous=await existingDocumentEffect(client,user.orgId,kind,id);for(const [ingredientId,delta] of previous)await adjustInventory(client,user.orgId,previousHeader?.warehouse_id||warehouseId,ingredientId,-delta);
   await client.query(`delete from ${qi(schema)}.${qi(names[1])} where org_id=$1::uuid and receipt_id=$2::uuid`,[user.orgId,id]);
   const totalAmount=(input.items||[]).reduce((sum,item)=>sum+Math.max(number(item.quantity),0)*Math.max(number(item.unit_cost),0),0),stocktakeValues=kind==='stocktake'?{shortage_value:0,surplus_value:0}:{},items=[],importIngredients=new Set();
-  let header=await upsert(client,names[0],{id,org_id:user.orgId,warehouse_id:warehouseId,receipt_no:receiptNo,receipt_date:value.receipt_date||new Date().toISOString().slice(0,10),note:value.note||'',reason:value.reason||'',finance_treatment:value.finance_treatment||'inventory',total_amount:totalAmount,...stocktakeValues});
+  let header=await upsert(client,names[0],{id,org_id:user.orgId,warehouse_id:warehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note:value.note||'',reason:value.reason||'',finance_treatment:value.finance_treatment||'inventory',total_amount:totalAmount,...stocktakeValues});
   for(const [index,item] of (input.items||[]).entries()){
     const ingredientId=uuid(item.ingredient_id);if(!ingredientId)continue;
     if(kind==='stocktake'){
@@ -111,6 +112,9 @@ async function saveDocument(client,user,kind,input){
     header=(await client.query(`update ${qi(schema)}.ly_stocktake_receipts set ${keys.map((key,index)=>`${qi(key)}=$${index+3}`).join(',')} where id=$1::uuid and org_id=$2::uuid returning *`,[id,user.orgId,...keys.map(key=>values[key])])).rows[0];
   }
   if(kind==='import')await recalculateImportCosts(client,user.orgId,new Set([...previous.keys(),...importIngredients]));
+  const persistedDate=(await client.query(`select receipt_date::text as receipt_date from ${qi(schema)}.${qi(names[0])} where id=$1::uuid and org_id=$2::uuid`,[id,user.orgId])).rows[0]?.receipt_date;
+  if(persistedDate!==receiptDate)throw new Error('Ngày phiếu trên Vibe Host không khớp ngày đã chọn. Dữ liệu chưa được lưu.');
+  header={...header,receipt_date:persistedDate};
   return {id,header,items};
 }
 async function deleteDocument(client,user,kind,id){
