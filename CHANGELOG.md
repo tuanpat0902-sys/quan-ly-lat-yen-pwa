@@ -2,6 +2,11 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.45 — 20/09/2026
+
+- Sửa lịch sử Thu/Chi trống trong khi báo cáo tài chính vẫn có giao dịch: hai màn hình dùng chung dữ liệu Cloud; phản hồi rỗng từ lượt đọc phụ không còn xóa các khoản đang hiển thị.
+- Bổ sung kiểm thử hồi quy cho 2 khoản chi ngày 19/09/2026 tổng 300 đ và thông báo xác nhận lưu.
+
 ## Ver 3.0.44 — 20/09/2026
 
 - Nén sẵn HTML bằng Brotli/gzip và nén các tệp giao diện theo yêu cầu của trình duyệt; giảm dung lượng truyền trang chính khoảng 80%.

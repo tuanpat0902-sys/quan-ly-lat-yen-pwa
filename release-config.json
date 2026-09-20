@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.44",
-  "revision": "fresh-core-v3-shell-authoritative-v45",
-  "loaderAssetVersion": "20260919.3",
+  "appVersion": "3.0.45",
+  "revision": "fresh-core-v3-shell-authoritative-v46",
+  "loaderAssetVersion": "20260920.2",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.19.3",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-268",
-  "redeploy": "2026-09-20-compressed-static-delivery-ver-3.0.44"
+  "moduleLoaderVersion": "2026.09.20.2",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-269",
+  "redeploy": "2026-09-20-cashflow-history-parity-ver-3.0.45"
 }
