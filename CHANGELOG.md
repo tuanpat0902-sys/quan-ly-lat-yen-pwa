@@ -2,6 +2,12 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.0.44 — 20/09/2026
+
+- Nén sẵn HTML bằng Brotli/gzip và nén các tệp giao diện theo yêu cầu của trình duyệt; giảm dung lượng truyền trang chính khoảng 80%.
+- Tệp có mã phiên bản được lưu cache dài hạn, trong khi trang chính và service worker tiếp tục lấy bản mới nhất.
+- Thêm kiểm tra hồi quy cho nội dung giải nén, lựa chọn kiểu nén và chính sách cache.
+
 ## Ver 3.0.43 — 19/09/2026
 
 - Lịch sử Thu/Chi của kho đang chọn đọc trực tiếp từ Vibe Host khi mở màn hình và sau khi lưu, tránh danh sách trống do lớp dữ liệu cũ.

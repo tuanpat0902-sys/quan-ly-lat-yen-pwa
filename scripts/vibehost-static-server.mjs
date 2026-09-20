@@ -1,8 +1,10 @@
 import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { brotliCompress, constants as zlibConstants, gzip } from 'node:zlib';
+import { promisify } from 'node:util';
 import { handleSnapshotApi } from './vibehost-snapshot-api.mjs';
 import { handleIposBootstrap } from './vibehost-ipos-bootstrap.mjs';
 import { handleAuthApi } from './vibehost-auth-api.mjs';
@@ -12,6 +14,24 @@ import { handleBusinessMutationApi } from './vibehost-business-mutation-api.mjs'
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
 const host = process.env.HOST || '0.0.0.0';
+const brotliAsync=promisify(brotliCompress),gzipAsync=promisify(gzip);
+const compressedAssets=new Map();
+const textExtensions=new Set(['.css','.html','.js','.json','.svg','.txt','.webmanifest']);
+
+function acceptsEncoding(header,name){
+  return String(header||'').split(',').some(part=>{const [encoding,...parameters]=part.trim().split(';');if(encoding.trim().toLowerCase()!==name)return false;const quality=parameters.map(value=>/^q\s*=\s*([\d.]+)/i.exec(value.trim())?.[1]).find(value=>value!==undefined);return quality===undefined||Number(quality)>0;});
+}
+function preferredEncoding(header){return acceptsEncoding(header,'br')?'br':acceptsEncoding(header,'gzip')?'gzip':'';}
+async function compressedAsset(file,encoding){
+  const key=`${file.path}:${file.mtimeMs}:${encoding}`;
+  let pending=compressedAssets.get(key);
+  if(!pending){
+    pending=readFile(file.path).then(body=>encoding==='br'?brotliAsync(body,{params:{[zlibConstants.BROTLI_PARAM_QUALITY]:5}}):gzipAsync(body,{level:6}));
+    compressedAssets.set(key,pending);
+    pending.catch(()=>compressedAssets.delete(key));
+  }
+  return pending;
+}
 
 const contentTypes = new Map([
   ['.css', 'text/css; charset=utf-8'],
@@ -43,11 +63,11 @@ async function findFile(pathname) {
 
   try {
     const details = await stat(candidate);
-    if (details.isFile()) return { path: candidate, size: details.size };
+    if (details.isFile()) return { path: candidate, size: details.size, mtimeMs: details.mtimeMs };
     if (details.isDirectory()) {
       const indexPath = resolve(candidate, 'index.html');
       const indexDetails = await stat(indexPath);
-      if (indexDetails.isFile()) return { path: indexPath, size: indexDetails.size };
+      if (indexDetails.isFile()) return { path: indexPath, size: indexDetails.size, mtimeMs: indexDetails.mtimeMs };
     }
   } catch {
     return null;
@@ -80,20 +100,30 @@ const server = createServer(async (request, response) => {
   if (!file) return sendText(response, 404, 'Not Found');
 
   const extension = extname(file.path).toLowerCase();
+  const canCompress=textExtensions.has(extension)&&file.size>=1024&&file.size<=3_000_000;
+  const encoding=canCompress?preferredEncoding(request.headers['accept-encoding']):'';
+  let compressed;
+  if(encoding)try{compressed=await compressedAsset(file,encoding);}catch(error){console.warn('[static-compression]',error?.code||error?.message||error);}
   response.writeHead(200, {
     'Cache-Control': /(?:index\.html|sw\.js|manifest\.webmanifest)$/.test(file.path)
       ? 'no-store, max-age=0, must-revalidate'
-      : 'public, max-age=3600',
-    'Content-Length': file.size,
+      : requestUrl.searchParams.has('v')?'public, max-age=31536000, immutable':'public, max-age=3600',
+    'Content-Length': compressed?.length||file.size,
     'Content-Type': contentTypes.get(extension) || 'application/octet-stream',
+    ...(canCompress?{'Vary':'Accept-Encoding'}:{}),
+    ...(compressed?{'Content-Encoding':encoding}:{}),
     'X-Content-Type-Options': 'nosniff',
   });
   if (request.method === 'HEAD') return response.end();
+  if(compressed)return response.end(compressed);
   createReadStream(file.path).pipe(response);
 });
 
+await Promise.all(['br','gzip'].map(async encoding=>{
+  try{const path=resolve(root,'index.html'),details=await stat(path);await compressedAsset({path,size:details.size,mtimeMs:details.mtimeMs},encoding);}catch(error){console.warn('[static-compression-warm]',error?.code||error?.message||error);}
+}));
 server.listen(port, host, () => {
-  console.log(`Static PWA server listening on http://${host}:${port}`);
+  console.log(`Static PWA server listening on http://${host}:${server.address().port}`);
 });
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
