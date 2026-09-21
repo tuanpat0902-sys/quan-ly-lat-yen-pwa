@@ -10,7 +10,7 @@ export async function handleHealthApi(request,response,pathname){
   const started=Date.now();
   try{
     const result=await Promise.race([
-      getVibePool().query(`select current_timestamp now,to_regclass($1) migrations,(select value from ${qi(schema)}.${qi('ly_runtime_sync_state')} where name='ipos_sync_health') ipos_health,(select count(*)::int from pg_indexes where schemaname=$2 and indexname like 'ly_idx_%') index_count,(select exists(select 1 from ${qi(schema)}.${qi('ly_runtime_migrations')} where name='20260921_v2_domain_reads_actor_and_index_audit')) migration_current`,[`${schema}.ly_runtime_migrations`,schema]),
+      getVibePool().query(`select current_timestamp now,to_regclass($1) migrations,(select value from ${qi(schema)}.${qi('ly_runtime_sync_state')} where name='ipos_sync_health') ipos_health,(select count(*)::int from pg_indexes where schemaname=$2 and indexname like 'ly_idx_%') index_count,(select exists(select 1 from ${qi(schema)}.${qi('ly_runtime_migrations')} where name='20260922_v3_authoritative_versions_and_inventory_repair')) migration_current`,[`${schema}.ly_runtime_migrations`,schema]),
       new Promise((_,reject)=>setTimeout(()=>reject(new Error('health-timeout')),3000)),
     ]);
     const row=result.rows[0]||{},health=(()=>{try{return JSON.parse(row.ipos_health||'{}')}catch{return {}}})();
