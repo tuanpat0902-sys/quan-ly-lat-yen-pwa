@@ -2,6 +2,12 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.1.4 — 21/09/2026
+
+- Hợp nhất toàn bộ biến động kho của kho đang chọn vào một bảng duy nhất, bỏ giới hạn cứng 300 dòng và bỏ nhãn “trước đây”.
+- Giới hạn mỗi trang của Nhật ký thay đổi và Toàn bộ biến động kho ở mức 50 dòng, có nút chuyển trang mới hơn/cũ hơn.
+- Sắp xếp biến động kho theo thời gian mới nhất trước và hiển thị tổng số bản ghi đầy đủ.
+
 ## Ver 3.1.3 — 21/09/2026
 
 - Chuyển Lịch sử hoạt động từ trình đọc Supabase cũ sang API Vibe có xác thực, giới hạn thời gian tải và nút thử lại khi máy chủ chậm.

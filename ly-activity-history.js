@@ -4,9 +4,9 @@
   'use strict';
   if(window.__lyActivityHistoryUIV1)return;
   window.__lyActivityHistoryUIV1=true;
-  const VERSION='2026.09.21.2';
+  const VERSION='2026.09.21.3';
   const cloudState={orgId:'',rows:[],loading:false,loaded:false,hasMore:true,error:''};
-  const PAGE_SIZE=100;let page=0;
+  const PAGE_SIZE=50;let page=0,movementPage=0;
 
   function activityModule(table){
     return ({
@@ -138,9 +138,14 @@
       .filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,'vi'));
   
-    const legacyMovements=(db.movements||[])
+    const allLegacyMovements=(db.movements||[])
       .filter(m=>m.warehouse_id===currentWarehouseId)
-      .slice(0,300);
+      .slice()
+      .sort((a,b)=>new Date(b?.created_at||0)-new Date(a?.created_at||0));
+    const movementPageCount=Math.max(1,Math.ceil(allLegacyMovements.length/PAGE_SIZE));
+    movementPage=Math.min(Math.max(0,movementPage),movementPageCount-1);
+    const movementStart=movementPage*PAGE_SIZE;
+    const legacyMovements=allLegacyMovements.slice(movementStart,movementStart+PAGE_SIZE);
   
     E.history.innerHTML=`
       <div class="history-head">
@@ -203,10 +208,13 @@
       </div>
   
       <div class="card section-gap">
-        <details open>
-          <summary><b>Biến động kho trước đây</b> <span class="muted">(${num(legacyMovements.length)} dòng)</span></summary>
-          <div class="section-gap">
+        <div class="history-head">
+          <h3>Toàn bộ biến động kho</h3>
+          <div class="history-count">${num(allLegacyMovements.length)} dòng</div>
+        </div>
+        <div class="section-gap">
             ${legacyMovements.length?`
+              ${allLegacyMovements.length>PAGE_SIZE?`<div class="history-limit-note">Đang hiển thị ${num(movementStart+1)}–${num(movementStart+legacyMovements.length)} trong ${num(allLegacyMovements.length)} biến động.</div>`:''}
               <div class="scroll">
                 <table class="legacy-movement-table" data-ly-table-view="legacyMovements">
                   <tr><th>Thời gian</th><th>Loại</th><th>Nguyên liệu/ Dụng cụ</th><th class="right">SL</th><th>Ghi chú</th></tr>
@@ -222,9 +230,9 @@
                   }).join('')}
                 </table>
               </div>
+              ${allLegacyMovements.length>PAGE_SIZE?`<div class="toolbar section-gap"><button type="button" class="secondary sm" onclick="changeInventoryMovementPage(-1)" ${movementPage===0?'disabled':''}>← Mới hơn</button><span>Trang ${num(movementPage+1)} / ${num(movementPageCount)}</span><button type="button" class="secondary sm" onclick="changeInventoryMovementPage(1)" ${movementPage>=movementPageCount-1?'disabled':''}>Cũ hơn →</button></div>`:''}
             `:'<div class="empty">Chưa có biến động kho.</div>'}
-          </div>
-        </details>
+        </div>
       </div>
     `;
     (window.queueMicrotask||window.setTimeout)?.(()=>window.__lyTableViewV2?.apply?.(E.history),0);
@@ -232,7 +240,8 @@
 
   window.auditActionClass=auditActionClass;
   window.auditFilterRows=auditFilterRows;
-  window.changeActivityHistoryPage=delta=>{const next=Number(delta)||0;if(next>0&&page>=pageCountForHistory()){refreshCloudHistory(false,true).then(()=>{page++;renderHistory();});return;}page=Math.max(0,page+next);renderHistory();E.history?.scrollIntoView?.({block:'start'});};
+  window.changeActivityHistoryPage=delta=>{const next=Number(delta)||0;if(next>0&&page>=pageCountForHistory()-1&&cloudState.hasMore){refreshCloudHistory(false,true).then(ok=>{if(ok)page=Math.min(page+1,pageCountForHistory()-1);renderHistory();E.history?.scrollIntoView?.({block:'start'});});return;}page=Math.max(0,page+next);renderHistory();E.history?.scrollIntoView?.({block:'start'});};
+  window.changeInventoryMovementPage=delta=>{movementPage=Math.max(0,movementPage+(Number(delta)||0));renderHistory();E.history?.querySelector?.('.legacy-movement-table')?.scrollIntoView?.({block:'start'});};
   window.renderHistory=renderHistory;
   window.__lyActivityHistoryModule={version:VERSION,render:renderHistory,refresh:()=>refreshCloudHistory(true),status:()=>({...cloudState,count:activityRows().length})};
 })();
