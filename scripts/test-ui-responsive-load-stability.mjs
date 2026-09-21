@@ -27,7 +27,8 @@ assert.match(loader,/data-ly-table-atomic[\s\S]*table:not\(\[data-ly-table-paint
 assert.match(loader,/removeAttribute\?\.\('data-ly-table-atomic'\)[\s\S]*1400/,'first-paint gate must fail open quickly if an asset fails');
 assert.match(loader,/Promise\.all\(\[load\('hydration'\),load\('shadow'\),load\('domShim'\)/,'independent compatibility layers must load in parallel');
 assert.match(loader,/async function loadCriticalTablePresentation\(\)\{await Promise\.all\(\[load\('tableFirstPaint'\),load\('uiTableErgonomics'\),load\('tableViewV2'\),load\('ingredientTableUX'\)\]\);window\.__lyTableFirstPaint\?\.settle/,'critical table owners must load in parallel and settle once before reveal');
-assert.match(loader,/ensureTableFirstPaintGate\(\);loadCriticalTablePresentation\(\);load\('runtimeErrorBoundary'\)/,'table gate must start before other asynchronous bootstrap work');
+assert.match(loader,/ensureTableFirstPaintGate\(\);load\('runtimeErrorBoundary'\);load\('appVersion'\);const coreReady=loadCore\(\)/,'table gate must start before other asynchronous bootstrap work');
+assert.match(loader,/authenticated=await window\.v260EnsureAuth[\s\S]*if\(!authenticated\)[\s\S]*return false;[\s\S]*await loadCriticalTablePresentation\(\)/,'business and table modules must wait until the Vibe session is authenticated');
 assert.doesNotMatch(firstPaint,/\bfetch\s*\(|\.rpc\s*\(|localStorage|sessionStorage/,'first-paint coordinator must remain presentation-only');
 assert.match(ui,/VERSION='2026\.08\.28\.5'/,'UI stability v5 must be active');
 assert.match(ui,/overflow-x:hidden;overflow-x:clip/,'global horizontal overflow guard missing');
