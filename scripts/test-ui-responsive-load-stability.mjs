@@ -97,7 +97,7 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.09\.02\.1'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.09\.21\.3'/,'current Vibe release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.09\.21\.4'/,'current Vibe release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260920\.1/,'table ergonomics asset must be deterministic');
 assert.match(sw,/lat-yen-fresh-core-v3-authoritative-278/,'the current UI build must force a fresh service-worker release');
 assert.match(index,/tuanpat0902-sys\.[^\n]+quan-ly-lat-yen-pwa-live\.n1\.tinhgon\.xyz/,'legacy GitHub Pages address must redirect to Vibe Host before loading Supabase');
