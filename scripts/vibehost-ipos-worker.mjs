@@ -162,6 +162,34 @@ export async function rebuildVibeIposInventory(client,ctx,saleIds=null){
   return totals.size;
 }
 
+export async function repairImpossiblePositiveInventory(client,ctx){
+  const result=await client.query(`with ledger as(
+      select org_id,warehouse_id,ingredient_id,sum(quantity)::numeric balance,
+        bool_or(quantity>0) has_positive_source,
+        bool_or(transaction_type='SALE' and quantity<0) has_sale_deduction
+      from ${qi(schema)}.ly_stock_transactions where org_id=$1::uuid
+      group by org_id,warehouse_id,ingredient_id
+    ), candidates as(
+      select i.org_id,i.warehouse_id,i.ingredient_id,l.balance
+      from ${qi(schema)}.ly_inventory i join ledger l using(org_id,warehouse_id,ingredient_id)
+      where i.org_id=$1::uuid and i.quantity>0 and l.balance<0
+        and l.has_sale_deduction and not l.has_positive_source
+        and not exists(
+          select 1 from ${qi(schema)}.ly_import_items x
+          join ${qi(schema)}.ly_import_receipts h on h.id=x.receipt_id and h.org_id=x.org_id
+          where x.org_id=i.org_id and h.warehouse_id=i.warehouse_id and x.ingredient_id=i.ingredient_id
+        )
+        and not exists(
+          select 1 from ${qi(schema)}.ly_stocktake_items x
+          join ${qi(schema)}.ly_stocktake_receipts h on h.id=x.receipt_id and h.org_id=x.org_id
+          where x.org_id=i.org_id and h.warehouse_id=i.warehouse_id and x.ingredient_id=i.ingredient_id and x.diff_qty>0
+        )
+    ) update ${qi(schema)}.ly_inventory i set quantity=c.balance,updated_at=now()
+      from candidates c where i.org_id=c.org_id and i.warehouse_id=c.warehouse_id and i.ingredient_id=c.ingredient_id
+      returning i.warehouse_id,i.ingredient_id,i.quantity`,[ctx.org]);
+  return result.rows;
+}
+
 async function removeIposSaleInventory(client,ctx,saleId){
   const rows=(await client.query(`select warehouse_id,ingredient_id,sum(quantity)::numeric quantity from ${qi(schema)}.ly_stock_transactions where org_id=$1 and source_id=$2::uuid and transaction_type='SALE' group by warehouse_id,ingredient_id`,[ctx.org,saleId])).rows;
   for(const row of rows)await client.query(`insert into ${qi(schema)}.ly_inventory(org_id,warehouse_id,ingredient_id,quantity,updated_at) values($1,$2,$3,$4,now()) on conflict(org_id,warehouse_id,ingredient_id) do update set quantity=${qi('ly_inventory')}.${qi('quantity')}+excluded.quantity,updated_at=now()`,[ctx.org,row.warehouse_id,row.ingredient_id,-number(row.quantity)]);
@@ -191,7 +219,7 @@ async function runSync({backfill=false,force=false,deep=false}={}){
     await client.query('begin');
     if(catalogData){summary.catalog=await syncCatalog(client,ctx,catalogData);await setSyncStateValue(client,'ipos_catalog_synced_at',new Date().toISOString());}
     const changedSaleIds=[];for(const plan of plans){summary.skippedSales+=plan.headersForDay.length-plan.details.length;for(const sale of plan.details){const saved=await upsertSale(client,ctx,config,sale);if(saved?.id)changedSaleIds.push(saved.id);summary.sales++;}for(const row of plan.stale){await removeIposSaleInventory(client,ctx,row.id);await client.query(`delete from ${qi(schema)}.ly_sale_items where org_id=$1 and sale_id=$2`,[ctx.org,row.id]);await client.query(`delete from ${qi(schema)}.ly_sales where org_id=$1 and id=$2`,[ctx.org,row.id]);summary.deletedSales++;}}
-    summary.activityEvents=await syncSaleActivityEvents(client,ctx);summary.inventoryGroups=changedSaleIds.length?await rebuildVibeIposInventory(client,ctx,changedSaleIds):0;if(effectiveBackfill)await setSyncStateValue(client,'ipos_backfill','complete');if(deepRequested)await setSyncStateValue(client,'ipos_deep_reconcile_day',today);await saveSyncHealth(client,successfulHealth(new Date(),summary,today));await client.query('commit');if(summary.sales||summary.deletedSales||summary.catalog)invalidateSnapshot();console.log(`[ipos-vibe] synchronized ${summary.sales} changed sale(s), skipped ${summary.skippedSales}, deleted ${summary.deletedSales}, ${summary.catalog} product(s), ${summary.days} day(s); recovered=${summary.recovered}; deep=${summary.deep}`);
+    summary.activityEvents=await syncSaleActivityEvents(client,ctx);summary.inventoryGroups=changedSaleIds.length?await rebuildVibeIposInventory(client,ctx,changedSaleIds):0;summary.inventoryRepairs=(await repairImpossiblePositiveInventory(client,ctx)).length;if(effectiveBackfill)await setSyncStateValue(client,'ipos_backfill','complete');if(deepRequested)await setSyncStateValue(client,'ipos_deep_reconcile_day',today);await saveSyncHealth(client,successfulHealth(new Date(),summary,today));await client.query('commit');if(summary.sales||summary.deletedSales||summary.catalog||summary.inventoryRepairs)invalidateSnapshot();console.log(`[ipos-vibe] synchronized ${summary.sales} changed sale(s), skipped ${summary.skippedSales}, deleted ${summary.deletedSales}, ${summary.catalog} product(s), ${summary.days} day(s), repaired ${summary.inventoryRepairs} impossible positive stock row(s); recovered=${summary.recovered}; deep=${summary.deep}`);
   }catch(error){if(client)await client.query('rollback').catch(()=>{});const next={...failedHealth(health,error),last_error:safeError(error)};if(client)await saveSyncHealth(client,next).catch(stateError=>console.error(`[ipos-vibe] health-state failed: ${safeError(stateError)}`));const failure=classifyIposFailure(error);console.error(`[ipos-vibe] failed ${failure.code}; next=${next.next_retry_at}: ${safeError(error)}`);}finally{client?.release();running=false;}
 }
 export function startVibeIposWorker(){if(process.env.VIBE_IPOS_SYNC!=='1'||timer)return;void runSync({backfill:true,deep:true,force:true});timer=setInterval(()=>{if(activeHour())void runSync({deep:localHour()===6});},intervalMs);timer.unref?.();console.log('[ipos-vibe] enabled: 5-minute live sync plus daily rolling recovery');}

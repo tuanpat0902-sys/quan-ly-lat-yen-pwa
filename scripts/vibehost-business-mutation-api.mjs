@@ -4,7 +4,7 @@ import { getVibePool } from './vibehost-db.mjs';
 import { authenticatedVibeUser } from './vibehost-auth-api.mjs';
 import { invalidateSnapshot } from './vibehost-snapshot-api.mjs';
 import { ensureIngredientCategoryColumn } from './vibehost-ingredient-category-api.mjs';
-import { rebuildVibeIposInventory } from './vibehost-ipos-worker.mjs';
+import { rebuildVibeIposInventory, repairImpossiblePositiveInventory } from './vibehost-ipos-worker.mjs';
 
 const schema='lat_yen_shadow_20260905',metaCache=new Map();
 function qi(value){return `"${String(value).replaceAll('"','""')}"`;}
@@ -14,7 +14,7 @@ function uuid(value){const text=String(value||'').trim();return /^[0-9a-f]{8}-[0
 function number(value,fallback=0){const result=Number(value);return Number.isFinite(result)?result:fallback;}
 class ConflictError extends Error{constructor(){super('Dữ liệu đã được thay đổi trên thiết bị khác. Vui lòng tải lại trước khi lưu.');this.name='ConflictError';}}
 function sameVersion(left,right){const a=Date.parse(String(left||'')),b=Date.parse(String(right||''));return Number.isFinite(a)&&Number.isFinite(b)&&a===b;}
-async function lockAndCheckVersion(client,table,user,id,value){if(!uuid(id))return null;const row=(await client.query(`select * from ${qi(schema)}.${qi(table)} where id=$1::uuid and org_id=$2::uuid for update`,[id,user.orgId])).rows[0]||null,expected=value?.expected_updated_at||value?.updated_at;if(row&&expected&&!sameVersion(row.updated_at,expected))throw new ConflictError();return row;}
+async function lockAndCheckVersion(client,table,user,id,value){if(!uuid(id))return null;const row=(await client.query(`select * from ${qi(schema)}.${qi(table)} where id=$1::uuid and org_id=$2::uuid for update`,[id,user.orgId])).rows[0]||null,expected=value?.expected_updated_at;if(row&&expected&&row.updated_at&&!sameVersion(row.updated_at,expected))throw new ConflictError();return row;}
 async function recordActivity(client,user,{table,id,type,name,amount=0}){
   if(!table||!uuid(id))return;
   await client.query(`insert into ${qi(schema)}.ly_activity_events(org_id,entity_table,entity_id,event_type,entity_name,amount,actor_email,created_at) values($1::uuid,$2,$3::uuid,$4,$5,$6,$7,now())`,[user.orgId,table,id,String(type||'UPDATE').toUpperCase(),String(name||id),number(amount),String(user.email||'')]);
@@ -63,7 +63,7 @@ async function saveProduct(client,user,input){
 
 async function reconcileProductInventory(ctx){
   let client;
-  try{client=await acquireClient();await client.query('begin');const saleIds=(await client.query(`select distinct s.id from ${qi(schema)}.ly_sales s join ${qi(schema)}.ly_sale_items i on i.org_id=s.org_id and i.sale_id=s.id where s.org_id=$1::uuid and s.source='iPOS' and i.product_id=$2::uuid`,[ctx.org,ctx.productId])).rows.map(row=>row.id);await rebuildVibeIposInventory(client,ctx,saleIds);await client.query('commit');invalidateSnapshot(ctx.org);}
+  try{client=await acquireClient();await client.query('begin');const saleIds=(await client.query(`select distinct s.id from ${qi(schema)}.ly_sales s join ${qi(schema)}.ly_sale_items i on i.org_id=s.org_id and i.sale_id=s.id where s.org_id=$1::uuid and s.source='iPOS' and i.product_id=$2::uuid`,[ctx.org,ctx.productId])).rows.map(row=>row.id);await rebuildVibeIposInventory(client,ctx,saleIds);await repairImpossiblePositiveInventory(client,ctx);await client.query('commit');invalidateSnapshot(ctx.org);}
   catch(error){if(client)await client.query('rollback').catch(()=>{});console.error(`[business-mutation-reconcile] ${String(error?.message||error).slice(0,220)}`);}
   finally{client?.release();}
 }
@@ -106,7 +106,7 @@ async function saveDocument(client,user,kind,input){
   const names={import:['ly_import_receipts','ly_import_items'],export:['ly_export_receipts','ly_export_items'],stocktake:['ly_stocktake_receipts','ly_stocktake_items']}[kind];if(!names)throw new Error('Invalid document');
   const value=input?.header||{},warehouseId=uuid(value.warehouse_id),requestedId=String(value.id||'').trim(),id=requestedId?uuid(requestedId):randomUUID(),receiptNo=String(value.receipt_no||'').trim(),receiptDate=String(value.receipt_date||'').trim();if(!id||!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid document');
   if(!/^\d{4}-\d{2}-\d{2}$/.test(receiptDate))throw new Error('Vui lòng chọn ngày trên phiếu hợp lệ.');
-  const previousHeader=requestedId?await documentHeader(client,user.orgId,kind,id):null;if(requestedId&&!previousHeader)throw new Error('Phiếu cần sửa không tồn tại trên Vibe Host');if(previousHeader&&(value.expected_updated_at||value.updated_at)&&!sameVersion(previousHeader.updated_at,value.expected_updated_at||value.updated_at))throw new ConflictError();
+  const previousHeader=requestedId?await documentHeader(client,user.orgId,kind,id):null;if(requestedId&&!previousHeader)throw new Error('Phiếu cần sửa không tồn tại trên Vibe Host');if(previousHeader&&value.expected_updated_at&&previousHeader.updated_at&&!sameVersion(previousHeader.updated_at,value.expected_updated_at))throw new ConflictError();
   const previous=await existingDocumentEffect(client,user.orgId,kind,id);for(const [ingredientId,delta] of previous)await adjustInventory(client,user.orgId,previousHeader?.warehouse_id||warehouseId,ingredientId,-delta);
   const ledgerType={import:'IMPORT',export:'EXPORT',stocktake:'ADJUSTMENT'}[kind];
   await client.query(`delete from ${qi(schema)}.ly_stock_transactions where org_id=$1::uuid and source_id=$2::uuid and transaction_type=$3`,[user.orgId,id,ledgerType]);

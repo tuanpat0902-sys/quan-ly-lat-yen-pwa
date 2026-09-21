@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.1 — 22/09/2026
+
+- Sửa cảnh báo xung đột giả khi sửa nguyên liệu và phiếu kho: phiên bản so sánh giờ lấy trực tiếp từ snapshot Vibe, không lấy từ dữ liệu giao diện có thể đã bị tính lại cục bộ.
+- Bổ sung `updated_at` chuẩn cho các bảng nghiệp vụ cần chống ghi đè; vẫn giữ khóa dòng và trả xung đột thật khi một thiết bị khác đã lưu trước.
+- Tự sửa các số tồn dương vô lý nếu mặt hàng không có nhập kho, không có kiểm kê tăng/tồn đầu và chỉ có phát sinh trừ từ bán hàng.
+- Giá vốn trên form nguyên liệu được chuẩn hóa số hiển thị, không còn chuỗi thập phân kéo dài.
+
 ## Ver 3.3.0 — 21/09/2026
 
 - Thay tải snapshot toàn bộ bằng năm miền dữ liệu độc lập; dữ liệu lịch sử bán hàng, thu/chi và kho có API phân trang ổn định, tối đa 50 dòng mỗi trang.

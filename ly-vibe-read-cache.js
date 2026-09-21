@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.21.4';
+  const VERSION='2026.09.22.1';
   const DOMAINS={
     core:['ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items','ly_products','ly_recipe_items','ly_inventory'],
     documents:['ly_import_receipts','ly_import_items','ly_export_receipts','ly_export_items','ly_stocktake_receipts','ly_stocktake_items'],
@@ -8,8 +8,14 @@
   };
   const TABLE_DOMAIN=new Map(Object.entries(DOMAINS).flatMap(([domain,tables])=>tables.map(table=>[table,domain])));
   const VIBE_ONLY=location.hostname.endsWith('.tinhgon.xyz');
-  const state={enabled:true,source:VIBE_ONLY?'vibe':'supabase',lastSnapshotAt:0,lastError:'',bypassUntil:0,pending:new Map(),domains:new Map()};
+  const state={enabled:true,source:VIBE_ONLY?'vibe':'supabase',lastSnapshotAt:0,lastError:'',bypassUntil:0,pending:new Map(),domains:new Map(),versions:new Map()};
   let generation=0;
+
+  function captureVersions(tables){
+    for(const [table,rows] of Object.entries(tables||{}))for(const row of rows||[]){
+      if(row?.id&&row?.updated_at)state.versions.set(`${table}:${row.id}`,String(row.updated_at));
+    }
+  }
 
   function compare(left,right){
     if(left===right)return 0;
@@ -49,6 +55,7 @@
           if(payload?.orgId!==orgId||payload?.domain!==domain||(!payload.notModified&&(!payload?.tables||tables.some(table=>!Array.isArray(payload.tables[table])))))throw new Error('invalid-domain');
           const next=payload.notModified&&cached?{...cached,loadedAt:Date.now()}:{...payload,loadedAt:Date.now()};
           if(entry.generation!==generation||String(window.__lyFreshOrgId||'')!==orgId)return payload;
+          captureVersions(next.tables);
           state.domains.set(domain,next);
           state.lastSnapshotAt=Date.now();
           state.source='vibe';
@@ -91,10 +98,11 @@
     generation+=1;
     state.domains.clear();
     state.pending.clear();
+    state.versions.clear();
     state.lastSnapshotAt=0;
     state.bypassUntil=VIBE_ONLY?0:Date.now()+45_000;
   });
-  window.__lyVibeReadCache={version:VERSION,install,rows:table=>{const cached=state.domains.get(TABLE_DOMAIN.get(table));return cached?.orgId===String(window.__lyFreshOrgId||'')?cached.tables?.[table]||[]:[];},status:()=>({...state,pending:state.pending.size,domains:[...state.domains.keys()]}),enable(value=true){state.enabled=!!value;}};
+  window.__lyVibeReadCache={version:VERSION,install,rows:table=>{const cached=state.domains.get(TABLE_DOMAIN.get(table));return cached?.orgId===String(window.__lyFreshOrgId||'')?cached.tables?.[table]||[]:[];},versionFor:(table,id)=>id?state.versions.get(`${table}:${id}`):undefined,status:()=>({...state,pending:state.pending.size,domains:[...state.domains.keys()],versions:state.versions.size}),enable(value=true){state.enabled=!!value;}};
   if(!install()){
     let attempts=0;
     const retry=()=>{attempts+=1;if(!install()&&attempts<100)setTimeout(retry,50);};retry();

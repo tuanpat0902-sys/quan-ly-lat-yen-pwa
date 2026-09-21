@@ -1,7 +1,7 @@
 import { getVibePool } from './vibehost-db.mjs';
 
 const schema='lat_yen_shadow_20260905';
-const migration='20260921_v2_domain_reads_actor_and_index_audit';
+const migration='20260922_v3_authoritative_versions_and_inventory_repair';
 const qi=value=>`"${String(value).replaceAll('"','""')}"`;
 
 const indexes=[
@@ -38,6 +38,26 @@ export async function runVibeSchemaMaintenance(){
     await client.query("select pg_advisory_xact_lock(hashtext('lat-yen-vibe-schema-maintenance'))");
     await client.query(`create table if not exists ${qi(schema)}.${qi('ly_runtime_migrations')}(name text primary key,applied_at timestamptz not null default now())`);
     await client.query(`create table if not exists ${qi(schema)}.${qi('ly_runtime_sync_state')}(name text primary key,value text not null,updated_at timestamptz not null default now())`);
+    for(const table of ['ly_ingredients','ly_products','ly_import_receipts','ly_export_receipts','ly_stocktake_receipts','ly_sales']){
+      if(await tableExists(client,table))await client.query(`alter table ${qi(schema)}.${qi(table)} add column if not exists updated_at timestamptz not null default now()`);
+    }
+    let inventoryRepairs=0;
+    if(await tableExists(client,'ly_inventory')&&await tableExists(client,'ly_stock_transactions')){
+      const repaired=await client.query(`with ledger as(
+          select org_id,warehouse_id,ingredient_id,sum(quantity)::numeric balance,
+            bool_or(quantity>0) has_positive_source,
+            bool_or(transaction_type='SALE' and quantity<0) has_sale_deduction
+          from ${qi(schema)}.ly_stock_transactions group by org_id,warehouse_id,ingredient_id
+        ), candidates as(
+          select i.org_id,i.warehouse_id,i.ingredient_id,l.balance
+          from ${qi(schema)}.ly_inventory i join ledger l using(org_id,warehouse_id,ingredient_id)
+          where i.quantity>0 and l.balance<0 and l.has_sale_deduction and not l.has_positive_source
+            and not exists(select 1 from ${qi(schema)}.ly_import_items x join ${qi(schema)}.ly_import_receipts h on h.id=x.receipt_id and h.org_id=x.org_id where x.org_id=i.org_id and h.warehouse_id=i.warehouse_id and x.ingredient_id=i.ingredient_id)
+            and not exists(select 1 from ${qi(schema)}.ly_stocktake_items x join ${qi(schema)}.ly_stocktake_receipts h on h.id=x.receipt_id and h.org_id=x.org_id where x.org_id=i.org_id and h.warehouse_id=i.warehouse_id and x.ingredient_id=i.ingredient_id and x.diff_qty>0)
+        ) update ${qi(schema)}.ly_inventory i set quantity=c.balance,updated_at=now() from candidates c
+          where i.org_id=c.org_id and i.warehouse_id=c.warehouse_id and i.ingredient_id=c.ingredient_id returning i.ingredient_id`);
+      inventoryRepairs=repaired.rowCount||0;
+    }
     const applied=(await client.query(`select 1 from ${qi(schema)}.${qi('ly_runtime_migrations')} where name=$1`,[migration])).rowCount>0;
     const required=[];
     for(const [table,name,columns] of indexes){
@@ -55,7 +75,7 @@ export async function runVibeSchemaMaintenance(){
     if(missing.length)throw new Error(`Required indexes missing: ${missing.map(row=>row.name).join(',')}`);
     if(!applied)await client.query(`insert into ${qi(schema)}.${qi('ly_runtime_migrations')}(name) values($1)`,[migration]);
     await client.query('commit');
-    console.log(`[schema] ready: ${migration}${applied?' (already applied)':''}`);
+    console.log(`[schema] ready: ${migration}${applied?' (already applied)':''}; inventory repairs=${inventoryRepairs}`);
   }catch(error){
     await client.query('rollback').catch(()=>{});
     throw error;
