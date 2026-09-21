@@ -11,6 +11,7 @@ Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt l�
 - Chỉ tải mô-đun nghiệp vụ sau đăng nhập; đồng bộ iPOS chỉ tải chi tiết đơn mới/thay đổi và giãn chu kỳ đồng bộ danh mục.
 - Bổ sung CSP, HSTS, chống nhúng trang, chính sách referrer/quyền trình duyệt và nâng service worker lên Core-275.
 - Đồng bộ lại các kiểm thử đã cũ với kiến trúc Vibe/V3 và giữ cổng kiểm tra hồi quy đầy đủ trước triển khai.
+- Dừng lịch GitHub Keepalive Supabase cũ; runtime sản xuất và lịch nền nay chỉ dùng Vibe/iPOS.
 
 ## Ver 3.0.50 — 20/09/2026
 
