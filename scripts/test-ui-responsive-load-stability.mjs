@@ -53,7 +53,7 @@ assert.match(design,/VERSION='2026\.08\.28\.2'/,'design-system version missing')
 assert.match(design,/#nav button\[data-panel\]\.active/,'active navigation hierarchy missing');
 assert.doesNotMatch(design,/\bfetch\s*\(|\.rpc\s*\(/,'design system must not perform cloud calls');
 
-assert.match(tableUx,/VERSION='2026\.08\.30\.2'/,'fixed-reference table owner must be active');
+assert.match(tableUx,/VERSION='2026\.09\.20\.1'/,'fixed-reference table owner must be active');
 assert.match(tableUx,/LONG_TABLE_ROWS=12/,'long-table threshold must stay bounded');
 assert.match(tableUx,/table-layout:fixed!important/,'table columns must use a stable fixed layout');
 assert.match(tableUx,/contain:layout paint/,'table wrappers must contain layout and paint shifts');
@@ -73,16 +73,16 @@ assert.match(tableUx,/lyTv2Active==='1'/,'only successfully activated explicit c
 assert.match(tableUx,/touch-action:pan-x pan-y[\s\S]*scrollbar-width:auto!important/,'native phone tables must expose a touchable visible horizontal scrollbar');
 assert.doesNotMatch(tableUx,/content:attr\(data-ly-value\)/,'mobile cards must preserve real cell content without duplicating text');
 assert.match(tableUx,/lyTableEditable/,'editable tables must remain protected');
-assert.match(tableUx,/compactFit=t\.classList\?\.contains\('salary-report-table'\)&&h\.length<=4,wide=!compactFit&&\(editable\|\|complex\)/,'small salary table must not be misclassified as horizontally wide');
+assert.match(tableUx,/compactFit=t\.classList\?\.contains\('salary-report-table'\)&&h\.length<=4,reportDetail=[\s\S]*wide=!compactFit&&\(editable\|\|complex\|\|reportDetail\)/,'small salary table must not be misclassified as horizontally wide');
 assert.match(tableUx,/prepared-virtual-table/,'virtual tables must stay excluded');
 assert.doesNotMatch(tableUx,/MutationObserver|\[80,300,900,1800\]|requestAnimationFrame|setInterval|window\.addEventListener\?\.\('resize'/,'table layer must not add observers, retry timers or resize-driven rewrites');
 assert.doesNotMatch(tableUx,/\bfetch\s*\(|\.rpc\s*\(|renderAll|renderPanel|showTab|\.navigate\s*\(/,'table ergonomics must remain presentation-only');
 
-assert.match(ingredientTable,/VERSION='2026\.09\.08\.1'/,'fixed-reference ingredient table layout version missing');
-assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1120px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
+assert.match(ingredientTable,/VERSION='2026\.09\.09\.1'/,'fixed-reference ingredient table layout version missing');
+assert.match(ingredientTable,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{width:100%!important;min-width:1020px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient stock table must use a fixed container-relative layout');
 assert.match(ingredientTable,/scrollbar-gutter:stable!important/,'ingredient stock table must reserve scrollbar space without resizing columns');
-assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:15%!important/,'purchase packaging column must have a stable width contract');
-assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:12%!important/,'ingredient action column must remain visible');
+assert.match(ingredientTable,/data-ly-ingredient-column="purchase"\]\{width:17%!important/,'purchase packaging column must have a stable width contract');
+assert.match(ingredientTable,/data-ly-ingredient-column="actions"\]\{width:14%!important/,'ingredient action column must remain visible');
 assert.match(ingredientTable,/window\.__lyUnitConversions\?\.enhanceIngredientTables\?\.\(\)/,'purchase column must settle before supplier removal');
 assert.match(ingredientTable,/markStableColumns\(table\)/,'column width metadata must be restored after every table render');
 assert.match(ingredientTable,/@media\(max-width:0px\)/,'ingredient tables must not replace the desktop reference grid with phone cards');
@@ -97,9 +97,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.09\.02\.1'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.09\.09\.67'/,'current Vibe release marker missing');
-assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260830\.2/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-263/,'UI build 71 must force a fresh service-worker release');
+assert.match(app,/UI_BUILD='UI-2026\.09\.21\.1'/,'current Vibe release marker missing');
+assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260920\.1/,'table ergonomics asset must be deterministic');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-275/,'the current UI build must force a fresh service-worker release');
 assert.match(index,/tuanpat0902-sys\.[^\n]+quan-ly-lat-yen-pwa-live\.n1\.tinhgon\.xyz/,'legacy GitHub Pages address must redirect to Vibe Host before loading Supabase');
 assert.match(sw,/location\.hostname==='tuanpat0902-sys\.github\.io'[\s\S]*Response\.redirect\(VIBE_URL,302\)/,'legacy service worker must redirect cached clients to Vibe Host');
 assert.match(sw,/async function navigationSource\(request\)\{try\{return await refreshNavigation\(request\);\}catch\(e\)\{return caches\.match\(INDEX_KEY\);\}\}/,'navigations must prefer the network release and use cached HTML only while offline');
