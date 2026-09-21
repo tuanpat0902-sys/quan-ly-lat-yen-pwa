@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.30.1';
+  const VERSION='2026.09.21.1';
   if(window.__lySalesReportRevenueCard?.version===VERSION)return;
   const text=value=>String(value??'').trim();
   const number=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
@@ -51,6 +51,6 @@
   }
   function sync(){patch();setTimeout(inject,0);}
   window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);window.addEventListener?.('latyen:cloud-refreshed',sync);window.addEventListener?.('latyen:panel',event=>{if(event?.detail?.panel==='sales')sync();});sync();
-  const timer=setInterval(()=>{if(patch())clearInterval(timer);},200);setTimeout(()=>clearInterval(timer),30000);
+  let attempts=0;const retry=()=>{attempts+=1;if(!patch()&&attempts<150)setTimeout(retry,200);};retry();
   window.__lySalesReportRevenueCard={version:VERSION,inject,patch,sync,revenueFor,comparisonLine,formatDate,status:()=>({version:VERSION,enabled:true})};
 })();

@@ -1,7 +1,7 @@
 import { getVibePool } from './vibehost-db.mjs';
 
 const schema='lat_yen_shadow_20260905';
-const migration='20260921_v1_runtime_indexes_and_activity_sequence';
+const migration='20260921_v2_domain_reads_actor_and_index_audit';
 const qi=value=>`"${String(value).replaceAll('"','""')}"`;
 
 const indexes=[
@@ -39,19 +39,21 @@ export async function runVibeSchemaMaintenance(){
     await client.query(`create table if not exists ${qi(schema)}.${qi('ly_runtime_migrations')}(name text primary key,applied_at timestamptz not null default now())`);
     await client.query(`create table if not exists ${qi(schema)}.${qi('ly_runtime_sync_state')}(name text primary key,value text not null,updated_at timestamptz not null default now())`);
     const applied=(await client.query(`select 1 from ${qi(schema)}.${qi('ly_runtime_migrations')} where name=$1`,[migration])).rowCount>0;
-    if(!applied){
-      for(const [table,name,columns] of indexes){
-        if(await tableExists(client,table))await client.query(`create index if not exists ${qi(name)} on ${qi(schema)}.${qi(table)} (${columns})`);
-      }
-      if(await tableExists(client,'ly_activity_events')){
-        const sequence=`${schema}.ly_activity_events_id_seq`;
-        await client.query(`create sequence if not exists ${qi(schema)}.${qi('ly_activity_events_id_seq')}`);
-        const max=Number((await client.query(`select coalesce(max(id),0) value from ${qi(schema)}.${qi('ly_activity_events')}`)).rows[0]?.value)||0;
-        await client.query('select setval($1::regclass,$2,$3)',[sequence,Math.max(max,1),max>0]);
-        await client.query(`alter table ${qi(schema)}.${qi('ly_activity_events')} alter column id set default nextval('${sequence}'::regclass)`);
-      }
-      await client.query(`insert into ${qi(schema)}.${qi('ly_runtime_migrations')}(name) values($1)`,[migration]);
+    const required=[];
+    for(const [table,name,columns] of indexes){
+      if(await tableExists(client,table)){await client.query(`create index if not exists ${qi(name)} on ${qi(schema)}.${qi(table)} (${columns})`);required.push(name);}
     }
+    if(await tableExists(client,'ly_activity_events')){
+      await client.query(`alter table ${qi(schema)}.${qi('ly_activity_events')} add column if not exists actor_email text`);
+      const sequence=`${schema}.ly_activity_events_id_seq`;
+      await client.query(`create sequence if not exists ${qi(schema)}.${qi('ly_activity_events_id_seq')}`);
+      const max=Number((await client.query(`select coalesce(max(id),0) value from ${qi(schema)}.${qi('ly_activity_events')}`)).rows[0]?.value)||0;
+      await client.query('select setval($1::regclass,$2,$3)',[sequence,Math.max(max,1),max>0]);
+      await client.query(`alter table ${qi(schema)}.${qi('ly_activity_events')} alter column id set default nextval('${sequence}'::regclass)`);
+    }
+    const missing=(await client.query(`select required.name from unnest($1::text[]) required(name) left join pg_indexes p on p.schemaname=$2 and p.indexname=required.name where p.indexname is null`,[required,schema])).rows;
+    if(missing.length)throw new Error(`Required indexes missing: ${missing.map(row=>row.name).join(',')}`);
+    if(!applied)await client.query(`insert into ${qi(schema)}.${qi('ly_runtime_migrations')}(name) values($1)`,[migration]);
     await client.query('commit');
     console.log(`[schema] ready: ${migration}${applied?' (already applied)':''}`);
   }catch(error){

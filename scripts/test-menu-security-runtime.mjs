@@ -15,10 +15,10 @@ for(const rpc of ['ly_menu_password_status','ly_verify_menu_password','ly_set_me
   assert.ok(security.includes(rpc),`security runtime missing RPC: ${rpc}`);
   assert.ok(migration.includes(rpc),`security migration missing RPC: ${rpc}`);
 }
-assert.match(security,/VERSION='2026\.09\.21\.1'/);
+assert.match(security,/VERSION='2026\.09\.21\.2'/);
 assert.ok(security.includes("window.addEventListener?.('latyen:v2-hydrated'"),'security settings card must recover after hydration');
-assert.ok(security.includes('if(settingsActive())render(false)'),'security settings card must survive settings-panel renders');
-assert.ok(loader.includes("menuSecurity:{src:'./ly-menu-security.js?v=20260921.1'"),'module loader must fetch menu security');
+assert.ok(security.includes('if(settingsActive())scheduleSettings()'),'security settings card must survive settings-panel renders');
+assert.ok(loader.includes("menuSecurity:{src:'./ly-menu-security.js?v=20260921.2'"),'module loader must fetch menu security');
 assert.ok(loader.includes("await load('menuSecurity')"),'module loader must activate menu security');
 assert.ok(pages.includes('no duplicated module-owned bootstrap')&&pages.includes('ly-menu-security'),'Pages artifact must leave menu security ownership to the versioned module loader');
 assert.equal(sw.includes("'./ly-menu-security.js'"),false,'service worker must not pin optional menu security code in the recovery shell');

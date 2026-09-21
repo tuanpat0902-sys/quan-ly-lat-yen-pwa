@@ -10,7 +10,7 @@
     if(window.__lySalesReportRevenueCard?.version==='2026.08.30.1'){window.__lySalesReportRevenueCard.sync?.();return Promise.resolve(true);}
     return new Promise(resolve=>{
       const existing=document.querySelector?.('script[data-ly-sales-revenue-card]');if(existing){setTimeout(()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(Boolean(window.__lySalesReportRevenueCard));},0);return;}
-      const s=document.createElement('script');s.src='./ly-sales-report-revenue-card.js?v=20260830.1';s.async=true;s.dataset.lySalesRevenueCard='1';s.onload=()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(true);};s.onerror=()=>resolve(false);(document.head||document.documentElement).appendChild(s);
+      const s=document.createElement('script');s.src='./ly-sales-report-revenue-card.js?v=20260921.1';s.async=true;s.dataset.lySalesRevenueCard='1';s.onload=()=>{window.__lySalesReportRevenueCard?.sync?.();resolve(true);};s.onerror=()=>resolve(false);(document.head||document.documentElement).appendChild(s);
     });
   }
   function load(){

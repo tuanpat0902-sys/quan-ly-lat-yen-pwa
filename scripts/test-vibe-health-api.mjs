@@ -6,5 +6,7 @@ assert.match(server,/handleHealthApi\(request, response, pathname\)/,'server mus
 assert.match(health,/to_regclass\(\$1\)/,'health probe must verify the versioned schema migration table');
 assert.match(health,/ipos_sync_health/,'health probe must expose bounded iPOS health state');
 assert.match(health,/health-timeout[\s\S]*3000/,'health probe must fail quickly instead of hanging');
+assert.match(health,/pg_indexes[\s\S]*index_count/,'health probe must verify production indexes');
+assert.match(health,/20260921_v2_domain_reads_actor_and_index_audit/,'health probe must require the current schema migration');
 assert.doesNotMatch(health,/password|authorization|access_token|DATABASE_URL/,'health response must not expose credentials');
 console.log('Vibe database, schema and iPOS health probe: PASS');

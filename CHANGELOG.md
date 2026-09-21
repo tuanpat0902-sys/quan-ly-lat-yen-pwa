@@ -2,6 +2,14 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.0 — 21/09/2026
+
+- Thay tải snapshot toàn bộ bằng năm miền dữ liệu độc lập; dữ liệu lịch sử bán hàng, thu/chi và kho có API phân trang ổn định, tối đa 50 dòng mỗi trang.
+- Tối ưu iPOS bằng bulk upsert và chỉ dựng lại tồn kho của hóa đơn hoặc công thức thực sự thay đổi; hóa đơn bị xóa được hoàn tác tồn kho trước khi xóa.
+- Kiểm tra trực tiếp `pg_indexes`, bổ sung người thực hiện vào nhật ký nghiệp vụ và đưa tình trạng index/migration vào health check.
+- Bổ sung bảo vệ xung đột khi hai thiết bị cùng sửa phiếu, trả cảnh báo tải lại thay vì âm thầm ghi đè.
+- Giảm thêm các bộ hẹn giờ nền của chatbot, báo cáo, khóa menu và cache; bổ sung kiểm thử tải lớn 10.000 đơn, 100.000 dòng bán và 500.000 biến động kho.
+
 ## Ver 3.2.0 — 21/09/2026
 
 - Bổ sung migration PostgreSQL Vibe có phiên bản, khóa chống chạy đồng thời và bộ index cho kho, bán hàng, phiếu, thu/chi, hoạt động và iPOS.

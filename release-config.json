@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.2.0",
-  "revision": "fresh-core-v3-shell-authoritative-v57",
-  "loaderAssetVersion": "20260921.6",
+  "appVersion": "3.3.0",
+  "revision": "fresh-core-v3-shell-authoritative-v58",
+  "loaderAssetVersion": "20260921.7",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.21.6",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-280",
-  "redeploy": "2026-09-21-vibe-reliability-index-ledger-health-ver-3.2.0"
+  "moduleLoaderVersion": "2026.09.21.7",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-281",
+  "redeploy": "2026-09-21-domain-sync-index-audit-ver-3.3.0"
 }

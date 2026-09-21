@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.2';
+  const VERSION='2026.09.21.1';
   if(window.__lyChatSalesInsights?.version===VERSION)return;
 
   const text=value=>String(value??'').trim();
@@ -41,6 +41,6 @@
   function insightReply(message,data=snapshot()){return declineReply(message,data)||averageReply(message,data)||compareReply(message,data);}
   function patchAssistant(){const assistant=window.__lyLocalAssistant;if(!assistant||assistant.__lySalesInsightsPatchedV2)return false;const original=typeof assistant.assistantReply==='function'?assistant.assistantReply.bind(assistant):null;if(!original)return false;assistant.assistantReply=(message,...rest)=>insightReply(message)||original(message,...rest);const originalStatus=typeof assistant.status==='function'?assistant.status.bind(assistant):()=>({});assistant.status=()=>({...originalStatus(),salesInsights:VERSION});assistant.__lySalesInsightsPatchedV2=true;return true;}
   function sync(){patchAssistant();}
-  window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);sync();const timer=setInterval(()=>{if(patchAssistant())clearInterval(timer);},250);setTimeout(()=>clearInterval(timer),30000);
+  window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);sync();let attempts=0;const retry=()=>{attempts+=1;if(!patchAssistant()&&attempts<120)setTimeout(retry,250);};retry();
   window.__lyChatSalesInsights={version:VERSION,comparisonPeriods,metrics,trendText,compareReply,averageReply,declineReply,insightReply,sync,status:()=>({version:VERSION,enabled:true})};
 })();

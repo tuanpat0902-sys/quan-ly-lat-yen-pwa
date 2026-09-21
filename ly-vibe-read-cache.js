@@ -1,14 +1,14 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.21.3';
-  const TABLES=new Set([
-    'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
-    'ly_products','ly_recipe_items','ly_inventory','ly_import_receipts',
-    'ly_import_items','ly_export_receipts','ly_export_items','ly_stocktake_receipts',
-    'ly_stocktake_items','ly_sales','ly_sale_items','ly_stock_transactions','ly_cashflow_entries'
-  ]);
+  const VERSION='2026.09.21.4';
+  const DOMAINS={
+    core:['ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items','ly_products','ly_recipe_items','ly_inventory'],
+    documents:['ly_import_receipts','ly_import_items','ly_export_receipts','ly_export_items','ly_stocktake_receipts','ly_stocktake_items'],
+    sales:['ly_sales','ly_sale_items'],ledger:['ly_stock_transactions'],cashflow:['ly_cashflow_entries']
+  };
+  const TABLE_DOMAIN=new Map(Object.entries(DOMAINS).flatMap(([domain,tables])=>tables.map(table=>[table,domain])));
   const VIBE_ONLY=location.hostname.endsWith('.tinhgon.xyz');
-  const state={enabled:true,source:VIBE_ONLY?'vibe':'supabase',lastSnapshotAt:0,lastError:'',bypassUntil:0,pending:null,snapshot:null};
+  const state={enabled:true,source:VIBE_ONLY?'vibe':'supabase',lastSnapshotAt:0,lastError:'',bypassUntil:0,pending:new Map(),domains:new Map()};
   let generation=0;
 
   function compare(left,right){
@@ -25,33 +25,37 @@
     if(column)copy.sort((a,b)=>(ascending===false?-1:1)*compare(a?.[column],b?.[column]));
     return copy;
   }
-  async function snapshot(orgId){
+  async function domainSnapshot(orgId,domain){
     for(let refresh=0;refresh<3;refresh++){
-      if(state.snapshot?.orgId===orgId&&Date.now()-state.lastSnapshotAt<60_000)return state.snapshot;
-      let entry=state.pending;
+      const cached=state.domains.get(domain);
+      if(cached?.orgId===orgId&&Date.now()-cached.loadedAt<60_000)return cached;
+      let entry=state.pending.get(domain);
       if(!entry||entry.orgId!==orgId||entry.generation!==generation){
-        entry={orgId,generation,promise:null};
+        entry={orgId,domain,generation,promise:null};
         entry.promise=(async()=>{
           let response;
           for(let attempt=0;attempt<3;attempt++){
             const controller=typeof AbortController==='function'?new AbortController():null;
             const timeout=controller?setTimeout(()=>controller.abort(),15000):null;
-            try{response=await fetch(`/api/v1/snapshot?org_id=${encodeURIComponent(orgId)}`,{cache:'no-store',credentials:'same-origin',...(controller?{signal:controller.signal}:{})});}
+            const revision=cached?.orgId===orgId?cached.revision:-1;
+            try{response=await fetch(`/api/v1/domains/${domain}?org_id=${encodeURIComponent(orgId)}&revision=${encodeURIComponent(revision)}`,{cache:'no-store',credentials:'same-origin',...(controller?{signal:controller.signal}:{})});}
             finally{if(timeout!==null)clearTimeout(timeout);}
             if(response.ok||![502,503,504].includes(response.status))break;
             if(attempt<2)await new Promise(resolve=>setTimeout(resolve,250*(attempt+1)));
           }
-          if(!response.ok)throw new Error(`snapshot-${response.status}`);
+          if(!response.ok)throw new Error(`domain-${domain}-${response.status}`);
           const payload=await response.json();
-          if(payload?.orgId!==orgId||!payload?.tables||[...TABLES].some(table=>!Array.isArray(payload.tables[table])))throw new Error('invalid-snapshot');
+          const tables=DOMAINS[domain];
+          if(payload?.orgId!==orgId||payload?.domain!==domain||(!payload.notModified&&(!payload?.tables||tables.some(table=>!Array.isArray(payload.tables[table])))))throw new Error('invalid-domain');
+          const next=payload.notModified&&cached?{...cached,loadedAt:Date.now()}:{...payload,loadedAt:Date.now()};
           if(entry.generation!==generation||String(window.__lyFreshOrgId||'')!==orgId)return payload;
-          state.snapshot=payload;
+          state.domains.set(domain,next);
           state.lastSnapshotAt=Date.now();
           state.source='vibe';
           state.lastError='';
-          return payload;
-        })().finally(()=>{if(state.pending===entry)state.pending=null;});
-        state.pending=entry;
+          return next;
+        })().finally(()=>{if(state.pending.get(domain)===entry)state.pending.delete(domain);});
+        state.pending.set(domain,entry);
       }
       const payload=await entry.promise;
       if(String(window.__lyFreshOrgId||'')!==orgId)throw new Error('snapshot-organization-changed');
@@ -64,14 +68,15 @@
     if(typeof original!=='function'||original.__lyVibeWrapped)return false;
     async function cachedFetch(table,orderColumn=null,ascending=true){
       const orgId=String(window.__lyFreshOrgId||'');
-      if(!state.enabled||!TABLES.has(table)||!orgId||(!VIBE_ONLY&&Date.now()<state.bypassUntil)){
+      if(!state.enabled||!TABLE_DOMAIN.has(table)||!orgId||(!VIBE_ONLY&&Date.now()<state.bypassUntil)){
         state.source='supabase';
         return original(table,orderColumn,ascending);
       }
-      try{return ordered((await snapshot(orgId)).tables[table],orderColumn,ascending);}
+      const domain=TABLE_DOMAIN.get(table);
+      try{return ordered((await domainSnapshot(orgId,domain)).tables[table],orderColumn,ascending);}
       catch(error){
         state.lastError=String(error?.message||error).slice(0,80);
-        if(VIBE_ONLY){state.source='vibe';if(state.snapshot?.orgId===orgId&&String(window.__lyFreshOrgId||'')===orgId)return ordered(state.snapshot.tables?.[table],orderColumn,ascending);throw error;}
+        if(VIBE_ONLY){state.source='vibe';const cached=state.domains.get(domain);if(cached?.orgId===orgId&&String(window.__lyFreshOrgId||'')===orgId)return ordered(cached.tables?.[table],orderColumn,ascending);throw error;}
         state.source='supabase';
         state.bypassUntil=Date.now()+30_000;
         return original(table,orderColumn,ascending);
@@ -84,14 +89,14 @@
   }
   window.addEventListener('latyen:change-signal',()=>{
     generation+=1;
-    state.snapshot=null;
-    state.pending=null;
+    state.domains.clear();
+    state.pending.clear();
     state.lastSnapshotAt=0;
     state.bypassUntil=VIBE_ONLY?0:Date.now()+45_000;
   });
-  window.__lyVibeReadCache={version:VERSION,install,rows:table=>state.snapshot?.orgId===String(window.__lyFreshOrgId||'')?state.snapshot.tables?.[table]||[]:[],status:()=>({...state,pending:!!state.pending,snapshot:undefined}),enable(value=true){state.enabled=!!value;}};
+  window.__lyVibeReadCache={version:VERSION,install,rows:table=>{const cached=state.domains.get(TABLE_DOMAIN.get(table));return cached?.orgId===String(window.__lyFreshOrgId||'')?cached.tables?.[table]||[]:[];},status:()=>({...state,pending:state.pending.size,domains:[...state.domains.keys()]}),enable(value=true){state.enabled=!!value;}};
   if(!install()){
     let attempts=0;
-    const timer=setInterval(()=>{attempts+=1;if(install()||attempts>=100)clearInterval(timer);},50);
+    const retry=()=>{attempts+=1;if(!install()&&attempts<100)setTimeout(retry,50);};retry();
   }
 })();

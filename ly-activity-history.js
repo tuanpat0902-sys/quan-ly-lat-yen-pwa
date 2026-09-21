@@ -4,8 +4,9 @@
   'use strict';
   if(window.__lyActivityHistoryUIV1)return;
   window.__lyActivityHistoryUIV1=true;
-  const VERSION='2026.09.21.3';
+  const VERSION='2026.09.21.4';
   const cloudState={orgId:'',rows:[],loading:false,loaded:false,hasMore:true,error:''};
+  const movementState={warehouseId:'',rows:[],next:null,loading:false,loaded:false,hasMore:true,error:''};
   const PAGE_SIZE=50;let page=0,movementPage=0;
 
   function activityModule(table){
@@ -121,11 +122,25 @@
     });
   }
 
+  async function refreshMovementHistory(force=false,older=false){
+    const orgId=String(window.__lyFreshOrgId||''),warehouseId=String(typeof currentWarehouseId==='undefined'?'':currentWarehouseId||'');
+    if(!orgId||!warehouseId||movementState.loading)return false;
+    const changed=movementState.warehouseId!==warehouseId;
+    if(!force&&!changed&&movementState.loaded&&!older)return true;
+    if((force||changed)){movementState.warehouseId=warehouseId;movementState.rows=[];movementState.next=null;movementState.hasMore=true;movementPage=0;}
+    if(older&&!movementState.hasMore)return true;
+    movementState.loading=true;movementState.error='';const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),12000);
+    try{const before=older&&movementState.next?`&before=${encodeURIComponent(movementState.next)}`:'',response=await fetch(`/api/v1/history/stock?org_id=${encodeURIComponent(orgId)}&warehouse_id=${encodeURIComponent(warehouseId)}&limit=${PAGE_SIZE}${before}`,{cache:'no-store',credentials:'same-origin',signal:controller.signal});if(!response.ok)throw new Error(`Máy chủ trả về mã ${response.status}`);const payload=await response.json(),known=new Set(movementState.rows.map(row=>String(row.id)));movementState.rows.push(...(payload.rows||[]).filter(row=>!known.has(String(row.id))));movementState.next=payload.next||null;movementState.hasMore=Boolean(payload.next);movementState.loaded=true;return true;}
+    catch(error){movementState.loaded=true;movementState.error=error?.name==='AbortError'?'Máy chủ phản hồi quá lâu.':String(error?.message||error);return false;}
+    finally{clearTimeout(timeout);movementState.loading=false;setTimeout(()=>{try{if(activePanelId==='history')renderHistory()}catch(e){}},0);}
+  }
+
   function pageCountForHistory(){return Math.max(1,Math.ceil(auditFilterRows().length/PAGE_SIZE));}
 
   function renderHistory(){
     if(!E.history)return;
     refreshCloudHistory(false);
+    refreshMovementHistory(false);
   
     const allAuditRows=auditFilterRows();
     const pageCount=Math.max(1,Math.ceil(allAuditRows.length/PAGE_SIZE));
@@ -138,10 +153,8 @@
       .filter(Boolean))]
       .sort((a,b)=>a.localeCompare(b,'vi'));
   
-    const allLegacyMovements=(db.movements||[])
-      .filter(m=>m.warehouse_id===currentWarehouseId)
-      .slice()
-      .sort((a,b)=>new Date(b?.created_at||0)-new Date(a?.created_at||0));
+    const fallbackMovements=(db.movements||[]).filter(m=>m.warehouse_id===currentWarehouseId).slice().sort((a,b)=>new Date(b?.created_at||0)-new Date(a?.created_at||0));
+    const allLegacyMovements=movementState.loaded&&movementState.warehouseId===String(currentWarehouseId)?movementState.rows:fallbackMovements;
     const movementPageCount=Math.max(1,Math.ceil(allLegacyMovements.length/PAGE_SIZE));
     movementPage=Math.min(Math.max(0,movementPage),movementPageCount-1);
     const movementStart=movementPage*PAGE_SIZE;
@@ -210,7 +223,7 @@
       <div class="card section-gap">
         <div class="history-head">
           <h3>Toàn bộ biến động kho</h3>
-          <div class="history-count">${num(allLegacyMovements.length)} dòng</div>
+          <div class="history-count">${num(allLegacyMovements.length)} dòng đã tải</div>
         </div>
         <div class="section-gap">
             ${legacyMovements.length?`
@@ -230,8 +243,8 @@
                   }).join('')}
                 </table>
               </div>
-              ${allLegacyMovements.length>PAGE_SIZE?`<div class="toolbar section-gap"><button type="button" class="secondary sm" onclick="changeInventoryMovementPage(-1)" ${movementPage===0?'disabled':''}>← Mới hơn</button><span>Trang ${num(movementPage+1)} / ${num(movementPageCount)}</span><button type="button" class="secondary sm" onclick="changeInventoryMovementPage(1)" ${movementPage>=movementPageCount-1?'disabled':''}>Cũ hơn →</button></div>`:''}
-            `:'<div class="empty">Chưa có biến động kho.</div>'}
+              ${allLegacyMovements.length>PAGE_SIZE||movementState.hasMore?`<div class="toolbar section-gap"><button type="button" class="secondary sm" onclick="changeInventoryMovementPage(-1)" ${movementPage===0?'disabled':''}>← Mới hơn</button><span>Trang ${num(movementPage+1)}${movementState.hasMore?' / …':` / ${num(movementPageCount)}`}</span><button type="button" class="secondary sm" onclick="changeInventoryMovementPage(1)" ${movementPage>=movementPageCount-1&&!movementState.hasMore?'disabled':''}>Cũ hơn →</button></div>`:''}
+            `:`<div class="empty">${movementState.loading?'Đang tải biến động kho…':movementState.error?esc(movementState.error):'Chưa có biến động kho.'}</div>`}
         </div>
       </div>
     `;
@@ -241,7 +254,7 @@
   window.auditActionClass=auditActionClass;
   window.auditFilterRows=auditFilterRows;
   window.changeActivityHistoryPage=delta=>{const next=Number(delta)||0;if(next>0&&page>=pageCountForHistory()-1&&cloudState.hasMore){refreshCloudHistory(false,true).then(ok=>{if(ok)page=Math.min(page+1,pageCountForHistory()-1);renderHistory();E.history?.scrollIntoView?.({block:'start'});});return;}page=Math.max(0,page+next);renderHistory();E.history?.scrollIntoView?.({block:'start'});};
-  window.changeInventoryMovementPage=delta=>{movementPage=Math.max(0,movementPage+(Number(delta)||0));renderHistory();E.history?.querySelector?.('.legacy-movement-table')?.scrollIntoView?.({block:'start'});};
+  window.changeInventoryMovementPage=delta=>{const next=Number(delta)||0,pageCount=Math.max(1,Math.ceil(movementState.rows.length/PAGE_SIZE));if(next>0&&movementPage>=pageCount-1&&movementState.hasMore){refreshMovementHistory(false,true).then(ok=>{if(ok)movementPage+=1;renderHistory();});return;}movementPage=Math.max(0,movementPage+next);renderHistory();E.history?.querySelector?.('.legacy-movement-table')?.scrollIntoView?.({block:'start'});};
   window.renderHistory=renderHistory;
-  window.__lyActivityHistoryModule={version:VERSION,render:renderHistory,refresh:()=>refreshCloudHistory(true),status:()=>({...cloudState,count:activityRows().length})};
+  window.__lyActivityHistoryModule={version:VERSION,render:renderHistory,refresh:()=>Promise.all([refreshCloudHistory(true),refreshMovementHistory(true)]),status:()=>({...cloudState,count:activityRows().length,movements:{...movementState}})};
 })();

@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.2';
+  const VERSION='2026.09.21.1';
   if(window.__lyChatInventoryQuery?.version===VERSION)return;
 
   const text=value=>String(value??'').trim();
@@ -109,6 +109,6 @@
   }
   function sync(){patchAssistant();}
   window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);sync();
-  const timer=setInterval(()=>{if(patchAssistant())clearInterval(timer);},250);setTimeout(()=>clearInterval(timer),30000);
+  let attempts=0;const retry=()=>{attempts+=1;if(!patchAssistant()&&attempts<120)setTimeout(retry,250);};retry();
   window.__lyChatInventoryQuery={version:VERSION,classify,safeUnit,summaryReply,itemReply,listReply,inventoryReply,rankIngredients,sync,status:()=>({version:VERSION,enabled:true})};
 })();

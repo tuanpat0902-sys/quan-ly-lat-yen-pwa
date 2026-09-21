@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV97)return;
   window.__lyModuleLoaderV97=true;
 
-  const VERSION='2026.09.21.6';
+  const VERSION='2026.09.21.7';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,18 +12,18 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.2.0',test:()=>window.__lyAppVersion?.version==='3.2.0'},
+    appVersion:{src:'./ly-app-version.js?v=3.3.0',test:()=>window.__lyAppVersion?.version==='3.3.0'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
     freshCoreV3EmployeesParityRunner:{src:'./ly-fresh-core-v3-employees-parity-runner.js?v=20260828.1',test:()=>window.__lyFreshCoreV3EmployeesParityRunner?.version==='2026.08.28.1'},
     localAssistant:{src:'./ly-local-chatbot.js?v=20260921.3',test:()=>window.__lyLocalAssistant?.version==='2026.09.21.3'},
-    chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260827.5',test:()=>window.__lyChatLanguagePlus?.version==='2026.08.27.5'},
+    chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260921.1',test:()=>window.__lyChatLanguagePlus?.version==='2026.09.21.1'},
     chatLegacyInventoryUnitGuard:{src:'./ly-chat-legacy-inventory-unit-guard.js?v=20260827.1',test:()=>window.__lyChatLegacyInventoryUnitGuard?.version==='2026.08.27.1'},
     chatResponseGate:{src:'./ly-chat-response-gate.js?v=20260827.1',test:()=>window.__lyChatResponseGate?.version==='2026.08.27.1'},
     chatUnitSync:{src:'./ly-chat-unit-sync.js?v=20260909.1',test:()=>window.__lyChatUnitSync?.version==='2026.09.09.1'},
-    vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260921.3',test:()=>window.__lyVibeReadCache?.version==='2026.09.21.3'},
-    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260921.1',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.21.1'&&!window.__lyVibeBusinessWrites?.installing},
+    vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260921.4',test:()=>window.__lyVibeReadCache?.version==='2026.09.21.4'},
+    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260921.2',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.21.2'&&!window.__lyVibeBusinessWrites?.installing},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260909.1',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.09.09.1'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
     domShim:{src:'./ly-legacy-dom-shim.js?v=20260824.4',test:()=>window.__lyLegacyDomShim?.version==='2026.08.24.4'},
@@ -32,7 +32,7 @@
     modelShim:{src:'./ly-legacy-model-shim.js?v=20260824.2',test:()=>window.__lyLegacyModelShim?.version==='2026.08.24.2'},
     listShim:{src:'./ly-legacy-list-shim.js?v=20260824.1',test:()=>window.__lyLegacyListShim?.version==='2026.08.24.1'},
     formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.3',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.3'},
-    menuSecurity:{src:'./ly-menu-security.js?v=20260921.1',test:()=>window.__lyMenuSecurity?.version==='2026.09.21.1'},
+    menuSecurity:{src:'./ly-menu-security.js?v=20260921.2',test:()=>window.__lyMenuSecurity?.version==='2026.09.21.2'},
     ingredientsTakeover:{src:'./ly-fresh-core-v2-ingredients-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2IngredientsTakeover?.version==='2026.08.24.4'},
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
     documentsTakeover:{src:'./ly-fresh-core-v2-documents-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2DocumentsTakeover?.version==='2026.08.24.3'},
@@ -61,7 +61,7 @@
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
     branding:{src:'./ly-branding-sync.js?v=20260901.1',test:()=>window.__lyBrandingSync?.version==='2026.09.01.1'},
     heavyPanels:{src:'./ly-heavy-panels.js?v=20260823.1',test:()=>!!window.__lyHeavyPanels},
-    activityHistory:{src:'./ly-activity-history.js?v=20260921.3',test:()=>window.__lyActivityHistoryModule?.version==='2026.09.21.3'},
+    activityHistory:{src:'./ly-activity-history.js?v=20260921.4',test:()=>window.__lyActivityHistoryModule?.version==='2026.09.21.4'},
     employeesUI:{src:'./ly-employees.js?v=20260920.1',test:()=>window.__lyEmployeesModule?.version==='2026.09.20.1'},
     financeUI:{src:'./ly-finance.js?v=20260908.4',test:()=>window.__lyFinanceModule?.version==='2026.09.08.4'},
     reportsUI:{src:'./ly-reports.js?v=20260823.1',test:()=>!!window.__lyReportsModule},

@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.08.27.1';
+  const VERSION='2026.09.21.1';
   if(window.__lyChatRouter?.version===VERSION)return;
   function route(message){
     const insights=window.__lyChatSalesInsights?.insightReply?.(message);if(insights)return insights;
@@ -18,6 +18,6 @@
   function ready(){return Boolean(window.__lyChatSalesInsights&&window.__lyChatInventoryQuery&&window.__lyChatSalesQuery);}
   function sync(){if(ready())patch();}
   window.addEventListener?.('latyen:hydrated',sync);window.addEventListener?.('latyen:v2-hydrated',sync);sync();
-  const timer=setInterval(()=>{if(ready()&&patch())clearInterval(timer);},150);setTimeout(()=>clearInterval(timer),30000);
+  let attempts=0;const retry=()=>{attempts+=1;if(!(ready()&&patch())&&attempts<200)setTimeout(retry,150);};retry();
   window.__lyChatRouter={version:VERSION,route,patch,sync,status:()=>({version:VERSION,enabled:true,ready:ready()})};
 })();

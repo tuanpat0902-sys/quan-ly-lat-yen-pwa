@@ -28,7 +28,7 @@ assert.match(salesChart,/ctx\.roundRect\(left,y,barW,barH,radius\)/,'sales bars 
 assert.match(salesChart,/getComputedStyle\(document\.body\)\.fontFamily/,'sales chart must inherit the application typeface');
 assert.doesNotMatch(salesChart,/Arial/,'sales chart must not introduce a mismatched typeface');
 assert.match(bridge,/ly-special-reports\.js\?v=20260902\.1/,'bridge must bypass the previous cached report module');
-assert.match(bridge,/ly-sales-report-revenue-card\.js\?v=20260830\.1/,'bridge must bypass the previous cached revenue card');
+assert.match(bridge,/ly-sales-report-revenue-card\.js\?v=20260921\.1/,'bridge must bypass the previous cached revenue card');
 assert.match(report,/const revenue=sales\.reduce/,'sales revenue must use the same filtered rows as the chart and quantity report');
 assert.match(report,/function refreshSalesReportCloud\(range,force=false\)/,'sales report must refresh the authoritative Cloud snapshot');
 assert.match(report,/window\.lyFreshFetch\?\.\('ly_sales','sold_at',false\)/,'sales report refresh must load current Cloud receipts');

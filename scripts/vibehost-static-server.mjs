@@ -12,6 +12,7 @@ import { handleIngredientCategoryApi } from './vibehost-ingredient-category-api.
 import { handleBusinessMutationApi } from './vibehost-business-mutation-api.mjs';
 import { handleMenuSecurityApi } from './vibehost-menu-security-api.mjs';
 import { handleHealthApi } from './vibehost-health-api.mjs';
+import { handleDomainReadApi } from './vibehost-domain-read-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
@@ -100,6 +101,7 @@ const server = createServer(async (request, response) => {
   if (await handleIngredientCategoryApi(request, response, pathname)) return;
   if (await handleBusinessMutationApi(request, response, pathname)) return;
   if (await handleHealthApi(request, response, pathname)) return;
+  if (await handleDomainReadApi(request, response, pathname, requestUrl)) return;
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.setHeader('Allow', 'GET, HEAD');
     return sendText(response, 405, 'Method Not Allowed');

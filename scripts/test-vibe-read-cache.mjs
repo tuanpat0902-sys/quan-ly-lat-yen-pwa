@@ -25,7 +25,9 @@ assert.doesNotMatch(loader,/supabaseBootstrap|ly-supabase-bootstrap/,'browser st
 assert.doesNotMatch(index,/cdn\.jsdelivr\.net\/npm\/@supabase|supabase-js@/,'page must not load the Supabase SDK');
 assert.doesNotMatch(index,/SUPABASE_URL|SUPABASE_KEY|sb_publishable_/,'browser source must not embed retired Supabase project credentials');
 assert.match(api,/expiresAt: Date\.now\(\) \+ 60_000/,'unchanged full snapshots must be reused for one minute');
-assert.match(client,/lastSnapshotAt<60_000/,'the browser must reuse the same one-minute snapshot window');
+assert.match(client,/Date\.now\(\)-cached\.loadedAt<60_000/,'the browser must reuse each domain for one minute');
+assert.match(client,/\/api\/v1\/domains\/\$\{domain\}/,'the browser must load bounded domain snapshots');
+assert.doesNotMatch(client,/fetch\(`\/api\/v1\/snapshot/,'the browser must not load the retired all-table snapshot');
 assert.match(compat,/\/api\/auth\/session/,'compatibility auth must use the same-origin Vibe session');
 assert.match(server,/handleSnapshotApi/,'same-origin server must expose the authenticated snapshot API');
 assert.match(api,/\/api\/v1\/activity-events/,'Vibe must expose authenticated notification history');
@@ -43,11 +45,11 @@ assert.match(bootstrap,/aes-256-gcm/,'transferred iPOS credentials must be encry
 assert.match(auth,/HttpOnly; Secure; SameSite=Lax/,'Vibe session must use a secure HTTP-only cookie');
 assert.match(auth,/bcrypt\.compare/,'Vibe login must verify the migrated password hash');
 assert.match(loader,/await load\('vibeReadCache'\)/,'read cache must load before hydration');
-assert.match(loader,/ly-vibe-read-cache\.js\?v=20260921\.3/,'loader must request the versioned cache bridge');
+assert.match(loader,/ly-vibe-read-cache\.js\?v=20260921\.4/,'loader must request the versioned cache bridge');
 assert.match(api,/for\(const table of tables\)/,'a snapshot must reuse one database connection instead of exhausting the pool');
 assert.match(client,/\[502,503,504\]/,'temporary snapshot failures must be retried');
 assert.match(client,/if\(VIBE_ONLY\)\{state\.source='vibe';[\s\S]*throw error;\}/,'Vibe production must never fall back to Supabase reads');
 assert.match(client,/\(!VIBE_ONLY&&Date\.now\(\)<state\.bypassUntil\)/,'Vibe invalidation must never bypass into restricted Supabase reads');
-assert.match(client,/rows:table=>state\.snapshot\?\.orgId===String\(window\.__lyFreshOrgId\|\|''\)\?state\.snapshot\.tables\?\.\[table\]/,'assistant must only read the current organization snapshot');
+assert.match(client,/cached\?\.orgId===String\(window\.__lyFreshOrgId\|\|''\)\?cached\.tables\?\.\[table\]/,'assistant must only read the current organization domain');
 assert.match(index,/!e\.warehouse_id\|\|!warehouseIds\.has\(String\(e\.warehouse_id\)\)/,'orphaned employee records must be reattached to the active warehouse');
 console.log('Vibe authenticated read-cache contract: PASS');

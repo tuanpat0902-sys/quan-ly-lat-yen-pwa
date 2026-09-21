@@ -43,6 +43,8 @@ assert.match(shell,/V269_PULL_INTERVAL_MS=900000/,'legacy fallback path must ret
 assert.match(vibeWorker,/headersForDay\.filter\([\s\S]*ipos_sale_updated_at[\s\S]*total_amount/,'Vibe worker must skip unchanged sale details using persisted versions and totals');
 assert.match(vibeWorker,/ipos_catalog_synced_at[\s\S]*6\*60\*60\*1000/,'Vibe worker must not reload the full catalog every five minutes');
 assert.match(vibeWorker,/summary\.skippedSales/,'Vibe worker health must report skipped unchanged sales');
-assert.match(vibeWorker,/summary\.sales\|\|summary\.deletedSales\|\|deepRequested/,'inventory rebuild must run only after a meaningful sale change or deep reconciliation');
+assert.match(vibeWorker,/changedSaleIds\.length\?await rebuildVibeIposInventory\(client,ctx,changedSaleIds\):0/,'inventory rebuild must be scoped to changed sales');
+assert.match(vibeWorker,/removeIposSaleInventory\(client,ctx,row\.id\)/,'deleted iPOS receipts must reverse their inventory before deletion');
+assert.match(vibeWorker,/writeRows\(client,'ly_stock_transactions',ledger\)/,'inventory ledger writes must use bounded bulk inserts');
 
 console.log('iPOS incremental synchronization checks passed');
