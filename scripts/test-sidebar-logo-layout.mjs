@@ -6,7 +6,7 @@ for(const expected of ['header .brand-wrap','header .app-logo-slot img','width:1
   if(!block.includes(expected))throw new Error(`Missing full-width logo contract: ${expected}`);
 }
 if(block.indexOf('header .app-logo-slot img')>block.indexOf('@media(min-width:761px)'))throw new Error('Full-width logo must also apply on narrow sidebars');
-if(!block.includes("const VERSION='2026.08.31.1'"))throw new Error('Sidebar visuals version is stale');
+if(!block.includes("const VERSION='2026.08.31.2'"))throw new Error('Sidebar visuals version is stale');
 if(!/appNameText[\s\S]*text-align:center!important/.test(block))throw new Error('Software name must be centered beneath the logo');
 if(!block.includes('background:#0f6cbd!important')||!block.includes('color:#fff!important')||!block.includes('stroke-linecap:round!important'))throw new Error('Windows-style Fluent active menu palette and icon treatment are incomplete');
 if(!html.includes('ly-sidebar-visuals.js?v=20260831.2'))throw new Error('Sidebar visuals are not loaded');

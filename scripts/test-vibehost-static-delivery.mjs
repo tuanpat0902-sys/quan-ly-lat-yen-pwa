@@ -27,6 +27,10 @@ try{
   assert.equal(brotli.headers.vary,'Accept-Encoding');
   assert.ok(Number(brotli.headers['content-length'])<original.length/2,'HTML transfer should be less than half of its original size');
   assert.deepEqual(brotliDecompressSync(brotli.body),original);
+  assert.match(brotli.headers['content-security-policy'],/connect-src 'self'/);
+  assert.equal(brotli.headers['x-frame-options'],'DENY');
+  assert.match(brotli.headers['strict-transport-security'],/max-age=31536000/);
+  assert.equal(brotli.headers['referrer-policy'],'strict-origin-when-cross-origin');
   const js=await readFile(resolve(root,'ly-module-loader.js'));
   const gzip=await rawResponse(`${url}ly-module-loader.js?v=static-test`,'gzip');
   assert.equal(gzip.headers['content-encoding'],'gzip');

@@ -12,7 +12,7 @@ const context={console,db:{ingredients:[],preparedItems:[]},loadCloud:async()=>{
 context.globalThis=context;vm.createContext(context);vm.runInContext(source,context,{filename:'ly-fresh-core-v2-ingredients-takeover.js'});
 const api=context.window.__lyFreshCoreV2IngredientsTakeover;assert.equal(api.status().enabled,true);
 const ingredient={name:'A',ingredient_type:'prepared'},prepared=[{source_ingredient_id:'i1',quantity:2}];
-const result=await client.rpc('ly_save_ingredient',{p_ingredient:ingredient,p_prepared_items:prepared});assert.equal(result.data,'v2-id');assert.equal(originalCalls.length,0);assert.deepEqual(saveCalls,[[ingredient,prepared]]);assert.equal(context.db.ingredients[0].id,'v2-id');
+const result=await client.rpc('ly_save_ingredient',{p_ingredient:ingredient,p_prepared_items:prepared});assert.equal(result.data,'v2-id');assert.equal(originalCalls.length,0);assert.equal(JSON.stringify(saveCalls),JSON.stringify([[ingredient,prepared]]));assert.equal(context.db.ingredients[0].id,'v2-id');
 await context.loadCloud();assert.equal(loadCloudCalls,0,'post-save loadCloud must be suppressed');
 const deleted=await client.from('ly_ingredients').delete().eq('id','v2-id').eq('org_id','org-1');assert.equal(deleted.error,null);assert.deepEqual(removeCalls,['v2-id']);assert.equal(rawMutations.length,0,'ingredient delete must not hit raw mutation');assert.equal(context.db.ingredients.length,0);
 await context.loadCloud();assert.equal(loadCloudCalls,0,'post-delete loadCloud must be suppressed');await context.loadCloud();assert.equal(loadCloudCalls,1,'manual reload must remain available');

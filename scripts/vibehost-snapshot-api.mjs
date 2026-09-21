@@ -19,7 +19,6 @@ const businessDateColumns=Object.freeze({
   ly_stocktake_receipts:'receipt_date',
   ly_cashflow_entries:'entry_date'
 });
-const authCache = new Map();
 const snapshotCache = new Map();
 const pendingSnapshots = new Map();
 const requestWindows = new Map();
@@ -41,11 +40,6 @@ function sendJson(response, statusCode, payload, extraHeaders = {}) {
   response.end(body);
 }
 
-function bearerToken(request) {
-  const header = String(request.headers.authorization || '');
-  return header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-}
-
 function rateLimitKey(request, token) {
   return `${request.socket?.remoteAddress || 'unknown'}:${createHash('sha256').update(token).digest('hex').slice(0, 16)}`;
 }
@@ -60,40 +54,6 @@ function allowRequest(request, token) {
   }
   entry.count += 1;
   return entry.count <= 30;
-}
-
-async function authenticatedUser(token) {
-  const tokenHash = createHash('sha256').update(token).digest('hex');
-  const cached = authCache.get(tokenHash);
-  if (cached && cached.expiresAt > Date.now()) return cached.userId;
-
-  const projectUrl = String(process.env.LAT_YEN_SUPABASE_API_URL || process.env.SUPABASE_URL || '').replace(/\/$/, '');
-  const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!projectUrl || !publishableKey) throw new Error('Supabase authentication verifier is unavailable');
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
-  try {
-    const response = await fetch(`${projectUrl}/auth/v1/user`, {
-      headers: { apikey: publishableKey, Authorization: `Bearer ${token}` },
-      signal: controller.signal,
-    });
-    if (!response.ok) return '';
-    const user = await response.json();
-    const userId = String(user?.id || '');
-    if (!userId) return '';
-    authCache.set(tokenHash, { userId, expiresAt: Date.now() + 120_000 });
-    return userId;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function isMember(userId, orgId) {
-  const result = await getVibePool().query(
-    `select 1 from ${quoteIdentifier(schema)}.ly_org_members where user_id = $1::uuid and org_id = $2::uuid limit 1`,
-    [userId, orgId],
-  );
-  return result.rowCount > 0;
 }
 
 async function buildSnapshot(orgId) {
@@ -173,7 +133,7 @@ export async function handleSnapshotApi(request, response, pathname, url) {
     return true;
   }
 
-  const token = bearerToken(request)||'cookie-session';
+  const token = 'vibe-cookie-session';
   const orgId = String(url.searchParams.get('org_id') || '');
   if (!token || !/^[0-9a-f-]{36}$/i.test(orgId)) {
     sendJson(response, 401, { error: 'Authentication required' });
@@ -186,9 +146,7 @@ export async function handleSnapshotApi(request, response, pathname, url) {
 
   try {
     const vibeUser=await authenticatedVibeUser(request);
-    const userId=vibeUser?.id||await authenticatedUser(token);
-    const allowed=vibeUser?vibeUser.orgId===orgId:(userId&&await isMember(userId,orgId));
-    if (!allowed) {
+    if (!vibeUser || vibeUser.orgId !== orgId) {
       sendJson(response, 403, { error: 'Organization access denied' });
       return true;
     }

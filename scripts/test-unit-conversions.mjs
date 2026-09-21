@@ -4,11 +4,13 @@ import vm from 'node:vm';
 
 const source=await fs.readFile(new URL('../ly-unit-conversions.js',import.meta.url),'utf8');
 const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
-const stockNormalizer=await fs.readFile(new URL('../ly-chat-stock-command-normalizer-v4.js',import.meta.url),'utf8');
+const chatbot=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url),'utf8');
 const memory=new Map();
-const context={window:{},localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,String(value)),removeItem:key=>memory.delete(key)},Date};
+const document={readyState:'loading',addEventListener:()=>{}};
+const context={window:{},document,localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,String(value)),removeItem:key=>memory.delete(key)},Date};
 context.window.window=context.window;
 context.window.localStorage=context.localStorage;
+context.window.document=document;
 vm.createContext(context);
 vm.runInContext(source,context);
 const units=context.window.__lyUnitConversions;
@@ -32,6 +34,6 @@ assert.match(source,/convert\(1,purchase,base\)/,'standard metric ratios must be
 assert.match(html,/const total=enteredQuantity\*enteredUnitCost/,'import total must remain based on the entered purchase unit');
 assert.match(html,/unit_cost:Number\.isFinite\(quantity\)&&quantity>0\?total\/quantity:0/,'import unit cost must be normalized to the inventory base unit');
 assert.match(html,/unit-conversion-invalid/,'invalid packaging conversions must block receipt confirmation');
-assert.match(stockNormalizer,/window\.__lyUnitConversions\?\.convert/,'chat stock commands must reuse the shared conversion rules');
-assert.match(stockNormalizer,/tấn\|tan\|kg/,'chat stock commands must recognize expanded common units');
+assert.match(chatbot,/window\.__lyUnitConversions\?\.convert/,'chat stock commands must reuse the shared conversion rules');
+assert.match(chatbot,/tan\|tấn\|kg/,'chat stock commands must recognize expanded common units');
 console.log('Measurement units and ingredient conversion rules: PASS');

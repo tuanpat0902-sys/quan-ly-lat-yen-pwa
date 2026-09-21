@@ -2,6 +2,16 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.1.0 — 21/09/2026
+
+- Chuyển đường chạy trình duyệt và máy chủ sang Vibe PostgreSQL hoàn toàn: bỏ thư viện Supabase CDN và không khởi động mirror Supabase.
+- Chuyển xóa phiếu nhập, xuất, kiểm kê, bán hàng, nguyên liệu, món và kho sang API Vibe có giao dịch, xác nhận máy chủ và hoàn tác tồn kho.
+- Chuyển mật khẩu bảo vệ menu/kho sang vùng riêng trên Vibe với mã băm bcrypt; không trả mã băm về trình duyệt.
+- Chatbot dùng chung quy tắc quy đổi đơn vị của nguyên liệu, hỗ trợ thêm đơn vị khối lượng, thể tích và đóng gói.
+- Chỉ tải mô-đun nghiệp vụ sau đăng nhập; đồng bộ iPOS chỉ tải chi tiết đơn mới/thay đổi và giãn chu kỳ đồng bộ danh mục.
+- Bổ sung CSP, HSTS, chống nhúng trang, chính sách referrer/quyền trình duyệt và nâng service worker lên Core-275.
+- Đồng bộ lại các kiểm thử đã cũ với kiến trúc Vibe/V3 và giữ cổng kiểm tra hồi quy đầy đủ trước triển khai.
+
 ## Ver 3.0.50 — 20/09/2026
 
 - Thêm nút Chi tiết trong lịch sử phiếu bán hàng để xem món, topping iPOS, số lượng, đơn giá, giảm giá, tổng thanh toán và ghi chú mà không mở chế độ sửa.

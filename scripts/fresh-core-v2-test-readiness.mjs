@@ -22,12 +22,12 @@ const coreTables=['ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_i
 for(const table of coreTables)assert.ok(readTakeover.includes(table),`read takeover missing ${table}`);
 
 for(const token of ['ingredients','products','imports','exports','stocktake','sales','cashflow','inventory','masterData'])assert.ok(domains.includes(token),`domain factory missing ${token}`);
-for(const file of ['ly-fresh-core-v2-ingredients-takeover.js','ly-fresh-core-v2-products-takeover.js','ly-fresh-core-v2-documents-takeover.js','ly-fresh-core-v2-sales-takeover.js','ly-fresh-core-v2-cashflow-takeover.js','ly-fresh-core-v2-masterdata-takeover.js','ly-fresh-core-v2-read-takeover.js','ly-fresh-core-v2-realtime.js','ly-fresh-core-v2-realtime-phase2.js'])assert.ok(sw.includes(file),`service worker missing runtime injection/precache contract for ${file}`);
+for(const file of ['ly-fresh-core-v2-ingredients-takeover.js','ly-fresh-core-v2-products-takeover.js','ly-fresh-core-v2-documents-takeover.js','ly-fresh-core-v2-sales-takeover.js','ly-fresh-core-v2-cashflow-takeover.js','ly-fresh-core-v2-masterdata-takeover.js','ly-fresh-core-v2-read-takeover.js','ly-fresh-core-v2-realtime.js','ly-fresh-core-v2-realtime-phase2.js'])assert.equal(sw.includes(`'./${file}'`),false,`service worker must not eagerly precache optional runtime ${file}`);
 
 assert.ok(readTakeover.includes('foregroundFastPaths'),'foreground fast-path telemetry missing');
 assert.ok(readTakeover.includes('hydrateFromCore'),'shared hydration wiring missing');
 assert.ok(hydration.includes('__lyFreshCoreV2LegacyHydration'),'Legacy hydration API missing');
-assert.ok(loader.includes("manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js")&&loader.includes("await load('manualRefresh')"),'manual refresh coordinator is not chained from the module loader');
+assert.ok(loader.includes("manualRefresh:{src:'./ly-fresh-core-v2-manual-refresh.js")&&loader.includes("load('manualRefresh')"),'manual refresh coordinator is not chained from the module loader');
 assert.ok(manual.includes('autoSyncNow'),'manual user refresh hook missing');
 assert.ok(manual.includes('refreshCoreDomains'),'manual refresh is not authoritative V2 refresh');
 assert.ok(realtime.includes('refreshCoreDomains')&&realtime.toLowerCase().includes('catchup'),'realtime reconnect catch-up missing');
@@ -38,7 +38,7 @@ assert.ok(readTakeover.includes('deferredHydrations')&&manual.includes('deferred
 assert.ok(phase2.includes('__lyFreshRealtime'),'Legacy realtime retirement/fallback contract missing');
 assert.ok(bootstrap.includes('shellReady()')&&bootstrap.includes('if(state.ready&&!force)return true'),'stable shell guard missing');
 assert.ok(loader.includes("menuSecurity:{src:'./ly-menu-security.js")&&loader.includes("await load('menuSecurity')"),'menu security is not chained from the module loader');
-assert.ok(loader.includes("notificationCenter:{src:'./ly-notification-center.js")&&loader.includes("await load('notificationCenter')"),'notification center is not chained from the module loader');
+assert.ok(loader.includes("notificationCenter:{src:'./ly-notification-center.js")&&loader.includes("load('notificationCenter')"),'notification center is not chained from the module loader');
 assert.ok(loader.includes("cloudRealtime:{src:'./ly-cloud-realtime.js")&&cloud.includes('latyen:v2-realtime-status'),'modern Cloud realtime UX is not connected');
 assert.ok(security.includes('ly_verify_menu_password')&&security.includes('ly_set_menu_password'),'protected-menu RPC contract missing');
 assert.ok(writeGuard.includes('PASS')||writeGuard.includes('direct-write'),'Legacy direct-write guard missing');

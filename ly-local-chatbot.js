@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.09.09.2',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
+const VERSION='2026.09.21.1',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',aiMode:'local',aiRetryAt:0,openingDraftId:'',lastFocus:null};
@@ -58,11 +58,14 @@ function collectionFor(kind){
 function parsedQuantity(value){const token=normalize(value),words={khong:0,mot:1,hai:2,ba:3,bon:4,tu:4,nam:5,sau:6,bay:7,tam:8,chin:9,muoi:10};if(token in words)return words[token];const number=Number(token.replace(',','.'));return Number.isFinite(number)?number:null;}
 const UNIT_ALIASES={ky:'kg',kilogram:'kg',gram:'g',gam:'g',lit:'l',liter:'l',litre:'l',coc:'ly',cup:'ly',chiec:'cai',suat:'phan'};
 const UNIT_DEFS={g:['mass',1],kg:['mass',1000],ml:['volume',1],l:['volume',1000],ly:['count',1],chai:['count',1],goi:['count',1],hop:['count',1],cai:['count',1],phan:['count',1],dia:['count',1]};
-function canonicalUnit(value){const unit=normalize(value);return UNIT_ALIASES[unit]||unit;}
+const UNIT_PATTERN='tan|tấn|kg|ky|kilogram|g|gram|gam|mg|l|lit|liter|litre|dl|cl|ml|thung|thùng|bao|khay|vi|vỉ|tui|túi|lo|lọ|hu|hũ|lon|cuon|cuộn|met|mét|to|tờ|chai|goi|gói|hop|hộp|cai|chiec|phan|suat|ly|coc|cup|dia';
+function canonicalUnit(value){const unit=normalize(value),shared=window.__lyUnitConversions?.canonical?.(unit);return shared||UNIT_ALIASES[unit]||unit;}
 function amountForItem(amount,item){
   const target=canonicalUnit(item?.unit),source=canonicalUnit(amount?.unit);
   if(amount?.quantity===null)return {quantity:null,unit:target||source,compatible:true};
   if(!source||!target||source===target)return {quantity:amount.quantity,unit:target||source,compatible:true};
+  const shared=window.__lyUnitConversions?.convert?.(amount.quantity,source,target,item?.id);
+  if(Number.isFinite(shared))return {quantity:shared,unit:target,compatible:true};
   const from=UNIT_DEFS[source],to=UNIT_DEFS[target];
   if(!from||!to||from[0]!==to[0])return {quantity:null,unit:target||source,compatible:false};
   return {quantity:amount.quantity*from[1]/to[1],unit:target,compatible:true};
@@ -86,10 +89,12 @@ function inventoryPricingNear(message,itemName){
   const segment=itemTailSegment(message,itemName);
   return {unit_cost:moneyMention(segment,['don gia nhap','don gia xuat','gia nhap','gia xuat','gia moi don vi','don gia','gia']),total:moneyMention(segment,['thanh tien nhap','thanh tien xuat','tong tien nhap','tong tien xuat','thanh tien'])};
 }
-function convertedUnitCost(unitCost,sourceUnit,targetUnit){
+function convertedUnitCost(unitCost,sourceUnit,targetUnit,ingredientId=''){
   const price=Number(unitCost),source=canonicalUnit(sourceUnit),target=canonicalUnit(targetUnit);
   if(!Number.isFinite(price)||price<0)return null;
   if(!source||!target||source===target)return price;
+  const shared=window.__lyUnitConversions?.convert?.(1,target,source,ingredientId);
+  if(Number.isFinite(shared))return price*shared;
   const from=UNIT_DEFS[source],to=UNIT_DEFS[target];
   if(!from||!to||from[0]!==to[0])return price;
   return price*to[1]/from[1];
@@ -111,11 +116,11 @@ function discountMentionNear(message,itemName){
   return discountMention(itemTailSegment(message,itemName));
 }
 function firstQuantity(message){
-  const match=normalize(message).match(/(?:^|\s)(\d+(?:[.,]\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)\s*(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)?(?:\s|$)/);
+  const match=normalize(message).match(new RegExp(`(?:^|\\s)(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)\\s*(${UNIT_PATTERN})?(?:\\s|$)`));
   return match?{quantity:parsedQuantity(match[1]),unit:text(match[2])}:{quantity:null,unit:''};
 }
 function quantityNear(message,itemName){
-  const source=normalize(message),name=normalize(itemName),number='(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',unit='(kg|ky|kilogram|g|gram|ml|l|lit|chai|goi|hop|cai|chiec|phan|suat|ly|coc|cup|dia)?';
+  const source=normalize(message),name=normalize(itemName),number='(\\d+(?:[.,]\\d+)?|khong|mot|hai|ba|bon|tu|nam|sau|bay|tam|chin|muoi)',unit=`(${UNIT_PATTERN})?`;
   let at=source.indexOf(name);
   while(at>=0){
     const before=source.slice(Math.max(0,at-42),at),after=source.slice(at+name.length,at+name.length+34),left=before.match(new RegExp(`${number}\\s*${unit}\\s*$`)),right=after.match(new RegExp(`^\\s*(?:x|:)?\\s*${number}\\s*${unit}`)),match=left||right;
@@ -224,7 +229,7 @@ function parseDraft(message){
   if(action==='create'){
     const creation=['recipe','prepared'].includes(kind)?creationParts(message,kind):null,itemMessage=creation?creation.components:message,extracted=['ingredient','cashflow'].includes(kind)?{items:[],ambiguities:[]}:extractItems(itemMessage,kind);if(creation)draft.component_text=creation.components;draft.items=extracted.items;draft.clarifications=extracted.ambiguities.map(row=>({...row,type:'item',resolved:false}));draft.receipt_code=receiptCode(message);
     const dateToken=normalize(message).match(/\b(?:\d{4}[\/-]\d{1,2}[\/-]\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})\b/)?.[0],date=parseReportDate(dateToken)||naturalSingleDate(source);if(date)draft.receipt_date=`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
-    if(['import','export'].includes(kind)){const pricing=inventoryPricing(message,draft.items),itemSlots=draft.items.length+draft.clarifications.filter(row=>row.type==='item').length,single=itemSlots===1;draft.inventory_unit_cost=single?pricing.unit_cost:null;draft.inventory_total=single?pricing.total:null;draft.items.forEach(item=>{const quoted=item.quoted_unit_cost!=null?item.quoted_unit_cost:(single?pricing.unit_cost:null),total=item.quoted_total!=null?item.quoted_total:(single?pricing.total:null);item.unit_cost=quoted!=null?convertedUnitCost(quoted,item.input_unit||item.unit,item.unit):(total!=null&&Number(item.quantity)>0?total/Number(item.quantity):null);});}
+    if(['import','export'].includes(kind)){const pricing=inventoryPricing(message,draft.items),itemSlots=draft.items.length+draft.clarifications.filter(row=>row.type==='item').length,single=itemSlots===1;draft.inventory_unit_cost=single?pricing.unit_cost:null;draft.inventory_total=single?pricing.total:null;draft.items.forEach(item=>{const quoted=item.quoted_unit_cost!=null?item.quoted_unit_cost:(single?pricing.unit_cost:null),total=item.quoted_total!=null?item.quoted_total:(single?pricing.total:null);item.unit_cost=quoted!=null?convertedUnitCost(quoted,item.input_unit||item.unit,item.unit,item.id):(total!=null&&Number(item.quantity)>0?total/Number(item.quantity):null);});}
     if(kind==='sale'){
       const discount=discountMention(message),receiptLevel=/\b(tong hoa don|tong bill|hoa don|bill)\b/.test(source),allItems=/\b(tung mon|moi mon|giam gia mon|chiet khau mon)\b/.test(source),localDiscounts=[...draft.items,...draft.clarifications.filter(row=>row.type==='item')].filter(row=>row.quoted_discount||row.discount);
       if(receiptLevel&&discount)draft.receipt_discount={...discount};
@@ -257,7 +262,7 @@ function answerDraftClarification(draft,clarificationId,optionId){
   const clarification=draft?.clarifications?.find(row=>String(row.id)===String(clarificationId)&&!row.resolved),option=clarification?.options?.find(row=>String(row.id)===String(optionId));if(!clarification||!option)return false;
   if(clarification.type==='item'){
     const converted=amountForItem({quantity:clarification.quantity,unit:clarification.unit},option),item={id:option.id,name:option.name,unit:text(option.unit||converted.unit||clarification.unit),quantity:converted.quantity,input_quantity:clarification.quantity,input_unit:canonicalUnit(clarification.unit||option.unit),clarification_id:clarification.id};
-    if(['import','export'].includes(draft.kind)){const quoted=clarification.unit_cost!==null&&clarification.unit_cost!==undefined?clarification.unit_cost:draft.inventory_unit_cost,total=clarification.total!==null&&clarification.total!==undefined?clarification.total:draft.inventory_total;item.unit_cost=quoted!==null&&quoted!==undefined?convertedUnitCost(quoted,item.input_unit||item.unit,item.unit):(Number(total)>0&&Number(item.quantity)>0?Number(total)/Number(item.quantity):null);}
+    if(['import','export'].includes(draft.kind)){const quoted=clarification.unit_cost!==null&&clarification.unit_cost!==undefined?clarification.unit_cost:draft.inventory_unit_cost,total=clarification.total!==null&&clarification.total!==undefined?clarification.total:draft.inventory_total;item.unit_cost=quoted!==null&&quoted!==undefined?convertedUnitCost(quoted,item.input_unit||item.unit,item.unit,item.id):(Number(total)>0&&Number(item.quantity)>0?Number(total)/Number(item.quantity):null);}
     if(draft.kind==='sale'&&clarification.discount)item.discount={...clarification.discount};
     draft.items=(draft.items||[]).filter(row=>String(row.clarification_id)!==String(clarification.id));draft.items.push(item);clarification.selected_id=option.id;clarification.resolved=true;addQuantityClarification(draft,item);
   }else if(clarification.type==='cashflow_category'){

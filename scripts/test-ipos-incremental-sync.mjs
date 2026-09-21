@@ -19,6 +19,7 @@ const scheduleMigration = await readFile(
 );
 const performance = await readFile(new URL('../ly-performance-optimizer.js', import.meta.url),'utf8');
 const shell = await readFile(new URL('../index.html', import.meta.url),'utf8');
+const vibeWorker = await readFile(new URL('./vibehost-ipos-worker.mjs', import.meta.url),'utf8');
 
 assert.match(edge,/fetchSaleHeadersForDay/,'the lightweight sale list must be fetched separately');
 assert.match(edge,/ly_ipos_changed_sale_ids/,'stored iPOS versions must filter unchanged receipts');
@@ -39,5 +40,9 @@ assert.match(scheduleMigration,/schedule=>'\*\/5 0-16,23 \* \* \*'/,'iPOS cron m
 assert.match(performance,/LIVE_MS=900000,FALLBACK_MS=120000/,'empty client fallback pulls must be sparse when Realtime is healthy');
 assert.match(performance,/reason!=='manual'&&quietHours\(\)&&pendingCount\(\)===0/,'automatic client reads must pause from midnight through 06:00 without blocking pending writes or manual refresh');
 assert.match(shell,/V269_PULL_INTERVAL_MS=900000/,'legacy fallback path must retain the same sparse pull floor');
+assert.match(vibeWorker,/headersForDay\.filter\([\s\S]*ipos_sale_updated_at[\s\S]*total_amount/,'Vibe worker must skip unchanged sale details using persisted versions and totals');
+assert.match(vibeWorker,/ipos_catalog_synced_at[\s\S]*6\*60\*60\*1000/,'Vibe worker must not reload the full catalog every five minutes');
+assert.match(vibeWorker,/summary\.skippedSales/,'Vibe worker health must report skipped unchanged sales');
+assert.match(vibeWorker,/summary\.sales\|\|summary\.deletedSales\|\|deepRequested/,'inventory rebuild must run only after a meaningful sale change or deep reconciliation');
 
 console.log('iPOS incremental synchronization checks passed');

@@ -16,6 +16,11 @@ assert.match(businessApi,/stocktakeValues\.shortage_value\+=Math\.max\(-diff\*co
 assert.match(businessApi,/update .*ly_stocktake_receipts.*returning \*/,'stocktake must persist final shortage and surplus values');
 assert.match(businessApi,/pathname==='\/api\/v1\/business\/cashflow'&&request\.method==='GET'/,'cashflow history must be read from the authoritative Vibe database');
 assert.match(businessApi,/cashflowMatch&&request\.method==='DELETE'[\s\S]*delete from .*ly_cashflow_entries where id=\$1::uuid and org_id=\$2::uuid and warehouse_id=\$3::uuid returning id/,'cashflow deletion must be scoped to the authenticated organization and selected warehouse');
+assert.match(businessApi,/async function deleteSale[\s\S]*for update[\s\S]*adjustInventory[\s\S]*delete from .*ly_sales/,'sale deletion must lock the receipt and restore inventory in one transaction');
+assert.match(businessApi,/documentMatch=.*stocktake[\s\S]*documentMatch&&request\.method==='DELETE'/,'stocktake deletion must use the same transactional Vibe route as warehouse receipts');
+assert.match(source,/window\.deleteSaleReceipt=async function[\s\S]*\/api\/v1\/business\/sale\//,'sale deletion must never fall through to the retired Supabase RPC on Vibe');
+assert.match(source,/window\.deleteIngredient=async function[\s\S]*\/api\/v1\/business\/ingredient\//,'ingredient deletion must use the Vibe API');
+assert.match(source,/window\.deleteRecipe=async function[\s\S]*\/api\/v1\/business\/product\//,'recipe deletion must use the Vibe API');
 async function setup({stale=false,failed=false,badResponse=false,resolved=false,wrongIngredient=false,wrongProduct=false,deleteFailed=false,deleteCancelled=false,cashflowMissing=false,cashflowDeleteFailed=false,employeeSaveFailed=false,wrongReceiptDate=false,receiptType='IMPORT'}={}){
   const calls=[],alerts=[],toasts=[],deleted=[],legacyReceiptDeletes=[],legacyCashflowDeletes=[];
   let employees=[{id:'old',code:'A'},{id:'new',code:'A',updated_at:'2026'}],refreshes=0;

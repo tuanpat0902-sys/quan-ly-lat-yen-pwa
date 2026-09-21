@@ -20,7 +20,7 @@ if(Object.keys(payroll).length!==4)throw new Error('Expected 4 payroll rows');
 window.__lySimulationPersonnel.seed();
 if(JSON.parse(store.get('lat_yen_employees_v1')).length!==4)throw new Error('Seed must be idempotent');
 if(!/employee-salary-chart-grid[\s\S]*employeeSalaryReportArea[\s\S]*employeeWorkChart/.test(employeesUi))throw new Error('Salary table and work chart must share the same responsive grid');
-if(!/VERSION='2026\.08\.25\.4'/.test(employeesUi))throw new Error('Employee phone layout module cache version must be current');
+if(!/VERSION='2026\.09\.20\.1'/.test(employeesUi))throw new Error('Employee phone layout module cache version must be current');
 if(!/ly-employees-bridge\.js\?v=20260825\.2/.test(indexSource))throw new Error('Employee bridge cache must refresh the phone layout module');
 if(/<canvas id="employeeWorkChart"/.test(employeeReports))throw new Error('Employee report must not render a second work chart below the detailed report');
 if(!/employeeWorkChartPeriod/.test(employeeReports))throw new Error('Work chart must show the currently selected report period');

@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.08.24.3';
+const VERSION='2026.09.21.1';
 if(window.__lyWarehouseDeleteUX?.version===VERSION)return;
 const text=v=>String(v??'').trim();
 const html=v=>text(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -8,6 +8,8 @@ const byId=id=>document.getElementById(id);
 const statusCache=new Map();
 function getDb(){try{return typeof db!=='undefined'?db:window.db}catch(_){return window.db}}
 function getClient(){try{return typeof sb!=='undefined'?sb:window.sb}catch(_){return window.sb}}
+const usesVibe=()=>globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
+async function vibeRequest(path,options={}){const response=await fetch(path,{credentials:'same-origin',...options}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
 function warehouse(id){return getDb()?.warehouses?.find?.(x=>String(x.id)===String(id))||null}
 function message(error,fallback){return text(error?.message||error)||fallback}
 function notify(value){try{if(typeof toastMsg==='function')return toastMsg(value)}catch(_){} alert(value)}
@@ -18,6 +20,7 @@ function open(content){if(typeof window.openModal==='function')window.openModal(
 async function passwordStatus(id,force=false){
   if(!id)return {has_password:false};
   if(!force&&statusCache.has(id))return statusCache.get(id);
+  if(usesVibe()){const result=await vibeRequest(`/api/v1/business/warehouse/${encodeURIComponent(id)}`);const state={has_password:Boolean(result.has_password)};statusCache.set(id,state);return state;}
   const client=getClient();
   if(!client?.rpc)throw new Error('Chưa kết nối Cloud.');
   const {data,error}=await client.rpc('ly_warehouse_password_status',{p_warehouse_id:id});
@@ -90,6 +93,10 @@ async function saveWarehouseSecure(id=''){
   const btn=byId('saveWarehouseBtn');
   if(btn){btn.disabled=true;btn.textContent=id?'Đang lưu…':'Đang tạo…'}
   try{
+    if(usesVibe()){
+      const data=await vibeRequest('/api/v1/business/warehouse',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({warehouse:{id:id||null,name,address,active:true},password_mode:mode,current_password:current||null,new_password:next||null})});
+      const warehouseId=data?.id;if(!warehouseId)throw new Error('Vibe Host chưa trả về mã kho.');statusCache.set(warehouseId,{has_password:Boolean(data?.has_password)});try{currentWarehouseId=warehouseId}catch(_){window.currentWarehouseId=warehouseId}await refresh();close();notify(id?'Đã lưu thay đổi kho':'Đã tạo kho mới');return warehouseId;
+    }
     const client=getClient();if(!client?.rpc)throw new Error('Chưa kết nối Cloud.');
     const row={id:id||null,name,address,active:true};
     const {data,error}=await client.rpc('ly_save_warehouse_secure',{p_warehouse:row,p_password_mode:mode,p_current_password:current||null,p_new_password:next||null});
@@ -131,6 +138,9 @@ async function executeWarehouseDelete(id,name,protectedWarehouse){
   if(protectedWarehouse&&!password)return alert('Nhập mật khẩu kho.');
   const btn=byId('executeWarehouseDeleteBtn');if(btn){btn.disabled=true;btn.textContent='Đang xóa dữ liệu…'}
   try{
+    if(usesVibe()){
+      const data=await vibeRequest(`/api/v1/business/warehouse/${encodeURIComponent(id)}`,{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({password:password||null})});statusCache.delete(id);await refresh();close();const total=['imports','exports','stocktakes','sales','cashflow'].reduce((sum,key)=>sum+Number(data?.[key]||0),0);notify(`Đã xóa kho “${name}” cùng ${total} bản ghi nghiệp vụ chính.`);try{if(typeof auditLog==='function')auditLog('Xóa kho và dữ liệu',`${name} · ${total} bản ghi`)}catch(_){}return true;
+    }
     const client=getClient();if(!client?.rpc)throw new Error('Chưa kết nối Cloud.');
     const {data,error}=await client.rpc('ly_delete_warehouse_secure',{p_warehouse_id:id,p_password:password||null});
     if(error)throw error;

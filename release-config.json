@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.0.50",
-  "revision": "fresh-core-v3-shell-authoritative-v51",
-  "loaderAssetVersion": "20260920.7",
+  "appVersion": "3.1.0",
+  "revision": "fresh-core-v3-shell-authoritative-v52",
+  "loaderAssetVersion": "20260921.1",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.20.7",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-274",
-  "redeploy": "2026-09-20-sale-order-detail-ver-3.0.50"
+  "moduleLoaderVersion": "2026.09.21.1",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-275",
+  "redeploy": "2026-09-21-vibe-only-reliability-ver-3.1.0"
 }

@@ -35,10 +35,7 @@ export function prepareHtml(source){
     "navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>reg.update?.()).catch(console.warn);"
   );
   if(!html.includes('id="lyReleaseGate"'))html=html.replace(/<head>/i,'<head>\n'+RELEASE_GATE);
-  if(!html.includes('id="lyEarlyAuthShim"')){
-    const tag='<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>';
-    html=html.includes(tag)?html.replace(tag,tag+'\n'+AUTH_SHIM):html.replace(/<head>/i,'<head>\n'+AUTH_SHIM);
-  }
+  if(!html.includes('id="lyEarlyAuthShim"'))html=html.replace(/<head>/i,'<head>\n'+AUTH_SHIM);
   html=html.replace(/\n?<script src="\.\/ly-(?:local-chatbot|chat-language-plus|chat-local-only|simulation-personnel)\.js\?v=[^"]+"><\/script>/g,'');
   html=html.replace(
     /\n*(?:<script src="\.\/ly-runtime-error-boundary\.js\?v=[^"]+"><\/script>\n)?<script src="\.\/ly-app-version\.js\?v=[^"]+"><\/script>[\s\S]*?<script src="\.\/ly-warehouse-delete-ux\.js\?v=[^"]+"><\/script>\n*/g,

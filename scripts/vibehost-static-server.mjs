@@ -10,6 +10,7 @@ import { handleIposBootstrap } from './vibehost-ipos-bootstrap.mjs';
 import { handleAuthApi } from './vibehost-auth-api.mjs';
 import { handleIngredientCategoryApi } from './vibehost-ingredient-category-api.mjs';
 import { handleBusinessMutationApi } from './vibehost-business-mutation-api.mjs';
+import { handleMenuSecurityApi } from './vibehost-menu-security-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
@@ -76,6 +77,13 @@ async function findFile(pathname) {
 }
 
 const server = createServer(async (request, response) => {
+  response.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'");
+  response.setHeader('Cross-Origin-Opener-Policy','same-origin');
+  response.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=(), payment=()');
+  response.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
+  response.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');
+  response.setHeader('X-Content-Type-Options','nosniff');
+  response.setHeader('X-Frame-Options','DENY');
   let pathname;
   let requestUrl;
   try {
@@ -87,6 +95,7 @@ const server = createServer(async (request, response) => {
 
   if (await handleIposBootstrap(request, response, pathname)) return;
   if (await handleAuthApi(request, response, pathname)) return;
+  if (await handleMenuSecurityApi(request, response, pathname)) return;
   if (await handleIngredientCategoryApi(request, response, pathname)) return;
   if (await handleBusinessMutationApi(request, response, pathname)) return;
   if (request.method !== 'GET' && request.method !== 'HEAD') {

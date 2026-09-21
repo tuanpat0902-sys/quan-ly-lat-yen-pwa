@@ -1,4 +1,4 @@
-const CACHE='lat-yen-fresh-core-v3-authoritative-274';
+const CACHE='lat-yen-fresh-core-v3-authoritative-275';
 const VIBE_URL='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/';
 const INDEX_KEY='./index.html';
 const PRECACHE_ASSETS=[
@@ -10,7 +10,7 @@ const PRECACHE_ASSETS=[
   './ly-app-version.js',
   './ly-ui-stability.js?v=20260828.5',
   './ly-ui-form-ergonomics.js?v=20260828.2',
-  './ly-supabase-bootstrap.js'
+  './ly-vibe-client-compat.js'
 ];
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const cache=await caches.open(CACHE);await Promise.allSettled(PRECACHE_ASSETS.map(async url=>{try{const r=await fetch(url,{cache:'reload'});if(r.ok)await cache.put(url,r);}catch(e){}}));await self.skipWaiting();})());});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{

@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV97)return;
   window.__lyModuleLoaderV97=true;
 
-  const VERSION='2026.09.20.7';
+  const VERSION='2026.09.21.1';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,20 +12,19 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.0.50',test:()=>window.__lyAppVersion?.version==='3.0.50'},
+    appVersion:{src:'./ly-app-version.js?v=3.1.0',test:()=>window.__lyAppVersion?.version==='3.1.0'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
     freshCoreV3EmployeesParityRunner:{src:'./ly-fresh-core-v3-employees-parity-runner.js?v=20260828.1',test:()=>window.__lyFreshCoreV3EmployeesParityRunner?.version==='2026.08.28.1'},
-    localAssistant:{src:'./ly-local-chatbot.js?v=20260909.2',test:()=>window.__lyLocalAssistant?.version==='2026.09.09.2'},
+    localAssistant:{src:'./ly-local-chatbot.js?v=20260921.1',test:()=>window.__lyLocalAssistant?.version==='2026.09.21.1'},
     chatLanguagePlus:{src:'./ly-chat-language-plus.js?v=20260827.5',test:()=>window.__lyChatLanguagePlus?.version==='2026.08.27.5'},
     chatLegacyInventoryUnitGuard:{src:'./ly-chat-legacy-inventory-unit-guard.js?v=20260827.1',test:()=>window.__lyChatLegacyInventoryUnitGuard?.version==='2026.08.27.1'},
     chatResponseGate:{src:'./ly-chat-response-gate.js?v=20260827.1',test:()=>window.__lyChatResponseGate?.version==='2026.08.27.1'},
     chatLocalOnly:{src:'./ly-chat-local-only.js?v=20260827.1',test:()=>window.__lyChatLocalOnly?.version==='2026.08.27.1'},
     chatUnitSync:{src:'./ly-chat-unit-sync.js?v=20260909.1',test:()=>window.__lyChatUnitSync?.version==='2026.09.09.1'},
-    supabaseBootstrap:{src:'./ly-supabase-bootstrap.js?v=20260824.2',test:()=>window.__lySupabaseBootstrap?.version==='2026.08.24.2'},
     vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260909.2',test:()=>window.__lyVibeReadCache?.version==='2026.09.09.2'},
-    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260920.6',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.20.6'&&!window.__lyVibeBusinessWrites?.installing},
+    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260921.1',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.21.1'&&!window.__lyVibeBusinessWrites?.installing},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260909.1',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.09.09.1'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
     domShim:{src:'./ly-legacy-dom-shim.js?v=20260824.4',test:()=>window.__lyLegacyDomShim?.version==='2026.08.24.4'},
@@ -34,7 +33,7 @@
     modelShim:{src:'./ly-legacy-model-shim.js?v=20260824.2',test:()=>window.__lyLegacyModelShim?.version==='2026.08.24.2'},
     listShim:{src:'./ly-legacy-list-shim.js?v=20260824.1',test:()=>window.__lyLegacyListShim?.version==='2026.08.24.1'},
     formDraftGuard:{src:'./ly-form-draft-guard.js?v=20260825.3',test:()=>window.__lyFormDraftGuard?.version==='2026.08.25.3'},
-    menuSecurity:{src:'./ly-menu-security.js?v=20260827.4',test:()=>window.__lyMenuSecurity?.version==='2026.08.27.4'},
+    menuSecurity:{src:'./ly-menu-security.js?v=20260921.1',test:()=>window.__lyMenuSecurity?.version==='2026.09.21.1'},
     ingredientsTakeover:{src:'./ly-fresh-core-v2-ingredients-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2IngredientsTakeover?.version==='2026.08.24.4'},
     productsTakeover:{src:'./ly-fresh-core-v2-products-takeover.js?v=20260824.4',test:()=>window.__lyFreshCoreV2ProductsTakeover?.version==='2026.08.24.4'},
     documentsTakeover:{src:'./ly-fresh-core-v2-documents-takeover.js?v=20260824.3',test:()=>window.__lyFreshCoreV2DocumentsTakeover?.version==='2026.08.24.3'},
@@ -57,7 +56,7 @@
     inventoryAlerts:{src:'./ly-inventory-alerts.js?v=20260824.1',test:()=>window.__lyInventoryAlerts?.version==='2026.08.24.1'},
     performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260907.1',test:()=>window.__lyPerformanceOptimizer?.version==='2026.09.07.1'},
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260907.1',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.09.07.1'},
-    warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260824.3',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.08.24.3'},
+    warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260921.1',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.09.21.1'},
     settingsUIBridge:{src:'./ly-settings-ui-bridge.js?v=20260827.2',test:()=>window.__lySettingsUIBridge?.version==='2026.08.27.2'},
     settings:{src:'./ly-settings-enhancements.js?v=20260828.8',test:()=>window.__lyNotificationMaster?.version==='2026.08.28.8'},
     settingsUI:{src:'./ly-settings-ui.js?v=20260823.1',test:()=>!!window.__lySettingsUIModule},
@@ -115,9 +114,12 @@
   }
 
   async function loadCore(){
-    await load('supabaseBootstrap');
-    try{await window.__lySupabaseReady;}catch(e){}
     await waitForLegacyShell();
+    if(location.hostname.endsWith('.tinhgon.xyz')){
+      let authenticated=false;try{authenticated=await window.v260EnsureAuth?.();}catch(e){}
+      if(!authenticated){window.__lyTableFirstPaint?.settle?.('authentication-required');document.documentElement.removeAttribute?.('data-ly-table-first-paint');document.documentElement.removeAttribute?.('data-ly-table-atomic');return false;}
+    }
+    await loadCriticalTablePresentation();
     await load('vibeReadCache');
     await load('vibeBusinessWrites');
     await Promise.all([load('hydration'),load('shadow'),load('domShim'),load('stateShim'),load('helperShim'),load('modelShim'),load('listShim'),load('formDraftGuard')]);
@@ -126,6 +128,7 @@
     await load('menuSecurity');await load('settingsUIBridge');
     await Promise.all([load('ingredientsTakeover'),load('productsTakeover'),load('documentsTakeover'),load('salesTakeover'),load('cashflowTakeover'),load('masterDataTakeover'),load('readTakeover'),load('manualRefresh')]);
     await Promise.all([load('realtime'),load('realtimePhase2'),load('inAppNotifications'),load('dataNotifications'),load('notificationCenter'),load('inventoryAlerts'),load('performanceOptimizer')]);
+    return true;
   }
 
   function panelOf(target){return target?.closest?.('#nav button[data-panel]')?.dataset?.panel||'';}
@@ -155,9 +158,9 @@
 
   document.addEventListener('pointerdown',event=>preparePanel(panelOf(event.target)),true);
   window.addEventListener('latyen:panel',event=>preparePanel(event?.detail?.panel||''));
-  ensureTableFirstPaintGate();loadCriticalTablePresentation();load('runtimeErrorBoundary');load('appVersion');loadCore();load('warehouseDeleteUX');
+  ensureTableFirstPaintGate();load('runtimeErrorBoundary');load('appVersion');const coreReady=loadCore();
   const loadBackground=()=>{load('branding');load('ingredientSidebarStatus');load('stockUnitSync');load('cloudRealtime');load('freshCoreV3ShadowSoak');load('freshCoreV3IngredientsInventorySoak');loadAssistant();};
-  if(typeof requestIdleCallback==='function')requestIdleCallback(loadBackground,{timeout:1400});else setTimeout(loadBackground,900);
-  setTimeout(()=>{load('runtimeErrorBoundary');load('appVersion');load('warehouseDeleteUX');},1400);
+  coreReady.then(ready=>{if(!ready)return;load('warehouseDeleteUX');if(typeof requestIdleCallback==='function')requestIdleCallback(loadBackground,{timeout:1400});else setTimeout(loadBackground,900);});
+  setTimeout(()=>{load('runtimeErrorBoundary');load('appVersion');},1400);
   window.__lyModuleLoader={version:VERSION,load,loadCore,loadAssistant,status:()=>({version:VERSION,loaded:[...loaded.keys()]})};
 })();

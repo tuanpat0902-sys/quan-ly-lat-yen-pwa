@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-const [client,api,mirror,ipos,bootstrap,auth,server,start,loader,index]=await Promise.all([
+const [client,api,ipos,bootstrap,auth,server,start,loader,index,compat]=await Promise.all([
   fs.readFile(new URL('../ly-vibe-read-cache.js',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-snapshot-api.mjs',import.meta.url),'utf8'),
-  fs.readFile(new URL('./vibehost-supabase-mirror.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-ipos-worker.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-ipos-bootstrap.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('./vibehost-auth-api.mjs',import.meta.url),'utf8'),
@@ -12,21 +11,22 @@ const [client,api,mirror,ipos,bootstrap,auth,server,start,loader,index]=await Pr
   fs.readFile(new URL('./vibehost-start.mjs',import.meta.url),'utf8'),
   fs.readFile(new URL('../ly-module-loader.js',import.meta.url),'utf8'),
   fs.readFile(new URL('../index.html',import.meta.url),'utf8'),
+  fs.readFile(new URL('../ly-vibe-client-compat.js',import.meta.url),'utf8'),
 ]);
-assert.match(api,/\/auth\/v1\/user/,'snapshot API must verify the active Supabase user');
-assert.match(api,/LAT_YEN_SUPABASE_API_URL/,'snapshot API must avoid host-reserved database URL variables');
-assert.match(api,/ly_org_members/,'snapshot API must enforce organization membership');
+assert.match(api,/authenticatedVibeUser\(request\)/,'snapshot API must verify the active Vibe session');
+assert.match(api,/vibeUser\.orgId !== orgId/,'snapshot API must enforce organization membership');
+assert.doesNotMatch(api,/Supabase|SUPABASE|\/auth\/v1\/user/,'snapshot API must not contact Supabase');
 assert.match(api,/gzipAsync/,'snapshot payload must be compressed');
 assert.doesNotMatch(client,/SECRET_KEY|service_role/,'browser bundle must not contain privileged keys');
 assert.match(client,/latyen:change-signal/,'fresh changes must bypass a potentially stale mirror');
-assert.match(client,/return original\(table,orderColumn,ascending\)/,'Supabase fallback must remain available');
-assert.match(mirror,/hour >= 6/,'mirror must pause recurring work from midnight to 06:00');
-assert.match(mirror,/LAT_YEN_SUPABASE_API_URL/,'mirror must use its dedicated Supabase API URL');
-assert.match(mirror,/updated_at.*created_at/,'mirror must prefer incremental timestamp reads');
+assert.match(client,/if\(VIBE_ONLY\)\{state\.source='vibe';[\s\S]*throw error;\}/,'Vibe production must never fall back to retired reads');
+assert.doesNotMatch(start,/startSupabaseMirror|vibehost-supabase-mirror/,'production startup must remain Vibe-only');
+assert.doesNotMatch(loader,/supabaseBootstrap|ly-supabase-bootstrap/,'browser startup must remain Vibe-only');
+assert.doesNotMatch(index,/cdn\.jsdelivr\.net\/npm\/@supabase|supabase-js@/,'page must not load the Supabase SDK');
+assert.match(compat,/\/api\/auth\/session/,'compatibility auth must use the same-origin Vibe session');
 assert.match(server,/handleSnapshotApi/,'same-origin server must expose the authenticated snapshot API');
 assert.match(api,/\/api\/v1\/activity-events/,'Vibe must expose authenticated notification history');
 assert.match(api,/ly_activity_events/,'notification history must be read from Vibe PostgreSQL');
-assert.match(start,/startSupabaseMirror/,'production startup must enable the mirror worker');
 assert.match(start,/startVibeIposWorker/,'production startup must support direct iPOS-to-Vibe synchronization');
 assert.match(ipos,/VIBE_IPOS_BACKFILL_FROM\|\|'2026-08-25'/,'iPOS backfill must cover the requested history');
 assert.match(ipos,/rebuildVibeIposInventory/,'iPOS synchronization must reconcile formula inventory idempotently');
