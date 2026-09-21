@@ -22,9 +22,9 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
 #settings .settings-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
 #settings .settings-status-pill,#settings .settings-account-pill{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:4px 9px;border:1px solid #dfe7eb;border-radius:999px;background:#fff;color:#475467;font-size:11.5px;font-weight:700}
 #settings .settings-status-pill i{width:7px;height:7px;border-radius:50%;background:#17a673}.settings-status-pill.is-offline i{background:#d64545!important}
-#settings .settings-dashboard-grid-v2{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(320px,.92fr);grid-template-areas:'cloud identity' 'notify data';gap:12px;align-items:stretch}
-#settings .settings-dashboard-grid-v2>.card,#settings .settings-dashboard-grid-v2>.settings-notify-host{min-width:0;margin:0!important}
-#settings .settings-cloud-card{grid-area:cloud}.settings-identity-card{grid-area:identity}.settings-notify-host{grid-area:notify}.settings-data-card{grid-area:data}
+#settings .settings-dashboard-grid-v2{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,1fr);grid-template-areas:'cloud identity';gap:12px;align-items:stretch}
+#settings .settings-dashboard-grid-v2>.card{min-width:0;margin:0!important}
+#settings .settings-cloud-card{grid-area:cloud}.settings-identity-card{grid-area:identity}
 #settings .settings-dashboard-grid-v2 .card{padding:14px!important;border-radius:12px!important}
 #settings .settings-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px}
 #settings .settings-card-head h3,#settings .brand-settings-head h3{margin:0 0 2px!important;font-size:14px!important}
@@ -40,6 +40,12 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
 #settings .settings-advanced-tools{margin-top:9px;padding-top:8px;border-top:1px solid #edf1f3}
 #settings .settings-advanced-tools summary{cursor:pointer;font-size:11.5px;font-weight:750;color:#667085}
 #settings .settings-advanced-tools button{margin-top:8px}
+#settings .settings-optional-section,#settings .ly-technical-settings{margin-top:10px;border:1px solid #dfe7eb;border-radius:12px;background:#fff;overflow:hidden}
+#settings .settings-optional-section>summary,#settings .ly-technical-settings>summary{cursor:pointer;list-style:none;padding:12px 14px;font-size:12px;font-weight:800;color:#344054}
+#settings .settings-optional-section>summary::-webkit-details-marker,#settings .ly-technical-settings>summary::-webkit-details-marker{display:none}
+#settings .settings-optional-section>summary::after,#settings .ly-technical-settings>summary::after{content:'+';float:right;color:#667085;font-size:16px;line-height:1}
+#settings .settings-optional-section[open]>summary::after,#settings .ly-technical-settings[open]>summary::after{content:'−'}
+#settings .settings-optional-content,#settings .settings-notify-host,#settings .ly-technical-content{padding:0 14px 14px}
 #settings .v226-notification-card{height:100%;box-sizing:border-box;padding:14px!important;border-radius:12px!important}
 #settings .v226-notify-actions,#settings .v226-notify-options{margin-top:8px!important}
 #settings .v226-notify-options{gap:6px!important;padding-top:7px!important}
@@ -77,7 +83,7 @@ table th{font-size:var(--ly-font-sm)!important;line-height:1.3}table td{font-siz
   .scroll{border-radius:10px}
   .toolbar{gap:8px!important}
 }
-@media(max-width:900px){#settings .settings-dashboard-grid-v2{grid-template-columns:1fr;grid-template-areas:'cloud' 'identity' 'notify' 'data'}}
+@media(max-width:900px){#settings .settings-dashboard-grid-v2{grid-template-columns:1fr;grid-template-areas:'cloud' 'identity'}}
 @media(max-width:900px){.ingredient-conversion-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ingredient-conversion-hint{grid-column:1/-1}}
 @media(max-width:700px){#settings .settings-workspace-head{align-items:flex-start;flex-direction:column}#settings .settings-head-actions{justify-content:flex-start}#settings .settings-account-pill{max-width:100%;overflow-wrap:anywhere}.supplier-page-head{align-items:flex-start;flex-direction:column}.supplier-page-head button{width:100%}.import-receipt-header-actions{width:100%}.import-receipt-header-actions button{flex:1}.supplier-list-summary{align-items:flex-start;flex-direction:column}}
 /* Phone workspace: preserve touch targets while removing unused vertical space. */

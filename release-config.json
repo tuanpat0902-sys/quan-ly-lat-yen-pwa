@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.1.1",
-  "revision": "fresh-core-v3-shell-authoritative-v53",
-  "loaderAssetVersion": "20260921.2",
+  "appVersion": "3.1.2",
+  "revision": "fresh-core-v3-shell-authoritative-v54",
+  "loaderAssetVersion": "20260921.3",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.21.2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-276",
-  "redeploy": "2026-09-21-chatbot-v3-startup-hotfix-ver-3.1.1"
+  "moduleLoaderVersion": "2026.09.21.3",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-277",
+  "redeploy": "2026-09-21-compact-settings-local-chatbot-ver-3.1.2"
 }

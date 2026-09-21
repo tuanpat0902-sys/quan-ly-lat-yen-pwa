@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.1.2 — 21/09/2026
+
+- Đơn giản hóa Cài đặt: chỉ hiển thị Đồng bộ dữ liệu và Nhận diện phần mềm; thông báo, sao lưu, bảo trì và phiên bản được thu gọn theo nhu cầu.
+- Loại bỏ bảng migration/production gate V3 khỏi giao diện người dùng và giữ các cổng kỹ thuật trong bộ kiểm thử phát hành.
+- Loại bỏ hoàn toàn đường gọi API/Edge Function khỏi chatbot; hội thoại và xử lý chỉ diễn ra trên thiết bị, lịch sử lưu trong IndexedDB của thiết bị.
+- Bổ sung nhận diện một số lỗi gõ phổ biến cho lệnh nhập, xuất, kiểm kê, công thức, doanh thu, tồn kho và thu chi.
+
 ## Ver 3.1.1 — 21/09/2026
 
 - Sửa chatbot hiểu trọn cụm “hạt cà phê”, không còn rút xuống từ “cà” và gợi ý nhầm dụng cụ ca đánh sữa.

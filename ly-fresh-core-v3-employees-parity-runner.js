@@ -68,13 +68,15 @@
   function render(){
     const settings=document.getElementById('settings');
     if(!settings)return false;
+    const host=document.querySelector('#lyTechnicalSettings .ly-technical-content')||settings;
     let box=document.getElementById('lyV36EmployeesParityBox');
     if(!box){
       box=document.createElement('div');
       box.id='lyV36EmployeesParityBox';
       box.className='card ly-v3-card';
-      const anchor=document.getElementById('lyV3ShadowStatusCard');
-      if(anchor?.parentElement===settings)anchor.insertAdjacentElement('afterend',box);else settings.appendChild(box);
+      host.appendChild(box);
+    }else if(box.parentElement!==host){
+      host.appendChild(box);
     }
     const s=status(),gate=s.gate||{},obs=s.observation||{};
     const state=gate.pass===true

@@ -29,6 +29,5 @@ assert.doesNotMatch(runtime,/\.upsert\s*\(/);
 assert.doesNotMatch(runtime,/\.delete\s*\(/);
 assert.doesNotMatch(runtime,/\.rpc\s*\(/);
 assert.doesNotMatch(loader,/load\('freshCoreV3IngredientsInventoryValidation'\).*loadBackground/s,'technical validation must not auto-run in the background');
-assert.match(settings,/Chạy kiểm tra nhanh V3-2/);
-assert.match(settings,/không cộng vào(?: 3 lần)? production soak/,'technical validation must never count toward production soak');
+assert.doesNotMatch(settings,/Chạy kiểm tra nhanh V3-2|production soak/,'internal validation controls must not appear in end-user Settings');
 console.log('Fresh Core V3-2 bounded technical validation: PASS');

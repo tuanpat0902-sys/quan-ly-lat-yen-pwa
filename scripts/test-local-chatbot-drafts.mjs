@@ -8,7 +8,7 @@ assert.ok(source.includes('indexedDB.open(DB_NAME,1)'));
 assert.ok(source.includes('Lịch sử chat chỉ lưu trên thiết bị này'));
 assert.ok(source.includes('class="ly-assistant-privacy-icon"')&&source.includes('>?</span>'),'privacy information must use a compact question-mark icon');
 assert.ok(source.includes('width:46px;height:46px;font-size:36px'),'the mobile chat close control must have a large touch target and visible icon');
-assert.ok(source.includes('câu hỏi hiện tại, tối đa 10 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật'));
+assert.ok(source.includes('không gọi API và không gửi nội dung trò chuyện ra ngoài'));
 assert.ok(!source.includes('localStorage'),'assistant history must not use LocalStorage');
 for(const forbidden of [".rpc(",".from(",'saveImportReceipt?.','saveExportReceipt?.','saveStocktakeReceipt?.','saveSaleReceipt?.'])assert.ok(!source.includes(forbidden),`assistant must not directly commit business data: ${forbidden}`);
 assert.ok(!source.includes('SpeechRecognition'),'voice recognition must be fully removed');
@@ -17,7 +17,7 @@ assert.ok(source.includes('ly-assistant-send'),'send control must have an animat
 assert.ok(source.includes('@keyframes ly-assistant-send'),'send icon animation must be defined');
 assert.ok(!source.includes('data-suggestion-message'),'suggestions must never be copied back into the chat input');
 assert.ok(source.includes('answer=await askAi(content,reply.content,reply)'),'every response, including draft clarification, must pass through the safe assistant response gate');
-assert.ok(source.includes("mode:'business_draft'"),'ChatGPT must receive safe structured draft context without owning the transaction');
+assert.ok(!source.includes("mode:'business_draft'"),'local-only chatbot must not prepare any payload for an external model');
 assert.ok(source.includes("await retireDrafts();await addMessage"),'a new command must retire links to older drafts');
 assert.ok(source.includes("message.draft=null;message.draft_retired_at=now()"),'an opened form must retire its draft link while retaining the chat message');
 for(const forbidden of ['MediaRecorder','getUserMedia'])assert.ok(!source.includes(forbidden),`assistant must not capture or retain raw audio: ${forbidden}`);

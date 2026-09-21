@@ -14,9 +14,9 @@ assert.match(runner,/createEmployeesDirectorySource/,'runner must use the data-l
 assert.match(runner,/runEmployeesManualDeviceParity/,'runner must use the guarded pure parity runner');
 assert.match(runner,/addEventListener\('click'/,'cloud parity must require an explicit user click');
 assert.match(runner,/const settings=document\.getElementById\('settings'\)/,'runner card must be owned by Settings, not by a re-rendered V3-2 child card');
-assert.match(runner,/box\.className='card ly-v3-card'/,'runner must render as a standalone Settings card');
-assert.match(runner,/anchor\.insertAdjacentElement\('afterend',box\)/,'runner should sit next to the V3 status card when available');
-assert.doesNotMatch(runner,/host\.appendChild\(box\)/,'runner must not be nested inside the V3-2 status card');
+assert.match(runner,/box\.className='card ly-v3-card'/,'runner must retain its diagnostic card contract');
+assert.match(runner,/#lyTechnicalSettings \.ly-technical-content/,'runner must stay inside the collapsed technical section');
+assert.match(runner,/host\.appendChild\(box\)/,'runner diagnostics must not clutter the primary Settings page');
 assert.match(runner,/0\/0 không có dữ liệu nhân viên để xác minh/,'empty parity must be visibly locked rather than shown as PASS');
 assert.match(runner,/0\/0 không được tính là parity evidence/,'UI note must disclose that empty parity has zero migration credit');
 assert.doesNotMatch(runner,/\.rpc\s*\(/,'browser runner must not call Supabase transport directly');
@@ -31,14 +31,14 @@ assert.match(loader,/freshCoreV3EmployeesParityRunner:\{src:'\.\/ly-fresh-core-v
 assert.match(loader,/if\(panel==='settings'\)[\s\S]*await load\('freshCoreV3EmployeesParityRunner'\)/,'Settings preparation remains an idempotent fallback loader');
 assert.doesNotMatch(loader,/loadBackground=.*freshCoreV3EmployeesParityRunner/,'runner must not be loaded by idle/background scheduling');
 
-assert.match(appVersion,/REVISION='fresh-core-v3-shell-authoritative-v53'/,'app boot revision must advance with the current release');
+assert.match(appVersion,/REVISION='fresh-core-v3-shell-authoritative-v54'/,'app boot revision must advance with the current release');
 assert.match(appVersion,/function ensureEmployeesParityRunner\(\)/,'app boot must expose a deterministic runner bootstrap');
 assert.match(appVersion,/ly-fresh-core-v3-employees-parity-runner\.js\?v=20260828\.3/,'app boot must use a cache-busted runner URL');
 assert.match(appVersion,/function boot\(\)\{ensureUILayers\(\);mount\(\);ensureEmployeesParityRunner\(\);/,'runner module must be requested after presentation layers mount during normal app boot');
 assert.doesNotMatch(appVersion,/\.run\?\.\(|\.run\(/,'boot loader must never execute parity automatically');
 assert.doesNotMatch(appVersion,/\.rpc\s*\(|\.from\s*\(|\.insert\s*\(|\.update\s*\(|\.upsert\s*\(|\.delete\s*\(/,'boot loader must not create any cloud data path');
 
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-276/,'current service worker release must continue invalidating cached false-positive parity runner bytes');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-277/,'current service worker release must continue invalidating cached false-positive parity runner bytes');
 assert.match(sw,/cacheFirstStatic\(request\)[\s\S]*fetch\(request,\{cache:'reload'\}\)/,'new static assets must bypass stale Safari HTTP cache before entering the release cache');
 
 console.log('Fresh Core V3 employees device runner UI guard: PASS');

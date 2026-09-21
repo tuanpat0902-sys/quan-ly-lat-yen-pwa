@@ -44,9 +44,9 @@ assert.match(service,/refreshControlledShadow/);
 assert.match(service,/complete=completeIngredients&&completeInventory/);
 assert.match(loader,/freshCoreV3IngredientsInventorySoak/);
 assert.match(loader,/ly-fresh-core-v3-ingredients-inventory-soak\.js\?v=20260828\.4/,'scheduler asset must bypass stale cache');
-assert.match(settings,/V3-2 lịch chạy/,'Settings must expose the next production deadline');
-assert.match(settings,/live\.nextRunAt/,'Settings must prefer the live scheduler deadline');
-assert.match(loader,/ly-settings-enhancements\.js\?v=20260828\.8/,'Settings scheduler status must bypass stale cache');
+assert.doesNotMatch(settings,/V3-2 lịch chạy|live\.nextRunAt/,'internal soak scheduling must not clutter end-user Settings');
+assert.match(settings,/Thông tin phiên bản/,'Settings must retain compact support information');
+assert.match(loader,/ly-settings-enhancements\.js\?v=20260921\.3/,'simplified Settings must bypass stale cache');
 
 const DAY=24*60*60*1000,NOW=10*DAY,ORG='org-scheduler-test';
 function schedulerHarness({lastAt=0,lastAttemptAt=0,hidden=false}={}){

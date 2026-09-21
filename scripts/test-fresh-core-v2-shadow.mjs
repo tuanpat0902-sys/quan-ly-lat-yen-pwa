@@ -22,7 +22,7 @@ for(const asset of runtimeAssets)assert.equal(sw.includes(`'${asset}'`),false,`S
 for(const name of ['ingredientsTakeover','productsTakeover','documentsTakeover','salesTakeover','cashflowTakeover','masterDataTakeover','readTakeover','manualRefresh','realtime','realtimePhase2'])assert.ok(loader.includes(`load('${name}')`),`Module loader must activate ${name}`);
 assert.equal(loader.includes('authGate:{'),false,'Legacy v260 auth must remain the single login owner');
 assert.equal(loader.includes("load('authGate')"),false,'Module loader must not mount a second login gate');
-assert.match(vibeCompat,/VERSION='2026\.09\.21\.1'/);
+assert.match(vibeCompat,/VERSION='2026\.09\.21\.2'/);
 assert.match(vibeCompat,/\/api\/auth\/session/,'Vibe compatibility bridge must use local authenticated sessions');
 assert.equal(/supabase\.co|supabase-js@2/.test(vibeCompat),false,'Vibe compatibility bridge must not make Supabase network calls');
 assert.match(sw,/function isSupabaseOrigin/);assert.match(sw,/p_type\|\|body\?\.p_kind/);

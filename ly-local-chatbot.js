@@ -1,12 +1,12 @@
 (()=>{
 'use strict';
-const VERSION='2026.09.21.2',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
+const VERSION='2026.09.21.3';
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
-const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',aiMode:'local',aiRetryAt:0,openingDraftId:'',lastFocus:null};
+const state={messages:[],open:false,memory:[],ready:false,thinking:false,aiMode:'local',openingDraftId:'',lastFocus:null};
 const text=value=>String(value??'').trim();
 const esc=value=>text(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-const normalize=value=>text(value).replace(/\u2060/g,'').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim();
+const normalize=value=>text(value).replace(/\u2060/g,'').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9.,:/%\-\s]/g,' ').replace(/\s+/g,' ').trim().replace(/\b(nhapp|nhpa)\b/g,'nhap').replace(/\b(xuaat|xuatkho)\b/g,'xuat kho').replace(/\bkiemke+\b/g,'kiem ke').replace(/\bcongthuc\b/g,'cong thuc').replace(/\bdoanhthu\b/g,'doanh thu').replace(/\btonkho\b/g,'ton kho').replace(/\bthuchi\b/g,'thu chi');
 function originalPhrase(message,folded){
   const target=normalize(folded),raw=text(message).normalize('NFC');
   if(!target)return text(folded);
@@ -319,6 +319,7 @@ function clarificationReply(message,draft){
   if(draft.action!=='create')return null;
   if(draft.kind==='stocktake'&&draft.open_blank)return null;
   if(draft.kind==='ingredient'&&!text(draft.name))return {content:'Mình chưa đọc được tên nguyên liệu cần tạo. Bạn có thể nói “Tạo nguyên liệu: Bột quế, đơn vị g” nhé.',localOnly:true};
+  if(draft.kind==='ingredient')return null;
   if(draft.kind==='cashflow'){
     if(!(Number(draft.amount)>0))return {content:'Mình chưa đọc được số tiền. Bạn ghi rõ, ví dụ “Tạo phiếu chi tiền điện 10 nghìn” nhé.',localOnly:true};
     if(!draft.cashflow_type&&!draft.clarifications.some(row=>row.type==='cashflow_category'&&!row.resolved))return {content:'Bạn muốn lập phiếu Thu hay phiếu Chi ạ? Hãy nói rõ loại phiếu và số tiền để mình không chọn nhầm.',localOnly:true};
@@ -472,37 +473,13 @@ function assistantReply(message){
   return {content:'Mình chưa hiểu trọn ý bạn vừa nói. Bạn có thể nói rõ nghiệp vụ hoặc chọn một gợi ý bên dưới nhé.',suggestions:['Kiểm tra tồn kho','Báo cáo doanh thu hôm nay','Tạo phiếu nhập']};
 }
 
-function supabaseClient(){try{return typeof sb!=='undefined'?sb:window.sb||null;}catch(_){return window.sb||null;}}
 function updateAssistantMode(mode=state.aiMode){
   state.aiMode=mode;
   const badge=document.getElementById?.('lyAssistantMode');if(!badge)return;
   badge.textContent=mode==='ai'?'AI hỗ trợ':mode==='waiting'?'Đang xử lý':'Trên thiết bị';
   badge.dataset.mode=mode;
 }
-function aiContext(localReply,reply={}){
-  const data=reportState(),warehouseId=text(window.currentWarehouseId),warehouse=data.warehouses.find(row=>String(row.id)===warehouseId);
-  const draft=reply.draft,interaction=draft?{mode:'business_draft',action:draft.action,receipt_kind:draft.kind,ready:draftReady(draft),summary:draftSummary(draft),choices:(draft.clarifications||[]).filter(row=>!row.resolved).map(row=>({question:row.type==='quantity'?`Số lượng ${row.item_name}`:row.query,options:row.options.map(option=>option.label||option.name)}))}:reply.report?{mode:'read_only_report'}:{mode:'conversation'};
-  return JSON.stringify({warehouse:warehouse?.name||'Kho đang chọn',resolved_follow_up:text(reply.contextual_message).slice(0,1000)||undefined,available_data:{ingredients:data.ingredients.length,products:data.products.length,inventory_rows:data.inventory.length,sales:data.sales.length,imports:data.imports.length,exports:data.exports.length,cashflow_entries:data.cashflow.length},verified_local_answer:text(localReply).slice(0,3000),interaction});
-}
-function recentConversation(currentMessage){
-  const rows=state.messages.filter(row=>!row.draft&&['user','assistant'].includes(row.role)).slice(-11);
-  if(rows.at(-1)?.role==='user'&&text(rows.at(-1)?.content)===text(currentMessage))rows.pop();
-  return rows.slice(-10).map(row=>({role:row.role,content:text(row.content).slice(0,900)}));
-}
-async function askAi(message,localReply,reply={}){
-  const verifiedReportIntent=/(bao cao|thong ke|tong quan|doanh thu|ton kho|thu chi|dong tien|chi phi|nhap xuat|ban duoc|ban hang|ban chay|mon nao ban|loi nhuan|lai rong|lai lo|bang luong|quy luong|tien luong|luong nhan vien|luong)/.test(normalize(message));
-  if(reply?.report||verifiedReportIntent){updateAssistantMode('local');return localReply;}
-  if(VIBE_ONLY){updateAssistantMode('local');return localReply;}
-  const client=supabaseClient();
-  if(!client?.functions?.invoke||Date.now()<state.aiRetryAt){updateAssistantMode('local');return localReply;}
-  try{
-    const request=client.functions.invoke('lat-yen-chat',{body:{message:text(message).slice(0,2000),recent_context:recentConversation(message),local_context:aiContext(localReply,reply),warehouse_name:text(legacyDb().warehouses?.find(row=>String(row.id)===String(window.currentWarehouseId))?.name).slice(0,200)}});
-    const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('AI_TIMEOUT')),15000));
-    const {data,error}=await Promise.race([request,timeout]);
-    if(error||!text(data?.answer))throw error||new Error('AI_EMPTY_RESPONSE');
-    state.lastAiError='';state.aiRetryAt=0;updateAssistantMode('ai');return text(data.answer);
-  }catch(error){state.lastAiError=text(error?.message||error);state.aiRetryAt=Date.now()+120_000;updateAssistantMode('local');return localReply;}
-}
+async function askAi(_message,localReply){updateAssistantMode('local');return localReply;}
 
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitFor(read,attempts=60){for(let i=0;i<attempts;i++){const value=read();if(value)return value;await delay(50);}return null;}
@@ -718,7 +695,7 @@ async function submitContent(value){
   const content=text(value);if(!content||state.thinking)return;
   state.thinking=true;
   try{await retireDrafts();await addMessage({id:uid(),role:'user',content,created_at:now()});const reply=assistantReply(content),answer=await askAi(content,reply.content,reply);await addMessage({id:uid(),role:'assistant',content:answer,draft:reply.draft||null,suggestions:reply.suggestions||null,created_at:now()});}
-  catch(error){state.lastAiError=text(error?.message||error);await addMessage({id:uid(),role:'assistant',content:'Mình chưa thể lưu lịch sử câu trả lời, nhưng vẫn đang hoạt động trên thiết bị. Bạn gửi lại câu hỏi giúp mình nhé.',created_at:now()}).catch(()=>{});}
+  catch(_error){await addMessage({id:uid(),role:'assistant',content:'Mình chưa thể lưu lịch sử câu trả lời, nhưng vẫn đang hoạt động trên thiết bị. Bạn gửi lại câu hỏi giúp mình nhé.',created_at:now()}).catch(()=>{});}
   finally{state.thinking=false;renderMessages();}
 }
 async function submit(){
@@ -747,7 +724,7 @@ function installUi(){
 @media(max-width:520px){.ly-assistant-launcher{right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:10px 13px;font-size:12px}.ly-assistant-drawer{right:8px;bottom:calc(60px + env(safe-area-inset-bottom,0px));left:auto;top:auto;width:min(360px,calc(100vw - 16px));height:min(460px,calc(100dvh - 72px - env(safe-area-inset-bottom,0px)));border-radius:14px}.ly-assistant-head{min-height:48px;padding:1px 3px 1px 10px}.ly-assistant-head h3{font-size:15px}.ly-assistant-head button[data-assistant-close]{width:46px;height:46px;font-size:36px}.ly-assistant-privacy-icon{width:30px;height:30px;font-size:17px}.ly-assistant-privacy{padding:7px 11px;font-size:10px;line-height:1.3}.ly-assistant-messages{padding:8px;gap:7px}.ly-assistant-message{max-width:96%;padding:8px 9px;font-size:12px}.ly-assistant-compose{padding:8px;gap:6px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}.ly-assistant-compose textarea{min-height:42px;padding:8px;font-size:16px}.ly-assistant-compose button{padding:0 10px;font-size:12px}.ly-assistant-tools{padding:0 9px 6px}.ly-assistant-choice{padding:7px;margin-top:7px}.ly-assistant-choice button{padding:7px 9px;font-size:12px}}
 `;document.head.appendChild(style);
   const launcher=document.createElement('button');launcher.id='lyAssistantLauncher';launcher.className='ly-assistant-launcher';launcher.type='button';launcher.textContent='Trợ lý Lát Yên';launcher.setAttribute('aria-controls','lyAssistantDrawer');launcher.setAttribute('aria-expanded','false');launcher.setAttribute('aria-haspopup','dialog');document.body.appendChild(launcher);
-  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.setAttribute('role','dialog');drawer.setAttribute('aria-label','Trợ lý Lát Yên');drawer.setAttribute('aria-hidden','true');drawer.innerHTML=`<div class="ly-assistant-head"><div class="ly-assistant-head-title"><h3>Trợ lý Lát Yên</h3><span id="lyAssistantMode" class="ly-assistant-mode" data-mode="local">Trên thiết bị</span></div><div class="ly-assistant-head-actions"><span class="ly-assistant-privacy-icon" role="img" aria-label="Thông tin bảo mật" title="Lịch sử chat chỉ lưu trên thiết bị này. Khi dùng AI, câu hỏi hiện tại, tối đa 10 tin gần nhất và bản tóm tắt dữ liệu tối thiểu được gửi bảo mật để trả lời đúng ngữ cảnh. Trợ lý không tự lưu hay xóa phiếu.">?</span><button type="button" data-assistant-close aria-label="Đóng chatbox">×</button></div></div><div id="lyAssistantMessages" class="ly-assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" aria-label="Nhập yêu cầu cho Trợ lý Lát Yên" rows="1" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" class="ly-assistant-send" data-assistant-send aria-label="Gửi tin nhắn" disabled><span>Gửi</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg></button></div></div>`;document.body.appendChild(drawer);
+  const drawer=document.createElement('section');drawer.id='lyAssistantDrawer';drawer.className='ly-assistant-drawer';drawer.setAttribute('role','dialog');drawer.setAttribute('aria-label','Trợ lý Lát Yên');drawer.setAttribute('aria-hidden','true');drawer.innerHTML=`<div class="ly-assistant-head"><div class="ly-assistant-head-title"><h3>Trợ lý Lát Yên</h3><span id="lyAssistantMode" class="ly-assistant-mode" data-mode="local">Trên thiết bị</span></div><div class="ly-assistant-head-actions"><span class="ly-assistant-privacy-icon" role="img" aria-label="Thông tin bảo mật" title="Chatbot xử lý hoàn toàn trên thiết bị, không gọi API và không gửi nội dung trò chuyện ra ngoài. Lịch sử chat chỉ lưu trên thiết bị này. Trợ lý không tự lưu hay xóa phiếu.">?</span><button type="button" data-assistant-close aria-label="Đóng chatbox">×</button></div></div><div id="lyAssistantMessages" class="ly-assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"></div><div><div class="ly-assistant-tools"><button type="button" data-assistant-clear>Xóa lịch sử trên thiết bị</button></div><div class="ly-assistant-compose"><textarea id="lyAssistantInput" aria-label="Nhập yêu cầu cho Trợ lý Lát Yên" rows="1" placeholder="Ví dụ: Tạo phiếu nhập 10 kg Đường"></textarea><button type="button" class="ly-assistant-send" data-assistant-send aria-label="Gửi tin nhắn" disabled><span>Gửi</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M22 2 11 13"></path><path d="m22 2-7 20-4-9-9-4Z"></path></svg></button></div></div>`;document.body.appendChild(drawer);
   launcher.addEventListener('click',()=>toggle());drawer.querySelector('[data-assistant-close]').addEventListener('click',()=>toggle(false));drawer.querySelector('[data-assistant-send]').addEventListener('click',submit);drawer.querySelector('[data-assistant-clear]').addEventListener('click',()=>{if(confirm('Xóa toàn bộ lịch sử trợ lý trên thiết bị này?'))clearMessages();});
   const chatInput=drawer.querySelector('#lyAssistantInput');chatInput.addEventListener('input',()=>{chatInput.style.height='auto';chatInput.style.height=`${Math.min(chatInput.scrollHeight,100)}px`;const send=drawer.querySelector('[data-assistant-send]');if(send)send.disabled=state.thinking||!text(chatInput.value);});
   chatInput.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submit();}});
@@ -757,6 +734,6 @@ function installUi(){
 }
 async function boot(){installUi();state.messages=await readMessages();state.ready=true;renderMessages();}
 
-window.__lyLocalAssistant={version:VERSION,parseDraft,draftReady,chooseDraftItem,answerDraftClarification,reportReply,contextualReportMessage,assistantReply,askAi,submit,executeDraft,openDraftMessage,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'openai-responses-via-authenticated-edge-function-with-local-circuit-breaker',aiMode:state.aiMode,aiRetryAt:state.aiRetryAt,lastAiError:state.lastAiError,draftLinks:'delegated-capture-open-and-retire-after-success',reports:'read-only-current-snapshot-with-follow-up-context',voice:'removed'})};
+window.__lyLocalAssistant={version:VERSION,parseDraft,draftReady,chooseDraftItem,answerDraftClarification,reportReply,contextualReportMessage,assistantReply,askAi,submit,executeDraft,openDraftMessage,clearMessages,status:()=>({version:VERSION,ready:state.ready,messageCount:state.messages.length,storage:'indexeddb-device-only',ai:'local-rules-engine-no-network',aiMode:state.thinking?'waiting':'local',externalApi:false,draftLinks:'delegated-capture-open-and-retire-after-success',reports:'read-only-current-snapshot-with-follow-up-context',voice:'removed'})};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
