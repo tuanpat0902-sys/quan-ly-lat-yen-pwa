@@ -5,6 +5,7 @@ import vm from 'node:vm';
 const source=await fs.readFile(new URL('../ly-unit-conversions.js',import.meta.url),'utf8');
 const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 const chatbot=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url),'utf8');
+const stockSync=await fs.readFile(new URL('../ly-stock-unit-sync.js',import.meta.url),'utf8');
 const memory=new Map();
 const document={readyState:'loading',addEventListener:()=>{}};
 const context={window:{},document,localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,String(value)),removeItem:key=>memory.delete(key)},Date};
@@ -36,7 +37,27 @@ assert.match(html,/unit_cost:Number\.isFinite\(quantity\)&&quantity>0\?total\/qu
 assert.match(html,/entered_quantity:enteredQuantity[\s\S]*entered_unit:enteredUnit[\s\S]*conversion_ratio:conversionRatio/,'import writes must retain the entered quantity and conversion snapshot');
 assert.match(html,/class="irConvertedQty ingredient-unit-cell"/,'the import form must visibly show the converted inventory quantity');
 assert.match(html,/function importQuantityBreakdown\(/,'receipt history and editing must share one conversion reconstruction rule');
+assert.match(stockSync,/if\(enteredUnit\)return original\.call\(this,ingredientId,supplierName,qty,unitCost,enteredUnit\)/,'editing an import must not convert an already reconstructed display quantity twice');
 assert.match(html,/unit-conversion-invalid/,'invalid packaging conversions must block receipt confirmation');
 assert.match(chatbot,/window\.__lyUnitConversions\?\.convert/,'chat stock commands must reuse the shared conversion rules');
 assert.match(chatbot,/tan\|tấn\|kg/,'chat stock commands must recognize expanded common units');
+
+let syncBoot=null;
+const importCalls=[];
+units.saveIngredientRule('coconut',{baseUnit:'ml',purchaseUnit:'lon',ratio:400});
+const syncDocument={readyState:'loading',addEventListener:(name,callback)=>{if(name==='DOMContentLoaded')syncBoot=callback;},getElementById:()=>null,documentElement:{}};
+const syncWindow={
+  __lyUnitConversions:units,
+  addImportReceiptLine:(...args)=>{importCalls.push(args);},
+  addEventListener:()=>{},
+};
+const syncContext={window:syncWindow,document:syncDocument,db:{ingredients:[{id:'coconut',unit:'ml',purchase_unit:'lon',conversion_ratio:400}]},Option:class{},MutationObserver:class{observe(){}},setTimeout,clearTimeout,console,Intl};
+syncWindow.window=syncWindow;
+vm.createContext(syncContext);
+vm.runInContext(stockSync,syncContext);
+syncBoot();
+syncWindow.addImportReceiptLine('coconut','',27,30000,'lon');
+assert.deepEqual(importCalls.at(-1),['coconut','',27,30000,'lon'],'27 entered cans must stay 27 cans when editing');
+syncWindow.addImportReceiptLine('coconut','',10800,75);
+assert.deepEqual(importCalls.at(-1),['coconut','',27,30000],'legacy base quantity must still be converted once');
 console.log('Measurement units and ingredient conversion rules: PASS');

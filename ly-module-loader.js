@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV97)return;
   window.__lyModuleLoaderV97=true;
 
-  const VERSION='2026.09.22.2';
+  const VERSION='2026.09.22.3';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,7 +12,7 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.3.2',test:()=>window.__lyAppVersion?.version==='3.3.2'},
+    appVersion:{src:'./ly-app-version.js?v=3.3.3',test:()=>window.__lyAppVersion?.version==='3.3.3'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
@@ -46,7 +46,7 @@
     ingredientConversionSync:{src:'./ly-ingredient-conversion-sync.js?v=20260921.4',test:()=>window.__lyIngredientConversionSync?.version==='2026.09.21.4'},
     ingredientTableUX:{src:'./ly-ingredient-table-ux.js?v=20260909.1',test:()=>window.__lyIngredientTableUX?.version==='2026.09.09.1'},
     ingredientSidebarStatus:{src:'./ly-ingredient-sidebar-status.js?v=20260829.2',test:()=>window.__lyIngredientSidebarStatus?.version==='2026.08.29.2'},
-    stockUnitSync:{src:'./ly-stock-unit-sync.js?v=20260921.2',test:()=>window.__lyStockUnitSync?.version==='2026.09.21.2'},
+    stockUnitSync:{src:'./ly-stock-unit-sync.js?v=20260922.1',test:()=>window.__lyStockUnitSync?.version==='2026.09.22.1'},
     salaryFundSync:{src:'./ly-salary-fund-sync.js?v=20260921.2',test:()=>window.__lySalaryFundSync?.version==='2026.09.21.2'},
     employeeTerminationDate:{src:'./ly-employee-termination-date.js?v=20260921.3',test:()=>window.__lyEmployeeTerminationDate?.version==='2026.09.21.3'},
     inAppNotifications:{src:'./ly-inapp-notifications.js?v=20260827.4',test:()=>window.__lyInAppNotifications?.version==='2026.08.27.4'},

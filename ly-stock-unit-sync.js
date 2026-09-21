@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyStockUnitSync)return;
-  const VERSION='2026.09.21.2';
+  const VERSION='2026.09.22.1';
 
   const api=()=>window.__lyUnitConversions||null;
   const rows=()=>{try{return Array.isArray(db?.ingredients)?db.ingredients:[]}catch(e){return []}};
@@ -61,8 +61,9 @@
   function installImportLineWrapper(){
     const original=window.addImportReceiptLine;
     if(typeof original!=='function'||original.__lyStockUnitWrapped)return false;
-    const wrapped=function(ingredientId='',supplierName='',qty='',unitCost=''){
+    const wrapped=function(ingredientId='',supplierName='',qty='',unitCost='',enteredUnit=''){
       const ing=ingredient(ingredientId),unit=preferredUnit(ing),factor=ing?factorToBase(ing,unit):1;
+      if(enteredUnit)return original.call(this,ingredientId,supplierName,qty,unitCost,enteredUnit);
       const displayQty=qty!==''&&Number.isFinite(Number(qty))?Number(qty)/factor:qty;
       const displayCost=unitCost!==''&&Number.isFinite(Number(unitCost))?Number(unitCost)*factor:unitCost;
       const result=original.call(this,ingredientId,supplierName,displayQty,displayCost);
