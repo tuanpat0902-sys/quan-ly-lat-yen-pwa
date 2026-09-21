@@ -2,6 +2,12 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.1.3 — 21/09/2026
+
+- Chuyển Lịch sử hoạt động từ trình đọc Supabase cũ sang API Vibe có xác thực, giới hạn thời gian tải và nút thử lại khi máy chủ chậm.
+- Bổ sung phân trang các hoạt động cũ trên Vibe, không còn dừng ở trang dữ liệu đầu tiên.
+- Mở sẵn bảng Biến động kho trước đây để lịch sử kho hiện trực tiếp thay vì bị ẩn trong mục thu gọn.
+
 ## Ver 3.1.2 — 21/09/2026
 
 - Đơn giản hóa Cài đặt: chỉ hiển thị Đồng bộ dữ liệu và Nhận diện phần mềm; thông báo, sao lưu, bảo trì và phiên bản được thu gọn theo nhu cầu.

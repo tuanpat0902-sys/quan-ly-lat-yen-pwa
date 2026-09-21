@@ -153,12 +153,14 @@ export async function handleSnapshotApi(request, response, pathname, url) {
     if (activityRequest) {
       const limit = Math.min(100, Math.max(1, Number.parseInt(url.searchParams.get('limit') || '20', 10) || 20));
       const after = Math.max(0, Number.parseInt(url.searchParams.get('after') || '0', 10) || 0);
+      const before = Math.max(0, Number.parseInt(url.searchParams.get('before') || '0', 10) || 0);
       const values = [orgId];
       let where = 'org_id = $1::uuid';
       if (after) { values.push(after); where += ` and id > $${values.length}`; }
+      if (before) { values.push(before); where += ` and id < $${values.length}`; }
       values.push(limit);
       const result = await getVibePool().query(
-        `select id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at from ${quoteIdentifier(schema)}.ly_activity_events where ${where} order by id ${after ? 'asc' : 'desc'} limit $${values.length}`,
+        `select id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at from ${quoteIdentifier(schema)}.ly_activity_events where ${where} order by id ${after && !before ? 'asc' : 'desc'} limit $${values.length}`,
         values,
       );
       sendJson(response, 200, { rows: result.rows });

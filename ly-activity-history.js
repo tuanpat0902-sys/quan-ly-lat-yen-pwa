@@ -4,14 +4,9 @@
   'use strict';
   if(window.__lyActivityHistoryUIV1)return;
   window.__lyActivityHistoryUIV1=true;
-  const VERSION='2026.08.31.1';
+  const VERSION='2026.09.21.2';
   const cloudState={orgId:'',rows:[],loading:false,loaded:false,hasMore:true,error:''};
-  const PAGE_SIZE=250;let page=0;
-
-  function cloudClient(){
-    try{if(typeof sb!=='undefined'&&sb?.from)return sb;}catch(e){}
-    return window.sb?.from?window.sb:null;
-  }
+  const PAGE_SIZE=100;let page=0;
 
   function activityModule(table){
     return ({
@@ -54,28 +49,45 @@
   }
 
   async function refreshCloudHistory(force=false,older=false){
-    const orgId=String(window.__lyFreshOrgId||'');
-    const client=cloudClient();
-    if(!orgId||!client||cloudState.loading)return false;
+    if(cloudState.loading)return false;
+    let orgId=String(window.__lyFreshOrgId||'');
+    if(!orgId&&typeof window.v260EnsureAuth==='function'){
+      try{await window.v260EnsureAuth();orgId=String(window.__lyFreshOrgId||'');}catch(e){}
+    }
+    if(!orgId){
+      cloudState.loaded=true;
+      cloudState.error='Chưa xác định được phiên làm việc. Vui lòng đăng nhập lại.';
+      return false;
+    }
     const orgChanged=cloudState.orgId!==orgId;
     if(!force&&cloudState.loaded&&!orgChanged&&!older)return true;
     cloudState.loading=true;cloudState.orgId=orgId;cloudState.error='';
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),12000);
     try{
       if(force||orgChanged){cloudState.rows=[];cloudState.hasMore=true;page=0;}
       if(older&&!cloudState.hasMore)return true;
-      const from=cloudState.rows.length;
-      const {data,error}=await client.from('ly_activity_events')
-        .select('id,org_id,entity_table,entity_id,event_type,entity_name,amount,created_at')
-        .eq('org_id',orgId).order('id',{ascending:false}).range(from,from+PAGE_SIZE-1);
-      if(error)throw error;
-      cloudState.rows=cloudState.rows.concat((data||[]).map(cloudActivityRow));
-      cloudState.hasMore=(data||[]).length===PAGE_SIZE;
+      const oldestId=older?cloudState.rows.reduce((min,row)=>{
+        const id=Number(String(row?.id||'').replace(/^cloud_/,''))||0;
+        return id&&(!min||id<min)?id:min;
+      },0):0;
+      const url=`/api/v1/activity-events?org_id=${encodeURIComponent(orgId)}&limit=${PAGE_SIZE}${oldestId?`&before=${oldestId}`:''}`;
+      const response=await fetch(url,{cache:'no-store',credentials:'same-origin',signal:controller.signal});
+      if(!response.ok)throw new Error(`Máy chủ trả về mã ${response.status}`);
+      const data=(await response.json())?.rows||[];
+      const known=new Set(cloudState.rows.map(row=>String(row.id||'')));
+      cloudState.rows=cloudState.rows.concat(data.map(cloudActivityRow).filter(row=>!known.has(String(row.id||''))));
+      cloudState.hasMore=data.length===PAGE_SIZE;
       cloudState.loaded=true;
       return true;
     }catch(error){
-      cloudState.error=String(error?.message||error||'Không tải được lịch sử Cloud');
+      cloudState.loaded=true;
+      cloudState.error=error?.name==='AbortError'
+        ?'Máy chủ phản hồi quá lâu. Hãy bấm Tải lại.'
+        :String(error?.message||error||'Không tải được lịch sử Cloud');
       return false;
     }finally{
+      clearTimeout(timeout);
       cloudState.loading=false;
       try{if(typeof activePanelId!=='undefined'&&activePanelId==='history')setTimeout(renderHistory,0);}catch(e){}
     }
@@ -187,11 +199,11 @@
               `).join('')}
             </table>
           </div>
-        `:`<div class="empty">${cloudState.loading?'Đang tải lịch sử hoạt động từ Cloud…':cloudState.error?'Không tải được lịch sử Cloud: '+esc(cloudState.error):'Chưa có hoạt động được ghi nhận.'}</div>`}
+        `:`<div class="empty">${cloudState.loading?'Đang tải lịch sử hoạt động…':cloudState.error?`${esc(cloudState.error)}<div class="section-gap"><button type="button" class="secondary sm" onclick="window.__lyActivityHistoryModule.refresh()">Tải lại</button></div>`:'Chưa có hoạt động được ghi nhận.'}</div>`}
       </div>
   
       <div class="card section-gap">
-        <details>
+        <details open>
           <summary><b>Biến động kho trước đây</b> <span class="muted">(${num(legacyMovements.length)} dòng)</span></summary>
           <div class="section-gap">
             ${legacyMovements.length?`
