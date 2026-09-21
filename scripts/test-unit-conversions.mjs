@@ -33,6 +33,9 @@ assert.match(html,/id="igConversionRatio"/,'ingredient form must expose the conv
 assert.match(source,/convert\(1,purchase,base\)/,'standard metric ratios must be calculated automatically');
 assert.match(html,/const total=enteredQuantity\*enteredUnitCost/,'import total must remain based on the entered purchase unit');
 assert.match(html,/unit_cost:Number\.isFinite\(quantity\)&&quantity>0\?total\/quantity:0/,'import unit cost must be normalized to the inventory base unit');
+assert.match(html,/entered_quantity:enteredQuantity[\s\S]*entered_unit:enteredUnit[\s\S]*conversion_ratio:conversionRatio/,'import writes must retain the entered quantity and conversion snapshot');
+assert.match(html,/class="irConvertedQty ingredient-unit-cell"/,'the import form must visibly show the converted inventory quantity');
+assert.match(html,/function importQuantityBreakdown\(/,'receipt history and editing must share one conversion reconstruction rule');
 assert.match(html,/unit-conversion-invalid/,'invalid packaging conversions must block receipt confirmation');
 assert.match(chatbot,/window\.__lyUnitConversions\?\.convert/,'chat stock commands must reuse the shared conversion rules');
 assert.match(chatbot,/tan\|tấn\|kg/,'chat stock commands must recognize expanded common units');

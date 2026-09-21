@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.2 — 22/09/2026
+
+- Loại bỏ xung đột giả khi sửa phiếu và dữ liệu danh mục; mọi lần sửa vẫn được khóa và ghi nguyên khối trong PostgreSQL.
+- Phiếu nhập lưu riêng số lượng nhập, đơn vị nhập, tỷ lệ quy đổi và số lượng tồn kho đã quy đổi.
+- Biểu mẫu và lịch sử phiếu nhập hiển thị đồng thời “SL nhập” và “SL quy đổi”; phiếu cũ được suy ngược bằng công thức hiện có.
+- Bổ sung migration và health gate bắt buộc cho dữ liệu quy đổi mới.
+
 ## Ver 3.3.1 — 22/09/2026
 
 - Sửa cảnh báo xung đột giả khi sửa nguyên liệu và phiếu kho: phiên bản so sánh giờ lấy trực tiếp từ snapshot Vibe, không lấy từ dữ liệu giao diện có thể đã bị tính lại cục bộ.

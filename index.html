@@ -5516,7 +5516,6 @@ table th{
   }
 }
 
-/* Tablet/laptop nhỏ: co giống cách phiếu bán hàng đang hoạt động */
 @media(min-width:701px) and (max-width:1100px){
   #imports .inline-import-form .import-receipt-columns,
   #imports .inline-import-form .import-receipt-line{
@@ -5533,7 +5532,6 @@ table th{
   }
 }
 
-/* Căn chữ header đúng loại dữ liệu */
 #imports .inline-import-form .import-receipt-columns > :first-child{
   text-align:center!important;
 }
@@ -5543,13 +5541,11 @@ table th{
   text-align:right!important;
 }
 
-/* Số lượng và giá nhập nhìn cân hơn */
 #imports .inline-import-form .irQty,
 #imports .inline-import-form .irUnitCost{
   text-align:right!important;
 }
 
-/* Mobile giữ layout card 3 cột từ V142 */
 @media(max-width:700px){
   #imports .inline-import-form .import-receipt-columns{
     display:none!important;
@@ -11533,7 +11529,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.1</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.2</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -28397,7 +28393,7 @@ function refreshReceiptLineNumbers(holderId,rowSelector,cellSelector){
   });
 }
 
-function addImportReceiptLine(ingredientId='',supplierName='',qty='',unitCost=''){
+function addImportReceiptLine(ingredientId='',supplierName='',qty='',unitCost='',enteredUnit=''){
   const holder=$('importReceiptLines');
   if(!holder)return;
 
@@ -28418,6 +28414,8 @@ function addImportReceiptLine(ingredientId='',supplierName='',qty='',unitCost=''
 
     <input class="irQty" type="number" min="0" step="0.001" placeholder="Số lượng" value="${qty}" oninput="updateImportReceiptTotals()">
 
+    <div class="irConvertedQty ingredient-unit-cell" title="Số lượng quy đổi về đơn vị tồn kho">0</div>
+
     <input class="irUnitCost" type="number" min="0" step="0.01" placeholder="Giá nhập/đv" value="${unitCost}" oninput="updateImportReceiptTotals()">
 
     <div class="irLineTotal right">0 ₫</div>
@@ -28428,6 +28426,10 @@ function addImportReceiptLine(ingredientId='',supplierName='',qty='',unitCost=''
   holder.appendChild(row);
   refreshReceiptLineNumbers('importReceiptLines','.import-receipt-line','.irStt');
   updateIngredientUnitDisplay(row.querySelector('.irIngredient'),'irUnit');
+  const unitSelect=row.querySelector('.irUnit');
+  const ingredient=db.ingredients.find(item=>item.id===(row.querySelector('.irIngredient')?.value||''));
+  const preferredUnit=enteredUnit||window.__lyUnitConversions?.ruleFor?.(ingredient?.id)?.purchaseUnit||ingredient?.purchase_unit||ingredient?.unit||'';
+  if(preferredUnit&&unitSelect&&[...unitSelect.options].some(option=>option.value===preferredUnit))unitSelect.value=preferredUnit;
   updateImportReceiptTotals();
 }
 
@@ -28443,6 +28445,11 @@ function updateImportReceiptTotals(){
     const convertedQty=window.__lyUnitConversions?.convert?.(qty,enteredUnit,ingredient?.unit||enteredUnit,ingredientId);
     const lineTotal=qty*unitCost;
     total+=lineTotal;
+    const converted=row.querySelector('.irConvertedQty');
+    if(converted){
+      converted.textContent=Number.isFinite(convertedQty)?`${num(convertedQty)} ${ingredient?.unit||enteredUnit}`:'Chưa có tỷ lệ';
+      converted.title=Number.isFinite(convertedQty)?`${num(qty)} ${enteredUnit} = ${num(convertedQty)} ${ingredient?.unit||enteredUnit}`:'Đơn vị chưa có tỷ lệ quy đổi';
+    }
     const out=row.querySelector('.irLineTotal');
     if(out){
       out.textContent=money(lineTotal);
@@ -28464,14 +28471,22 @@ function getImportReceiptLines(){
       const enteredUnitCost=Number(row.querySelector('.irUnitCost')?.value||0);
       const quantity=window.__lyUnitConversions?.convert?.(enteredQuantity,enteredUnit,ingredient?.unit||enteredUnit,ingredientId);
       const total=enteredQuantity*enteredUnitCost;
+      const conversionRatio=enteredQuantity>0&&Number.isFinite(quantity)?quantity/enteredQuantity:1;
       return {
         ingredient_id:ingredientId,
         supplier_name:(row.querySelector('.irSupplier')?.value||'').trim(),
+        entered_quantity:enteredQuantity,
+        entered_unit:enteredUnit,
+        conversion_ratio:conversionRatio,
         quantity:Number.isFinite(quantity)?quantity:0,
         unit_cost:Number.isFinite(quantity)&&quantity>0?total/quantity:0
       };
     })
     .filter(x=>x.ingredient_id&&x.quantity>0);
+}
+
+function importQuantityBreakdown(m,ingredient){
+  return window.__lyImportQuantityBreakdown(m,ingredient);
 }
 
 function receiptNumberFromMovement(m){
@@ -28692,26 +28707,27 @@ function importReceiptHistoryTable(){
                       <tr>
                         <th class="import-col-stt">STT</th>
                         <th class="import-col-name">Nguyên liệu/ Dụng cụ</th>
-                        <th class="import-col-unit">Đơn vị</th>
+                        <th class="import-col-unit">Đơn vị nhập</th>
                         <th class="import-col-supplier">Nhà cung cấp</th>
-                        <th class="right import-col-qty">Số lượng</th>
+                        <th class="right import-col-qty">SL nhập</th>
+                        <th class="right import-col-converted">SL quy đổi</th>
                         <th class="right import-col-price">Giá nhập/đv</th>
                         <th class="right import-col-total">Thành tiền</th>
                       </tr>
                       ${g.rows.map((m,rowIndex)=>{
                         const ing=db.ingredients.find(i=>i.id===m.ingredient_id);
                         const supplier=latestSupplierForMovement(m);
-                        const unitCost=importCostFromMovement(m);
-                        const total=importTotalFromMovement(m);
+                        const detail=importQuantityBreakdown(m,ing);
 
                         return `<tr>
                           <td class="import-stt-cell">${rowIndex+1}</td>
                           <td class="import-name-cell"><b>${esc(ing?.name||'')}</b></td>
-                          <td class="import-unit-cell">${esc(ing?.unit||'—')}</td>
+                          <td class="import-unit-cell">${esc(detail.enteredUnit||'—')}</td>
                           <td class="import-supplier-cell">${esc(supplier||'—')}</td>
-                          <td class="right import-qty-cell">${num(m.quantity)}</td>
-                          <td class="right import-price-cell">${unitCost!=null?money(unitCost):'—'}</td>
-                          <td class="right import-total-cell"><b>${total!=null?money(total):'—'}</b></td>
+                          <td class="right import-qty-cell">${num(detail.enteredQuantity)}</td>
+                          <td class="right import-converted-cell">${num(detail.baseQuantity)} ${esc(detail.baseUnit)}</td>
+                          <td class="right import-price-cell">${money(detail.enteredUnitCost)}</td>
+                          <td class="right import-total-cell"><b>${detail.total!=null?money(detail.total):'—'}</b></td>
                         </tr>`;
                       }).join('')}
                     </table>
@@ -30969,10 +30985,11 @@ function warehouseReceiptHistoryTable(){
                         <tr>
                           <th>STT</th>
                           <th>Nguyên liệu/Dụng cụ</th>
-                          <th>Đơn vị</th>
+                          <th>Đơn vị nhập</th>
                           <th>Nhà cung cấp</th>
-                          <th class="right">Số lượng</th>
-                          <th class="right">Đơn giá</th>
+                          <th class="right">SL nhập</th>
+                          <th class="right">SL quy đổi</th>
+                          <th class="right">Đơn giá nhập</th>
                           <th class="right">Thành tiền</th>
                         </tr>
 
@@ -30984,21 +31001,18 @@ function warehouseReceiptHistoryTable(){
                           const supplier=
                             latestSupplierForMovement(m);
 
-                          const unitCost=
-                            importCostFromMovement(m);
-
-                          const total=
-                            importTotalFromMovement(m);
+                          const detail=importQuantityBreakdown(m,ing);
 
                           return `
                             <tr>
                               <td>${rowIndex+1}</td>
                               <td><b>${esc(ing?.name||'Mặt hàng đã xóa')}</b></td>
-                              <td>${esc(ing?.unit||'')}</td>
+                              <td>${esc(detail.enteredUnit||'')}</td>
                               <td>${esc(supplier||'—')}</td>
-                              <td class="right">${num(Number(m.quantity||0))}</td>
-                              <td class="right">${unitCost!=null?money(unitCost):'—'}</td>
-                              <td class="right"><b>${total!=null?money(total):'—'}</b></td>
+                              <td class="right">${num(detail.enteredQuantity)}</td>
+                              <td class="right">${num(detail.baseQuantity)} ${esc(detail.baseUnit)}</td>
+                              <td class="right">${money(detail.enteredUnitCost)}</td>
+                              <td class="right"><b>${detail.total!=null?money(detail.total):'—'}</b></td>
                             </tr>
                           `;
                         }).join('')}
@@ -31135,9 +31149,10 @@ function renderImports(forceReset=false){
             <div class="import-receipt-columns">
               <span class="receipt-stt-head">STT</span>
               <span>Nguyên liệu/ Dụng cụ</span>
-              <span>Đơn vị</span>
+              <span>Đơn vị nhập</span>
               <span>Nhà cung cấp</span>
-              <span>Số lượng</span>
+              <span>SL nhập</span>
+              <span>SL quy đổi</span>
               <span>Giá nhập/đv</span>
               <span class="right">Thành tiền</span>
               <span></span>
@@ -31435,11 +31450,14 @@ function editImportReceipt(encodedKey){
   if(holder)holder.innerHTML='';
 
   rows.forEach(m=>{
+    const ing=db.ingredients.find(item=>item.id===m.ingredient_id);
+    const detail=importQuantityBreakdown(m,ing);
     addImportReceiptLine(
       m.ingredient_id,
       latestSupplierForMovement(m),
-      Number(m.quantity||0),
-      importCostFromMovement(m)??''
+      detail.enteredQuantity,
+      detail.enteredUnitCost,
+      detail.enteredUnit
     );
   });
 
@@ -54038,6 +54056,10 @@ function lyFreshSynthMovements({
       reference_id:h.id,
       unit_cost:Number(item.unit_cost||0),
       total_cost:Number(item.total_cost||0),
+      _entered_quantity:Number(item.entered_quantity||0),
+      _entered_unit:item.entered_unit||'',
+      _conversion_ratio:Number(item.conversion_ratio||0),
+      _base_quantity:Number(item.quantity||0),
       supplier_id:item.supplier_id||null,
       _line_order:Number(item.line_order||itemIndex+1),
       _receipt_date:businessReceiptDateISO(h.receipt_date),

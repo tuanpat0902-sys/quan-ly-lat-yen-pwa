@@ -17,11 +17,10 @@ assert.match(businessApi,/ledgerType=\{import:'IMPORT',export:'EXPORT',stocktake
 assert.match(businessApi,/insert\(client,'ly_stock_transactions',[\s\S]*source_id:id/,'warehouse document ledger rows must be linked to their source receipt');
 assert.match(businessApi,/recordActivity[\s\S]*ly_activity_events/,'confirmed Vibe writes must create an activity event in the same transaction');
 assert.match(businessApi,/actor_email[\s\S]*user\.email/,'activity events must retain the authenticated actor');
-assert.match(businessApi,/for update[\s\S]*expected_updated_at[\s\S]*ConflictError/,'edits must lock and reject stale versions from another device');
-assert.match(businessApi,/json\(response,409,\{error:error\.message,code:'STALE_WRITE'\}\)/,'stale writes must return an explicit conflict response');
-assert.match(source,/withExpectedVersion\(path,payload\)/,'browser writes must carry the version originally loaded by the user');
-assert.match(source,/__lyVibeReadCache\?\.versionFor\?\.\(table,id\)/,'browser writes must prefer the immutable version captured from Vibe');
-assert.doesNotMatch(businessApi,/expected=value\?\.expected_updated_at\|\|value\?\.updated_at/,'locally-mutated updated_at values must never trigger a false stale-write conflict');
+assert.match(businessApi,/async function lockAndCheckVersion[\s\S]*for update/,'edits must serialize concurrent updates with a database row lock');
+assert.doesNotMatch(businessApi,/STALE_WRITE|expected_updated_at|ConflictError/,'UI timestamps must never create a false edit conflict');
+assert.doesNotMatch(source,/withExpectedVersion|expected_updated_at/,'browser writes must not send transient cached timestamps');
+assert.match(businessApi,/entered_quantity:enteredQuantity\|\|quantity[\s\S]*entered_unit:enteredUnit\|\|null[\s\S]*conversion_ratio/,'imports must persist the entered quantity, unit and conversion snapshot');
 assert.match(businessApi,/saleMatch&&request\.method==='DELETE'[\s\S]*recordActivity\(client,user,\{table:'ly_sales'[\s\S]*type:'DELETE'/,'sale deletion must create an authoritative activity event');
 assert.match(businessApi,/update .*ly_stocktake_receipts.*returning \*/,'stocktake must persist final shortage and surplus values');
 assert.match(businessApi,/pathname==='\/api\/v1\/business\/cashflow'&&request\.method==='GET'/,'cashflow history must be read from the authoritative Vibe database');

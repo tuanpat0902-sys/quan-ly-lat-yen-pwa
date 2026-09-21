@@ -1,15 +1,14 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.22.1';
+  const VERSION='2026.09.22.2';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
-  async function post(path,payload){const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(withExpectedVersion(path,payload))}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
+  async function post(path,payload){const response=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify(payload)}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   async function request(path,options={}){const response=await fetch(path,{credentials:'same-origin',...options}),result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Vibe Host chưa xác nhận dữ liệu.');return result;}
   function receiptId(value){return typeof lyFreshRef==='function'?lyFreshRef(value):'';}
-  function rowVersion(rows,id){return id?(rows||[]).find(row=>String(row.id)===String(id))?.updated_at||undefined:undefined;}
-  function authoritativeVersion(table,id,fallbackRows=[]){if(!id)return undefined;const serverVersion=window.__lyVibeReadCache?.versionFor?.(table,id);return serverVersion||(!usesVibe()?rowVersion(fallbackRows,id):undefined);}
-  function withExpectedVersion(path,payload){const copy={...payload};if(copy.ingredient?.id&&!copy.ingredient.expected_updated_at)copy.ingredient={...copy.ingredient,expected_updated_at:authoritativeVersion('ly_ingredients',copy.ingredient.id)};if(copy.product?.id&&!copy.product.expected_updated_at)copy.product={...copy.product,expected_updated_at:authoritativeVersion('ly_products',copy.product.id)};if(copy.header?.id&&!copy.header.expected_updated_at){const config=path.endsWith('/import')?['ly_import_receipts','imports']:path.endsWith('/export')?['ly_export_receipts','exports']:path.endsWith('/stocktake')?['ly_stocktake_receipts','stocktakes']:path.endsWith('/sale')?['ly_sales','sales']:[];copy.header={...copy.header,expected_updated_at:authoritativeVersion(config[0],copy.header.id,window.__lyFreshHeaders?.[config[1]])};}return copy;}
+  function importQuantityBreakdown(m,ingredient){const ing=ingredient||db.ingredients.find(item=>item.id===m?.ingredient_id),baseQuantity=Math.abs(Number(m?._base_quantity??m?.quantity??0)),baseUnit=String(ing?.unit||'').trim(),rule=window.__lyUnitConversions?.ruleFor?.(m?.ingredient_id)||null,enteredUnit=String(m?._entered_unit||rule?.purchaseUnit||ing?.purchase_unit||baseUnit).trim()||baseUnit;let enteredQuantity=Number(m?._entered_quantity);if(!(enteredQuantity>0))enteredQuantity=window.__lyUnitConversions?.convert?.(baseQuantity,baseUnit,enteredUnit,m?.ingredient_id);if(!Number.isFinite(enteredQuantity)||enteredQuantity<=0)enteredQuantity=baseQuantity;const conversionRatio=Number(m?._conversion_ratio)||(enteredQuantity>0?baseQuantity/enteredQuantity:1),total=importTotalFromMovement(m),enteredUnitCost=total!=null&&enteredQuantity>0?Number(total)/enteredQuantity:0;return {baseQuantity,baseUnit,enteredQuantity,enteredUnit,conversionRatio,enteredUnitCost,total};}
+  window.__lyImportQuantityBreakdown=importQuantityBreakdown;
   function applyDeletedReceipt(kind,result){
     const id=String(result.id||''),movementType=kind==='import'?'IMPORT':'EXPORT';
     db.movements=(db.movements||[]).filter(row=>!(String(row.reference_id||'')===id&&String(row.transaction_type||'').toUpperCase()===movementType));
@@ -94,7 +93,7 @@
       if(!nameEl||!unitEl||!typeEl)return alert('Không tìm thấy biểu mẫu nguyên liệu/ dụng cụ.');
       const unit=unitEl.value==='khác'?(otherEl?.value||'').trim():unitEl.value,type=typeEl.value||'purchased',lines=type==='prepared'?[...document.querySelectorAll('#preparedRecipeLines .recipe-line')].map(row=>({source_ingredient_id:row.querySelector('.prSource')?.value||'',quantity:Number(row.querySelector('.prQty')?.value||0)})).filter(row=>row.source_ingredient_id&&row.quantity>0):[];
       if(!nameEl.value.trim()||!unit)return alert('Nhập tên và đơn vị.');if(type==='prepared'&&!lines.length)return alert('Thêm ít nhất 1 nguyên liệu nguồn.');
-      const batch=Math.max(Number(batchEl?.value||1),0.000001),calculatedCost=type==='prepared'?lines.reduce((sum,row)=>sum+Number(db.ingredients.find(item=>item.id===row.source_ingredient_id)?.cost||0)*row.quantity,0)/batch:Number(costEl?.value||0),payload={id:id||null,expected_updated_at:authoritativeVersion('ly_ingredients',id,db.ingredients),warehouse_id:currentWarehouseId,code:null,name:nameEl.value.trim(),unit,ingredient_type:type,batch_output_qty:batch,inventory_category:type==='prepared'?'ingredient':(categoryEl?.value==='tool'?'tool':'ingredient'),purchase_unit:(purchaseEl?.value||unit).trim()||unit,conversion_ratio:Math.max(Number(ratioEl?.value||1),0.000001),minimum_stock:type==='prepared'?0:Number(minEl?.value||0),cost:calculatedCost,active:true};
+      const batch=Math.max(Number(batchEl?.value||1),0.000001),calculatedCost=type==='prepared'?lines.reduce((sum,row)=>sum+Number(db.ingredients.find(item=>item.id===row.source_ingredient_id)?.cost||0)*row.quantity,0)/batch:Number(costEl?.value||0),payload={id:id||null,warehouse_id:currentWarehouseId,code:null,name:nameEl.value.trim(),unit,ingredient_type:type,batch_output_qty:batch,inventory_category:type==='prepared'?'ingredient':(categoryEl?.value==='tool'?'tool':'ingredient'),purchase_unit:(purchaseEl?.value||unit).trim()||unit,conversion_ratio:Math.max(Number(ratioEl?.value||1),0.000001),minimum_stock:type==='prepared'?0:Number(minEl?.value||0),cost:calculatedCost,active:true};
       try{if(btn){btn.disabled=true;btn.textContent='Đang lưu…'}if(status)status.textContent='Đang ghi trực tiếp Vibe Host…';const saved=await post('/api/v1/business/ingredient',{ingredient:payload,prepared_items:lines}),rowIndex=(db.ingredients||[]).findIndex(row=>row.id===saved.id);if(rowIndex>=0)db.ingredients[rowIndex]={...db.ingredients[rowIndex],...saved.row};else db.ingredients.push(saved.row);db.preparedItems=(db.preparedItems||[]).filter(row=>row.prepared_ingredient_id!==saved.id);db.preparedItems.push(...(saved.prepared_items||[]));if(!(db.inventory||[]).some(row=>row.warehouse_id===currentWarehouseId&&row.ingredient_id===saved.id))db.inventory.push({org_id:window.__lyFreshOrgId,warehouse_id:currentWarehouseId,ingredient_id:saved.id,quantity:0});settle();closeIngredientPanel?.();renderIngredients?.();renderRecipes?.();renderDashboard?.();toastMsg('Đã lưu nguyên liệu/ dụng cụ trên Vibe Host');}catch(error){console.error(error);if(status)status.textContent=`Lỗi: ${error?.message||error}`;}finally{if(btn){btn.disabled=false;btn.textContent='Lưu'}}
     };
     window.saveRecipe=async function(id){
@@ -130,7 +129,7 @@
       try{
         if(btn){btn.disabled=true;btn.textContent='Đang lưu…';}
         const saved=await post('/api/v1/business/import',{
-          header:{id:receiptId(editKey)||null,expected_updated_at:authoritativeVersion('ly_import_receipts',receiptId(editKey),window.__lyFreshHeaders?.imports),warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note},items
+          header:{id:receiptId(editKey)||null,warehouse_id:currentWarehouseId,receipt_no:receiptNo,receipt_date:receiptDate,note},items
         });
         // A confirmed receipt must become an edit target before any refresh attempt.
         if(form)form.dataset.editKey=`ref:${saved.id}`;
@@ -253,7 +252,7 @@
         return true;
       }catch(error){alert('Lỗi xóa nhân viên: '+(error?.message||error));return false;}
     };
-    window.__lyVibeBusinessWrites={version:VERSION,installing:false,refreshCashflow};return true;
+    window.__lyVibeBusinessWrites={version:VERSION,installing:false,refreshCashflow,importQuantityBreakdown};return true;
   }
   const boot=()=>{if(!install())setTimeout(boot,50);else syncEmployees().catch(error=>console.error('[employee-sync]',error));};
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot,{once:true}):boot();

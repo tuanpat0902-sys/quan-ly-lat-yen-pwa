@@ -1,7 +1,7 @@
 import { getVibePool } from './vibehost-db.mjs';
 
 const schema='lat_yen_shadow_20260905';
-const migration='20260922_v3_authoritative_versions_and_inventory_repair';
+const migration='20260922_v3_import_conversion_snapshot';
 const qi=value=>`"${String(value).replaceAll('"','""')}"`;
 
 const indexes=[
@@ -40,6 +40,11 @@ export async function runVibeSchemaMaintenance(){
     await client.query(`create table if not exists ${qi(schema)}.${qi('ly_runtime_sync_state')}(name text primary key,value text not null,updated_at timestamptz not null default now())`);
     for(const table of ['ly_ingredients','ly_products','ly_import_receipts','ly_export_receipts','ly_stocktake_receipts','ly_sales']){
       if(await tableExists(client,table))await client.query(`alter table ${qi(schema)}.${qi(table)} add column if not exists updated_at timestamptz not null default now()`);
+    }
+    if(await tableExists(client,'ly_import_items')){
+      await client.query(`alter table ${qi(schema)}.${qi('ly_import_items')} add column if not exists entered_quantity numeric`);
+      await client.query(`alter table ${qi(schema)}.${qi('ly_import_items')} add column if not exists entered_unit text`);
+      await client.query(`alter table ${qi(schema)}.${qi('ly_import_items')} add column if not exists conversion_ratio numeric`);
     }
     let inventoryRepairs=0;
     if(await tableExists(client,'ly_inventory')&&await tableExists(client,'ly_stock_transactions')){
