@@ -43,6 +43,9 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install pinned runtime dependencies
+        run: npm ci
+
       - name: Run predeploy regression gate
         run: npm run predeploy:check
 

@@ -31,7 +31,7 @@ assert.match(loader,/freshCoreV3EmployeesParityRunner:\{src:'\.\/ly-fresh-core-v
 assert.match(loader,/if\(panel==='settings'\)[\s\S]*await load\('freshCoreV3EmployeesParityRunner'\)/,'Settings preparation remains an idempotent fallback loader');
 assert.doesNotMatch(loader,/loadBackground=.*freshCoreV3EmployeesParityRunner/,'runner must not be loaded by idle/background scheduling');
 
-assert.match(appVersion,/REVISION='fresh-core-v3-shell-authoritative-v42'/,'app boot revision must advance with the current release');
+assert.match(appVersion,/REVISION='fresh-core-v3-shell-authoritative-v52'/,'app boot revision must advance with the current release');
 assert.match(appVersion,/function ensureEmployeesParityRunner\(\)/,'app boot must expose a deterministic runner bootstrap');
 assert.match(appVersion,/ly-fresh-core-v3-employees-parity-runner\.js\?v=20260828\.3/,'app boot must use a cache-busted runner URL');
 assert.match(appVersion,/function boot\(\)\{ensureUILayers\(\);mount\(\);ensureEmployeesParityRunner\(\);/,'runner module must be requested after presentation layers mount during normal app boot');
