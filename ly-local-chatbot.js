@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.09.21.1',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
+const VERSION='2026.09.21.2',VIBE_ONLY=globalThis.location?.hostname?.endsWith('.tinhgon.xyz')===true;
 if(window.__lyLocalAssistant?.version===VERSION)return;
 const DB_NAME='lat_yen_local_assistant_v1',STORE='messages';
 const state={messages:[],open:false,memory:[],ready:false,thinking:false,lastAiError:'',aiMode:'local',aiRetryAt:0,openingDraftId:'',lastFocus:null};
@@ -151,8 +151,9 @@ function extractItems(message,kind){
     for(let length=words.length-1;length>=1;length--){const candidate=words.slice(0,length).join(' ');if(containsPhrase(source,candidate)&&!exact.some(row=>normalize(row.name).includes(candidate))){phrase=candidate;break;}}
     if(!phrase)continue;const rows=groups.get(phrase)||[];rows.push(item);groups.set(phrase,rows);
   }
-  const ambiguities=[];
-  for(const [phrase,candidates] of groups){
+  const ambiguities=[],retainedGroups=[];
+  for(const entry of [...groups.entries()].sort((a,b)=>b[0].split(' ').length-a[0].split(' ').length||b[0].length-a[0].length)){if(retainedGroups.some(([longer])=>containsPhrase(longer,entry[0])))continue;retainedGroups.push(entry);}
+  for(const [phrase,candidates] of retainedGroups){
     const amount=quantityNear(message,phrase),unique=[...new Map(candidates.map(item=>[String(item.id),item])).values()];
     if(unique.length){const pricing=inventoryPricingNear(message,phrase);ambiguities.push({id:uid(),query:originalPhrase(message,phrase),quantity:kind==='stocktake'?amount.quantity:(amount.quantity!==null&&amount.quantity>0?amount.quantity:null),unit:text(amount.unit),unit_cost:pricing.unit_cost,total:pricing.total,discount:kind==='sale'?discountMentionNear(message,phrase):null,selected_id:'',options:unique.map(item=>({id:item.id,name:item.name,unit:text(item.unit||amount.unit)}))});}
   }
@@ -311,7 +312,7 @@ function suggestionCandidates(message,draft){
     const relatedIds=new Set((legacy.recipeItems||[]).filter(row=>ingredientIds.has(String(row.ingredient_id))).map(row=>String(row.product_id)));
     candidates=catalog.filter(item=>relatedIds.has(String(item.id)));
   }
-  if(!candidates.length)candidates=catalog.map(item=>({item,score:candidateScore(item,tokens)})).filter(row=>row.score>=3).sort((a,b)=>b.score-a.score||normalize(a.item.name).localeCompare(normalize(b.item.name))).map(row=>row.item);
+  if(!candidates.length){const minimum=tokens.length>1?8:3,ranked=catalog.map(item=>({item,score:candidateScore(item,tokens)})).filter(row=>row.score>=minimum).sort((a,b)=>b.score-a.score||normalize(a.item.name).localeCompare(normalize(b.item.name))),best=ranked[0]?.score||0;candidates=ranked.filter(row=>row.score>=Math.max(minimum,best-2)).map(row=>row.item);}
   return [...new Map(candidates.map(item=>[String(item.id),item])).values()].slice(0,4);
 }
 function clarificationReply(message,draft){

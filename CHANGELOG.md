@@ -2,6 +2,12 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.1.1 — 21/09/2026
+
+- Sửa chatbot hiểu trọn cụm “hạt cà phê”, không còn rút xuống từ “cà” và gợi ý nhầm dụng cụ ca đánh sữa.
+- Giữ đúng quy đổi đơn vị đóng gói khi chọn mặt hàng từ gợi ý, ví dụ 10 gói × 500 g được ghi nhận thành 5.000 g tồn kho.
+- Gắn Vibe client vào cầu nối toàn cục mà Fresh Core V3 cần, giúp V3 runtime/router hoàn tất khởi động thay vì đứng ở `waiting`.
+
 ## Ver 3.1.0 — 21/09/2026
 
 - Chuyển đường chạy trình duyệt và máy chủ sang Vibe PostgreSQL hoàn toàn: bỏ thư viện Supabase CDN và không khởi động mirror Supabase.

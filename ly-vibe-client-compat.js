@@ -1,6 +1,6 @@
 (()=>{
 'use strict';
-const VERSION='2026.09.21.1';
+const VERSION='2026.09.21.2';
 function retired(operation){return new Error(`Kết nối ${operation} cũ đã ngừng hoạt động; dữ liệu hiện do Vibe Host quản lý.`);}
 function result(operation='truy vấn'){return Promise.resolve({data:null,error:retired(operation),count:null});}
 function builder(operation='truy vấn'){
@@ -19,5 +19,8 @@ function client(){return {
   auth:{getSession:session,getUser:async()=>{const value=await session();return {data:{user:value.data.session?.user||null},error:value.error};},signInWithPassword:async({email,password}={})=>{try{const response=await fetch('/api/auth/login',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({email,password})}),data=await response.json().catch(()=>({}));return response.ok?{data:{session:data.session,user:data.session?.user||null},error:null}:{data:null,error:new Error(data.error||'Đăng nhập thất bại')}}catch(error){return {data:null,error};}},signOut:async()=>{try{await fetch('/api/auth/logout',{method:'POST',credentials:'same-origin'});return {error:null}}catch(error){return {error}}},onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}})},
   from:name=>builder(`bảng ${name}`),rpc:name=>result(`hàm ${name}`),channel:()=>({on(){return this},subscribe(){return this},unsubscribe(){}}),removeChannel(){},storage:{from:()=>({upload:()=>result('lưu tệp'),download:()=>result('tải tệp'),remove:()=>result('xóa tệp'),getPublicUrl:()=>({data:{publicUrl:''}})})}
 };}
-window.supabase={createClient:client};window.__lyVibeClientCompat={version:VERSION,client:client()};
+const vibeClient=client();
+window.supabase={createClient:()=>vibeClient};
+window.sb=vibeClient;
+window.__lyVibeClientCompat={version:VERSION,client:vibeClient};
 })();
