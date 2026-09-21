@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   if(window.__lySalaryFundSync)return;
-  const VERSION='2026.08.26.1';
+  const VERSION='2026.09.21.2';
 
   const num=v=>Number(v||0);
   const isoMonth=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
@@ -116,7 +116,7 @@
       if(event.target?.matches?.('.salarySource,.salaryDirectValue'))setTimeout(()=>{install();refreshVisibleReports();},40);
     },true);
     window.addEventListener('latyen:cloud-refreshed',()=>setTimeout(install,60));
-    setInterval(install,2500);
+    window.addEventListener('latyen:panel',()=>setTimeout(install,0));
   }
 
   window.__lySalaryFundSync={version:VERSION,install,financeSalaryCostInRange:financeSalaryCostInRangeSynced,salaryReportMonthValue};

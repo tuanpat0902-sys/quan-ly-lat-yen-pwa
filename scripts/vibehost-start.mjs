@@ -11,6 +11,14 @@ try {
   console.error('[migration] source remains authoritative; static server will continue');
 }
 try {
+  const { runVibeSchemaMaintenance } = await import('./vibehost-schema-maintenance.mjs');
+  await runVibeSchemaMaintenance();
+} catch (error) {
+  const message=String(error?.message||error).replace(/postgres(?:ql)?:\/\/[^\s]+/gi,'[database-url-redacted]').slice(0,300);
+  console.error(`[schema] maintenance failed (${error?.code||'UNKNOWN'}): ${message}`);
+  throw error;
+}
+try {
   const { startVibeIposWorker } = await import('./vibehost-ipos-worker.mjs');
   startVibeIposWorker();
 } catch (error) {

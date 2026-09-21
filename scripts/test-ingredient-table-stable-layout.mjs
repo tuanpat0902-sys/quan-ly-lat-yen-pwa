@@ -61,8 +61,8 @@ assert.doesNotMatch(sidebar,/return db\.ingredients/,'sidebar must not fall back
 assert.match(sidebar,/@media\(max-width:760px\)\{#nav>\.ly-sidebar-stock-status\{display:none!important\}\}/,'desktop stock summary must not increase the mobile navigation height');
 assert.match(loader,/ly-ingredient-sidebar-status\.js\?v=20260829\.2/);
 
-assert.match(conversion,/VERSION='2026\.08\.29\.3'/);
-assert.match(loader,/ly-ingredient-conversion-sync\.js\?v=20260829\.3/);
+assert.match(conversion,/VERSION='2026\.09\.21\.4'/);
+assert.match(loader,/ly-ingredient-conversion-sync\.js\?v=20260921\.4/);
 assert.doesNotMatch(conversion,/#ingredients \.scroll\{[^}]*overflow-x:/,'conversion sync must not own the ingredient table scroll geometry');
 assert.doesNotMatch(conversion,/table\.ingredient-stock-table:not\(\.prepared-virtual-table\)\{[^}]*\b(?:width|min-width|max-width|table-layout):/,'conversion sync must not override the canonical table geometry');
 assert.doesNotMatch(conversion,/data-ly-col=|min-width:|max-width:|table-layout:|overflow-x:/,'conversion sync must not inject any late table geometry after refresh');

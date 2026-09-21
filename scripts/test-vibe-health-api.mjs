@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const health=fs.readFileSync(new URL('./vibehost-health-api.mjs',import.meta.url),'utf8');
+const server=fs.readFileSync(new URL('./vibehost-static-server.mjs',import.meta.url),'utf8');
+assert.match(server,/handleHealthApi\(request, response, pathname\)/,'server must route health checks to the database-aware probe');
+assert.match(health,/to_regclass\(\$1\)/,'health probe must verify the versioned schema migration table');
+assert.match(health,/ipos_sync_health/,'health probe must expose bounded iPOS health state');
+assert.match(health,/health-timeout[\s\S]*3000/,'health probe must fail quickly instead of hanging');
+assert.doesNotMatch(health,/password|authorization|access_token|DATABASE_URL/,'health response must not expose credentials');
+console.log('Vibe database, schema and iPOS health probe: PASS');

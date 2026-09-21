@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyIngredientConversionSync)return;
-  const VERSION='2026.08.29.3';
+  const VERSION='2026.09.21.4';
   const fold=v=>String(v??'').trim().toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d');
   const fmt=v=>new Intl.NumberFormat('vi-VN',{maximumFractionDigits:6}).format(Number(v||0));
   const client=()=>{try{if(typeof sb!=='undefined'&&sb)return sb;}catch(e){}return window.sb||null;};
@@ -86,7 +86,7 @@
   function captureCreateTrigger(event){const target=event.target?.closest?.('#btnPurchasedPanel,#btnPreparedPanel');if(!target)return;setCreateMode(target.id==='btnPreparedPanel'?'prepared':'purchased');const panel=document.getElementById('ingredientInlinePanel');const isAlreadyOpen=panel?.classList?.contains('open')&&!String(panel?.dataset?.editId||'').trim();if(!isAlreadyOpen)createViewport=captureScrollState();}
   function wrapSave(){const original=window.saveIngredient;if(typeof original!=='function'||original.__lyConversionWrapped)return false;const wrapped=async function(id){const captured=captureForm();const editId=String(id||document.getElementById('ingredientInlinePanel')?.dataset?.editId||'').trim();const viewport=editId?captureViewport(editId,captured.name):createViewport;const result=await original.apply(this,arguments);try{await persistCaptured(captured,id||'');}catch(e){console.warn('[Lát Yên] Lỗi đồng bộ quy đổi',e);}if(viewport)scheduleRestore(viewport,!!editId);if(!editId)createViewport=null;return result;};wrapped.__lyConversionWrapped=true;wrapped.__lyOriginal=original;window.saveIngredient=wrapped;return true;}
   let timer=0;const schedule=()=>{clearTimeout(timer);timer=setTimeout(()=>{wrapSave();refreshTables();applyModeUX();ensureUXStyle();},60);};
-  const boot=()=>{ensureUXStyle();wrapSave();refreshTables();applyModeUX();document.addEventListener('pointerdown',captureCreateTrigger,true);new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('latyen:v2-ingredient-saved',schedule);window.addEventListener('latyen:cloud-refreshed',schedule);setInterval(()=>{wrapSave();refreshTables();applyModeUX();},2500);};
+  const boot=()=>{ensureUXStyle();wrapSave();refreshTables();applyModeUX();document.addEventListener('pointerdown',captureCreateTrigger,true);new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});window.addEventListener('latyen:v2-ingredient-saved',schedule);window.addEventListener('latyen:cloud-refreshed',schedule);window.addEventListener('latyen:panel',schedule);};
   window.__lyIngredientConversionSync={version:VERSION,refreshTables,persistCaptured,restoreViewport,restoreScrollState,setCreateMode,getMode:()=>createMode};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

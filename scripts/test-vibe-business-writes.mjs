@@ -13,6 +13,10 @@ assert.match(businessApi,/unnest\(\$3::uuid\[\],\$4::numeric\[\]\)/,'receipt del
 assert.match(businessApi,/with target as\(select unnest\(\$2::uuid\[\]\)/,'import costs must be recalculated in one database query');
 assert.match(businessApi,/stocktakeValues=kind==='stocktake'\?\{shortage_value:0,surplus_value:0\}/,'stocktake headers must include required shortage and surplus values');
 assert.match(businessApi,/stocktakeValues\.shortage_value\+=Math\.max\(-diff\*cost,0\);stocktakeValues\.surplus_value\+=Math\.max\(diff\*cost,0\)/,'stocktake must total shortages and surpluses from item differences');
+assert.match(businessApi,/ledgerType=\{import:'IMPORT',export:'EXPORT',stocktake:'ADJUSTMENT'\}/,'warehouse documents must write a canonical stock ledger');
+assert.match(businessApi,/insert\(client,'ly_stock_transactions',[\s\S]*source_id:id/,'warehouse document ledger rows must be linked to their source receipt');
+assert.match(businessApi,/recordActivity[\s\S]*ly_activity_events/,'confirmed Vibe writes must create an activity event in the same transaction');
+assert.match(businessApi,/saleMatch&&request\.method==='DELETE'[\s\S]*recordActivity\(client,user,\{table:'ly_sales'[\s\S]*type:'DELETE'/,'sale deletion must create an authoritative activity event');
 assert.match(businessApi,/update .*ly_stocktake_receipts.*returning \*/,'stocktake must persist final shortage and surplus values');
 assert.match(businessApi,/pathname==='\/api\/v1\/business\/cashflow'&&request\.method==='GET'/,'cashflow history must be read from the authoritative Vibe database');
 assert.match(businessApi,/cashflowMatch&&request\.method==='DELETE'[\s\S]*delete from .*ly_cashflow_entries where id=\$1::uuid and org_id=\$2::uuid and warehouse_id=\$3::uuid returning id/,'cashflow deletion must be scoped to the authenticated organization and selected warehouse');

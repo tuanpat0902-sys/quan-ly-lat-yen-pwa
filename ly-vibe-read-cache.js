@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.09.2';
+  const VERSION='2026.09.21.3';
   const TABLES=new Set([
     'ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items',
     'ly_products','ly_recipe_items','ly_inventory','ly_import_receipts',
@@ -27,7 +27,7 @@
   }
   async function snapshot(orgId){
     for(let refresh=0;refresh<3;refresh++){
-      if(state.snapshot?.orgId===orgId&&Date.now()-state.lastSnapshotAt<15_000)return state.snapshot;
+      if(state.snapshot?.orgId===orgId&&Date.now()-state.lastSnapshotAt<60_000)return state.snapshot;
       let entry=state.pending;
       if(!entry||entry.orgId!==orgId||entry.generation!==generation){
         entry={orgId,generation,promise:null};

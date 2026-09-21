@@ -96,7 +96,7 @@ async function buildSnapshot(orgId) {
   };
   const body = Buffer.from(JSON.stringify(payload));
   const compressed = await gzipAsync(body, { level: 6 });
-  return { body, compressed, expiresAt: Date.now() + 15_000 };
+  return { body, compressed, expiresAt: Date.now() + 60_000 };
 }
 
 async function snapshotFor(orgId) {

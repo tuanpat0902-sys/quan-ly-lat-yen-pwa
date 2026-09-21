@@ -96,8 +96,11 @@ async function upsertProduct(client,ctx,item,extra={}){
   let id=(await client.query(`select id from ${qi(schema)}.ly_products where org_id=$1 and ipos_item_id=$2 limit 1`,[ctx.org,itemId])).rows[0]?.id||randomUUID();
   return writeRow(client,'ly_products',{id,org_id:ctx.org,warehouse_id:ctx.warehouse,name,sku:itemId,unit:item.unit_name||item.unit||'Món',selling_price:number(item.price??item.price_org??item.ots_price??item.ta_price),active:item.deleted===true?false:item.active!==false,ipos_item_id:itemId,ipos_item_type_id:extra.item_type_id??item.item_type_id??null,ipos_item_type_name:extra.item_type_name??item.item_type_name??null,ipos_item_class_id:extra.item_class_id??item.item_class_id??null,ipos_item_class_name:extra.item_class_name??item.item_class_name??null,ipos_last_synced_at:new Date().toISOString()});
 }
-async function syncCatalog(client,ctx,config){
+async function loadCatalog(config){
   const [items,types,classes,units]=await Promise.all(['items','item-types','item-classes','units'].map(name=>catalog(config,name)));
+  return {items,types,classes,units};
+}
+async function syncCatalog(client,ctx,{items,types,classes,units}){
   const maps=list=>new Map(list.map(row=>[String(row.id||''),row])),typeMap=maps(types),classMap=maps(classes),unitMap=maps(units);
   for(const item of items){const type=typeMap.get(String(item.item_type_uid||'')),itemClass=classMap.get(String(item.item_class_uid||'')),unit=unitMap.get(String(item.unit_uid||''));await upsertProduct(client,ctx,{...item,unit_name:unit?.unit_name},{item_type_id:type?.item_type_id,item_type_name:type?.item_type_name,item_class_id:itemClass?.item_class_id,item_class_name:itemClass?.item_class_name});}
   return items.length;
@@ -144,20 +147,29 @@ export async function rebuildVibeIposInventory(client,ctx){
   return totals.size;
 }
 
+async function prepareDay(client,ctx,config,label,{forced,effectiveBackfill,deepRequested}){
+  const window=dayWindow(label);
+  const headersForDay=(await saleHeaders(config,window)).filter(row=>row.deleted!==true&&String(row.store_uid||config.storeUid)===config.storeUid);
+  const dayStart=new Date(window.start).toISOString(),dayEnd=new Date(window.end).toISOString();
+  const existing=(await client.query(`select id,receipt_no,ipos_tran_id,ipos_sale_updated_at,total_amount from ${qi(schema)}.ly_sales where org_id=$1 and source='iPOS' and sold_at between $2 and $3`,[ctx.org,dayStart,dayEnd])).rows;
+  const byTran=new Map(existing.map(row=>[canonical(row.ipos_tran_id),row]));
+  const changed=forced||effectiveBackfill||deepRequested?headersForDay:headersForDay.filter(row=>{const old=byTran.get(canonical(row.tran_id));if(!old)return true;const updated=String(row.sale_updated_at||''),oldUpdated=String(old.ipos_sale_updated_at||'');return (updated&&updated!==oldUpdated)||number(row.total_amount)!==number(old.total_amount)||String(row.tran_no||'').trim()!==String(old.receipt_no||'').trim();});
+  const details=[];
+  for(let i=0;i<changed.length;i+=detailConcurrency)details.push(...await Promise.all(changed.slice(i,i+detailConcurrency).map(row=>saleDetail(config,row,window))));
+  const active=new Set(headersForDay.map(row=>canonical(row.tran_id)));
+  return {headersForDay,details,stale:existing.filter(row=>!active.has(canonical(row.ipos_tran_id)))};
+}
+
 async function runSync({backfill=false,force=false,deep=false}={}){
   const forced=force||forcedRecovery;if(running||process.env.VIBE_IPOS_SYNC!=='1')return;forcedRecovery=false;running=true;let client,health={};
   try{client=await getVibePool().connect();health=await syncHealth(client);if(!forced&&!mayAttempt(health))return;
     const completed=(await client.query(`select 1 from ${qi(schema)}.${qi('ly_runtime_sync_state')} where name='ipos_backfill' and value='complete'`)).rowCount>0,effectiveBackfill=backfill&&!completed,config=await iposConfig(client),ctx=await context(client),today=localDate(),lastDeep=await syncStateValue(client,'ipos_deep_reconcile_day'),deepRequested=deep&&(force||lastDeep!==today),lookbackDays=process.env.VIBE_IPOS_RECOVERY_LOOKBACK_DAYS||7,from=effectiveBackfill?(process.env.VIBE_IPOS_BACKFILL_FROM||'2026-08-25'):deepRequested?lookbackStartDay(today,lookbackDays):recoveryStartDay(health,today),days=labels(from),summary={catalog:0,sales:0,skippedSales:0,deletedSales:0,days:days.length,recovered:health.status==='degraded'||health.status==='needs_reconnect',deep:deepRequested};
-    await client.query('begin');
     const lastCatalogAt=Date.parse(await syncStateValue(client,'ipos_catalog_synced_at')||'')||0,catalogDue=forced||effectiveBackfill||deepRequested||Date.now()-lastCatalogAt>=6*60*60*1000;
-    if(catalogDue){summary.catalog=await syncCatalog(client,ctx,config);await setSyncStateValue(client,'ipos_catalog_synced_at',new Date().toISOString());}
-    for(const label of days){
-      const window=dayWindow(label),headersForDay=(await saleHeaders(config,window)).filter(row=>row.deleted!==true&&String(row.store_uid||config.storeUid)===config.storeUid),dayStart=new Date(window.start).toISOString(),dayEnd=new Date(window.end).toISOString();
-      const existing=(await client.query(`select id,receipt_no,ipos_tran_id,ipos_sale_updated_at,total_amount from ${qi(schema)}.ly_sales where org_id=$1 and source='iPOS' and sold_at between $2 and $3`,[ctx.org,dayStart,dayEnd])).rows,byTran=new Map(existing.map(row=>[canonical(row.ipos_tran_id),row]));
-      const changed=forced||effectiveBackfill||deepRequested?headersForDay:headersForDay.filter(row=>{const old=byTran.get(canonical(row.tran_id));if(!old)return true;const updated=String(row.sale_updated_at||''),oldUpdated=String(old.ipos_sale_updated_at||'');return (updated&&updated!==oldUpdated)||number(row.total_amount)!==number(old.total_amount)||String(row.tran_no||'').trim()!==String(old.receipt_no||'').trim();});
-      summary.skippedSales+=headersForDay.length-changed.length;const details=[];for(let i=0;i<changed.length;i+=detailConcurrency)details.push(...await Promise.all(changed.slice(i,i+detailConcurrency).map(row=>saleDetail(config,row,window))));for(const sale of details){await upsertSale(client,ctx,config,sale);summary.sales++;}
-      const active=[...new Set(headersForDay.map(row=>canonical(row.tran_id)))],stale=existing.filter(row=>!active.includes(canonical(row.ipos_tran_id)));for(const row of stale){await client.query(`delete from ${qi(schema)}.ly_sale_items where org_id=$1 and sale_id=$2`,[ctx.org,row.id]);await client.query(`delete from ${qi(schema)}.ly_sales where org_id=$1 and id=$2`,[ctx.org,row.id]);summary.deletedSales++;}
-    }
+    const catalogData=catalogDue?await loadCatalog(config):null,plans=[];
+    for(const label of days)plans.push(await prepareDay(client,ctx,config,label,{forced,effectiveBackfill,deepRequested}));
+    await client.query('begin');
+    if(catalogData){summary.catalog=await syncCatalog(client,ctx,catalogData);await setSyncStateValue(client,'ipos_catalog_synced_at',new Date().toISOString());}
+    for(const plan of plans){summary.skippedSales+=plan.headersForDay.length-plan.details.length;for(const sale of plan.details){await upsertSale(client,ctx,config,sale);summary.sales++;}for(const row of plan.stale){await client.query(`delete from ${qi(schema)}.ly_sale_items where org_id=$1 and sale_id=$2`,[ctx.org,row.id]);await client.query(`delete from ${qi(schema)}.ly_sales where org_id=$1 and id=$2`,[ctx.org,row.id]);summary.deletedSales++;}}
     summary.activityEvents=await syncSaleActivityEvents(client,ctx);summary.inventoryGroups=(summary.sales||summary.deletedSales||deepRequested||effectiveBackfill)?await rebuildVibeIposInventory(client,ctx):0;if(effectiveBackfill)await setSyncStateValue(client,'ipos_backfill','complete');if(deepRequested)await setSyncStateValue(client,'ipos_deep_reconcile_day',today);await saveSyncHealth(client,successfulHealth(new Date(),summary,today));await client.query('commit');if(summary.sales||summary.deletedSales||summary.catalog)invalidateSnapshot();console.log(`[ipos-vibe] synchronized ${summary.sales} changed sale(s), skipped ${summary.skippedSales}, deleted ${summary.deletedSales}, ${summary.catalog} product(s), ${summary.days} day(s); recovered=${summary.recovered}; deep=${summary.deep}`);
   }catch(error){if(client)await client.query('rollback').catch(()=>{});const next={...failedHealth(health,error),last_error:safeError(error)};if(client)await saveSyncHealth(client,next).catch(stateError=>console.error(`[ipos-vibe] health-state failed: ${safeError(stateError)}`));const failure=classifyIposFailure(error);console.error(`[ipos-vibe] failed ${failure.code}; next=${next.next_retry_at}: ${safeError(error)}`);}finally{client?.release();running=false;}
 }

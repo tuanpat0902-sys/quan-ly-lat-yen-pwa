@@ -25,5 +25,6 @@ assert.match(worker,/accessToken:value\('IPOS_ACCESS_TOKEN'\)\|\|stored\.ly_ipos
 assert.match(worker,/runSync\(\{backfill:true,deep:true,force:true\}\)/,'a fresh deployment must attempt one immediate rolling recovery despite an old circuit-breaker state');
 assert.match(worker,/deepRequested\?lookbackStartDay\(today,lookbackDays\):recoveryStartDay/,'deep recovery must reconcile a bounded rolling business-day window');
 assert.match(worker,/ipos_deep_reconcile_day/,'daily deep reconciliation must be persisted to avoid redundant expensive runs');
+assert.ok(worker.indexOf('plans.push(await prepareDay')<worker.indexOf("await client.query('begin')"),'all external iPOS reads must finish before the PostgreSQL write transaction begins');
 assert.match(bootstrap,/ly_ipos_login_password[\s\S]*encrypt\(value\)/,'optional iPOS login credentials must be encrypted at rest');
 console.log('Vibe iPOS self-healing retry, circuit-breaker and catch-up policy: PASS');

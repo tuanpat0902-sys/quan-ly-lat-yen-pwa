@@ -2,6 +2,15 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.2.0 — 21/09/2026
+
+- Bổ sung migration PostgreSQL Vibe có phiên bản, khóa chống chạy đồng thời và bộ index cho kho, bán hàng, phiếu, thu/chi, hoạt động và iPOS.
+- Ghi ledger biến động kho chuẩn cho nhập, xuất, kiểm kê và bán hàng; liên kết theo phiếu nguồn và ghi nhật ký trong cùng transaction.
+- Hoàn tất đọc iPOS trước khi mở transaction ghi PostgreSQL, tránh giữ kết nối và khóa cơ sở dữ liệu trong lúc chờ mạng ngoài.
+- Bổ sung `/healthz` kiểm tra cơ sở dữ liệu, schema và trạng thái iPOS trong tối đa 3 giây.
+- Tăng thời gian tái sử dụng snapshot không đổi lên 60 giây, vẫn vô hiệu ngay sau thay đổi; loại khóa Supabase cũ khỏi mã trình duyệt.
+- Thay các vòng lặp nền vô hạn của đơn vị, nguyên liệu, nhân viên và lương bằng cập nhật theo sự kiện.
+
 ## Ver 3.1.4 — 21/09/2026
 
 - Hợp nhất toàn bộ biến động kho của kho đang chọn vào một bảng duy nhất, bỏ giới hạn cứng 300 dòng và bỏ nhãn “trước đây”.

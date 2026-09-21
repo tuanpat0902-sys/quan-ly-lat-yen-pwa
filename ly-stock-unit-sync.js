@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
   if(window.__lyStockUnitSync)return;
-  const VERSION='2026.08.25.1';
+  const VERSION='2026.09.21.2';
 
   const api=()=>window.__lyUnitConversions||null;
   const rows=()=>{try{return Array.isArray(db?.ingredients)?db.ingredients:[]}catch(e){return []}};
@@ -186,7 +186,8 @@
   function boot(){
     install();
     new MutationObserver(schedule).observe(document.documentElement,{childList:true,subtree:true});
-    setInterval(install,2000);
+    window.addEventListener('latyen:panel',schedule);
+    window.addEventListener('latyen:cloud-refreshed',schedule);
   }
 
   window.__lyStockUnitSync={version:VERSION,updateExportRow,preferredUnit,factorToBase};

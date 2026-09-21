@@ -19,7 +19,7 @@ const lazy=[
   'ly-cashflow.js','ly-special-reports.js','ly-employee-reports.js'
 ];
 
-const mainMarker='<script>\n// ===== SUPABASE PROJECT =====';
+const mainMarker='<script>\n// ===== VIBE HOST COMPATIBILITY CLIENT =====';
 const mainAt=html.indexOf(mainMarker);
 if(mainAt<0)fail('Legacy main script marker missing');
 for(const f of bootstrap){

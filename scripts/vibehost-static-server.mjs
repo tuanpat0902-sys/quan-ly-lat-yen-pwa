@@ -11,6 +11,7 @@ import { handleAuthApi } from './vibehost-auth-api.mjs';
 import { handleIngredientCategoryApi } from './vibehost-ingredient-category-api.mjs';
 import { handleBusinessMutationApi } from './vibehost-business-mutation-api.mjs';
 import { handleMenuSecurityApi } from './vibehost-menu-security-api.mjs';
+import { handleHealthApi } from './vibehost-health-api.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number.parseInt(process.env.PORT || '3000', 10);
@@ -98,11 +99,11 @@ const server = createServer(async (request, response) => {
   if (await handleMenuSecurityApi(request, response, pathname)) return;
   if (await handleIngredientCategoryApi(request, response, pathname)) return;
   if (await handleBusinessMutationApi(request, response, pathname)) return;
+  if (await handleHealthApi(request, response, pathname)) return;
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     response.setHeader('Allow', 'GET, HEAD');
     return sendText(response, 405, 'Method Not Allowed');
   }
-  if (pathname === '/healthz') return sendText(response, 200, 'ok');
   if (await handleSnapshotApi(request, response, pathname, requestUrl)) return;
 
   const file = await findFile(pathname);

@@ -2,7 +2,7 @@
 (()=>{
   'use strict';
   if(window.__lyEmployeeTerminationDate)return;
-  const VERSION='2026.08.26.2';
+  const VERSION='2026.09.21.3';
   const STORAGE_KEY='__latyen_employee_termination_dates_v1';
   let activeEmployeeId='';
   let timer=0;
@@ -131,7 +131,8 @@
       setTimeout(syncAssistantLauncher,0);
     },true);
     window.addEventListener('resize',syncAssistantLauncher,{passive:true});
-    setInterval(install,1500);
+    window.addEventListener('latyen:panel',schedule);
+    window.addEventListener('latyen:cloud-refreshed',schedule);
   }
 
   window.__lyEmployeeTerminationDate={version:VERSION,install,getDate,setDate,syncAssistantLauncher};
