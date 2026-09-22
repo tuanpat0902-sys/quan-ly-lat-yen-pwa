@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.4 — 22/09/2026
+
+- Đồng nhất thứ tự dòng phiếu nhập giữa lịch sử và màn hình sửa theo `line_order` đã lưu; không còn hiện đúng ở lịch sử nhưng đảo ngược khi sửa.
+- Biểu mẫu nhập kho hiển thị đầy đủ chuỗi kiểm soát: số lượng mua, đơn vị nhập, tỷ lệ quy đổi, số lượng quy đổi và đơn vị quy đổi.
+- Tỷ lệ, số lượng và đơn vị quy đổi được tính tự động từ cấu hình nguyên liệu; lịch sử phiếu cũng tách riêng các cột này để đối chiếu.
+- Bổ sung kiểm thử hồi quy cho thứ tự dòng và giao diện quy đổi đầu-cuối.
+
 ## Ver 3.3.3 — 22/09/2026
 
 - Sửa lỗi số lượng nhập và đơn giá bị quy đổi lần thứ hai khi mở sửa phiếu nhập cũ.

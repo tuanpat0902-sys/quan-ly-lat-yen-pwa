@@ -5459,7 +5459,7 @@ table th{
 
 /* ===== V143 FIX IMPORT RECEIPT COLUMN ALIGNMENT ===== */
 
-/* Desktop: bắt buộc 8 cột đúng với STT + 6 nội dung + nút X */
+/* Desktop: một hàng kiểm soát đầy đủ SL mua, tỷ lệ và kết quả quy đổi. */
 #imports .inline-import-form .import-receipt-columns,
 #imports .inline-import-form .import-receipt-line{
   display:grid!important;
@@ -5468,9 +5468,12 @@ table th{
     minmax(190px,1.65fr)
     64px
     minmax(150px,1.15fr)
-    88px
+    78px
+    142px
+    92px
+    66px
+    105px
     110px
-    115px
     30px !important;
   column-gap:7px!important;
   align-items:center!important;
@@ -5499,18 +5502,30 @@ table th{
     grid-column:5!important;
     grid-row:1!important;
   }
-  #imports .inline-import-form .import-receipt-line .irUnitCost{
+  #imports .inline-import-form .import-receipt-line .irConversionRatio{
     grid-column:6!important;
     grid-row:1!important;
   }
-  #imports .inline-import-form .import-receipt-line .irLineTotal{
+  #imports .inline-import-form .import-receipt-line .irConvertedQty{
     grid-column:7!important;
+    grid-row:1!important;
+  }
+  #imports .inline-import-form .import-receipt-line .irConvertedUnit{
+    grid-column:8!important;
+    grid-row:1!important;
+  }
+  #imports .inline-import-form .import-receipt-line .irUnitCost{
+    grid-column:9!important;
+    grid-row:1!important;
+  }
+  #imports .inline-import-form .import-receipt-line .irLineTotal{
+    grid-column:10!important;
     grid-row:1!important;
     text-align:right!important;
     padding:0!important;
   }
   #imports .inline-import-form .import-receipt-line > button{
-    grid-column:8!important;
+    grid-column:11!important;
     grid-row:1!important;
     justify-self:center!important;
   }
@@ -5524,9 +5539,12 @@ table th{
       minmax(165px,1.55fr)
       58px
       minmax(125px,1.05fr)
-      78px
+      72px
+      124px
+      82px
+      58px
+      92px
       94px
-      102px
       30px !important;
     column-gap:5px!important;
   }
@@ -5536,8 +5554,9 @@ table th{
   text-align:center!important;
 }
 #imports .inline-import-form .import-receipt-columns > :nth-child(5),
-#imports .inline-import-form .import-receipt-columns > :nth-child(6),
-#imports .inline-import-form .import-receipt-columns > :nth-child(7){
+#imports .inline-import-form .import-receipt-columns > :nth-child(7),
+#imports .inline-import-form .import-receipt-columns > :nth-child(9),
+#imports .inline-import-form .import-receipt-columns > :nth-child(10){
   text-align:right!important;
 }
 
@@ -5576,13 +5595,25 @@ table th{
     grid-column:1/2!important;
     grid-row:3!important;
   }
-  #imports .inline-import-form .import-receipt-line .irUnitCost{
-    grid-column:2/3!important;
+  #imports .inline-import-form .import-receipt-line .irConversionRatio{
+    grid-column:2/4!important;
     grid-row:3!important;
   }
-  #imports .inline-import-form .import-receipt-line .irLineTotal{
+  #imports .inline-import-form .import-receipt-line .irConvertedQty{
+    grid-column:1/2!important;
+    grid-row:4!important;
+  }
+  #imports .inline-import-form .import-receipt-line .irConvertedUnit{
+    grid-column:2/3!important;
+    grid-row:4!important;
+  }
+  #imports .inline-import-form .import-receipt-line .irUnitCost{
     grid-column:3/4!important;
-    grid-row:3!important;
+    grid-row:4!important;
+  }
+  #imports .inline-import-form .import-receipt-line .irLineTotal{
+    grid-column:2/4!important;
+    grid-row:5!important;
   }
   #imports .inline-import-form .import-receipt-line > button{
     grid-column:3/4!important;
@@ -11529,7 +11560,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.3</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.4</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -28414,7 +28445,11 @@ function addImportReceiptLine(ingredientId='',supplierName='',qty='',unitCost=''
 
     <input class="irQty" type="number" min="0" step="0.001" placeholder="Số lượng" value="${qty}" oninput="updateImportReceiptTotals()">
 
-    <div class="irConvertedQty ingredient-unit-cell" title="Số lượng quy đổi về đơn vị tồn kho">0</div>
+    <div class="irConversionRatio ingredient-unit-cell" title="Tỷ lệ quy đổi đã khai báo cho nguyên liệu">—</div>
+
+    <div class="irConvertedQty ingredient-unit-cell right" title="Số lượng quy đổi về đơn vị tồn kho">0</div>
+
+    <div class="irConvertedUnit ingredient-unit-cell" title="Đơn vị tồn kho">—</div>
 
     <input class="irUnitCost" type="number" min="0" step="0.01" placeholder="Giá nhập/đv" value="${unitCost}" oninput="updateImportReceiptTotals()">
 
@@ -28433,6 +28468,27 @@ function addImportReceiptLine(ingredientId='',supplierName='',qty='',unitCost=''
   updateImportReceiptTotals();
 }
 
+function sortReceiptRowsBySavedOrder(rows){
+  return (rows||[])
+    .map((row,index)=>({row,index}))
+    .sort((a,b)=>{
+      const ao=Number(a.row?._line_order);
+      const bo=Number(b.row?._line_order);
+      const aHas=Number.isFinite(ao)&&ao>0;
+      const bHas=Number.isFinite(bo)&&bo>0;
+      if(aHas&&bHas&&ao!==bo)return ao-bo;
+      if(aHas!==bHas)return aHas?-1:1;
+      return a.index-b.index;
+    })
+    .map(entry=>entry.row);
+}
+
+function importConversionText(enteredUnit,ratio,baseUnit){
+  const safeRatio=Number(ratio);
+  if(!enteredUnit||!baseUnit||!Number.isFinite(safeRatio)||safeRatio<=0)return 'Chưa có tỷ lệ';
+  return `1 ${enteredUnit} = ${num(safeRatio)} ${baseUnit}`;
+}
+
 function updateImportReceiptTotals(){
   let total=0;
   const rows=[...document.querySelectorAll('.import-receipt-line')];
@@ -28443,13 +28499,21 @@ function updateImportReceiptTotals(){
     const ingredient=db.ingredients.find(item=>item.id===ingredientId);
     const enteredUnit=row.querySelector('.irUnit')?.value||ingredient?.unit||'';
     const convertedQty=window.__lyUnitConversions?.convert?.(qty,enteredUnit,ingredient?.unit||enteredUnit,ingredientId);
+    const conversionRatio=window.__lyUnitConversions?.convert?.(1,enteredUnit,ingredient?.unit||enteredUnit,ingredientId);
     const lineTotal=qty*unitCost;
     total+=lineTotal;
     const converted=row.querySelector('.irConvertedQty');
     if(converted){
-      converted.textContent=Number.isFinite(convertedQty)?`${num(convertedQty)} ${ingredient?.unit||enteredUnit}`:'Chưa có tỷ lệ';
+      converted.textContent=Number.isFinite(convertedQty)?num(convertedQty):'—';
       converted.title=Number.isFinite(convertedQty)?`${num(qty)} ${enteredUnit} = ${num(convertedQty)} ${ingredient?.unit||enteredUnit}`:'Đơn vị chưa có tỷ lệ quy đổi';
     }
+    const ratioEl=row.querySelector('.irConversionRatio');
+    if(ratioEl){
+      ratioEl.textContent=importConversionText(enteredUnit,conversionRatio,ingredient?.unit||enteredUnit);
+      ratioEl.title=ratioEl.textContent;
+    }
+    const convertedUnit=row.querySelector('.irConvertedUnit');
+    if(convertedUnit)convertedUnit.textContent=ingredient?.unit||enteredUnit||'—';
     const out=row.querySelector('.irLineTotal');
     if(out){
       out.textContent=money(lineTotal);
@@ -28534,11 +28598,11 @@ function receiptGroupKeyForMovement(m){
 
 function receiptRowsByKey(encodedKey){
   const key=decodeURIComponent(encodedKey||'');
-  return (db.movements||[]).filter(m=>
+  return sortReceiptRowsBySavedOrder((db.movements||[]).filter(m=>
     m.warehouse_id===currentWarehouseId &&
     m.transaction_type==='IMPORT' &&
     receiptGroupKeyForMovement(m)===key
-  ).sort((a,b)=>Number(a._line_order||0)-Number(b._line_order||0)||new Date(a.created_at||0)-new Date(b.created_at||0));
+  ));
 }
 
 function recalcIngredientCostFromImports(ingredientId){
@@ -28603,141 +28667,6 @@ async function deleteMovementRowsCloud(rows){
   }
 
   return {deleted,pending};
-}
-
-function importReceiptHistoryTable(){
-  const rows=(db.movements||[])
-    .filter(m=>m.warehouse_id===currentWarehouseId&&m.transaction_type==='IMPORT')
-    .sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
-
-  if(!rows.length)return '<div class="empty">Chưa có phiếu nhập kho</div>';
-
-  const days={};
-
-  for(const m of rows){
-    const d=new Date(m.created_at||0);
-    const savedDate=receiptDateFromMovement(m);
-
-    let dayKey=d.toLocaleDateString('vi-VN');
-    let dayTimestamp=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
-
-    if(/^\d{4}-\d{2}-\d{2}$/.test(savedDate)){
-      const parts=savedDate.split('-').map(Number);
-      dayKey=`${String(parts[2]).padStart(2,'0')}/${String(parts[1]).padStart(2,'0')}/${parts[0]}`;
-      dayTimestamp=new Date(parts[0],parts[1]-1,parts[2]).getTime();
-    }
-
-    const receipt=receiptNumberFromMovement(m);
-    const groupKey=receiptGroupKeyForMovement(m);
-
-    if(!days[dayKey]){
-      days[dayKey]={
-        date:dayKey,
-        timestamp:dayTimestamp,
-        receipts:{}
-      };
-    }
-
-    if(!days[dayKey].receipts[groupKey]){
-      days[dayKey].receipts[groupKey]={
-        receipt,
-        groupKey,
-        timestamp:d.getTime(),
-        rows:[],
-        total:0
-      };
-    }
-
-    const g=days[dayKey].receipts[groupKey];
-    g.rows.push(m);
-    g.timestamp=Math.max(g.timestamp,d.getTime());
-    g.total+=importTotalFromMovement(m)||0;
-  }
-
-  const groupedDays=Object.values(days)
-    .sort((a,b)=>b.timestamp-a.timestamp)
-    .slice(0,30);
-
-  return groupedDays.map((day,dayIndex)=>{
-    const receipts=Object.values(day.receipts).sort((a,b)=>b.timestamp-a.timestamp);
-    const dayTotal=receipts.reduce((sum,r)=>sum+r.total,0);
-    const itemCount=receipts.reduce((sum,r)=>sum+r.rows.length,0);
-
-    return `
-      <div class="import-day-group collapsed">
-        <div class="import-day-head clickable" onclick="toggleImportDay('importDay${dayIndex}',this)">
-          <div>
-            <b>Ngày ${esc(day.date)}</b>
-            <div class="muted">${receipts.length} phiếu • ${itemCount} mặt hàng</div>
-          </div>
-          <div class="import-day-summary">
-            <b>${money(dayTotal)}</b>
-            <span class="import-day-chevron">▸</span>
-          </div>
-        </div>
-
-        <div id="importDay${dayIndex}" class="import-day-body import-day-collapsible">
-          ${receipts.map((g,receiptIndex)=>{
-            g.rows.sort((a,b)=>Number(a._line_order||0)-Number(b._line_order||0)||new Date(a.created_at||0)-new Date(b.created_at||0));
-            const encoded=encodeURIComponent(g.groupKey);
-
-            return `
-              <div class="receipt-history-item">
-                <div class="receipt-history-head">
-                  <div class="receipt-click-area" onclick="toggleReceiptHistory('receiptHistory${dayIndex}_${receiptIndex}',this.parentElement)">
-                    <b>${esc(g.receipt)}</b>
-                    <div class="muted">
-                      ${new Date(g.timestamp).toLocaleTimeString('vi-VN')} • ${g.rows.length} mặt hàng
-                    </div>
-                  </div>
-
-                  <div class="receipt-head-actions">
-                    <b>${money(g.total)}</b>
-                    <button type="button" class="secondary sm" onclick="editImportReceipt('${encoded}')">Sửa</button>
-                    <button type="button" class="danger sm" onclick="event.stopPropagation();deleteImportReceipt('${encoded}')">Xóa phiếu</button>
-                    <button type="button" class="secondary sm receipt-expand-btn" onclick="toggleReceiptHistory('receiptHistory${dayIndex}_${receiptIndex}',this.parentElement.parentElement)">
-                      <span class="receipt-chevron">▸</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div id="receiptHistory${dayIndex}_${receiptIndex}" class="receipt-history-body">
-                  <div class="scroll">
-                    <table class="import-history-detail-table">
-                      <tr>
-                        <th class="import-col-stt">STT</th>
-                        <th class="import-col-name">Nguyên liệu/ Dụng cụ</th>
-                        <th class="import-col-unit">Đơn vị nhập</th>
-                        <th class="import-col-supplier">Nhà cung cấp</th>
-                        <th class="right import-col-qty">SL nhập</th>
-                        <th class="right import-col-converted">SL quy đổi</th>
-                        <th class="right import-col-price">Giá nhập/đv</th>
-                        <th class="right import-col-total">Thành tiền</th>
-                      </tr>
-                      ${g.rows.map((m,rowIndex)=>{
-                        const ing=db.ingredients.find(i=>i.id===m.ingredient_id);
-                        const supplier=latestSupplierForMovement(m);
-                        const detail=importQuantityBreakdown(m,ing);
-
-                        return `<tr>
-                          <td class="import-stt-cell">${rowIndex+1}</td>
-                          <td class="import-name-cell"><b>${esc(ing?.name||'')}</b></td>
-                          <td class="import-unit-cell">${esc(detail.enteredUnit||'—')}</td>
-                          <td class="import-supplier-cell">${esc(supplier||'—')}</td>
-                          <td class="right import-qty-cell">${num(detail.enteredQuantity)}</td>
-                          <td class="right import-converted-cell">${num(detail.baseQuantity)} ${esc(detail.baseUnit)}</td>
-                          <td class="right import-price-cell">${money(detail.enteredUnitCost)}</td>
-                          <td class="right import-total-cell"><b>${detail.total!=null?money(detail.total):'—'}</b></td>
-                        </tr>`;
-                      }).join('')}
-                    </table>
-                  </div>
-                </div>
-              </div>`;
-          }).join('')}
-        </div>
-      </div>`;
-  }).join('');
 }
 
 function toggleImportDay(id,head){
@@ -30853,6 +30782,10 @@ function warehouseReceiptHistoryTable(){
     const receipts=Object.values(day.receipts)
       .sort((a,b)=>b.timestamp-a.timestamp);
 
+    receipts.forEach(receipt=>{
+      receipt.rows=sortReceiptRowsBySavedOrder(receipt.rows);
+    });
+
     const imports=receipts.filter(
       r=>r.type==='IMPORT'
     );
@@ -30988,7 +30921,9 @@ function warehouseReceiptHistoryTable(){
                           <th>Đơn vị nhập</th>
                           <th>Nhà cung cấp</th>
                           <th class="right">SL nhập</th>
+                          <th>Tỷ lệ quy đổi</th>
                           <th class="right">SL quy đổi</th>
+                          <th>ĐV quy đổi</th>
                           <th class="right">Đơn giá nhập</th>
                           <th class="right">Thành tiền</th>
                         </tr>
@@ -31010,7 +30945,9 @@ function warehouseReceiptHistoryTable(){
                               <td>${esc(detail.enteredUnit||'')}</td>
                               <td>${esc(supplier||'—')}</td>
                               <td class="right">${num(detail.enteredQuantity)}</td>
-                              <td class="right">${num(detail.baseQuantity)} ${esc(detail.baseUnit)}</td>
+                              <td>${esc(importConversionText(detail.enteredUnit,detail.conversionRatio,detail.baseUnit))}</td>
+                              <td class="right">${num(detail.baseQuantity)}</td>
+                              <td>${esc(detail.baseUnit)}</td>
                               <td class="right">${money(detail.enteredUnitCost)}</td>
                               <td class="right"><b>${detail.total!=null?money(detail.total):'—'}</b></td>
                             </tr>
@@ -31151,8 +31088,10 @@ function renderImports(forceReset=false){
               <span>Nguyên liệu/ Dụng cụ</span>
               <span>Đơn vị nhập</span>
               <span>Nhà cung cấp</span>
-              <span>SL nhập</span>
+              <span>SL mua</span>
+              <span>Tỷ lệ quy đổi</span>
               <span>SL quy đổi</span>
+              <span>ĐV quy đổi</span>
               <span>Giá nhập/đv</span>
               <span class="right">Thành tiền</span>
               <span></span>

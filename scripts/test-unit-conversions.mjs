@@ -35,8 +35,12 @@ assert.match(source,/convert\(1,purchase,base\)/,'standard metric ratios must be
 assert.match(html,/const total=enteredQuantity\*enteredUnitCost/,'import total must remain based on the entered purchase unit');
 assert.match(html,/unit_cost:Number\.isFinite\(quantity\)&&quantity>0\?total\/quantity:0/,'import unit cost must be normalized to the inventory base unit');
 assert.match(html,/entered_quantity:enteredQuantity[\s\S]*entered_unit:enteredUnit[\s\S]*conversion_ratio:conversionRatio/,'import writes must retain the entered quantity and conversion snapshot');
-assert.match(html,/class="irConvertedQty ingredient-unit-cell"/,'the import form must visibly show the converted inventory quantity');
+assert.match(html,/class="irConvertedQty ingredient-unit-cell right"/,'the import form must visibly show the converted inventory quantity');
+assert.match(html,/class="irConversionRatio ingredient-unit-cell"/,'the import form must visibly show the applied conversion ratio');
+assert.match(html,/class="irConvertedUnit ingredient-unit-cell"/,'the import form must expose the converted inventory unit separately');
+assert.match(html,/SL mua[\s\S]*Tỷ lệ quy đổi[\s\S]*SL quy đổi[\s\S]*ĐV quy đổi/,'the import form must present the full purchase-to-inventory audit trail');
 assert.match(html,/function importQuantityBreakdown\(/,'receipt history and editing must share one conversion reconstruction rule');
+assert.match(html,/receipt\.rows=sortReceiptRowsBySavedOrder\(receipt\.rows\)/,'history and editing must use the same persisted line order');
 assert.match(stockSync,/if\(enteredUnit\)return original\.call\(this,ingredientId,supplierName,qty,unitCost,enteredUnit\)/,'editing an import must not convert an already reconstructed display quantity twice');
 assert.match(html,/unit-conversion-invalid/,'invalid packaging conversions must block receipt confirmation');
 assert.match(chatbot,/window\.__lyUnitConversions\?\.convert/,'chat stock commands must reuse the shared conversion rules');
@@ -60,4 +64,15 @@ syncWindow.addImportReceiptLine('coconut','',27,30000,'lon');
 assert.deepEqual(importCalls.at(-1),['coconut','',27,30000,'lon'],'27 entered cans must stay 27 cans when editing');
 syncWindow.addImportReceiptLine('coconut','',10800,75);
 assert.deepEqual(importCalls.at(-1),['coconut','',27,30000],'legacy base quantity must still be converted once');
+
+const orderStart=html.indexOf('function sortReceiptRowsBySavedOrder(');
+const orderEnd=html.indexOf('\nfunction importConversionText(',orderStart);
+assert.ok(orderStart>=0&&orderEnd>orderStart,'saved receipt order helper must exist');
+const orderContext={};
+vm.runInNewContext(`${html.slice(orderStart,orderEnd)}\nthis.sortReceiptRowsBySavedOrder=sortReceiptRowsBySavedOrder;`,orderContext);
+assert.deepEqual(
+  orderContext.sortReceiptRowsBySavedOrder([{id:'third',_line_order:3},{id:'first',_line_order:1},{id:'second',_line_order:2}]).map(row=>row.id),
+  ['first','second','third'],
+  'history and edit forms must retain the stored receipt line order'
+);
 console.log('Measurement units and ingredient conversion rules: PASS');
