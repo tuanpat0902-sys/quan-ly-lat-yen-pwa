@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.3.7",
-  "revision": "fresh-core-v3-shell-authoritative-v65",
+  "appVersion": "3.3.8",
+  "revision": "fresh-core-v3-shell-authoritative-v66",
   "loaderAssetVersion": "20260922.7",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.22.7",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-288",
-  "redeploy": "2026-09-22-canonical-inventory-reconciliation-ver-3.3.7"
+  "moduleLoaderVersion": "2026.09.22.8",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-289",
+  "redeploy": "2026-09-22-inventory-write-serialization-ver-3.3.8"
 }

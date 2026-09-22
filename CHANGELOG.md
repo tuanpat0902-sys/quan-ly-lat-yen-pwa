@@ -2,6 +2,12 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.8 — 22/09/2026
+
+- Tuần tự hóa mọi ghi tồn kho giữa phiếu thủ công, công thức và đồng bộ iPOS để không thể ghi đè số dư khi hai tác vụ chạy cùng lúc.
+- Khi sửa công thức nguyên liệu pha chế, tự dựng lại toàn bộ phần trừ kho iPOS có liên quan và đối soát lại tồn từ sổ biến động.
+- Giữ nguyên nguyên tắc tồn kho chuẩn: số dư hiển thị luôn bằng tổng biến động có chứng từ nguồn.
+
 ## Ver 3.3.7 — 22/09/2026
 
 - Đối soát toàn bộ tồn kho từ phiếu nhập, phiếu xuất, kiểm kê và lịch sử bán hàng iPOS thay vì tiếp tục tin vào số dư tích lũy đã lệch.

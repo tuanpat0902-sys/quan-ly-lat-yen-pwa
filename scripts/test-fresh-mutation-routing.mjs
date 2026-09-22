@@ -63,6 +63,9 @@ assert.match(businessApi,/authenticatedVibeUser[\s\S]*client\.query\('begin'\)[\
 assert.match(businessApi,/let client[\s\S]*client=await acquireClient\(\)[\s\S]*client\?\.release\(\)/,'connection failures must not crash the Vibe process');
 assert.match(businessApi,/employeeMatch[\s\S]*request\.method==='DELETE'/,'employee deletes must be persisted on Vibe Host');
 assert.match(businessApi,/rebuildVibeIposInventory/,'recipe edits must reconcile historical iPOS inventory');
+assert.match(businessApi,/lockInventoryOrg[\s\S]*pg_advisory_xact_lock/,'business inventory mutations must serialize with iPOS reconciliation');
+assert.match(businessApi,/previous\?\.ingredient_type==='prepared'[\s\S]*full:true/,'prepared ingredient edits must trigger a full historical iPOS reconciliation');
+assert.match(businessApi,/ctx\.full\?null/,'prepared ingredient reconciliation must rebuild all affected historical sales');
 const productHandler=businessApi.slice(businessApi.indexOf('async function saveProduct'),businessApi.indexOf('async function reconcileProductInventory'));
 assert.ok(productHandler.indexOf("throw new Error('Invalid recipe items')")<productHandler.indexOf('delete from ${qi(schema)}.ly_recipe_items'),'invalid or empty recipes must be rejected before existing ingredients are deleted');
 assert.match(productHandler,/Recipe persistence verification failed/,'recipe children must be verified inside the same transaction');

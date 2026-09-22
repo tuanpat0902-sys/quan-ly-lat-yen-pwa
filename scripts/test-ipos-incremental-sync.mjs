@@ -48,5 +48,6 @@ assert.match(vibeWorker,/removeIposSaleInventory\(client,ctx,row\.id\)/,'deleted
 assert.match(vibeWorker,/writeRows\(client,'ly_stock_transactions',ledger\)/,'inventory ledger writes must use bounded bulk inserts');
 assert.match(vibeWorker,/repairImpossiblePositiveInventory[\s\S]*sum\(quantity\)::numeric balance[\s\S]*on conflict\(org_id,warehouse_id,ingredient_id\)[\s\S]*quantity=excluded\.quantity/,'every cached inventory balance must be reconciled from the authoritative ledger');
 assert.match(vibeWorker,/summary\.inventoryRepairs/,'iPOS health must report automatic inventory repairs');
+assert.match(vibeWorker,/pg_advisory_xact_lock\(hashtext\(\$1\)\)[\s\S]*lat-yen-inventory/,'iPOS writes must serialize with manual inventory mutations');
 
 console.log('iPOS incremental synchronization checks passed');
