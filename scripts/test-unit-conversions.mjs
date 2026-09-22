@@ -43,8 +43,11 @@ assert.match(html,/SL mua[\s\S]*Tỷ lệ quy đổi[\s\S]*SL quy đổi[\s\S]*�
 assert.match(html,/class="import-lines-scroll"[\s\S]*class="import-receipt-columns"[\s\S]*id="importReceiptLines"/,'import headers and rows must scroll as one aligned table');
 assert.match(forms,/\.irConversionRatio\{grid-column:6!important[\s\S]*\.irConvertedUnit\{grid-column:8!important[\s\S]*>button\{grid-column:11!important/,'the late form owner must preserve every conversion column');
 assert.match(html,/function stocktakeConversionRule\(ingredient\)/,'stocktake must use the ingredient conversion rule');
-assert.match(html,/ĐV kiểm kê[\s\S]*Tỷ lệ quy đổi[\s\S]*Thực tế kiểm kê[\s\S]*SL quy đổi[\s\S]*ĐV tồn/,'stocktake must expose entered and converted quantities and units');
-assert.match(html,/actual:Number\(row\.querySelector\('\.srActual'\)\?\.value\)\*Math\.max\(0\.000001,Number\(row\.dataset\.conversionRatio\|\|1\)\)/,'stocktake persistence must convert entered counts back to base inventory quantity');
+assert.match(html,/Đơn vị tồn[\s\S]*Tồn hệ thống[\s\S]*Tỷ lệ quy đổi[\s\S]*Đơn vị nhập[\s\S]*Tồn HT \(ĐV nhập\)[\s\S]*Thực tế kiểm kê[\s\S]*Đơn vị kiểm kê[\s\S]*Chênh lệch/,'stocktake columns must follow the base-unit and purchase-unit audit order');
+assert.match(html,/class="srCountUnit"[\s\S]*option value="base"[\s\S]*option value="purchase"/,'each stocktake row must allow base or purchase counting units');
+assert.match(html,/function stocktakeActualBase\(row\)[\s\S]*value\*ratio:value/,'stocktake must interpolate purchase-unit counts into base inventory quantity');
+assert.match(html,/function changeStocktakeCountUnit\(select\)[\s\S]*actualBase\/ratio:actualBase/,'changing the counting unit must preserve the equivalent physical quantity');
+assert.match(html,/actual:stocktakeActualBase\(row\)/,'stocktake persistence must always save canonical base inventory quantity');
 assert.match(html,/function importQuantityBreakdown\(/,'receipt history and editing must share one conversion reconstruction rule');
 assert.match(html,/receipt\.rows=sortReceiptRowsBySavedOrder\(receipt\.rows\)/,'history and editing must use the same persisted line order');
 assert.match(stockSync,/if\(enteredUnit\)return original\.call\(this,ingredientId,supplierName,qty,unitCost,enteredUnit\)/,'editing an import must not convert an already reconstructed display quantity twice');
@@ -81,4 +84,18 @@ assert.deepEqual(
   ['first','second','third'],
   'history and edit forms must retain the stored receipt line order'
 );
+
+const stocktakeStart=html.indexOf('function stocktakeRoundedQuantity(');
+const stocktakeEnd=html.indexOf('\nfunction addStocktakeReceiptLine(',stocktakeStart);
+assert.ok(stocktakeStart>=0&&stocktakeEnd>stocktakeStart,'stocktake interpolation helpers must exist');
+const stocktakeContext={updateStocktakeReceiptLine:()=>{}};
+vm.runInNewContext(`${html.slice(stocktakeStart,stocktakeEnd)}\nthis.stocktakeActualBase=stocktakeActualBase;this.changeStocktakeCountUnit=changeStocktakeCountUnit;`,stocktakeContext);
+const countInput={value:'61820.9'},countSelect={value:'base'},countRow={dataset:{conversionRatio:'25000',countUnit:'base'},querySelector:selector=>selector==='.srActual'?countInput:selector==='.srCountUnit'?countSelect:null};
+countSelect.closest=()=>countRow;
+assert.equal(stocktakeContext.stocktakeActualBase(countRow),61820.9);
+countSelect.value='purchase';stocktakeContext.changeStocktakeCountUnit(countSelect);
+assert.equal(countInput.value,'2.472836');
+assert.ok(Math.abs(stocktakeContext.stocktakeActualBase(countRow)-61820.9)<0.01,'purchase-unit interpolation must preserve base stock');
+countSelect.value='base';stocktakeContext.changeStocktakeCountUnit(countSelect);
+assert.equal(countInput.value,'61820.9','switching back to base units must restore the canonical quantity');
 console.log('Measurement units and ingredient conversion rules: PASS');

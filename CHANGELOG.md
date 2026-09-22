@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.6 — 22/09/2026
+
+- Sắp xếp lại bảng kiểm kê theo chuỗi đối chiếu: đơn vị tồn, tồn hệ thống, tỷ lệ quy đổi, đơn vị nhập, tồn theo đơn vị nhập, thực tế và đơn vị kiểm kê.
+- Cho phép chọn đơn vị kiểm kê theo đơn vị tồn hoặc đơn vị nhập trên từng dòng.
+- Khi đổi đơn vị kiểm kê, hệ thống tự nội suy giá trị tương đương và luôn tính chênh lệch, đơn giá, thành tiền theo đơn vị tồn chuẩn.
+- Mặc định kiểm kê theo đơn vị tồn để tránh số thập phân dài; tồn theo đơn vị nhập chỉ dùng làm cột đối chiếu.
+
 ## Ver 3.3.5 — 22/09/2026
 
 - Sửa triệt để lệch bảng nhập kho do lớp giao diện tải sau còn ghi đè lưới 11 cột bằng cấu trúc 9 cột cũ.

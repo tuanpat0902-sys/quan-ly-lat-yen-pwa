@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.3.5",
-  "revision": "fresh-core-v3-shell-authoritative-v63",
-  "loaderAssetVersion": "20260922.5",
+  "appVersion": "3.3.6",
+  "revision": "fresh-core-v3-shell-authoritative-v64",
+  "loaderAssetVersion": "20260922.6",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.22.5",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-286",
-  "redeploy": "2026-09-22-import-grid-alignment-ver-3.3.5"
+  "moduleLoaderVersion": "2026.09.22.6",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-287",
+  "redeploy": "2026-09-22-selectable-stocktake-units-ver-3.3.6"
 }

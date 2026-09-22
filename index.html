@@ -5013,78 +5013,6 @@ table th{
   min-width:130px;
 }
 
-/* ===== V140 STT DANH SÁCH KIỂM KÊ ===== */
-#stocktake .stocktake-receipt-columns,
-#stocktake .stocktake-receipt-line{
-  grid-template-columns:
-    46px
-    minmax(190px,1.6fr)
-    72px
-    125px
-    125px
-    125px !important;
-}
-
-#stocktake .stocktake-stt-head,
-#stocktake .srStt{
-  width:46px;
-  min-width:46px;
-  max-width:46px;
-  text-align:center!important;
-  justify-self:center;
-  font-variant-numeric:tabular-nums;
-}
-
-#stocktake .stocktake-stt-head{
-  font-weight:800;
-  color:#475467;
-}
-
-#stocktake .srStt{
-  color:#667085;
-  font-weight:700;
-}
-
-@media(max-width:700px){
-  #stocktake .stocktake-receipt-line{
-    grid-template-columns:42px minmax(0,1fr) 76px!important;
-    align-items:center!important;
-  }
-
-  #stocktake .stocktake-receipt-line .srStt{
-    grid-column:1/2!important;
-    grid-row:1!important;
-    width:42px;
-    min-width:42px;
-    max-width:42px;
-  }
-
-  #stocktake .stocktake-receipt-line .srIngredientName{
-    grid-column:2/3!important;
-    grid-row:1!important;
-  }
-
-  #stocktake .stocktake-receipt-line .srUnit{
-    grid-column:3/4!important;
-    grid-row:1!important;
-  }
-
-  #stocktake .stocktake-receipt-line .srSystem{
-    grid-column:1/2!important;
-    grid-row:2!important;
-  }
-
-  #stocktake .stocktake-receipt-line .srActual{
-    grid-column:2/3!important;
-    grid-row:2!important;
-  }
-
-  #stocktake .stocktake-receipt-line .srDiff{
-    grid-column:3/4!important;
-    grid-row:2!important;
-  }
-}
-
 /* ===== V141 STT TRONG CÁC PHIẾU ===== */
 .receipt-stt-head,
 .receipt-line-stt{
@@ -6239,29 +6167,30 @@ table.app-aligned-table td > .muted{
   order:1;
 }
 
-/* STT | Mặt hàng | ĐV kiểm kê | Tỷ lệ | Tồn | Thực tế | Quy đổi | ĐV tồn | Chênh lệch | Đơn giá | Thành tiền */
+/* STT | Mặt hàng | ĐV tồn | Tồn | Tỷ lệ | ĐV nhập | Tồn theo ĐV nhập | Thực tế | ĐV kiểm kê | Chênh lệch | Đơn giá | Thành tiền */
 #stocktake .stocktake-receipt-columns,
 #stocktake .stocktake-receipt-line{
   display:grid!important;
   grid-template-columns:
     36px
-    minmax(210px,1.55fr)
-    76px
+    minmax(210px,1.5fr)
+    70px
+    96px
     150px
-    92px
-    92px
-    92px
-    68px
-    90px
+    76px
     110px
-    128px !important;
+    104px
+    92px
+    90px
+    104px
+    124px !important;
   column-gap:7px!important;
   align-items:center!important;
   width:100%!important;
 }
 
 #stocktake .stocktake-receipt-columns{
-  min-width:1280px;
+  min-width:1450px;
   position:sticky;
   top:0;
   z-index:2;
@@ -6269,7 +6198,7 @@ table.app-aligned-table td > .muted{
 }
 
 #stocktake .stocktake-receipt-line{
-  min-width:1280px;
+  min-width:1450px;
 }
 
 #stocktake .stocktake-receipt-scroll{
@@ -6280,7 +6209,7 @@ table.app-aligned-table td > .muted{
 #stocktake .srUnitPrice,
 #stocktake .srDiffValue,
 #stocktake .srConversionRatio,
-#stocktake .srConvertedActual{
+#stocktake .srSystemPurchase{
   white-space:nowrap;
   font-variant-numeric:tabular-nums;
   font-size:11.5px;
@@ -6327,16 +6256,17 @@ table.app-aligned-table td > .muted{
     grid-template-columns:
       34px
       minmax(190px,1.45fr)
-      70px
+      64px
+      86px
       138px
-      84px
-      84px
-      84px
-      62px
-      84px
+      70px
       100px
-      118px !important;
-    min-width:1160px;
+      94px
+      84px
+      84px
+      94px
+      112px !important;
+    min-width:1320px;
     column-gap:5px!important;
   }
 }
@@ -6363,7 +6293,7 @@ table.app-aligned-table td > .muted{
     grid-row:1!important;
   }
 
-  #stocktake .stocktake-receipt-line .srEnteredUnit{
+  #stocktake .stocktake-receipt-line .srUnit{
     grid-column:3/4!important;
     grid-row:1!important;
   }
@@ -6379,29 +6309,35 @@ table.app-aligned-table td > .muted{
     grid-row:3!important;
   }
 
-  #stocktake .stocktake-receipt-line .srActual{
+  #stocktake .stocktake-receipt-line .srEnteredUnit{
     grid-column:2/3!important;
     grid-row:3!important;
   }
 
-  #stocktake .stocktake-receipt-line .srConvertedActual{
+  #stocktake .stocktake-receipt-line .srSystemPurchase{
     grid-column:3/4!important;
     grid-row:3!important;
   }
 
-  #stocktake .stocktake-receipt-line .srUnit{
+  #stocktake .stocktake-receipt-line .srActual{
     grid-column:1/2!important;
     grid-row:4!important;
   }
 
-  #stocktake .stocktake-receipt-line .srDiff{
+  #stocktake .stocktake-receipt-line .srCountUnit{
     grid-column:2/3!important;
     grid-row:4!important;
   }
 
-  #stocktake .stocktake-receipt-line .srUnitPrice{
+  #stocktake .stocktake-receipt-line .srDiff{
     grid-column:3/4!important;
     grid-row:4!important;
+    text-align:right!important;
+  }
+
+  #stocktake .stocktake-receipt-line .srUnitPrice{
+    grid-column:1/2!important;
+    grid-row:5!important;
     text-align:right!important;
   }
 
@@ -6409,6 +6345,11 @@ table.app-aligned-table td > .muted{
     grid-column:2/4!important;
     grid-row:5!important;
     text-align:right!important;
+  }
+
+  #stocktake .stocktake-receipt-line .srCountUnit{
+    height:34px!important;
+    min-height:34px!important;
   }
 
   #stocktake .stocktake-value-summary{
@@ -11588,7 +11529,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.5</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.6</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -36923,6 +36864,29 @@ function stocktakeConversionRule(ingredient){
   return {baseUnit,enteredUnit,ratio};
 }
 
+function stocktakeRoundedQuantity(value){
+  const n=Number(value);return Number.isFinite(n)?Number(n.toFixed(6)):0;
+}
+
+function stocktakeActualBase(row){
+  const raw=row?.querySelector('.srActual')?.value;
+  if(raw===''||raw==null)return null;
+  const value=Number(raw);if(!Number.isFinite(value))return null;
+  return row.querySelector('.srCountUnit')?.value==='purchase'
+    ?value*Math.max(0.000001,Number(row.dataset.conversionRatio||1)):value;
+}
+
+function changeStocktakeCountUnit(select){
+  const row=select?.closest('.stocktake-receipt-line');
+  if(!row)return;
+  const input=row.querySelector('.srActual'),ratio=Math.max(0.000001,Number(row.dataset.conversionRatio||1));
+  const value=input?.value===''?null:Number(input?.value);
+  const actualBase=value==null||!Number.isFinite(value)?null:row.dataset.countUnit==='purchase'?value*ratio:value;
+  row.dataset.countUnit=select.value==='purchase'?'purchase':'base';
+  if(input&&actualBase!=null)input.value=String(stocktakeRoundedQuantity(row.dataset.countUnit==='purchase'?actualBase/ratio:actualBase));
+  updateStocktakeReceiptLine(row);
+}
+
 function addStocktakeReceiptLine(ingredientId='',actual=null){
   const holder=$('stocktakeReceiptLines');
   if(!holder)return;
@@ -36935,7 +36899,8 @@ function addStocktakeReceiptLine(ingredientId='',actual=null){
   const stt=holder.children.length+1;
   const unitPrice=Math.max(0,Number(ing.cost||0));
   const conversion=stocktakeConversionRule(ing);
-  const enteredActual=actualValue/conversion.ratio;
+  const systemInPurchaseUnit=system/conversion.ratio;
+  const hasSeparatePurchaseUnit=conversion.enteredUnit!==conversion.baseUnit||Math.abs(conversion.ratio-1)>0.000001;
 
   const row=document.createElement('div');
   row.className='stocktake-receipt-line';
@@ -36944,16 +36909,21 @@ function addStocktakeReceiptLine(ingredientId='',actual=null){
   row.dataset.conversionRatio=String(conversion.ratio);
   row.dataset.enteredUnit=conversion.enteredUnit;
   row.dataset.baseUnit=conversion.baseUnit;
+  row.dataset.countUnit='base';
 
   row.innerHTML=`
     <div class="srStt">${stt}</div>
     <div class="srIngredientName"><b>${esc(ing.name)}</b></div>
-    <div class="srEnteredUnit ingredient-unit-cell">${esc(conversion.enteredUnit)}</div>
-    <div class="srConversionRatio ingredient-unit-cell">1 ${esc(conversion.enteredUnit)} = ${num(conversion.ratio)} ${esc(conversion.baseUnit)}</div>
-    <div class="srSystem right">${num(system)}</div>
-    <input class="srActual" type="number" min="0" step="0.001" value="${enteredActual}" oninput="updateStocktakeReceiptLine(this.closest('.stocktake-receipt-line'))">
-    <div class="srConvertedActual right">${num(actualValue)}</div>
     <div class="srUnit ingredient-unit-cell">${esc(conversion.baseUnit)}</div>
+    <div class="srSystem right">${num(system)}</div>
+    <div class="srConversionRatio ingredient-unit-cell">1 ${esc(conversion.enteredUnit)} = ${num(conversion.ratio)} ${esc(conversion.baseUnit)}</div>
+    <div class="srEnteredUnit ingredient-unit-cell">${esc(conversion.enteredUnit)}</div>
+    <div class="srSystemPurchase right">${num(systemInPurchaseUnit)}</div>
+    <input class="srActual" type="number" step="0.001" value="${stocktakeRoundedQuantity(actualValue)}" oninput="updateStocktakeReceiptLine(this.closest('.stocktake-receipt-line'))">
+    <select class="srCountUnit" onchange="changeStocktakeCountUnit(this)">
+      <option value="base">${esc(conversion.baseUnit)}</option>
+      ${hasSeparatePurchaseUnit?`<option value="purchase">${esc(conversion.enteredUnit)}</option>`:''}
+    </select>
     <div class="srDiff right">0</div>
     <div class="srUnitPrice right">${money(unitPrice)}</div>
     <div class="srDiffValue right">0 ₫</div>
@@ -36995,16 +36965,11 @@ function updateStocktakeReceiptLine(row){
   const id=row.dataset.ingredientId;
   const system=stock(id);
   const unitPrice=Math.max(0,Number(row.dataset.unitPrice||0));
-  const ratio=Math.max(0.000001,Number(row.dataset.conversionRatio||1));
-  const actualRaw=row.querySelector('.srActual')?.value;
-  const enteredActual=actualRaw===''?null:Number(actualRaw);
-  const actual=enteredActual==null?null:enteredActual*ratio;
+  const actual=stocktakeActualBase(row);
   const diff=actual==null?null:actual-system;
   const diffValue=diff==null?null:diff*unitPrice;
 
   const de=row.querySelector('.srDiff');
-  const convertedEl=row.querySelector('.srConvertedActual');
-  if(convertedEl)convertedEl.textContent=actual==null?'—':num(actual);
   if(de){
     if(diff==null){
       de.textContent='—';
@@ -37037,9 +37002,7 @@ function updateStocktakeValueSummary(){
   document.querySelectorAll('#stocktakeReceiptLines .stocktake-receipt-line').forEach(row=>{
     const id=row.dataset.ingredientId;
     const system=stock(id);
-    const ratio=Math.max(0.000001,Number(row.dataset.conversionRatio||1));
-    const actualRaw=row.querySelector('.srActual')?.value;
-    const actual=actualRaw===''?null:Number(actualRaw)*ratio;
+    const actual=stocktakeActualBase(row);
     const unitPrice=Math.max(0,Number(row.dataset.unitPrice||0));
 
     if(actual==null || !Number.isFinite(actual))return;
@@ -37068,9 +37031,11 @@ function getStocktakeReceiptLines(){
   return [...document.querySelectorAll('.stocktake-receipt-line')]
     .map((row,index)=>({
       ingredient_id:row.dataset.ingredientId||'',
-      actual:Number(row.querySelector('.srActual')?.value)*Math.max(0.000001,Number(row.dataset.conversionRatio||1)),
+      actual:stocktakeActualBase(row),
       entered_quantity:Number(row.querySelector('.srActual')?.value),
-      entered_unit:row.dataset.enteredUnit||row.dataset.baseUnit||'',
+      entered_unit:row.querySelector('.srCountUnit')?.value==='purchase'
+        ? row.dataset.enteredUnit||''
+        : row.dataset.baseUnit||'',
       conversion_ratio:Math.max(0.000001,Number(row.dataset.conversionRatio||1)),
       base_unit:row.dataset.baseUnit||'',
       unit_price:Math.max(0,Number(row.dataset.unitPrice||0)),
@@ -37328,12 +37293,13 @@ function renderStocktake(forceReset=false){
               <div class="stocktake-receipt-columns">
                 <span class="stocktake-stt-head">STT</span>
                 <span>Nguyên liệu/ Dụng cụ</span>
-                <span>ĐV kiểm kê</span>
-                <span>Tỷ lệ quy đổi</span>
+                <span>Đơn vị tồn</span>
                 <span class="right">Tồn hệ thống</span>
+                <span>Tỷ lệ quy đổi</span>
+                <span>Đơn vị nhập</span>
+                <span class="right">Tồn HT (ĐV nhập)</span>
                 <span>Thực tế kiểm kê</span>
-                <span class="right">SL quy đổi</span>
-                <span>ĐV tồn</span>
+                <span>Đơn vị kiểm kê</span>
                 <span class="right">Chênh lệch</span>
                 <span class="right">Đơn giá</span>
                 <span class="right">Thành tiền</span>
