@@ -34,14 +34,14 @@ async function tableExists(client,table){
 
 async function rebuildDocumentLedger(client){
   await client.query(`delete from ${qi(schema)}.ly_stock_transactions t where t.transaction_type in('IMPORT','EXPORT','ADJUSTMENT')`);
-  await client.query(`insert into ${qi(schema)}.ly_stock_transactions(id,org_id,warehouse_id,ingredient_id,transaction_type,quantity,source_id,note,created_at)
-    select md5('IMPORT:'||x.id::text)::uuid,x.org_id,h.warehouse_id,x.ingredient_id,'IMPORT',abs(x.quantity),h.id,'Phiếu nhập:'||h.receipt_no,(h.receipt_date::text||' 00:00:00+07')::timestamptz
+  await client.query(`insert into ${qi(schema)}.ly_stock_transactions(id,org_id,warehouse_id,ingredient_id,transaction_type,quantity,source_id,note,created_at,updated_at)
+    select md5('IMPORT:'||x.id::text)::uuid,x.org_id,h.warehouse_id,x.ingredient_id,'IMPORT',abs(x.quantity),h.id,'Phiếu nhập:'||h.receipt_no,(h.receipt_date::text||' 00:00:00+07')::timestamptz,(h.receipt_date::text||' 00:00:00+07')::timestamptz
     from ${qi(schema)}.ly_import_items x join ${qi(schema)}.ly_import_receipts h on h.id=x.receipt_id and h.org_id=x.org_id`);
-  await client.query(`insert into ${qi(schema)}.ly_stock_transactions(id,org_id,warehouse_id,ingredient_id,transaction_type,quantity,source_id,note,created_at)
-    select md5('EXPORT:'||x.id::text)::uuid,x.org_id,h.warehouse_id,x.ingredient_id,'EXPORT',-abs(x.quantity),h.id,'Phiếu xuất:'||h.receipt_no,(h.receipt_date::text||' 00:00:00+07')::timestamptz
+  await client.query(`insert into ${qi(schema)}.ly_stock_transactions(id,org_id,warehouse_id,ingredient_id,transaction_type,quantity,source_id,note,created_at,updated_at)
+    select md5('EXPORT:'||x.id::text)::uuid,x.org_id,h.warehouse_id,x.ingredient_id,'EXPORT',-abs(x.quantity),h.id,'Phiếu xuất:'||h.receipt_no,(h.receipt_date::text||' 00:00:00+07')::timestamptz,(h.receipt_date::text||' 00:00:00+07')::timestamptz
     from ${qi(schema)}.ly_export_items x join ${qi(schema)}.ly_export_receipts h on h.id=x.receipt_id and h.org_id=x.org_id`);
-  await client.query(`insert into ${qi(schema)}.ly_stock_transactions(id,org_id,warehouse_id,ingredient_id,transaction_type,quantity,source_id,note,created_at)
-    select md5('ADJUSTMENT:'||x.id::text)::uuid,x.org_id,h.warehouse_id,x.ingredient_id,'ADJUSTMENT',x.diff_qty,h.id,'Kiểm kê:'||h.receipt_no,(h.receipt_date::text||' 00:00:00+07')::timestamptz
+  await client.query(`insert into ${qi(schema)}.ly_stock_transactions(id,org_id,warehouse_id,ingredient_id,transaction_type,quantity,source_id,note,created_at,updated_at)
+    select md5('ADJUSTMENT:'||x.id::text)::uuid,x.org_id,h.warehouse_id,x.ingredient_id,'ADJUSTMENT',x.diff_qty,h.id,'Kiểm kê:'||h.receipt_no,(h.receipt_date::text||' 00:00:00+07')::timestamptz,(h.receipt_date::text||' 00:00:00+07')::timestamptz
     from ${qi(schema)}.ly_stocktake_items x join ${qi(schema)}.ly_stocktake_receipts h on h.id=x.receipt_id and h.org_id=x.org_id`);
   await client.query(`delete from ${qi(schema)}.ly_stock_transactions t where t.transaction_type='SALE' and not exists(select 1 from ${qi(schema)}.ly_sales s where s.id=t.source_id and s.org_id=t.org_id)`);
 }
