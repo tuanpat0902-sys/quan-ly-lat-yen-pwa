@@ -44,7 +44,10 @@ assert.doesNotMatch(ui,/min-width:max-content/,'global max-content sizing must n
 assert.match(ingredientTable,/table\.prepared-virtual-table\{width:100%!important;min-width:900px!important;max-width:none!important;table-layout:fixed!important\}/,'prepared ingredient table must fill the available desktop width');
 assert.match(ingredientTable,/table\.ingredient-usage-table\{width:100%!important;min-width:900px!important;max-width:none!important;table-layout:fixed!important\}/,'ingredient history table must fill the available desktop width');
 
-assert.match(forms,/VERSION='2026\.09\.22\.1'/,'form ergonomics version missing');
+assert.match(forms,/VERSION='2026\.09\.22\.2'/,'form ergonomics version missing');
+assert.match(forms,/grid-template-columns:36px minmax\(190px,1\.65fr\) 64px minmax\(150px,1\.15fr\) 78px 142px 92px 66px 105px 110px 30px!important/,'import form must keep one canonical 11-column grid');
+assert.match(forms,/\.irConversionRatio\{grid-column:6!important[\s\S]*\.irConvertedQty\{grid-column:7!important[\s\S]*\.irConvertedUnit\{grid-column:8!important[\s\S]*\.irUnitCost\{grid-column:9!important[\s\S]*\.irLineTotal\{grid-column:10!important[\s\S]*>button\{grid-column:11!important/,'import row fields must align with the 11 header columns');
+assert.match(forms,/\.import-lines-scroll\{[^}]*overflow-x:auto/,'import header and rows must share one horizontal scroll container');
 assert.match(forms,/aria-invalid="true"/,'ARIA invalid fields must have explicit styling');
 assert.doesNotMatch(forms,/MutationObserver|setInterval/,'form ergonomics must not observe or poll the DOM');
 assert.doesNotMatch(forms,/\bfetch\s*\(|\.rpc\s*\(/,'form ergonomics must not perform cloud calls');
@@ -97,9 +100,9 @@ assert.doesNotMatch(sales,/max-height:none/,'sales workflow must not disable bou
 assert.doesNotMatch(sales,/MutationObserver|setInterval|\bfetch\s*\(|\.rpc\s*\(/,'sales workflow layer must remain bounded');
 assert.match(recovery,/VERSION='2026\.09\.02\.1'/,'lazy recovery version missing');
 
-assert.match(app,/UI_BUILD='UI-2026\.09\.22\.4'/,'current Vibe release marker missing');
+assert.match(app,/UI_BUILD='UI-2026\.09\.22\.5'/,'current Vibe release marker missing');
 assert.match(app,/ly-ui-table-ergonomics\.js\?v=20260920\.1/,'table ergonomics asset must be deterministic');
-assert.match(sw,/lat-yen-fresh-core-v3-authoritative-285/,'the current UI build must force a fresh service-worker release');
+assert.match(sw,/lat-yen-fresh-core-v3-authoritative-286/,'the current UI build must force a fresh service-worker release');
 assert.match(index,/tuanpat0902-sys\.[^\n]+quan-ly-lat-yen-pwa-live\.n1\.tinhgon\.xyz/,'legacy GitHub Pages address must redirect to Vibe Host before loading Supabase');
 assert.match(sw,/location\.hostname==='tuanpat0902-sys\.github\.io'[\s\S]*Response\.redirect\(VIBE_URL,302\)/,'legacy service worker must redirect cached clients to Vibe Host');
 assert.match(sw,/async function navigationSource\(request\)\{try\{return await refreshNavigation\(request\);\}catch\(e\)\{return caches\.match\(INDEX_KEY\);\}\}/,'navigations must prefer the network release and use cached HTML only while offline');

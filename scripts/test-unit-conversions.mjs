@@ -6,6 +6,7 @@ const source=await fs.readFile(new URL('../ly-unit-conversions.js',import.meta.u
 const html=await fs.readFile(new URL('../index.html',import.meta.url),'utf8');
 const chatbot=await fs.readFile(new URL('../ly-local-chatbot.js',import.meta.url),'utf8');
 const stockSync=await fs.readFile(new URL('../ly-stock-unit-sync.js',import.meta.url),'utf8');
+const forms=await fs.readFile(new URL('../ly-ui-form-ergonomics.js',import.meta.url),'utf8');
 const memory=new Map();
 const document={readyState:'loading',addEventListener:()=>{}};
 const context={window:{},document,localStorage:{getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,String(value)),removeItem:key=>memory.delete(key)},Date};
@@ -39,6 +40,11 @@ assert.match(html,/class="irConvertedQty ingredient-unit-cell right"/,'the impor
 assert.match(html,/class="irConversionRatio ingredient-unit-cell"/,'the import form must visibly show the applied conversion ratio');
 assert.match(html,/class="irConvertedUnit ingredient-unit-cell"/,'the import form must expose the converted inventory unit separately');
 assert.match(html,/SL mua[\s\S]*Tỷ lệ quy đổi[\s\S]*SL quy đổi[\s\S]*ĐV quy đổi/,'the import form must present the full purchase-to-inventory audit trail');
+assert.match(html,/class="import-lines-scroll"[\s\S]*class="import-receipt-columns"[\s\S]*id="importReceiptLines"/,'import headers and rows must scroll as one aligned table');
+assert.match(forms,/\.irConversionRatio\{grid-column:6!important[\s\S]*\.irConvertedUnit\{grid-column:8!important[\s\S]*>button\{grid-column:11!important/,'the late form owner must preserve every conversion column');
+assert.match(html,/function stocktakeConversionRule\(ingredient\)/,'stocktake must use the ingredient conversion rule');
+assert.match(html,/ĐV kiểm kê[\s\S]*Tỷ lệ quy đổi[\s\S]*Thực tế kiểm kê[\s\S]*SL quy đổi[\s\S]*ĐV tồn/,'stocktake must expose entered and converted quantities and units');
+assert.match(html,/actual:Number\(row\.querySelector\('\.srActual'\)\?\.value\)\*Math\.max\(0\.000001,Number\(row\.dataset\.conversionRatio\|\|1\)\)/,'stocktake persistence must convert entered counts back to base inventory quantity');
 assert.match(html,/function importQuantityBreakdown\(/,'receipt history and editing must share one conversion reconstruction rule');
 assert.match(html,/receipt\.rows=sortReceiptRowsBySavedOrder\(receipt\.rows\)/,'history and editing must use the same persisted line order');
 assert.match(stockSync,/if\(enteredUnit\)return original\.call\(this,ingredientId,supplierName,qty,unitCost,enteredUnit\)/,'editing an import must not convert an already reconstructed display quantity twice');

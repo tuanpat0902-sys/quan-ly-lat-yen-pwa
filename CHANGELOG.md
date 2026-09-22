@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.5 — 22/09/2026
+
+- Sửa triệt để lệch bảng nhập kho do lớp giao diện tải sau còn ghi đè lưới 11 cột bằng cấu trúc 9 cột cũ.
+- Tiêu đề và các dòng phiếu nhập dùng chung một khung cuộn ngang, giữ đúng cột trên máy tính, máy tính bảng và điện thoại.
+- Bảng kiểm kê bổ sung đơn vị kiểm kê, tỷ lệ quy đổi, số lượng thực tế nhập, số lượng quy đổi và đơn vị tồn kho.
+- Chênh lệch kiểm kê, giá trị thiếu/thừa và dữ liệu lưu luôn được tính theo đơn vị tồn kho chuẩn sau quy đổi.
+
 ## Ver 3.3.4 — 22/09/2026
 
 - Đồng nhất thứ tự dòng phiếu nhập giữa lịch sử và màn hình sửa theo `line_order` đã lưu; không còn hiện đúng ở lịch sử nhưng đảo ngược khi sửa.

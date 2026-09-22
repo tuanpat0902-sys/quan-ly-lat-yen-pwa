@@ -1,7 +1,7 @@
 (()=>{
   'use strict';
-  if(window.__lyUIFormErgonomics?.version==='2026.09.22.1')return;
-  const VERSION='2026.09.22.1';
+  if(window.__lyUIFormErgonomics?.version==='2026.09.22.2')return;
+  const VERSION='2026.09.22.2';
   const STYLE_ID='lyUiFormErgonomicsStyle';
   const CSS=`
 :where(.form-grid,.toolbar,.modal-box,.card)>*{min-width:0}
@@ -30,11 +30,35 @@
 details>summary{min-height:38px;display:flex;align-items:center;gap:8px;outline-offset:2px;font-weight:650;cursor:pointer}
 :where(input[type="checkbox"],input[type="radio"]){min-height:18px;min-width:18px;accent-color:var(--primary,#0f766e)}
 :where(.recipe-line){align-items:end}
-#imports .inline-import-form :is(.import-receipt-columns,.import-receipt-line){grid-template-columns:36px minmax(180px,1.55fr) 64px minmax(135px,1.05fr) 82px 100px 105px 110px 30px!important}
-#imports .inline-import-form .irConvertedQty{text-align:right!important;white-space:nowrap;font-variant-numeric:tabular-nums}
-@media(min-width:701px){#imports .inline-import-form .import-receipt-line .irConvertedQty{grid-column:6!important;grid-row:1!important}#imports .inline-import-form .import-receipt-line .irUnitCost{grid-column:7!important}#imports .inline-import-form .import-receipt-line .irLineTotal{grid-column:8!important}#imports .inline-import-form .import-receipt-line>button{grid-column:9!important}}
-@media(min-width:701px) and (max-width:1100px){#imports .inline-import-form :is(.import-receipt-columns,.import-receipt-line){grid-template-columns:34px minmax(155px,1.45fr) 58px minmax(115px,1fr) 72px 90px 90px 98px 30px!important}}
-@media(max-width:700px){#imports .inline-import-form .import-receipt-line .irConvertedQty{grid-column:2/3!important;grid-row:3!important}#imports .inline-import-form .import-receipt-line .irUnitCost{grid-column:1/3!important;grid-row:4!important}#imports .inline-import-form .import-receipt-line .irLineTotal{grid-column:3/4!important;grid-row:3/5!important;align-self:center!important}}
+#imports .inline-import-form .import-lines-scroll{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-gutter:stable}
+#imports .inline-import-form :is(.import-receipt-columns,.import-receipt-line){grid-template-columns:36px minmax(190px,1.65fr) 64px minmax(150px,1.15fr) 78px 142px 92px 66px 105px 110px 30px!important}
+#imports .inline-import-form :is(.irQty,.irConvertedQty,.irUnitCost,.irLineTotal){text-align:right!important;font-variant-numeric:tabular-nums}
+#imports .inline-import-form :is(.irConversionRatio,.irConvertedQty,.irConvertedUnit){white-space:nowrap}
+@media(min-width:701px){
+  #imports .inline-import-form .import-lines-scroll>.import-receipt-columns,#imports .inline-import-form .import-lines-scroll>#importReceiptLines{min-width:1280px}
+  #imports .inline-import-form .import-receipt-line .irStt{grid-column:1!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irIngredient{grid-column:2!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irUnit{grid-column:3!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irSupplier{grid-column:4!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irQty{grid-column:5!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irConversionRatio{grid-column:6!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irConvertedQty{grid-column:7!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irConvertedUnit{grid-column:8!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irUnitCost{grid-column:9!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line .irLineTotal{grid-column:10!important;grid-row:1!important}
+  #imports .inline-import-form .import-receipt-line>button{grid-column:11!important;grid-row:1!important}
+}
+@media(max-width:700px){
+  #imports .inline-import-form .import-lines-scroll{overflow:visible}
+  #imports .inline-import-form .import-lines-scroll>#importReceiptLines{min-width:0}
+  #imports .inline-import-form .import-receipt-line .irQty{grid-column:1/2!important;grid-row:3!important}
+  #imports .inline-import-form .import-receipt-line .irConversionRatio{grid-column:2/4!important;grid-row:3!important}
+  #imports .inline-import-form .import-receipt-line .irConvertedQty{grid-column:1/2!important;grid-row:4!important}
+  #imports .inline-import-form .import-receipt-line .irConvertedUnit{grid-column:2/3!important;grid-row:4!important}
+  #imports .inline-import-form .import-receipt-line .irUnitCost{grid-column:3/4!important;grid-row:4!important}
+  #imports .inline-import-form .import-receipt-line .irLineTotal{grid-column:2/4!important;grid-row:5!important;align-self:center!important}
+  #imports .inline-import-form .import-receipt-line>button{grid-column:3/4!important;grid-row:2!important}
+}
 @media(max-width:760px){
   :where(.toolbar)>input,:where(.toolbar)>select{flex-basis:220px}
   :where(.toolbar)>button{min-height:42px}

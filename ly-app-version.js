@@ -1,13 +1,13 @@
 (()=>{
   'use strict';
-  const VERSION='3.3.4',REVISION='fresh-core-v3-shell-authoritative-v62',UI_BUILD='UI-2026.09.22.4';
+  const VERSION='3.3.5',REVISION='fresh-core-v3-shell-authoritative-v63',UI_BUILD='UI-2026.09.22.5';
   if(window.__lyAppVersion?.version===VERSION&&window.__lyAppVersion?.revision===REVISION&&window.__lyAppVersion?.uiBuild===UI_BUILD)return;
   const LABEL=`Ver ${VERSION} · ${UI_BUILD}`,STORAGE_KEY='lat_yen_last_seen_app_version';
   const state={version:VERSION,revision:REVISION,uiBuild:UI_BUILD,label:LABEL,mounted:false,updateNoticeShown:false};
   function mount(){const name=document.getElementById?.('appNameText');if(!name)return false;let badge=document.getElementById?.('appVersionStatic');if(!badge){badge=document.createElement?.('span');if(!badge)return false;badge.id='appVersionStatic';badge.className='badge';name.insertAdjacentElement?.('afterend',badge);}badge.textContent=LABEL;badge.setAttribute?.('data-ly-app-version',VERSION);badge.setAttribute?.('data-ly-ui-build',UI_BUILD);state.mounted=true;return true;}
   function ensureScript(globalTest,src,key){if(globalTest())return true;if(document.querySelector?.(`script[data-ly-bootstrap="${key}"]`))return true;const script=document.createElement?.('script');if(!script)return false;script.src=src;script.async=true;script.dataset.lyBootstrap=key;script.onerror=()=>script.remove?.();(document.head||document.documentElement).appendChild(script);return true;}
   const ensureUIStability=()=>ensureScript(()=>window.__lyUIStability?.version==='2026.08.28.5','./ly-ui-stability.js?v=20260828.5','ui-stability');
-  const ensureUIFormErgonomics=()=>ensureScript(()=>window.__lyUIFormErgonomics?.version==='2026.09.22.1','./ly-ui-form-ergonomics.js?v=20260922.1','ui-form-ergonomics');
+  const ensureUIFormErgonomics=()=>ensureScript(()=>window.__lyUIFormErgonomics?.version==='2026.09.22.2','./ly-ui-form-ergonomics.js?v=20260922.2','ui-form-ergonomics');
   const ensureUIDesignSystem=()=>ensureScript(()=>window.__lyUIDesignSystem?.version==='2026.08.28.2','./ly-ui-design-system.js?v=20260828.2','ui-design-system');
   const ensureUITableErgonomics=()=>ensureScript(()=>window.__lyUITableErgonomics?.version==='2026.09.20.1','./ly-ui-table-ergonomics.js?v=20260920.1','ui-table-ergonomics');
   const ensureTableViewV2=()=>ensureScript(()=>window.__lyTableViewV2?.version==='2026.08.30.3','./ly-table-view-v2.js?v=20260830.3','table-view-v2');
