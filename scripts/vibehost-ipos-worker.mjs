@@ -164,29 +164,22 @@ export async function rebuildVibeIposInventory(client,ctx,saleIds=null){
 
 export async function repairImpossiblePositiveInventory(client,ctx){
   const result=await client.query(`with ledger as(
-      select org_id,warehouse_id,ingredient_id,sum(quantity)::numeric balance,
-        bool_or(quantity>0) has_positive_source,
-        bool_or(transaction_type='SALE' and quantity<0) has_sale_deduction
+      select org_id,warehouse_id,ingredient_id,sum(quantity)::numeric balance
       from ${qi(schema)}.ly_stock_transactions where org_id=$1::uuid
       group by org_id,warehouse_id,ingredient_id
-    ), candidates as(
-      select i.org_id,i.warehouse_id,i.ingredient_id,l.balance
-      from ${qi(schema)}.ly_inventory i join ledger l using(org_id,warehouse_id,ingredient_id)
-      where i.org_id=$1::uuid and i.quantity>0 and l.balance<0
-        and l.has_sale_deduction and not l.has_positive_source
-        and not exists(
-          select 1 from ${qi(schema)}.ly_import_items x
-          join ${qi(schema)}.ly_import_receipts h on h.id=x.receipt_id and h.org_id=x.org_id
-          where x.org_id=i.org_id and h.warehouse_id=i.warehouse_id and x.ingredient_id=i.ingredient_id
-        )
-        and not exists(
-          select 1 from ${qi(schema)}.ly_stocktake_items x
-          join ${qi(schema)}.ly_stocktake_receipts h on h.id=x.receipt_id and h.org_id=x.org_id
-          where x.org_id=i.org_id and h.warehouse_id=i.warehouse_id and x.ingredient_id=i.ingredient_id and x.diff_qty>0
-        )
-    ) update ${qi(schema)}.ly_inventory i set quantity=c.balance,updated_at=now()
-      from candidates c where i.org_id=c.org_id and i.warehouse_id=c.warehouse_id and i.ingredient_id=c.ingredient_id
-      returning i.warehouse_id,i.ingredient_id,i.quantity`,[ctx.org]);
+    ), keys as(
+      select org_id,warehouse_id,ingredient_id from ledger
+      union
+      select org_id,warehouse_id,ingredient_id from ${qi(schema)}.ly_inventory where org_id=$1::uuid
+    ), expected as(
+      select k.org_id,k.warehouse_id,k.ingredient_id,coalesce(l.balance,0)::numeric balance
+      from keys k left join ledger l using(org_id,warehouse_id,ingredient_id)
+    ) insert into ${qi(schema)}.ly_inventory(org_id,warehouse_id,ingredient_id,quantity,updated_at)
+      select org_id,warehouse_id,ingredient_id,balance,now() from expected
+      on conflict(org_id,warehouse_id,ingredient_id) do update
+      set quantity=excluded.quantity,updated_at=now()
+      where abs(${qi('ly_inventory')}.quantity-excluded.quantity)>0.000001
+      returning warehouse_id,ingredient_id,quantity`,[ctx.org]);
   return result.rows;
 }
 

@@ -46,7 +46,7 @@ assert.match(vibeWorker,/summary\.skippedSales/,'Vibe worker health must report 
 assert.match(vibeWorker,/changedSaleIds\.length\?await rebuildVibeIposInventory\(client,ctx,changedSaleIds\):0/,'inventory rebuild must be scoped to changed sales');
 assert.match(vibeWorker,/removeIposSaleInventory\(client,ctx,row\.id\)/,'deleted iPOS receipts must reverse their inventory before deletion');
 assert.match(vibeWorker,/writeRows\(client,'ly_stock_transactions',ledger\)/,'inventory ledger writes must use bounded bulk inserts');
-assert.match(vibeWorker,/repairImpossiblePositiveInventory[\s\S]*i\.quantity>0[\s\S]*l\.balance<0[\s\S]*not l\.has_positive_source/,'phantom positive inventory with only deductions must be repaired from the authoritative ledger');
+assert.match(vibeWorker,/repairImpossiblePositiveInventory[\s\S]*sum\(quantity\)::numeric balance[\s\S]*on conflict\(org_id,warehouse_id,ingredient_id\)[\s\S]*quantity=excluded\.quantity/,'every cached inventory balance must be reconciled from the authoritative ledger');
 assert.match(vibeWorker,/summary\.inventoryRepairs/,'iPOS health must report automatic inventory repairs');
 
 console.log('iPOS incremental synchronization checks passed');

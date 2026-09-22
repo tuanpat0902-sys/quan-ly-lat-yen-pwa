@@ -2,6 +2,15 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.7 — 22/09/2026
+
+- Đối soát toàn bộ tồn kho từ phiếu nhập, phiếu xuất, kiểm kê và lịch sử bán hàng iPOS thay vì tiếp tục tin vào số dư tích lũy đã lệch.
+- Dựng lại sổ biến động nhập/xuất/kiểm kê chỉ từ chi tiết phiếu còn tồn tại; loại bỏ biến động mồ côi và các lần ghi tồn dụng cụ bị lặp.
+- Dựng lại toàn bộ trừ kho iPOS theo công thức hiện hành, sau đó khóa số dư tồn bằng đúng tổng sổ kho cho từng kho và từng nguyên liệu.
+- Ghi nhật ký đối soát gồm số cũ, số mới và mức điều chỉnh để có thể kiểm tra sau triển khai.
+- Tự kiểm tra và sửa mọi chênh lệch giữa bảng tồn với sổ kho khi máy chủ khởi động hoặc hoàn tất đồng bộ iPOS.
+- Sửa hoàn tác tồn kho khi sửa phiếu bán chuyển sang kho khác: số cũ được trả đúng về kho nguồn.
+
 ## Ver 3.3.6 — 22/09/2026
 
 - Sắp xếp lại bảng kiểm kê theo chuỗi đối chiếu: đơn vị tồn, tồn hệ thống, tỷ lệ quy đổi, đơn vị nhập, tồn theo đơn vị nhập, thực tế và đơn vị kiểm kê.
