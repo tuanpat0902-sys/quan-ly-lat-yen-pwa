@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.9 — 24/09/2026
+
+- Đồng bộ nền, kết nối lại mạng và quay lại cửa sổ không còn dựng lại màn hình khi người dùng đang nhập hoặc thao tác.
+- Phiếu đã lưu được xác nhận dữ liệu trong nền, sau đó giao diện mới đóng và cập nhật đúng chức năng hiện tại.
+- Bỏ qua toàn bộ bước chiếu lại giao diện khi revision dữ liệu không thay đổi; không còn hiện lớp tiến trình tải cho tác vụ nền.
+- Thay đổi từ thiết bị khác được gom thành một lần tải theo miền dữ liệu và vẫn tuân thủ khóa bảo vệ biểu mẫu.
+
 ## Ver 3.3.8 — 22/09/2026
 
 - Tuần tự hóa mọi ghi tồn kho giữa phiếu thủ công, công thức và đồng bộ iPOS để không thể ghi đè số dư khi hai tác vụ chạy cùng lúc.

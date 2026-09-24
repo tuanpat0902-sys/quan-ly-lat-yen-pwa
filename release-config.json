@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.3.8",
-  "revision": "fresh-core-v3-shell-authoritative-v66",
-  "loaderAssetVersion": "20260922.7",
+  "appVersion": "3.3.9",
+  "revision": "fresh-core-v3-shell-authoritative-v67",
+  "loaderAssetVersion": "20260924.1",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.22.8",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-289",
-  "redeploy": "2026-09-22-inventory-write-serialization-ver-3.3.8"
+  "moduleLoaderVersion": "2026.09.24.1",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-290",
+  "redeploy": "2026-09-24-interaction-safe-sync-ver-3.3.9"
 }

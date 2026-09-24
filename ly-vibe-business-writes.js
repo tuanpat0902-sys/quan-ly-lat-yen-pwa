@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.22.2';
+  const VERSION='2026.09.24.1';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
@@ -39,7 +39,7 @@
     if(typeof window.loadCloud!=='function')throw new Error('Chưa sẵn sàng tải lại dữ liệu Cloud.');
     const deadline=Date.now()+30000;
     for(;;){
-      const result=await window.loadCloud();
+      const result=await window.loadCloud({reason:'confirmed-write',allowDraftApply:true,render:false,forceApply:true,background:true});
       if(result?.deferred){if(Date.now()>=deadline)throw new Error('Cloud đang bận. Vui lòng tải lại dữ liệu để kiểm tra.');await new Promise(resolve=>setTimeout(resolve,100));continue;}
       if(result===false||result?.ok===false)throw new Error(result?.error?.message||'Không tải lại được dữ liệu Cloud để xác nhận.');
       return result;

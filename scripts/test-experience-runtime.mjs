@@ -30,8 +30,8 @@ assert.ok(cloud.includes('ly-cloud-orbit')&&cloud.includes('ly-realtime-live'),'
 assert.match(cloud,/if\(VIBE_ONLY\)[\s\S]*realtime:false,smartSync:false,vibe:true/,'Vibe status must ignore disconnected legacy Realtime state');
 assert.match(cloud,/return 'Vibe • Đã đồng bộ'/,'Vibe status must settle after snapshot completion');
 assert.match(index,/if\(location\.hostname\.endsWith\('\.tinhgon\.xyz'\)\)\{[\s\S]{0,180}Vibe • Đã đồng bộ/,'Vibe production must not start legacy Realtime');
-assert.match(loader,/ly-performance-optimizer\.js\?v=20260907\.1/,'Vibe-aware adaptive scheduler version is missing');
-assert.match(performance,/if\(VIBE_ONLY\)\{if\(typeof window\.loadCloud==='function'\)await window\.loadCloud\(\);\}/,'Vibe scheduler must refresh snapshots instead of running legacy sync cycles');
+assert.match(loader,/ly-performance-optimizer\.js\?v=20260924\.1/,'Vibe-aware adaptive scheduler version is missing');
+assert.match(performance,/if\(VIBE_ONLY\)\{if\(typeof window\.loadCloud==='function'\)await window\.loadCloud\(\{reason:'adaptive-scheduler',background:true\}\);\}/,'Vibe scheduler must use non-blocking background snapshot refreshes');
 assert.ok(cloud.includes('latyen:v2-realtime-status'),'Cloud indicator is not connected to V2 realtime status');
 assert.ok(realtime.includes("CustomEvent('latyen:v2-realtime-status'"),'V2 realtime must publish its visual connection state');
 assert.ok(index.includes("'.inline-import-form.open'")&&index.includes('v240HasActiveDraft'),'open receipt protection is missing from the shell');

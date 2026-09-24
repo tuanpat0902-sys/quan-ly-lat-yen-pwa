@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>QUẢN LÝ LÁT YÊN</title>
 <script>if(location.host.startsWith('tuanpat0902-sys.'))location='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/'</script>
-<link rel="preload" href="./ly-module-loader.js?v=20260922.1" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260924.1" as="script">
 <script src="./ly-vibe-client-compat.js?v=20260921.2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)return false;const data=await response.json();const session=data?.session||null;window.__lyFreshSession=session;window.__lyFreshOrgId=session?.org_id||null;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.09.07.2',provider:'vibe'};})();</script>
 <style>
@@ -11529,7 +11529,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.8</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.9</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11560,7 +11560,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260922.1"></script>
+<script src="./ly-module-loader.js?v=20260924.1"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -54099,13 +54099,14 @@ function lyFreshSynthMovements({
   return out.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
 }
 
-loadCloud=async function(){
+loadCloud=async function(value={}){
+  const gate=window.__lyVibeReadCache?.gateRefresh?.(value)||{options:value&&typeof value==='object'?value:{}};if(gate.deferred)return gate.deferred;const options=gate.options,background=options.background===true;
   if(!window.__lyFreshOrgId)return {ok:false};
   if(window.__lyFreshLoading)return {ok:false,deferred:true};
   const loadingOrgId=window.__lyFreshOrgId;
+  const beforeRevision=window.__lyVibeReadCache?.revisionToken?.()||'';
   window.__lyFreshLoading=true;
-  lyFreshBusy(true,'Đang tải dữ liệu Cloud…');
-  setCloudStatus?.('Đang tải Cloud…');
+  if(!background){lyFreshBusy(true,'Đang tải dữ liệu Cloud…');setCloudStatus?.('Đang tải Cloud…')}
   try{
     const [
       warehouses,suppliers,ingredients,preparedItems,products,recipeItems,inventory,
@@ -54133,6 +54134,8 @@ loadCloud=async function(){
 
     if(window.__lyFreshOrgId!==loadingOrgId)throw new Error('Phiên làm việc đã thay đổi. Vui lòng tải lại dữ liệu.');
     if([warehouses,suppliers,ingredients,preparedItems,products,recipeItems,inventory,importReceipts,importItems,exportReceipts,exportItems,stocktakeReceipts,stocktakeItems,sales,saleItems,transactions,cashflowEntries].some(rows=>!Array.isArray(rows)))throw new Error('Dữ liệu tải về chưa đầy đủ. Dữ liệu hiện tại được giữ lại.');
+    const afterRevision=window.__lyVibeReadCache?.revisionToken?.()||'';
+    if(!options.forceApply&&beforeRevision&&afterRevision===beforeRevision){cloudOnline=true;setCloudStatus?.('Vibe • Đã đồng bộ','online');return {ok:true,notModified:true}}
     const mappedSales=(sales||[]).map(s=>({
       ...s,
       _fresh_note:s.note||'',
@@ -54180,10 +54183,10 @@ loadCloud=async function(){
     invalidateDataIndexes?.();
     invalidateDerivedCaches?.();
     try{v266RepairProductWarehouseOwnership?.()}catch(e){}
-    renderWarehouseSelect?.();
-    renderAll?.();
+    if(options.render!==false){if(background&&typeof v219SafeBackgroundRender==='function')v219SafeBackgroundRender();else renderAll?.()}
     cloudOnline=true;
-    setCloudStatus?.('Cloud • Realtime','online');
+    setCloudStatus?.('Vibe • Đã đồng bộ','online');
+    window.dispatchEvent?.(new CustomEvent('latyen:cloud-refreshed'));
     return {ok:true};
   }catch(e){
     console.error('Fresh Core loadCloud',e);
@@ -54193,7 +54196,7 @@ loadCloud=async function(){
     return {ok:false,error:e};
   }finally{
     window.__lyFreshLoading=false;
-    lyFreshBusy(false);
+    if(!background)lyFreshBusy(false);
   }
 };
 
@@ -54732,13 +54735,13 @@ init=async function(){
     setCloudStatus?.('Offline • chỉ xem dữ liệu đang mở','offline');
   });
   window.addEventListener('online',()=>{
-    loadCloud();
+    loadCloud({reason:'online',background:true});
   });
   document.addEventListener('visibilitychange',()=>{
-    if(!document.hidden&&navigator.onLine)loadCloud();
+    if(!document.hidden&&navigator.onLine)loadCloud({reason:'visible',background:true});
   });
 
-  const loaded=await loadCloud();
+  const loaded=await loadCloud({reason:'startup',forceApply:true});
   if(!loaded?.ok)return;
   setCloudStatus?.('Vibe • Đã kết nối','online');
   updatePendingSyncBadge();

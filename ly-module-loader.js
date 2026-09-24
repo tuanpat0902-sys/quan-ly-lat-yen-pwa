@@ -3,7 +3,7 @@
   if(window.__lyModuleLoaderV97)return;
   window.__lyModuleLoaderV97=true;
 
-  const VERSION='2026.09.22.8';
+  const VERSION='2026.09.24.1';
   const loaded=new Map();
   const HEAVY=new Set(['finance','employees','history','reports','settings','cashflow']);
   const modules={
@@ -12,7 +12,7 @@
     tableViewV2:{src:'./ly-table-view-v2.js?v=20260830.3',test:()=>window.__lyTableViewV2?.version==='2026.08.30.3'},
     runtimeErrorBoundary:{src:'./ly-runtime-error-boundary.js?v=20260824.1',test:()=>window.__lyRuntimeErrorBoundary?.version==='2026.08.24.1'},
     freshCoreV3Runtime:{src:'./ly-fresh-core-v3-runtime.js?v=20260827.6',test:()=>window.__lyFreshCoreV3Runtime?.version==='2026.08.27.6'},
-    appVersion:{src:'./ly-app-version.js?v=3.3.8',test:()=>window.__lyAppVersion?.version==='3.3.8'},
+    appVersion:{src:'./ly-app-version.js?v=3.3.9',test:()=>window.__lyAppVersion?.version==='3.3.9'},
     freshCoreV3ShadowSoak:{src:'./ly-fresh-core-v3-shadow-soak.js?v=20260827.2',test:()=>window.__lyFreshCoreV3ShadowSoak?.version==='2026.08.27.2'},
     freshCoreV3IngredientsInventorySoak:{src:'./ly-fresh-core-v3-ingredients-inventory-soak.js?v=20260828.4',test:()=>window.__lyFreshCoreV3IngredientsInventorySoak?.version==='2026.08.28.4'},
     freshCoreV3IngredientsInventoryValidation:{src:'./ly-fresh-core-v3-ingredients-inventory-validation.js?v=20260827.2',test:()=>window.__lyFreshCoreV3IngredientsInventoryValidation?.version==='2026.08.27.2'},
@@ -22,8 +22,8 @@
     chatLegacyInventoryUnitGuard:{src:'./ly-chat-legacy-inventory-unit-guard.js?v=20260827.1',test:()=>window.__lyChatLegacyInventoryUnitGuard?.version==='2026.08.27.1'},
     chatResponseGate:{src:'./ly-chat-response-gate.js?v=20260827.1',test:()=>window.__lyChatResponseGate?.version==='2026.08.27.1'},
     chatUnitSync:{src:'./ly-chat-unit-sync.js?v=20260909.1',test:()=>window.__lyChatUnitSync?.version==='2026.09.09.1'},
-    vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260922.1',test:()=>window.__lyVibeReadCache?.version==='2026.09.22.1'},
-    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260922.2',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.22.2'&&!window.__lyVibeBusinessWrites?.installing},
+    vibeReadCache:{src:'./ly-vibe-read-cache.js?v=20260924.1',test:()=>window.__lyVibeReadCache?.version==='2026.09.24.1'},
+    vibeBusinessWrites:{src:'./ly-vibe-business-writes.js?v=20260924.1',test:()=>window.__lyVibeBusinessWrites?.version==='2026.09.24.1'&&!window.__lyVibeBusinessWrites?.installing},
     hydration:{src:'./ly-fresh-core-v2-legacy-hydration.js?v=20260909.1',test:()=>window.__lyFreshCoreV2LegacyHydration?.version==='2026.09.09.1'},
     shadow:{src:'./ly-fresh-core-v2-shadow.js?v=20260824.7',test:()=>window.__lyFreshCoreV2Shadow?.version==='2026.08.24.7'},
     domShim:{src:'./ly-legacy-dom-shim.js?v=20260824.4',test:()=>window.__lyLegacyDomShim?.version==='2026.08.24.4'},
@@ -50,10 +50,10 @@
     salaryFundSync:{src:'./ly-salary-fund-sync.js?v=20260921.2',test:()=>window.__lySalaryFundSync?.version==='2026.09.21.2'},
     employeeTerminationDate:{src:'./ly-employee-termination-date.js?v=20260921.3',test:()=>window.__lyEmployeeTerminationDate?.version==='2026.09.21.3'},
     inAppNotifications:{src:'./ly-inapp-notifications.js?v=20260827.4',test:()=>window.__lyInAppNotifications?.version==='2026.08.27.4'},
-    dataNotifications:{src:'./ly-data-notifications.js?v=20260907.1',test:()=>window.__lyDataActivityNotifications?.version==='2026.09.07.1'},
+    dataNotifications:{src:'./ly-data-notifications.js?v=20260924.1',test:()=>window.__lyDataActivityNotifications?.version==='2026.09.24.1'},
     notificationCenter:{src:'./ly-notification-center.js?v=20260908.1',test:()=>window.__lyNotificationCenter?.version==='2026.09.08.1'},
     inventoryAlerts:{src:'./ly-inventory-alerts.js?v=20260824.1',test:()=>window.__lyInventoryAlerts?.version==='2026.08.24.1'},
-    performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260907.1',test:()=>window.__lyPerformanceOptimizer?.version==='2026.09.07.1'},
+    performanceOptimizer:{src:'./ly-performance-optimizer.js?v=20260924.1',test:()=>window.__lyPerformanceOptimizer?.version==='2026.09.24.1'},
     cloudRealtime:{src:'./ly-cloud-realtime.js?v=20260907.1',test:()=>window.__lyUnifiedCloudRealtime?.version==='2026.09.07.1'},
     warehouseDeleteUX:{src:'./ly-warehouse-delete-ux.js?v=20260921.1',test:()=>window.__lyWarehouseDeleteUX?.version==='2026.09.21.1'},
     settingsUIBridge:{src:'./ly-settings-ui-bridge.js?v=20260827.2',test:()=>window.__lySettingsUIBridge?.version==='2026.08.27.2'},

@@ -3,7 +3,7 @@
   if(window.__lyPerformanceOptimizerV4)return;
   window.__lyPerformanceOptimizerV4=true;
 
-  const VERSION='2026.09.07.1';
+  const VERSION='2026.09.24.1';
   const VIBE_ONLY=location.hostname.endsWith('.tinhgon.xyz'),VIBE_REFRESH_MS=900000;
   const LIVE_MS=900000,FALLBACK_MS=120000,HIDDEN_MS=1800000,OFFLINE_MS=300000,QUIET_MS=1800000,PENDING_MS=5000,IDLE_TRIM_MS=20000;
   const LEADER_VISIBLE_MS=4500,LEADER_RETRY_MS=1800;
@@ -34,7 +34,7 @@
   function installScopedTableObserver(){try{rebindTableObserver();if(typeof window.showTab==='function'&&!window.showTab.__lyScopedTableObserver){const original=window.showTab;state.originalShowTab=original;const wrapped=function(...args){const result=original.apply(this,args);requestAnimationFrame(rebindTableObserver);return result;};wrapped.__lyScopedTableObserver=true;window.showTab=wrapped;}}catch(e){console.warn('[Lát Yên] scoped table observer fallback',e);}}
 
   function schedule(delay=nextDelay()){clearTimeout(state.timer);state.timer=setTimeout(run,Math.max(1000,Number(delay)||nextDelay()));}
-  async function run(reason='adaptive'){clearLegacySyncTimers();if(state.running){schedule();return;}if(!window.__lyFreshOrgId||!navigator.onLine||document.hidden||(reason!=='manual'&&quietHours()&&pendingCount()===0)){schedule();return;}state.running=true;state.lastReason=reason;state.lastRunAt=Date.now();state.cycles++;try{if(VIBE_ONLY){if(typeof window.loadCloud==='function')await window.loadCloud();}else{if(typeof v269SyncCycle!=='function'){schedule(3000);return;}await v269SyncCycle({forcePull:false,reason:'adaptive_scheduler'});}}catch(e){state.errors++;console.warn('[Lát Yên] adaptive sync',e);}finally{state.running=false;schedule();}}
+  async function run(reason='adaptive'){clearLegacySyncTimers();if(state.running){schedule();return;}if(!window.__lyFreshOrgId||!navigator.onLine||document.hidden||(reason!=='manual'&&quietHours()&&pendingCount()===0)){schedule();return;}state.running=true;state.lastReason=reason;state.lastRunAt=Date.now();state.cycles++;try{if(VIBE_ONLY){if(typeof window.loadCloud==='function')await window.loadCloud({reason:'adaptive-scheduler',background:true});}else{if(typeof v269SyncCycle!=='function'){schedule(3000);return;}await v269SyncCycle({forcePull:false,reason:'adaptive_scheduler'});}}catch(e){state.errors++;console.warn('[Lát Yên] adaptive sync',e);}finally{state.running=false;schedule();}}
   function trimRuntimeCaches(){clearTimeout(state.trimTimer);state.trimTimer=null;if(!document.hidden)return;const task=()=>{try{if(typeof v218TrimRuntimeCaches==='function')v218TrimRuntimeCaches();}catch(e){}try{if(typeof v220OptionHtmlCache!=='undefined'&&v220OptionHtmlCache?.size>120)v220OptionHtmlCache.clear();}catch(e){}};if('requestIdleCallback' in window)requestIdleCallback(task,{timeout:2000});else setTimeout(task,80);}
   function scheduleHiddenTrim(){clearTimeout(state.trimTimer);if(document.hidden)state.trimTimer=setTimeout(trimRuntimeCaches,IDLE_TRIM_MS);}
   function applyVisibilityState(){document.documentElement.classList.toggle('ly-app-hidden',document.hidden);if(document.hidden){schedule(HIDDEN_MS);scheduleHiddenTrim();leaderTick('visibility-hidden');return;}clearTimeout(state.trimTimer);state.trimTimer=null;schedule(VIBE_ONLY?VIBE_REFRESH_MS:500);scheduleLeader(250);requestAnimationFrame(rebindTableObserver);}
