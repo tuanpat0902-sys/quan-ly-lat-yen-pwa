@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.10 — 25/09/2026
+
+- Bổ sung quy trình bảo trì có sao lưu để loại dữ liệu bán hàng tháng 8/2026 cùng chi tiết, biến động SALE và nhật ký liên quan trong một giao dịch khóa an toàn.
+- Thiết lập mốc dữ liệu bán hàng từ 01/09/2026, ngăn đồng bộ iPOS tự nhập lại kỳ tháng 8 sau khi làm sạch.
+- Tính lại toàn bộ số dư tồn kho từ sổ biến động còn hợp lệ ngay trong giao dịch bảo trì; phiếu nhập, xuất và kiểm kê hợp lệ được giữ nguyên.
+- Sửa con trỏ phân trang lịch sử để ngày giờ luôn được truyền dưới dạng ISO ổn định.
+
 ## Ver 3.3.9 — 24/09/2026
 
 - Đồng bộ nền, kết nối lại mạng và quay lại cửa sổ không còn dựng lại màn hình khi người dùng đang nhập hoặc thao tác.

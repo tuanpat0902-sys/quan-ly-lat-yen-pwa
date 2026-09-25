@@ -15,7 +15,7 @@ const recentDays=Math.min(730,Math.max(30,Number.parseInt(process.env.VIBE_RECEN
 
 function send(response,status,payload){const body=Buffer.from(JSON.stringify(payload));response.writeHead(status,{'cache-control':'no-store','content-length':body.length,'content-type':'application/json; charset=utf-8','x-content-type-options':'nosniff'});response.end(body);}
 function cursorParts(value){const raw=String(value||'').trim(),split=raw.lastIndexOf('|'),id=split>0?raw.slice(split+1):'';return {time:split>0?raw.slice(0,split):raw,id:/^[0-9a-f-]{36}$/i.test(id)?id:''};}
-function nextCursor(row,column){return row?`${row[column]}|${row.id}`:null;}
+function nextCursor(row,column){const value=row?.[column];return row?`${value instanceof Date?value.toISOString():value}|${row.id}`:null;}
 async function userFor(request,response,orgId){const user=await authenticatedVibeUser(request);if(!user||user.orgId!==orgId){send(response,403,{error:'Organization access denied'});return null;}return user;}
 async function revision(client,orgId){const row=(await client.query(`select coalesce(max(revision),0)::bigint value from ${qi(schema)}.ly_change_signals where org_id=$1::uuid`,[orgId])).rows[0];return Number(row?.value)||0;}
 function selection(table){return ['ly_import_receipts','ly_export_receipts','ly_stocktake_receipts'].includes(table)?'*,receipt_date::text receipt_date':table==='ly_cashflow_entries'?'*,entry_date::text entry_date':'*';}
