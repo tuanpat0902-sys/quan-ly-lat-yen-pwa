@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.24.1';
+  const VERSION='2026.09.25.2';
   const DOMAINS={
     core:['ly_warehouses','ly_suppliers','ly_ingredients','ly_prepared_items','ly_products','ly_recipe_items','ly_inventory'],
     documents:['ly_import_receipts','ly_import_items','ly_export_receipts','ly_export_items','ly_stocktake_receipts','ly_stocktake_items'],
@@ -20,7 +20,10 @@
   function gateRefresh(value){
     const options=loadOptions(value);
     if(!options.allowDraftApply&&draftActive()){window.v240MarkProjectionDeferred?.();queueRefresh(options.reason||'active-draft');return {options,deferred:{ok:true,deferred:true,reason:'active-draft'}};}
-    if(options.background&&interactionActive()){queueRefresh(options.reason||'active-interaction');return {options,deferred:{ok:true,deferred:true,reason:'active-interaction'}};}
+    // Every automatic/legacy refresh must yield to the user, not only callers
+    // that remembered to label themselves as background work. Confirmed writes
+    // opt in explicitly after the server has committed and always render=false.
+    if(!options.allowInteractionApply&&interactionActive()){queueRefresh(options.reason||'active-interaction');return {options,deferred:{ok:true,deferred:true,reason:'active-interaction'}};}
     return {options,deferred:null};
   }
 

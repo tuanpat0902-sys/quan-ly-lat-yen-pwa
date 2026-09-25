@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.24.1';
+  const VERSION='2026.09.25.2';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');
@@ -39,7 +39,7 @@
     if(typeof window.loadCloud!=='function')throw new Error('Chưa sẵn sàng tải lại dữ liệu Cloud.');
     const deadline=Date.now()+30000;
     for(;;){
-      const result=await window.loadCloud({reason:'confirmed-write',allowDraftApply:true,render:false,forceApply:true,background:true});
+      const result=await window.loadCloud({reason:'confirmed-write',allowDraftApply:true,allowInteractionApply:true,render:false,forceApply:true,background:true});
       if(result?.deferred){if(Date.now()>=deadline)throw new Error('Cloud đang bận. Vui lòng tải lại dữ liệu để kiểm tra.');await new Promise(resolve=>setTimeout(resolve,100));continue;}
       if(result===false||result?.ok===false)throw new Error(result?.error?.message||'Không tải lại được dữ liệu Cloud để xác nhận.');
       return result;
@@ -80,7 +80,7 @@
   const employeeKey=row=>String(row?.code||'').trim().toLocaleLowerCase('vi');
   function dedupeEmployees(rows){const kept=new Map();for(const row of rows||[]){const key=employeeKey(row)||String(row?.id||'');const previous=kept.get(key);if(!previous||String(row.updated_at||row.created_at||'')>=String(previous.updated_at||previous.created_at||''))kept.set(key,row);}return [...kept.values()];}
   function fromVibeEmployee(row){return {...row,id:String(row.legacy_id||row.id),vibe_id:row.id,warehouse_id:row.warehouse_id};}
-  async function syncEmployees(){if(!usesVibe()||typeof currentWarehouseId==='undefined'||!currentWarehouseId)return;const warehouseId=currentWarehouseId,cloud=await request(`/api/v1/business/employees?warehouse_id=${encodeURIComponent(warehouseId)}`);if(currentWarehouseId!==warehouseId)return;const merged=dedupeEmployees((cloud.rows||[]).map(fromVibeEmployee));saveEmployees?.(merged);renderEmployees?.();}
+  async function syncEmployees(){if(!usesVibe()||typeof currentWarehouseId==='undefined'||!currentWarehouseId)return;const warehouseId=currentWarehouseId,cloud=await request(`/api/v1/business/employees?warehouse_id=${encodeURIComponent(warehouseId)}`);if(currentWarehouseId!==warehouseId)return;const merged=dedupeEmployees((cloud.rows||[]).map(fromVibeEmployee));saveEmployees?.(merged);if(document.querySelector('#employees.panel.active')){if(window.v219InteractionActive?.())window.v240DeferOpenFormRender?.();else renderEmployees?.();}}
 
   function install(){
     if(typeof window.saveIngredient!=='function'||typeof window.saveRecipe!=='function')return false;

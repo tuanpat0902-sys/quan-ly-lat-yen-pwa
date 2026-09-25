@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.11 — 25/09/2026
+
+- Ngăn mọi lượt tải/đồng bộ tự động dựng lại giao diện trong lúc người dùng đang nhập, sửa hoặc chọn dữ liệu.
+- Sửa vòng chờ sau khi máy chủ xác nhận lưu khiến phiếu có thể treo ở trạng thái “Đang lưu…” dù dữ liệu đã được ghi.
+- Đồng bộ nền luôn bám theo màn hình đang thực sự hiển thị, không quay về màn hình cũ và giữ nguyên vị trí cuộn.
+- Lượt tải nhân sự đến muộn không còn ghi đè biểu mẫu hoặc bộ lọc nhân sự đang thao tác.
+
 ## Ver 3.3.10 — 25/09/2026
 
 - Bổ sung quy trình bảo trì có sao lưu để loại dữ liệu bán hàng tháng 8/2026 cùng chi tiết, biến động SALE và nhật ký liên quan trong một giao dịch khóa an toàn.

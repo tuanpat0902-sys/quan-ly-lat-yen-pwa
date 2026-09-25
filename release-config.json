@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.3.10",
-  "revision": "fresh-core-v3-shell-authoritative-v68",
-  "loaderAssetVersion": "20260925.1",
+  "appVersion": "3.3.11",
+  "revision": "fresh-core-v3-shell-authoritative-v69",
+  "loaderAssetVersion": "20260925.2",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.25.1",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-291",
-  "redeploy": "2026-09-25-september-sales-inventory-baseline-ver-3.3.10"
+  "moduleLoaderVersion": "2026.09.25.2",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-292",
+  "redeploy": "2026-09-25-interaction-safe-business-forms-ver-3.3.11"
 }

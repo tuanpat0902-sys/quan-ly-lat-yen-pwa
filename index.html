@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>QUẢN LÝ LÁT YÊN</title>
 <script>if(location.host.startsWith('tuanpat0902-sys.'))location='https://quan-ly-lat-yen-pwa-live.n1.tinhgon.xyz/'</script>
-<link rel="preload" href="./ly-module-loader.js?v=20260925.1" as="script">
+<link rel="preload" href="./ly-module-loader.js?v=20260925.2" as="script">
 <script src="./ly-vibe-client-compat.js?v=20260921.2"></script>
 <script id="lyEarlyAuthShim">(()=>{if(typeof window.v260EnsureAuth==='function')return;window.v260EnsureAuth=async function(){try{const response=await fetch('/api/auth/session',{cache:'no-store'});if(!response.ok)return false;const data=await response.json();const session=data?.session||null;window.__lyFreshSession=session;window.__lyFreshOrgId=session?.org_id||null;if(session&&typeof window.v260Session==='undefined')window.v260Session=session;return !!session;}catch(e){window.__lyEarlyAuthError=String(e?.message||e);return false;}};window.__lyEarlyAuthShim={version:'2026.09.07.2',provider:'vibe'};})();</script>
 <style>
@@ -11529,7 +11529,7 @@ html.v257-device-locked body{
  <div class="top">
   <div class="brand-wrap">
     <div id="appLogoSlot" class="app-logo-slot"></div>
-    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.10</span>
+    <div class="brand"><span id="appNameText">QUẢN LÝ LÁT YÊN</span> <span class="badge" id="appVersionStatic">Ver 3.3.11</span>
       <small>Quản lý kho • nguyên liệu/ dụng cụ • pha chế • bán hàng • báo cáo</small>
     </div>
   </div>
@@ -11560,7 +11560,7 @@ html.v257-device-locked body{
 <div id="modal" class="modal"><div id="modalBox" class="modal-box"></div></div>
 <div id="toast" class="toast"></div>
 <script src="./ly-runtime-error-boundary.js?v=20260824.1"></script>
-<script src="./ly-module-loader.js?v=20260925.1"></script>
+<script src="./ly-module-loader.js?v=20260925.2"></script>
 <script src="./ly-history-bridge.js?v=20260824.2"></script>
 <script src="./ly-employees-bridge.js?v=20260825.2"></script>
 <script src="./ly-finance-bridge.js?v=20260823.1"></script>
@@ -12676,15 +12676,8 @@ function v219MarkEditing(){
   v219LastUserEditAt=Date.now();
 }
 
-function v219ActivePanel(){
-  return (
-    activePanelId ||
-    document.querySelector(
-      '.panel.active'
-    )?.id ||
-    'finance'
-  );
-}
+function v219ActivePanel(){const p=document.querySelector('.panel.active')?.id;return p?(activePanelId=p):(activePanelId||'finance');}
+function v219RenderVisiblePanel(){const p=v219ActivePanel(),x=scrollX,y=scrollY;renderWarehouseSelect();renderPanel(p);requestAnimationFrame(()=>requestAnimationFrame(()=>v219ActivePanel()===p&&scrollTo(x,y)));}
 
 function v219FlushDeferredRender(){
   clearTimeout(
@@ -12703,10 +12696,6 @@ function v219FlushDeferredRender(){
     return;
   }
 
-  /*
-    V235 first applies queued DATA while idle, then performs only one UI
-    render. Realtime/canonical no longer rebuild the panel independently.
-  */
   v235FlushDeferredData();
 
   if(v219InteractionActive()){
@@ -12718,11 +12707,7 @@ function v219FlushDeferredRender(){
   v240ClearDeferredStatus();
 
   try{
-    renderWarehouseSelect();
-
-    renderPanel(
-      v219ActivePanel()
-    );
+    v219RenderVisiblePanel();
 
     updatePendingSyncBadge();
 
@@ -12744,11 +12729,7 @@ function v219SafeBackgroundRender(){
     return false;
   }
 
-  renderWarehouseSelect();
-
-  renderPanel(
-    v219ActivePanel()
-  );
+  v219RenderVisiblePanel();
 
   updatePendingSyncBadge();
 
@@ -30977,7 +30958,6 @@ function warehouseReceiptHistoryTable(){
 }
 
 function renderImports(forceReset=false){
-  // Background Cloud refreshes must never replace an in-progress receipt form.
   if(forceReset!==true&&E.imports?.querySelector('#inlineImportReceiptForm.open,#inlineExportReceiptForm.open')){
     window.v240DeferOpenFormRender();
     return;

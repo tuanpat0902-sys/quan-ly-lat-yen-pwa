@@ -45,7 +45,7 @@ assert.match(bootstrap,/aes-256-gcm/,'transferred iPOS credentials must be encry
 assert.match(auth,/HttpOnly; Secure; SameSite=Lax/,'Vibe session must use a secure HTTP-only cookie');
 assert.match(auth,/bcrypt\.compare/,'Vibe login must verify the migrated password hash');
 assert.match(loader,/await load\('vibeReadCache'\)/,'read cache must load before hydration');
-assert.match(loader,/ly-vibe-read-cache\.js\?v=20260924\.1/,'loader must request the versioned cache bridge');
+assert.match(loader,/ly-vibe-read-cache\.js\?v=20260925\.2/,'loader must request the versioned cache bridge');
 assert.match(client,/captureVersions\(next\.tables\)/,'authoritative row versions must be captured before UI projection can mutate rows');
 assert.match(client,/versionFor:\(table,id\)/,'business writes must be able to read an immutable server version');
 assert.match(client,/revisionToken/,'the UI coordinator must be able to skip unchanged domain projections');
