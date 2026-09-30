@@ -1,9 +1,9 @@
 {
-  "appVersion": "3.3.11",
-  "revision": "fresh-core-v3-shell-authoritative-v69",
-  "loaderAssetVersion": "20260925.2",
+  "appVersion": "3.3.12",
+  "revision": "fresh-core-v3-shell-authoritative-v70",
+  "loaderAssetVersion": "20260930.1",
   "sidebarVisualsAssetVersion": "20260831.2",
-  "moduleLoaderVersion": "2026.09.25.2",
-  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-292",
-  "redeploy": "2026-09-25-interaction-safe-business-forms-ver-3.3.11"
+  "moduleLoaderVersion": "2026.09.30.1",
+  "serviceWorker": "lat-yen-fresh-core-v3-authoritative-293",
+  "redeploy": "2026-09-30-idempotent-receipt-write-diagnostics-ver-3.3.12"
 }

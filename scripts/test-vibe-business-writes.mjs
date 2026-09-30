@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {publicBusinessMutationError} from './vibehost-business-mutation-api.mjs';
 
 const source=readFileSync(new URL('../ly-vibe-business-writes.js',import.meta.url),'utf8');
 const cashflowView=readFileSync(new URL('../ly-cashflow.js',import.meta.url),'utf8');
@@ -9,6 +10,8 @@ assert.doesNotMatch(cashflowView,/function renderCashflow\(\)\s*\{[\s\S]*?const 
 assert.match(businessApi,/documentMatch&&request\.method==='DELETE'[\s\S]*client\.query\('begin'\)[\s\S]*deleteDocument\([\s\S]*client\.query\('commit'\)/,'receipt deletion must be authenticated and committed atomically');
 assert.match(businessApi,/async function deleteDocument[\s\S]*existingDocumentEffect[\s\S]*insert into[\s\S]*delete from[\s\S]*recalculateImportCosts/,'receipt deletion must reverse inventory and import costs');
 assert.match(businessApi,/if\(requestedId&&!previousHeader\)throw/,'editing a missing receipt must not silently create a second receipt');
+assert.match(businessApi,/documentByReceiptNumber[\s\S]*sameWarehouse\[0\]\?\.id\|\|randomUUID/,'a confirmed receipt retry must reuse the authoritative receipt id instead of failing as a duplicate');
+assert.match(businessApi,/sameNumber\.length&&!sameWarehouse\.length[\s\S]*được dùng tại kho khác/,'receipt-number retry protection must not overwrite a receipt belonging to another warehouse');
 assert.match(businessApi,/unnest\(\$3::uuid\[\],\$4::numeric\[\]\)/,'receipt deletion must update all affected inventory rows in one database query');
 assert.match(businessApi,/with target as\(select unnest\(\$2::uuid\[\]\)/,'import costs must be recalculated in one database query');
 assert.match(businessApi,/stocktakeValues=kind==='stocktake'\?\{shortage_value:0,surplus_value:0\}/,'stocktake headers must include required shortage and surplus values');
@@ -30,6 +33,9 @@ assert.match(businessApi,/documentMatch=.*stocktake[\s\S]*documentMatch&&request
 assert.match(source,/window\.deleteSaleReceipt=async function[\s\S]*\/api\/v1\/business\/sale\//,'sale deletion must never fall through to the retired Supabase RPC on Vibe');
 assert.match(source,/window\.deleteIngredient=async function[\s\S]*\/api\/v1\/business\/ingredient\//,'ingredient deletion must use the Vibe API');
 assert.match(source,/window\.deleteRecipe=async function[\s\S]*\/api\/v1\/business\/product\//,'recipe deletion must use the Vibe API');
+assert.deepEqual(publicBusinessMutationError({code:'23505'},'POST','abc12345'),{status:409,code:'DUPLICATE',error:'Dữ liệu này đã tồn tại trên Vibe Host. Hãy tải lại danh sách rồi thử lại.'});
+assert.deepEqual(publicBusinessMutationError({code:'42703'},'POST','abc12345'),{status:503,code:'SCHEMA_OUTDATED',error:'Cơ sở dữ liệu Vibe Host chưa được cập nhật đúng phiên bản (mã lỗi: abc12345)'});
+assert.deepEqual(publicBusinessMutationError(new Error('unknown'),'POST','abc12345'),{status:503,code:'WRITE_FAILED',error:'Không thể lưu dữ liệu trên Vibe Host (mã lỗi: abc12345)'});
 async function setup({stale=false,failed=false,badResponse=false,resolved=false,wrongIngredient=false,wrongProduct=false,deleteFailed=false,deleteCancelled=false,cashflowMissing=false,cashflowDeleteFailed=false,employeeSaveFailed=false,wrongReceiptDate=false,receiptType='IMPORT'}={}){
   const calls=[],alerts=[],toasts=[],deleted=[],legacyReceiptDeletes=[],legacyCashflowDeletes=[];
   let employees=[{id:'old',code:'A'},{id:'new',code:'A',updated_at:'2026'}],refreshes=0;

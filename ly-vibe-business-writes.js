@@ -1,6 +1,6 @@
 (()=>{
   'use strict';
-  const VERSION='2026.09.25.2';
+  const VERSION='2026.09.30.1';
   if(window.__lyVibeBusinessWrites?.installing||window.__lyVibeBusinessWrites?.version===VERSION)return;
   window.__lyVibeBusinessWrites={version:VERSION,installing:true};
   const usesVibe=()=>location.hostname.endsWith('.tinhgon.xyz');

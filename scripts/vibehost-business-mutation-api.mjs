@@ -97,6 +97,11 @@ async function documentHeader(client,orgId,kind,id){
   const table={import:'ly_import_receipts',export:'ly_export_receipts',stocktake:'ly_stocktake_receipts'}[kind];
   return (await client.query(`select * from ${qi(schema)}.${qi(table)} where id=$1::uuid and org_id=$2::uuid for update`,[id,orgId])).rows[0]||null;
 }
+async function documentByReceiptNumber(client,orgId,kind,receiptNo){
+  const table={import:'ly_import_receipts',export:'ly_export_receipts',stocktake:'ly_stocktake_receipts'}[kind];
+  if(!table||!receiptNo)return [];
+  return (await client.query(`select * from ${qi(schema)}.${qi(table)} where org_id=$1::uuid and receipt_no=$2 order by created_at desc nulls last,id for update`,[orgId,receiptNo])).rows;
+}
 async function recalculateImportCosts(client,orgId,ingredientIds){
   const ids=[...ingredientIds];if(!ids.length)return [];
   const result=await client.query(`with target as(select unnest($2::uuid[]) id),costs as(select x.ingredient_id,sum(x.quantity*x.unit_cost)/nullif(sum(x.quantity),0) cost from ${qi(schema)}.ly_import_items x where x.org_id=$1::uuid and x.ingredient_id=any($2::uuid[]) group by x.ingredient_id) update ${qi(schema)}.ly_ingredients i set cost=coalesce(costs.cost,0),updated_at=now() from target left join costs on costs.ingredient_id=target.id where i.org_id=$1::uuid and i.id=target.id returning i.id,i.cost`,[orgId,ids]);
@@ -104,9 +109,13 @@ async function recalculateImportCosts(client,orgId,ingredientIds){
 }
 async function saveDocument(client,user,kind,input){
   const names={import:['ly_import_receipts','ly_import_items'],export:['ly_export_receipts','ly_export_items'],stocktake:['ly_stocktake_receipts','ly_stocktake_items']}[kind];if(!names)throw new Error('Invalid document');
-  const value=input?.header||{},warehouseId=uuid(value.warehouse_id),requestedId=String(value.id||'').trim(),id=requestedId?uuid(requestedId):randomUUID(),receiptNo=String(value.receipt_no||'').trim(),receiptDate=String(value.receipt_date||'').trim();if(!id||!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid document');
+  const value=input?.header||{},warehouseId=uuid(value.warehouse_id),requestedId=String(value.id||'').trim(),receiptNo=String(value.receipt_no||'').trim(),receiptDate=String(value.receipt_date||'').trim();if(!warehouseId||!receiptNo||!await warehouseAllowed(client,user.orgId,warehouseId))throw new Error('Invalid document');
   if(!/^\d{4}-\d{2}-\d{2}$/.test(receiptDate))throw new Error('Vui lòng chọn ngày trên phiếu hợp lệ.');
-  const previousHeader=requestedId?await documentHeader(client,user.orgId,kind,id):null;if(requestedId&&!previousHeader)throw new Error('Phiếu cần sửa không tồn tại trên Vibe Host');
+  const sameNumber=requestedId?[]:await documentByReceiptNumber(client,user.orgId,kind,receiptNo),sameWarehouse=sameNumber.filter(row=>String(row.warehouse_id)===warehouseId);
+  if(!requestedId&&sameNumber.length&&!sameWarehouse.length)throw new Error('Số phiếu này đã được dùng tại kho khác. Vui lòng đổi số phiếu.');
+  if(sameWarehouse.length>1)throw new Error('Có nhiều phiếu trùng số trên Vibe Host. Vui lòng liên hệ quản trị để gộp dữ liệu trước khi lưu.');
+  const id=requestedId?uuid(requestedId):(sameWarehouse[0]?.id||randomUUID());if(!id)throw new Error('Invalid document');
+  const previousHeader=(requestedId||sameWarehouse.length)?await documentHeader(client,user.orgId,kind,id):null;if(requestedId&&!previousHeader)throw new Error('Phiếu cần sửa không tồn tại trên Vibe Host');
   const previous=await existingDocumentEffect(client,user.orgId,kind,id);for(const [ingredientId,delta] of previous)await adjustInventory(client,user.orgId,previousHeader?.warehouse_id||warehouseId,ingredientId,-delta);
   const ledgerType={import:'IMPORT',export:'EXPORT',stocktake:'ADJUSTMENT'}[kind];
   await client.query(`delete from ${qi(schema)}.ly_stock_transactions where org_id=$1::uuid and source_id=$2::uuid and transaction_type=$3`,[user.orgId,id,ledgerType]);
@@ -132,6 +141,20 @@ async function saveDocument(client,user,kind,input){
   for(const item of items){const quantity=kind==='export'?-Math.abs(number(item.quantity)):kind==='stocktake'?number(item.diff_qty):Math.abs(number(item.quantity));await insert(client,'ly_stock_transactions',{org_id:user.orgId,warehouse_id:warehouseId,ingredient_id:item.ingredient_id,transaction_type:ledgerType,quantity,source_id:id,unit_cost:number(item.unit_cost),note:`${kind==='import'?'Phiếu nhập':kind==='export'?'Phiếu xuất':'Kiểm kê'}:${receiptNo}`,created_at:occurredAt});}
   header={...header,receipt_date:persistedDate};
   return {id,header,items};
+}
+
+export function publicBusinessMutationError(error,method='POST',reference=''){
+  const code=String(error?.code||''),message=String(error?.message||''),suffix=reference?` (mã lỗi: ${reference})`:'';
+  if(method==='GET')return {status:503,code:'READ_FAILED',error:`Không thể tải dữ liệu từ Vibe Host${suffix}`};
+  if(message==='Invalid document')return {status:400,code:'INVALID_DOCUMENT',error:'Thông tin phiếu không hợp lệ hoặc kho đang chọn không còn hoạt động.'};
+  if(message==='Invalid ingredient')return {status:400,code:'INVALID_INGREDIENT',error:'Thông tin nguyên liệu/ dụng cụ không hợp lệ.'};
+  if(/^(Vui lòng|Phiếu cần sửa|Ngày phiếu|Số phiếu|Có nhiều phiếu|Mật khẩu kho)/.test(message))return {status:409,code:'BUSINESS_CONFLICT',error:message};
+  if(code==='23505')return {status:409,code:'DUPLICATE',error:'Dữ liệu này đã tồn tại trên Vibe Host. Hãy tải lại danh sách rồi thử lại.'};
+  if(code==='23503')return {status:409,code:'STALE_REFERENCE',error:'Nguyên liệu, kho hoặc dữ liệu liên quan đã thay đổi. Hãy tải lại danh sách rồi thử lại.'};
+  if(code==='23502'||code==='23514'||code==='22P02')return {status:400,code:'INVALID_VALUE',error:'Phiếu còn thiếu hoặc có giá trị không hợp lệ. Hãy kiểm tra lại các dòng hàng.'};
+  if(code==='42P01'||code==='42703')return {status:503,code:'SCHEMA_OUTDATED',error:`Cơ sở dữ liệu Vibe Host chưa được cập nhật đúng phiên bản${suffix}`};
+  if(code.startsWith('08')||code==='53300'||code==='57P03')return {status:503,code:'DATABASE_UNAVAILABLE',error:`Vibe Host đang tạm thời không kết nối được cơ sở dữ liệu${suffix}`};
+  return {status:503,code:'WRITE_FAILED',error:`Không thể lưu dữ liệu trên Vibe Host${suffix}`};
 }
 async function deleteDocument(client,user,kind,id){
   const names={import:['ly_import_receipts','ly_import_items'],export:['ly_export_receipts','ly_export_items'],stocktake:['ly_stocktake_receipts','ly_stocktake_items']}[kind];
@@ -227,5 +250,10 @@ export async function handleBusinessMutationApi(request,response,pathname){
     if(warehouseMatch&&request.method==='DELETE'){const input=await readBody(request).catch(()=>({}));await client.query('begin');await lockInventoryOrg(client,user.orgId);const result=await deleteWarehouse(client,user,warehouseMatch[1],input.password);if(!result.ok){await client.query('rollback');json(response,409,result);return true;}await recordActivity(client,user,{table:'ly_warehouses',id:result.id,type:'DELETE',name:result.name});await client.query('commit');invalidateSnapshot(user.orgId);json(response,200,result);return true;}
     if(request.method!=='POST'){response.setHeader('allow','GET, POST, DELETE');json(response,405,{error:'Method Not Allowed'});return true;}
     const input=await readBody(request);await client.query('begin');if(['/api/v1/business/ingredient','/api/v1/business/product','/api/v1/business/import','/api/v1/business/export','/api/v1/business/stocktake','/api/v1/business/sale','/api/v1/business/warehouse'].includes(pathname))await lockInventoryOrg(client,user.orgId);let result;if(pathname.endsWith('/ingredient'))result=await saveIngredient(client,user,input);else if(pathname.endsWith('/product'))result=await saveProduct(client,user,input);else if(pathname.endsWith('/warehouse'))result=await saveWarehouse(client,user,input);else if(pathname.endsWith('/supplier'))result=await saveSupplier(client,user,input.supplier||{});else if(pathname.endsWith('/cashflow'))result=await saveCashflow(client,user,input.cashflow||{});else if(pathname.endsWith('/import'))result=await saveDocument(client,user,'import',input);else if(pathname.endsWith('/export'))result=await saveDocument(client,user,'export',input);else if(pathname.endsWith('/stocktake'))result=await saveDocument(client,user,'stocktake',input);else if(pathname.endsWith('/sale'))result=await saveSale(client,user,input);else result=await saveEmployee(client,user,input.employee||{});const activity=writeActivity(pathname,input,result);if(activity)await recordActivity(client,user,activity);await client.query('commit');invalidateSnapshot(user.orgId);const reconcile=result?.reconcile;if(reconcile)delete result.reconcile;json(response,200,result);if(reconcile)queueMicrotask(()=>reconcileProductInventory(reconcile));
-  }catch(error){if(client&&request.method!=='GET')await client.query('rollback').catch(()=>{});console.error(`[business-mutation] ${String(error?.message||error).slice(0,220)}`);json(response,503,{error:request.method==='GET'?'Không thể tải lịch sử trên Vibe Host':'Không thể lưu dữ liệu trên Vibe Host'});}finally{client?.release();}return true;
+  }catch(error){
+    if(client&&request.method!=='GET')await client.query('rollback').catch(()=>{});
+    const reference=randomUUID().slice(0,8),safe=publicBusinessMutationError(error,request.method,reference);
+    console.error(`[business-mutation:${reference}] code=${String(error?.code||'none')} ${String(error?.message||error).slice(0,220)}`);
+    json(response,safe.status,{error:safe.error,code:safe.code,reference});
+  }finally{client?.release();}return true;
 }

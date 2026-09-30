@@ -25,6 +25,6 @@ assert.match(index,/function v219ActivePanel\(\)[\s\S]{0,220}'\.panel\.active'[\
 assert.match(index,/function v219RenderVisiblePanel\(\)[\s\S]{0,300}scrollTo\(x,y\)/,'background rendering must preserve the user reading position');
 assert.match(performance,/loadCloud\(\{reason:'adaptive-scheduler',background:true\}\)/,'the adaptive scheduler must never invoke a foreground Cloud load');
 assert.match(notifications,/source:'activity-events'/,'activity polling must signal remote data changes');
-for(const marker of ['ly-vibe-read-cache.js?v=20260925.2','ly-vibe-business-writes.js?v=20260925.2','ly-performance-optimizer.js?v=20260924.1','ly-data-notifications.js?v=20260924.1'])assert.ok(loader.includes(marker),`missing deterministic runtime asset: ${marker}`);
+for(const marker of ['ly-vibe-read-cache.js?v=20260925.2','ly-vibe-business-writes.js?v=20260930.1','ly-performance-optimizer.js?v=20260924.1','ly-data-notifications.js?v=20260924.1'])assert.ok(loader.includes(marker),`missing deterministic runtime asset: ${marker}`);
 
 console.log('Vibe interaction-safe synchronization and load coordination: PASS');

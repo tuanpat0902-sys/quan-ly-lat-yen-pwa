@@ -2,6 +2,13 @@
 
 Số `Ver` hiển thị cạnh tên ứng dụng và trong phần Cài đặt là phiên bản đang chạy. Mỗi bản triển khai thay đổi chức năng cần tăng số này và ghi nội dung tại đây.
 
+## Ver 3.3.12 — 30/09/2026
+
+- Sửa lỗi lưu phiếu nhập/xuất/kiểm kê bị báo chung “Không thể lưu dữ liệu trên Vibe Host” khi cùng một phiếu được gửi lại sau gián đoạn mạng hoặc đồng bộ.
+- Lần lưu lặp theo đúng số phiếu và đúng kho nay cập nhật phiếu đã được máy chủ xác nhận, không tạo trùng và không cộng tồn kho hai lần.
+- Chặn an toàn việc dùng lại số phiếu của kho khác và phát hiện dữ liệu trùng bất thường trước khi thay đổi tồn kho.
+- Bổ sung thông báo lỗi theo nguyên nhân cùng mã truy vết, giúp phân biệt dữ liệu không hợp lệ, liên kết đã thay đổi, cơ sở dữ liệu chưa cập nhật và mất kết nối.
+
 ## Ver 3.3.11 — 25/09/2026
 
 - Ngăn mọi lượt tải/đồng bộ tự động dựng lại giao diện trong lúc người dùng đang nhập, sửa hoặc chọn dữ liệu.
